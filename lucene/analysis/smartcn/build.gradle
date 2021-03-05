@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Analyzer for indexing Chinese'
+
 dependencies {
   api project(':lucene:core')
   api project(':lucene:analysis:common')

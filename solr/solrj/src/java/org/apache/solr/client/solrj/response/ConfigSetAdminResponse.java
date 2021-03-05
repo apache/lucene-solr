@@ -23,12 +23,13 @@ import org.apache.solr.common.util.NamedList;
  */
 public class ConfigSetAdminResponse extends SolrResponseBase
 {
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked"})
   public NamedList<String> getErrorMessages()
   {
      return (NamedList<String>) getResponse().get( "exceptions" );
   }
 
+  @SuppressWarnings({"unchecked"})
   public static class List extends ConfigSetAdminResponse {
     public java.util.List<String> getConfigSets() {
       return (java.util.List<String>) getResponse().get("configSets");

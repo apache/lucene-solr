@@ -53,9 +53,15 @@ public class TestV2Request extends SolrCloudTestCase {
         .forceV2(true)
         .withMethod(SolrRequest.METHOD.GET).build()
         .process(cluster.getSolrClient());
+    @SuppressWarnings({"rawtypes"})
     List l = (List) rsp._get("nodes",null);
     assertNotNull(l);
     assertFalse(l.isEmpty());
+    rsp = new V2Request.Builder("/cluster/aliases")
+        .forceV2(true)
+        .withMethod(SolrRequest.METHOD.GET).build()
+        .process(cluster.getSolrClient());
+    assertTrue(rsp.getResponse().indexOf("aliases", 0) > -1);
   }
   
   @After
@@ -119,9 +125,10 @@ public class TestV2Request extends SolrCloudTestCase {
 
     assertSuccess(client, new V2Request.Builder("/c/test").withMethod(SolrRequest.METHOD.DELETE).build());
     NamedList<Object> res = client.request(new V2Request.Builder("/c").build());
-    List collections = (List) res.get("collections");
+
     
     // TODO: this is not guaranteed now - beast test if you try to fix
+    //List collections = (List) res.get("collections");
     // assertFalse( collections.contains("test"));
     try{
       NamedList<Object> res1 = client.request(new V2Request.Builder("/collections")

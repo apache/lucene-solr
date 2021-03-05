@@ -26,15 +26,14 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -46,43 +45,46 @@ import org.apache.lucene.util.TestUtil;
 
 /** Base class for per-LockFactory tests. */
 public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
-  
-  /** Subclass returns the Directory to be tested; if it's
-   *  an FS-based directory it should point to the specified
-   *  path, else it can ignore it. */
+
+  /**
+   * Subclass returns the Directory to be tested; if it's an FS-based directory it should point to
+   * the specified path, else it can ignore it.
+   */
   protected abstract Directory getDirectory(Path path) throws IOException;
-  
+
   /** Test obtaining and releasing locks, checking validity */
   public void testBasics() throws IOException {
     Path tempPath = createTempDir();
     Directory dir = getDirectory(tempPath);
-    
+
     Lock l = dir.obtainLock("commit");
     // shouldn't be able to get the lock twice
-    expectThrows(LockObtainFailedException.class, () -> {      
-      dir.obtainLock("commit");
-    });
+    expectThrows(
+        LockObtainFailedException.class,
+        () -> {
+          dir.obtainLock("commit");
+        });
     l.close();
-    
+
     // Make sure we can obtain first one again:
     l = dir.obtainLock("commit");
     l.close();
-    
+
     dir.close();
   }
-  
+
   /** Test closing locks twice */
   public void testDoubleClose() throws IOException {
     Path tempPath = createTempDir();
     Directory dir = getDirectory(tempPath);
-    
+
     Lock l = dir.obtainLock("commit");
     l.close();
     l.close(); // close again, should be no exception
-    
+
     dir.close();
   }
-  
+
   /** Test ensureValid returns true after acquire */
   public void testValidAfterAcquire() throws IOException {
     Path tempPath = createTempDir();
@@ -92,22 +94,24 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     l.close();
     dir.close();
   }
-  
+
   /** Test ensureValid throws exception after close */
   public void testInvalidAfterClose() throws IOException {
     Path tempPath = createTempDir();
     Directory dir = getDirectory(tempPath);
-    
+
     Lock l = dir.obtainLock("commit");
     l.close();
 
-    expectThrows(AlreadyClosedException.class, () -> {      
-      l.ensureValid();
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          l.ensureValid();
+        });
 
     dir.close();
   }
-  
+
   public void testObtainConcurrently() throws InterruptedException, IOException {
     Path tempPath = createTempDir();
     final Directory directory = getDirectory(tempPath);
@@ -119,41 +123,42 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     CyclicBarrier barrier = new CyclicBarrier(numThreads);
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread() {
-        @Override
-        public void run() {
-          try {
-            barrier.await();
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-          while (running.get()) {
-            try (Lock lock = directory.obtainLock("foo.lock")) {
-              assertFalse(assertingLock.isLocked());
-              if (assertingLock.tryLock()) {
-                assertingLock.unlock();
-              } else {
-                fail();
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                barrier.await();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-              assert lock != null; // stupid compiler
-            } catch (IOException ex) {
-              //
+              while (running.get()) {
+                try (Lock lock = directory.obtainLock("foo.lock")) {
+                  assertFalse(assertingLock.isLocked());
+                  if (assertingLock.tryLock()) {
+                    assertingLock.unlock();
+                  } else {
+                    fail();
+                  }
+                  assert lock != null; // stupid compiler
+                } catch (IOException ex) {
+                  //
+                }
+                if (atomicCounter.incrementAndGet() > runs) {
+                  running.set(false);
+                }
+              }
             }
-            if (atomicCounter.incrementAndGet() > runs) {
-              running.set(false);
-            }
-          }
-        }
-      };
+          };
       threads[i].start();
     }
-    
+
     for (int i = 0; i < threads.length; i++) {
       threads[i].join();
     }
     directory.close();
   }
-  
+
   // Verify: do stress test, by opening IndexReaders and
   // IndexWriters over & over in 2 threads and making sure
   // no unexpected exceptions are raised:
@@ -164,10 +169,12 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     Directory dir = getDirectory(tempPath);
 
     // First create a 1 doc index:
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
+    IndexWriter w =
+        new IndexWriter(
+            dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     addDoc(w);
     w.close();
-    
+
     int numIterations = atLeast(20);
     WriterThread writer = new WriterThread(numIterations, dir);
     SearcherThread searcher = new SearcherThread(numIterations, dir);
@@ -179,20 +186,21 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
 
     assertTrue("IndexWriter hit unexpected exceptions", !writer.hitException);
     assertTrue("IndexSearcher hit unexpected exceptions", !searcher.hitException);
-    
+
     dir.close();
   }
-  
+
   private void addDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     writer.addDocument(doc);
   }
-  
-  private class WriterThread extends Thread { 
+
+  private class WriterThread extends Thread {
     private Directory dir;
     private int numIteration;
     public boolean hitException = false;
+
     public WriterThread(int numIteration, Directory dir) {
       this.numIteration = numIteration;
       this.dir = dir;
@@ -206,12 +214,12 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
         throw new RuntimeException(uee);
       }
     }
-  
+
     @Override
     public void run() {
       IndexWriter writer = null;
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      for(int i=0;i<this.numIteration;i++) {
+      for (int i = 0; i < this.numIteration; i++) {
         if (VERBOSE) {
           System.out.println("TEST: WriterThread iter=" + i);
         }
@@ -236,7 +244,8 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
 
         } catch (Throwable t) {
           if (Constants.WINDOWS && t instanceof AccessDeniedException) {
-            // LUCENE-6684: suppress this: on Windows, a file in the curious "pending delete" state can
+            // LUCENE-6684: suppress this: on Windows, a file in the curious "pending delete" state
+            // can
             // cause this exc on IW init, where one thread/process deleted an old
             // segments_N, but the delete hasn't finished yet because other threads/processes
             // still have it open
@@ -244,7 +253,8 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
             t.printStackTrace(printStream);
           } else {
             hitException = true;
-            System.out.println("Stress Test Index Writer: creation hit unexpected exception: " + t.toString());
+            System.out.println(
+                "Stress Test Index Writer: creation hit unexpected exception: " + t.toString());
             t.printStackTrace(System.out);
             System.out.println(toString(baos));
           }
@@ -255,7 +265,8 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
             addDoc(writer);
           } catch (Throwable t) {
             hitException = true;
-            System.out.println("Stress Test Index Writer: addDoc hit unexpected exception: " + t.toString());
+            System.out.println(
+                "Stress Test Index Writer: addDoc hit unexpected exception: " + t.toString());
             t.printStackTrace(System.out);
             System.out.println(toString(baos));
             break;
@@ -264,7 +275,8 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
             writer.close();
           } catch (Throwable t) {
             hitException = true;
-            System.out.println("Stress Test Index Writer: close hit unexpected exception: " + t.toString());
+            System.out.println(
+                "Stress Test Index Writer: close hit unexpected exception: " + t.toString());
             t.printStackTrace(System.out);
             System.out.println(toString(baos));
             break;
@@ -278,22 +290,25 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     private Directory dir;
     private int numIteration;
     public boolean hitException = false;
+
     public SearcherThread(int numIteration, Directory dir) {
       this.numIteration = numIteration;
       this.dir = dir;
     }
+
     @Override
     public void run() {
       IndexReader reader = null;
       IndexSearcher searcher = null;
       Query query = new TermQuery(new Term("content", "aaa"));
-      for(int i=0;i<this.numIteration;i++) {
-        try{
+      for (int i = 0; i < this.numIteration; i++) {
+        try {
           reader = DirectoryReader.open(dir);
           searcher = newSearcher(reader);
         } catch (Exception e) {
           hitException = true;
-          System.out.println("Stress Test Index Searcher: create hit unexpected exception: " + e.toString());
+          System.out.println(
+              "Stress Test Index Searcher: create hit unexpected exception: " + e.toString());
           e.printStackTrace(System.out);
           break;
         }
@@ -301,7 +316,8 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
           searcher.search(query, 1000);
         } catch (IOException e) {
           hitException = true;
-          System.out.println("Stress Test Index Searcher: search hit unexpected exception: " + e.toString());
+          System.out.println(
+              "Stress Test Index Searcher: search hit unexpected exception: " + e.toString());
           e.printStackTrace(System.out);
           break;
         }
@@ -310,12 +326,12 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
           reader.close();
         } catch (IOException e) {
           hitException = true;
-          System.out.println("Stress Test Index Searcher: close hit unexpected exception: " + e.toString());
+          System.out.println(
+              "Stress Test Index Searcher: close hit unexpected exception: " + e.toString());
           e.printStackTrace(System.out);
           break;
         }
       }
     }
   }
-  
 }

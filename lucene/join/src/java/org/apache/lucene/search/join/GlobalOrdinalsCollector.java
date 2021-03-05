@@ -17,7 +17,6 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.OrdinalMap;
@@ -85,8 +84,7 @@ final class GlobalOrdinalsCollector implements Collector {
     }
 
     @Override
-    public void setScorer(Scorable scorer) throws IOException {
-    }
+    public void setScorer(Scorable scorer) throws IOException {}
   }
 
   final class SegmentOrdinalCollector implements LeafCollector {
@@ -105,8 +103,6 @@ final class GlobalOrdinalsCollector implements Collector {
     }
 
     @Override
-    public void setScorer(Scorable scorer) throws IOException {
-    }
+    public void setScorer(Scorable scorer) throws IOException {}
   }
-
 }

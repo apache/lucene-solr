@@ -18,11 +18,11 @@
 
 Solr's default Query Parser is also known as the "```lucene```" parser.
 
-The key advantage of the standard query parser is that it supports a robust and fairly intuitive syntax allowing you to create a variety of structured queries. The largest disadvantage is that it's very intolerant of syntax errors, as compared with something like the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> query parser which is designed to throw as few errors as possible.
+The key advantage of the standard query parser is that it supports a robust and fairly intuitive syntax allowing you to create a variety of structured queries. The largest disadvantage is that it's very intolerant of syntax errors, as compared with something like the <<the-dismax-query-parser.adoc#,DisMax>> query parser which is designed to throw as few errors as possible.
 
 == Standard Query Parser Parameters
 
-In addition to the <<common-query-parameters.adoc#common-query-parameters,Common Query Parameters>>, <<faceting.adoc#faceting,Faceting Parameters>>, <<highlighting.adoc#highlighting,Highlighting Parameters>>, and <<morelikethis.adoc#morelikethis,MoreLikeThis Parameters>>, the standard query parser supports the parameters described in the table below.
+In addition to the <<common-query-parameters.adoc#,Common Query Parameters>>, <<faceting.adoc#,Faceting Parameters>>, <<highlighting.adoc#,Highlighting Parameters>>, and <<morelikethis.adoc#,MoreLikeThis Parameters>>, the standard query parser supports the parameters described in the table below.
 
 `q`::
 Defines a query using standard query syntax. This parameter is mandatory.
@@ -220,7 +220,7 @@ Example:
 
 == Querying Specific Fields
 
-Data indexed in Solr is organized in fields, which are <<defining-fields.adoc#defining-fields,defined in the Solr Schema>>. Searches can take advantage of fields to add precision to queries. For example, you can search for a term only in a specific field, such as a title field.
+Data indexed in Solr is organized in fields, which are <<defining-fields.adoc#,defined in the Solr Schema>>. Searches can take advantage of fields to add precision to queries. For example, you can search for a term only in a specific field, such as a title field.
 
 The Schema defines one field as a default field. If you do not specify a field in a query, Solr searches only the default field. Alternatively, you can specify a different field or a combination of fields in a query.
 
@@ -381,7 +381,7 @@ This can even be used to cache individual clauses of complex filter queries. In 
 
 === Specifying Dates and Times
 
-Queries against date based fields must use the <<working-with-dates.adoc#working-with-dates,appropriate date formating>>.  Queries for exact date values will require quoting or escaping since `:` is the parser syntax used to denote a field query:
+Queries against date based fields must use the <<working-with-dates.adoc#,appropriate date formating>>.  Queries for exact date values will require quoting or escaping since `:` is the parser syntax used to denote a field query:
 
 * `createdate:1976-03-06T23\:59\:59.999Z`
 * `createdate:"1976-03-06T23:59:59.999Z"`

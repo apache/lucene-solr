@@ -19,16 +19,16 @@
 
 This section discusses the available client APIs for Solr. It covers the following topics:
 
-<<introduction-to-client-apis.adoc#introduction-to-client-apis,Introduction to Client APIs>>: A conceptual overview of Solr client APIs.
+<<introduction-to-client-apis.adoc#,Introduction to Client APIs>>: A conceptual overview of Solr client APIs.
 
-<<choosing-an-output-format.adoc#choosing-an-output-format,Choosing an Output Format>>: Information about choosing a response format in Solr.
+<<choosing-an-output-format.adoc#,Choosing an Output Format>>: Information about choosing a response format in Solr.
 
-<<using-solrj.adoc#using-solrj,Using SolrJ>>: Detailed information about SolrJ, an API for working with Java applications.
+<<using-solrj.adoc#,Using SolrJ>>: Detailed information about SolrJ, an API for working with Java applications.
 
-<<using-javascript.adoc#using-javascript,Using JavaScript>>: Explains why a client API is not needed for JavaScript responses.
+<<using-javascript.adoc#,Using JavaScript>>: Explains why a client API is not needed for JavaScript responses.
 
-<<using-python.adoc#using-python,Using Python>>: Information about Python and JSON responses.
+<<using-python.adoc#,Using Python>>: Information about Python and JSON responses.
 
-<<using-solr-from-ruby.adoc#using-solr-from-ruby,Using Solr From Ruby>>: Detailed information about using Solr with Ruby applications.
+<<using-solr-from-ruby.adoc#,Using Solr From Ruby>>: Detailed information about using Solr with Ruby applications.
 
-<<client-api-lineup.adoc#client-api-lineup,Other Clients>>: How to find links to 3rd-party client libraries.
+<<client-api-lineup.adoc#,Other Clients>>: How to find links to 3rd-party client libraries.

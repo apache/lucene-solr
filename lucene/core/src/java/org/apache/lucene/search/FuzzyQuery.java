@@ -16,83 +16,74 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
+import java.util.Objects;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
-/** Implements the fuzzy search query. The similarity measurement
- * is based on the Damerau-Levenshtein (optimal string alignment) algorithm,
- * though you can explicitly choose classic Levenshtein by passing <code>false</code>
- * to the <code>transpositions</code> parameter.
- * 
- * <p>This query uses {@link MultiTermQuery.TopTermsBlendedFreqScoringRewrite}
- * as default. So terms will be collected and scored according to their
- * edit distance. Only the top terms are used for building the {@link BooleanQuery}.
- * It is not recommended to change the rewrite mode for fuzzy queries.
- * 
- * <p>At most, this query will match terms up to 
- * {@value org.apache.lucene.util.automaton.LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE} edits. 
- * Higher distances (especially with transpositions enabled), are generally not useful and 
- * will match a significant amount of the term dictionary. If you really want this, consider
- * using an n-gram indexing technique (such as the SpellChecker in the 
- * <a href="{@docRoot}/../suggest/overview-summary.html">suggest module</a>) instead.
+/**
+ * Implements the fuzzy search query. The similarity measurement is based on the Damerau-Levenshtein
+ * (optimal string alignment) algorithm, though you can explicitly choose classic Levenshtein by
+ * passing <code>false</code> to the <code>transpositions</code> parameter.
  *
- * <p>NOTE: terms of length 1 or 2 will sometimes not match because of how the scaled
- * distance between two terms is computed.  For a term to match, the edit distance between
- * the terms must be less than the minimum length term (either the input term, or
- * the candidate term).  For example, FuzzyQuery on term "abcd" with maxEdits=2 will
- * not match an indexed term "ab", and FuzzyQuery on term "a" with maxEdits=2 will not
- * match an indexed term "abc".
+ * <p>This query uses {@link MultiTermQuery.TopTermsBlendedFreqScoringRewrite} as default. So terms
+ * will be collected and scored according to their edit distance. Only the top terms are used for
+ * building the {@link BooleanQuery}. It is not recommended to change the rewrite mode for fuzzy
+ * queries.
+ *
+ * <p>At most, this query will match terms up to {@value
+ * org.apache.lucene.util.automaton.LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE} edits. Higher
+ * distances (especially with transpositions enabled), are generally not useful and will match a
+ * significant amount of the term dictionary. If you really want this, consider using an n-gram
+ * indexing technique (such as the SpellChecker in the <a
+ * href="{@docRoot}/../suggest/overview-summary.html">suggest module</a>) instead.
+ *
+ * <p>NOTE: terms of length 1 or 2 will sometimes not match because of how the scaled distance
+ * between two terms is computed. For a term to match, the edit distance between the terms must be
+ * less than the minimum length term (either the input term, or the candidate term). For example,
+ * FuzzyQuery on term "abcd" with maxEdits=2 will not match an indexed term "ab", and FuzzyQuery on
+ * term "a" with maxEdits=2 will not match an indexed term "abc".
  */
-public class FuzzyQuery extends MultiTermQuery implements Accountable {
+public class FuzzyQuery extends MultiTermQuery {
 
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(AutomatonQuery.class);
-  
-  public final static int defaultMaxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
-  public final static int defaultPrefixLength = 0;
-  public final static int defaultMaxExpansions = 50;
-  public final static boolean defaultTranspositions = true;
-  
+  public static final int defaultMaxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
+  public static final int defaultPrefixLength = 0;
+  public static final int defaultMaxExpansions = 50;
+  public static final boolean defaultTranspositions = true;
+
   private final int maxEdits;
   private final int maxExpansions;
   private final boolean transpositions;
   private final int prefixLength;
   private final Term term;
-  private final int termLength;
-  private final CompiledAutomaton[] automata;
 
-  private final long ramBytesUsed;
-  
   /**
-   * Create a new FuzzyQuery that will match terms with an edit distance 
-   * of at most <code>maxEdits</code> to <code>term</code>.
-   * If a <code>prefixLength</code> &gt; 0 is specified, a common prefix
-   * of that length is also required.
-   * 
+   * Create a new FuzzyQuery that will match terms with an edit distance of at most <code>maxEdits
+   * </code> to <code>term</code>. If a <code>prefixLength</code> &gt; 0 is specified, a common
+   * prefix of that length is also required.
+   *
    * @param term the term to search for
-   * @param maxEdits must be {@code >= 0} and {@code <=} {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}.
+   * @param maxEdits must be {@code >= 0} and {@code <=} {@link
+   *     LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}.
    * @param prefixLength length of common (non-fuzzy) prefix
-   * @param maxExpansions the maximum number of terms to match. If this number is
-   *  greater than {@link IndexSearcher#getMaxClauseCount} when the query is rewritten,
-   *  then the maxClauseCount will be used instead.
-   * @param transpositions true if transpositions should be treated as a primitive
-   *        edit operation. If this is false, comparisons will implement the classic
-   *        Levenshtein algorithm.
+   * @param maxExpansions the maximum number of terms to match. If this number is greater than
+   *     {@link IndexSearcher#getMaxClauseCount} when the query is rewritten, then the
+   *     maxClauseCount will be used instead.
+   * @param transpositions true if transpositions should be treated as a primitive edit operation.
+   *     If this is false, comparisons will implement the classic Levenshtein algorithm.
    */
-  public FuzzyQuery(Term term, int maxEdits, int prefixLength, int maxExpansions, boolean transpositions) {
+  public FuzzyQuery(
+      Term term, int maxEdits, int prefixLength, int maxExpansions, boolean transpositions) {
     super(term.field());
-    
+
     if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
-      throw new IllegalArgumentException("maxEdits must be between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+      throw new IllegalArgumentException(
+          "maxEdits must be between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
     if (prefixLength < 0) {
       throw new IllegalArgumentException("prefixLength cannot be negative.");
@@ -100,115 +91,87 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     if (maxExpansions <= 0) {
       throw new IllegalArgumentException("maxExpansions must be positive.");
     }
-    
+
     this.term = term;
     this.maxEdits = maxEdits;
     this.prefixLength = prefixLength;
     this.transpositions = transpositions;
     this.maxExpansions = maxExpansions;
-    int[] codePoints = FuzzyTermsEnum.stringToUTF32(term.text());
-    this.termLength = codePoints.length;
-    this.automata = FuzzyTermsEnum.buildAutomata(term.text(), codePoints, prefixLength, transpositions, maxEdits);
     setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
-    this.ramBytesUsed = calculateRamBytesUsed(term, this.automata);
   }
 
-  private static long calculateRamBytesUsed(Term term, CompiledAutomaton[] automata) {
-    long bytes = BASE_RAM_BYTES + term.ramBytesUsed();
-    for (CompiledAutomaton a : automata) {
-      bytes += a.ramBytesUsed();
-    }
-    bytes += 4 * Integer.BYTES;
-    bytes += Long.BYTES;
-    bytes += 1;
-    return bytes;
-  }
-  
   /**
-   * Calls {@link #FuzzyQuery(Term, int, int, int, boolean) 
-   * FuzzyQuery(term, maxEdits, prefixLength, defaultMaxExpansions, defaultTranspositions)}.
+   * Calls {@link #FuzzyQuery(Term, int, int, int, boolean) FuzzyQuery(term, maxEdits, prefixLength,
+   * defaultMaxExpansions, defaultTranspositions)}.
    */
   public FuzzyQuery(Term term, int maxEdits, int prefixLength) {
     this(term, maxEdits, prefixLength, defaultMaxExpansions, defaultTranspositions);
   }
-  
-  /**
-   * Calls {@link #FuzzyQuery(Term, int, int) FuzzyQuery(term, maxEdits, defaultPrefixLength)}.
-   */
+
+  /** Calls {@link #FuzzyQuery(Term, int, int) FuzzyQuery(term, maxEdits, defaultPrefixLength)}. */
   public FuzzyQuery(Term term, int maxEdits) {
     this(term, maxEdits, defaultPrefixLength);
   }
 
-  /**
-   * Calls {@link #FuzzyQuery(Term, int) FuzzyQuery(term, defaultMaxEdits)}.
-   */
+  /** Calls {@link #FuzzyQuery(Term, int) FuzzyQuery(term, defaultMaxEdits)}. */
   public FuzzyQuery(Term term) {
     this(term, defaultMaxEdits);
   }
-  
-  /**
-   * @return the maximum number of edit distances allowed for this query to match.
-   */
+
+  /** @return the maximum number of edit distances allowed for this query to match. */
   public int getMaxEdits() {
     return maxEdits;
   }
-    
+
   /**
-   * Returns the non-fuzzy prefix length. This is the number of characters at the start
-   * of a term that must be identical (not fuzzy) to the query term if the query
-   * is to match that term. 
+   * Returns the non-fuzzy prefix length. This is the number of characters at the start of a term
+   * that must be identical (not fuzzy) to the query term if the query is to match that term.
    */
   public int getPrefixLength() {
     return prefixLength;
   }
-  
+
   /**
-   * Returns true if transpositions should be treated as a primitive edit operation. 
-   * If this is false, comparisons will implement the classic Levenshtein algorithm.
+   * Returns true if transpositions should be treated as a primitive edit operation. If this is
+   * false, comparisons will implement the classic Levenshtein algorithm.
    */
   public boolean getTranspositions() {
     return transpositions;
   }
 
-  /**
-   * Returns the compiled automata used to match terms
-   */
-  public CompiledAutomaton[] getAutomata() {
-    return automata;
+  /** Returns the compiled automata used to match terms */
+  public CompiledAutomaton getAutomata() {
+    FuzzyAutomatonBuilder builder =
+        new FuzzyAutomatonBuilder(term.text(), maxEdits, prefixLength, transpositions);
+    return builder.buildMaxEditAutomaton();
   }
 
   @Override
   public void visit(QueryVisitor visitor) {
     if (visitor.acceptField(field)) {
-      if (maxEdits == 0 || prefixLength >= term.text().length()) {
-        visitor.consumeTerms(this, term);
-      } else {
-        automata[automata.length - 1].visit(visitor, this, field);
-      }
+      visitor.consumeTermsMatching(this, term.field(), () -> getAutomata().runAutomaton);
     }
   }
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
+    if (maxEdits == 0) { // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
-    return new FuzzyTermsEnum(terms, atts, getTerm(), termLength, maxEdits, automata);
+    return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
   }
 
-  /**
-   * Returns the pattern term.
-   */
+  /** Returns the pattern term. */
   public Term getTerm() {
     return term;
   }
-    
+
   @Override
   public String toString(String field) {
     final StringBuilder buffer = new StringBuilder();
     if (!term.field().equals(field)) {
-        buffer.append(term.field());
-        buffer.append(":");
+      buffer.append(term.field());
+      buffer.append(":");
     }
     buffer.append(term.text());
     buffer.append('~');
@@ -230,35 +193,20 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
     FuzzyQuery other = (FuzzyQuery) obj;
-    // Note that we don't need to compare termLength or automata because they
-    // are entirely determined by the other fields
-    if (maxEdits != other.maxEdits)
-      return false;
-    if (prefixLength != other.prefixLength)
-      return false;
-    if (maxExpansions != other.maxExpansions)
-      return false;
-    if (transpositions != other.transpositions)
-      return false;
-    if (term == null) {
-      if (other.term != null)
-        return false;
-    } else if (!term.equals(other.term))
-      return false;
-    return true;
+    return Objects.equals(maxEdits, other.maxEdits)
+        && Objects.equals(prefixLength, other.prefixLength)
+        && Objects.equals(maxExpansions, other.maxExpansions)
+        && Objects.equals(transpositions, other.transpositions)
+        && Objects.equals(term, other.term);
   }
 
   /**
-   * Helper function to convert from "minimumSimilarity" fractions
-   * to raw edit distances.
-   * 
+   * Helper function to convert from "minimumSimilarity" fractions to raw edit distances.
+   *
    * @param minimumSimilarity scaled similarity
    * @param termLen length (in unicode codepoints) of the term.
    * @return equivalent number of maxEdits
@@ -269,13 +217,9 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     } else if (minimumSimilarity == 0.0f) {
       return 0; // 0 means exact, not infinite # of edits!
     } else {
-      return Math.min((int) ((1D-minimumSimilarity) * termLen), 
-        LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+      return Math.min(
+          (int) ((1D - minimumSimilarity) * termLen),
+          LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return ramBytesUsed;
   }
 }

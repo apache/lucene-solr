@@ -16,16 +16,17 @@
  */
 package org.apache.lucene.search.similarities;
 
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 import org.apache.lucene.search.Explanation;
-import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * The basic tf-idf model of randomness.
+ *
  * @lucene.experimental
- */ 
+ */
 public class BasicModelIn extends BasicModel {
-  
+
   /** Sole constructor: parameter-free */
   public BasicModelIn() {}
 
@@ -42,18 +43,15 @@ public class BasicModelIn extends BasicModel {
 
     return A * aeTimes1pTfn * (1 - 1 / (1 + tfn));
   }
-  
+
   @Override
   public final Explanation explain(BasicStats stats, double tfn, double aeTimes1pTfn) {
     return Explanation.match(
         (float) (score(stats, tfn, aeTimes1pTfn) * (1 + tfn) / aeTimes1pTfn),
-        getClass().getSimpleName() +
-            ", computed as tfn * log2((N + 1) / (n + 0.5)) from:",
+        getClass().getSimpleName() + ", computed as tfn * log2((N + 1) / (n + 0.5)) from:",
         Explanation.match((float) tfn, "tfn, normalized term frequency"),
-        Explanation.match(stats.getNumberOfDocuments(),
-            "N, total number of documents with field"),
-        Explanation.match(stats.getDocFreq(),
-            "n, number of documents containing term"));
+        Explanation.match(stats.getNumberOfDocuments(), "N, total number of documents with field"),
+        Explanation.match(stats.getDocFreq(), "n, number of documents containing term"));
   }
 
   @Override

@@ -17,18 +17,17 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-
 import java.util.Random;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
-import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
-import org.apache.lucene.geo.XYRectangle;
-import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.geo.XYPoint;
 
-/** random cartesian bounding box, line, and polygon query tests for random generated {@code x, y} points */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random generated {@code x, y}
+ * points
+ */
 public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
   @Override
@@ -40,18 +39,19 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
   protected XYLine randomQueryLine(Object... shapes) {
     Random random = random();
     if (random.nextInt(100) == 42) {
-      // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
-      int maxBound = (int)Math.floor(shapes.length * 0.1d);
+      // we want to ensure some cross, so randomly generate lines that share vertices with the
+      // indexed point set
+      int maxBound = (int) Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
       float[] x = new float[RandomNumbers.randomIntBetween(random, 2, maxBound)];
       float[] y = new float[x.length];
       for (int i = 0, j = 0; j < x.length && i < shapes.length; ++i, ++j) {
-        Point p = (Point) (shapes[i]);
+        XYPoint p = (XYPoint) (shapes[i]);
         if (random.nextBoolean() && p != null) {
-          x[j] = p.x;
-          y[j] = p.y;
+          x[j] = p.getX();
+          y[j] = p.getY();
         } else {
           x[j] = ShapeTestUtil.nextFloat(random);
           y[j] = ShapeTestUtil.nextFloat(random);
@@ -64,8 +64,8 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object point) {
-    Point p = (Point)point;
-    return XYShape.createIndexableFields(field, p.x, p.y);
+    XYPoint p = (XYPoint) point;
+    return XYShape.createIndexableFields(field, p.getX(), p.getY());
   }
 
   @Override
@@ -79,27 +79,15 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
-      Point p = (Point) shape;
-      double lat = encoder.quantizeY(p.y);
-      double lon = encoder.quantizeX(p.x);
+      XYPoint point = (XYPoint) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return query.withinTriangle(lon, lat, true, lon, lat, true, lon, lat, true) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(
+                query, XYShape.createIndexableFields("dummy", point.getX(), point.getY()))
+            == Component2D.WithinRelation.CANDIDATE;
       }
-      // for consistency w/ the query we test the point as a triangle
-      Relation r = query.relateTriangle(lon, lat, lon, lat, lon, lat);
-      if (queryRelation == QueryRelation.WITHIN) {
-        return r == Relation.CELL_INSIDE_QUERY;
-      } else if (queryRelation == QueryRelation.DISJOINT) {
-        return r == Relation.CELL_OUTSIDE_QUERY;
-      }
-      return r != Relation.CELL_OUTSIDE_QUERY;
+      return testComponentQuery(
+          query, XYShape.createIndexableFields("dummy", point.getX(), point.getY()));
     }
   }
 }

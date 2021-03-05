@@ -248,7 +248,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
         
   }
 
-  private static int countItems(Iterator i) {
+  private static int countItems(@SuppressWarnings({"rawtypes"})Iterator i) {
     int count = 0;
     while (i.hasNext()) {
       count++;

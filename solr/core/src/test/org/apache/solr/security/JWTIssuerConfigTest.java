@@ -17,6 +17,9 @@
 
 package org.apache.solr.security;
 
+import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
+import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -28,24 +31,22 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.jose4j.jwk.JsonWebKeySet;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 
-import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
-import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-public class JWTIssuerConfigTest {
+public class JWTIssuerConfigTest extends SolrTestCase {
   private JWTIssuerConfig testIssuer;
   private Map<String, Object> testIssuerConfigMap;
   private String testIssuerJson;
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     testIssuer = new JWTIssuerConfig("name")
         .setJwksUrl("https://issuer/path")
         .setIss("issuer")
@@ -65,6 +66,12 @@ public class JWTIssuerConfigTest {
         "  \"iss\":\"issuer\",\n" +
         "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
   }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = false;
+  }  
 
   @Test
   public void parseConfigMap() {
@@ -126,6 +133,26 @@ public class JWTIssuerConfigTest {
   }
 
   @Test
+  public void jwksUrlwithHttpBehaviors() {
+    
+    HashMap<String, Object> issuerConfigMap = new HashMap<>();
+    issuerConfigMap.put("name", "myName");
+    issuerConfigMap.put("iss", "myIss");
+    issuerConfigMap.put("jwksUrl", "http://host/jwk");
+
+    JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
+    
+    SolrException e = expectThrows(SolrException.class, () -> issuerConfig.getHttpsJwks());
+    assertEquals(400, e.code());
+    assertEquals("jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.", e.getMessage());
+    
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
+
+    assertEquals(1, issuerConfig.getHttpsJwks().size());
+    assertEquals("http://host/jwk", issuerConfig.getHttpsJwks().get(0).getLocation());    
+  }
+  
+  @Test
   public void wellKnownConfigFromInputstream() throws IOException {
     Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
@@ -144,13 +171,27 @@ public class JWTIssuerConfigTest {
     assertEquals(Arrays.asList("code", "code id_token", "code token", "code id_token token", "token", "id_token", "id_token token"), config.getResponseTypesSupported());
   }
 
-  @Test(expected = SolrException.class)
-  public void wellKnownConfigNotHttps() {
-    JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config");
-  }
+  @Test
+  public void wellKnownConfigWithHttpBehaviors() {
+    SolrException e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
+    assertEquals(400, e.code());
+    assertEquals("wellKnownUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.", e.getMessage());
+    
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
+    
+    e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
+    assertEquals(500, e.code());
+    // We open a connection in the code path to a server that doesn't exist, which causes this.  Should really be mocked.
+    assertEquals("Well-known config could not be read from url http://127.0.0.1:45678/.well-known/config", e.getMessage());
+    
+            
 
-  @Test(expected = SolrException.class)
+  }
+  
+  @Test
   public void wellKnownConfigNotReachable() {
-    JWTIssuerConfig.WellKnownDiscoveryConfig.parse("https://127.0.0.1:45678/.well-known/config");
+    SolrException e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("https://127.0.0.1:45678/.well-known/config"));
+    assertEquals(500, e.code());
+    assertEquals("Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config", e.getMessage());
   }
 }

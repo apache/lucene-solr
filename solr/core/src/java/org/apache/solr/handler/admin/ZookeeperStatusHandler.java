@@ -73,8 +73,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     return Category.ADMIN;
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     NamedList values = rsp.getValues();
     if (cores.isZooKeeperAware()) {
@@ -94,6 +94,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    * @param zkDynamicConfig list of zk dynamic config objects
    * @return map of zookeeper config and status per zk host
    */
+  @SuppressWarnings({"unchecked"})
   protected Map<String, Object> getZkStatus(String zkHost, ZkDynamicConfig zkDynamicConfig) {
     final ZkDynamicConfig hostsFromConnectionString = ZkDynamicConfig.fromZkConnectString(zkHost);
     final ZkDynamicConfig zookeepers;
@@ -111,7 +112,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
           .sorted().collect(Collectors.toList());
       List<String> dynamicHosts = zkDynamicConfig.getServers().stream()
-          .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
+          .map(h -> h.resolveClientPortAddress() + ":" +
+                  (h.clientPort != null ? h.clientPort : hostsFromConnectionString.getServers().get(0).clientPort))
           .sorted().collect(Collectors.toList());
       if (!connStringHosts.containsAll(dynamicHosts)) {
         errors.add("Your ZK connection string (" + connStringHosts.size() + " hosts) is different from the " +
@@ -119,7 +121,13 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
                 "dynamic reconfiguration and will only be able to connect to the zk hosts in your connection string.");
         status = STATUS_YELLOW;
       }
-      zookeepers = zkDynamicConfig; // Clone input
+      if (zkDynamicConfig.getServers().get(0).clientPort != null) {
+        // If we have dynamic config with client ports, use this list to iterate servers
+        zookeepers = zkDynamicConfig;
+      } else {
+        // Use list from connection string since client port is missing on dynamic config from ZK
+        zookeepers = hostsFromConnectionString;
+      }
     }
     final Map<String, Object> zkStatus = new HashMap<>();
     final List<Object> details = new ArrayList<>();
@@ -147,7 +155,10 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           followers++;
         } else if ("leader".equals(state)) {
           leaders++;
-          reportedFollowers = Integer.parseInt(String.valueOf(stat.get("zk_followers")));
+          reportedFollowers = Math.max(
+              (int) Float.parseFloat((String) stat.getOrDefault("zk_followers", "0")),
+              (int) Float.parseFloat((String) stat.getOrDefault("zk_synced_followers", "0"))
+          );
         } else if ("standalone".equals(state)) {
           standalone++;
         }
@@ -155,7 +166,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           stat.put("role", zk.role);
         }
       } catch (SolrException se) {
-        log.warn("Failed talking to zookeeper " + zkClientHostPort, se);
+        log.warn("Failed talking to zookeeper {}", zkClientHostPort, se);
         errors.add(se.getMessage());
         Map<String, Object> stat = new HashMap<>();
         stat.put("host", zkClientHostPort);

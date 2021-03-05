@@ -20,10 +20,12 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,7 +34,7 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   protected ByteBuffersDataOutput newInstance() {
     return new ByteBuffersDataOutput();
   }
-  
+
   @Override
   protected byte[] toBytes(ByteBuffersDataOutput instance) {
     return instance.toArrayCopy();
@@ -41,17 +43,19 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
   @Test
   public void testReuse() throws IOException {
     AtomicInteger allocations = new AtomicInteger(0);
-    ByteBuffersDataOutput.ByteBufferRecycler reuser = new ByteBuffersDataOutput.ByteBufferRecycler(
-        (size) -> {
-          allocations.incrementAndGet();
-          return ByteBuffer.allocate(size);
-        });
-    
-    ByteBuffersDataOutput o = new ByteBuffersDataOutput(
-        ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
-        ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK, 
-        reuser::allocate,
-        reuser::reuse);
+    ByteBuffersDataOutput.ByteBufferRecycler reuser =
+        new ByteBuffersDataOutput.ByteBufferRecycler(
+            (size) -> {
+              allocations.incrementAndGet();
+              return ByteBuffer.allocate(size);
+            });
+
+    ByteBuffersDataOutput o =
+        new ByteBuffersDataOutput(
+            ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
+            ByteBuffersDataOutput.DEFAULT_MAX_BITS_PER_BLOCK,
+            reuser::allocate,
+            reuser::reuse);
 
     // Add some random data first.
     long genSeed = randomLong();
@@ -73,7 +77,9 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     {
       ByteBuffersDataOutput o = new ByteBuffersDataOutput(0);
       o.writeByte((byte) 0);
-      assertEquals(1 << ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK, o.toBufferList().get(0).capacity());
+      assertEquals(
+          1 << ByteBuffersDataOutput.DEFAULT_MIN_BITS_PER_BLOCK,
+          o.toBufferList().get(0).capacity());
     }
 
     {
@@ -82,8 +88,10 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
       ByteBuffersDataOutput o = new ByteBuffersDataOutput(expectedSize);
       o.writeByte((byte) 0);
       int cap = o.toBufferList().get(0).capacity();
-      assertTrue((cap >> 1) * ByteBuffersDataOutput.MAX_BLOCKS_BEFORE_BLOCK_EXPANSION < expectedSize);
-      assertTrue("cap=" + cap + ", exp=" + expectedSize,
+      assertTrue(
+          (cap >> 1) * ByteBuffersDataOutput.MAX_BLOCKS_BEFORE_BLOCK_EXPANSION < expectedSize);
+      assertTrue(
+          "cap=" + cap + ", exp=" + expectedSize,
           (cap) * ByteBuffersDataOutput.MAX_BLOCKS_BEFORE_BLOCK_EXPANSION >= expectedSize);
     }
   }
@@ -98,11 +106,11 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     o.writeByte((byte) 1);
     assertEquals(1, o.size());
     assertTrue(o.ramBytesUsed() > 0);
-    assertArrayEquals(new byte [] { 1 }, o.toArrayCopy());
+    assertArrayEquals(new byte[] {1}, o.toArrayCopy());
 
-    o.writeBytes(new byte [] {2, 3, 4}, 3);
+    o.writeBytes(new byte[] {2, 3, 4}, 3);
     assertEquals(4, o.size());
-    assertArrayEquals(new byte [] { 1, 2, 3, 4 }, o.toArrayCopy());    
+    assertArrayEquals(new byte[] {1, 2, 3, 4}, o.toArrayCopy());
   }
 
   @Test
@@ -116,35 +124,37 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
     src.limit(offset + len);
     o.writeBytes(src);
     assertEquals(len, o.size());
-    Assert.assertArrayEquals(ArrayUtil.copyOfSubArray(bytes, offset, offset + len), o.toArrayCopy());
+    Assert.assertArrayEquals(
+        ArrayUtil.copyOfSubArray(bytes, offset, offset + len), o.toArrayCopy());
   }
 
   @Test
   public void testLargeArrayAdd() {
     ByteBuffersDataOutput o = new ByteBuffersDataOutput();
     int MB = 1024 * 1024;
-    final byte [] bytes;
+    final byte[] bytes;
     if (LuceneTestCase.TEST_NIGHTLY) {
       bytes = randomBytesOfLength(5 * MB, 15 * MB);
     } else {
-      bytes = randomBytesOfLength(MB/2, MB);
+      bytes = randomBytesOfLength(MB / 2, MB);
     }
     int offset = randomIntBetween(0, 100);
     int len = bytes.length - offset;
     o.writeBytes(bytes, offset, len);
     assertEquals(len, o.size());
-    Assert.assertArrayEquals(ArrayUtil.copyOfSubArray(bytes, offset, offset + len), o.toArrayCopy());
+    Assert.assertArrayEquals(
+        ArrayUtil.copyOfSubArray(bytes, offset, offset + len), o.toArrayCopy());
   }
 
   @Test
   public void testToBufferListReturnsReadOnlyBuffers() throws Exception {
     ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
-    dst.writeBytes(new byte [100]);
+    dst.writeBytes(new byte[100]);
     for (ByteBuffer bb : dst.toBufferList()) {
       assertTrue(bb.isReadOnly());
     }
   }
-  
+
   @Test
   public void testToWriteableBufferListReturnsOriginalBuffers() throws Exception {
     ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
@@ -153,10 +163,51 @@ public final class TestByteBuffersDataOutput extends BaseDataOutputTestCase<Byte
       assertTrue(bb.hasArray()); // even the empty buffer should have a backing array.
     }
 
-    dst.writeBytes(new byte [100]);
+    dst.writeBytes(new byte[100]);
     for (ByteBuffer bb : dst.toWriteableBufferList()) {
       assertTrue(!bb.isReadOnly());
       assertTrue(bb.hasArray()); // heap-based by default, so array should be there.
     }
+  }
+
+  @Test
+  public void testRamBytesUsed() {
+    ByteBuffersDataOutput out = new ByteBuffersDataOutput();
+    // Empty output requires no RAM
+    assertEquals(0, out.ramBytesUsed());
+
+    // Non-empty buffer requires RAM
+    out.writeInt(4);
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+
+    // Make sure this keeps working with multiple backing buffers
+    while (out.toBufferList().size() < 2) {
+      out.writeLong(42);
+    }
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+
+    // Make sure this keeps working when increasing the block size
+    int currentBlockCapacity = out.toBufferList().get(0).capacity();
+    do {
+      out.writeLong(42);
+    } while (out.toBufferList().get(0).capacity() == currentBlockCapacity);
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+
+    // Back to zero after a clear
+    out.reset();
+    assertEquals(0, out.ramBytesUsed());
+
+    // And back to non-empty
+    out.writeInt(4);
+    assertEquals(out.ramBytesUsed(), computeRamBytesUsed(out));
+  }
+
+  private static long computeRamBytesUsed(ByteBuffersDataOutput out) {
+    if (out.size() == 0) {
+      return 0;
+    }
+    List<ByteBuffer> buffers = out.toBufferList();
+    return buffers.stream().mapToLong(ByteBuffer::capacity).sum()
+        + buffers.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 }

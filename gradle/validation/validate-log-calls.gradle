@@ -17,153 +17,153 @@
 
 import org.apache.tools.ant.BuildException
 
-import static java.util.concurrent.TimeUnit.SECONDS
-
 // Checks logging calls to keep from using patterns that might be expensive
-// either in CPU or unnecessary object creation
+// either in CPU or unnecessary object creation. Some of the checks are a little
+// over-zealous, but it's worth a bit of aggravation to catch the egregious
+// mistakes before they accrue.
 
-configure(rootProject) {
+// This all started with Java Flight Recorder showing a massive number of
+// objects allocated and garbage collected. Tracing a bunch of them down showed
+// that we have a number of calls like:
+// log.debug("some string" + very_expensive_object_to_make_a_string).
+// which _always_ constructed the very expensive ojbect even if the log level
+// was INFO or more severe. Rather than leave lots of confusing formats laying
+// about or expecting people to remember the rules, we opted to make this
+// check part of Gradle precommit. It will be included by default in Solr
+// 9.0.
 
-  allprojects {
+// See the associated help task "gradlew helpValidateLogCalls"
 
-    task validateLogCalls(type: ValidateLogCallsTask) {
+configure(subprojects.findAll { it.path.startsWith(':solr') }) {
+  plugins.withType(JavaPlugin) {
+    task validateLogCalls(type: ValidateLogCallsTask) { task ->
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
 
-      doFirst {
-        if (project.hasProperty('srcDir')) {
-          srcDir = project.getProperty('srcDir')
-        } else { // Remove this later, make it optional
-          throw new BuildException(String.format(Locale.ENGLISH,
-              '''Until we get all the calls cleaned up, you MUST specify -PsrcDir=relative_path, e.g.
-            "-PsrcDir=solr/core/src/java/org/apache/solr/core". This task will recursively check all
-             "*.java" files under that directory'''))
-        }
+      // This task has no proper outputs.
+      setupDummyOutputs(task)
 
-        checkPlus = Boolean.valueOf(propertyOrDefault('checkPlus', 'false'))
-      }
+      sourceFiles = files(sourceSets*.java)
     }
-  }
+ 
+    // Add log validation to per-project checks as well.
+    check.dependsOn validateLogCalls
+ }
 }
 
 class ValidateLogCallsTask extends DefaultTask {
-  @Input
-  String srcDir = ""
-
-  @Input
-  boolean checkPlus
-
-  // nocommit, remove when you go to project-based checking.
-  Set<String> dirsToCheck = ["solr/core/src/java/org/apache/solr/analysis"
-                             , "solr/core/src/java/org/apache/solr/api"
-                             , "solr/core/src/java/org/apache/solr/client"
-//  , "solr/core/src/java/org/apache/solr/cloud"
-                             , "solr/core/src/java/org/apache/solr/core"
-                             , "solr/core/src/java/org/apache/solr/filestore"
-//                             , "solr/core/src/java/org/apache/solr/handler"
-                             , "solr/core/src/java/org/apache/solr/highlight"
-                             , "solr/core/src/java/org/apache/solr/index"
-                             , "solr/core/src/java/org/apache/solr/internal"
-                             , "solr/core/src/java/org/apache/solr/legacy"
-                             , "solr/core/src/java/org/apache/solr/logging"
-//  , "solr/core/src/java/org/apache/solr/metrics"
-                             , "solr/core/src/java/org/apache/solr/packagemanager"
-                             , "solr/core/src/java/org/apache/solr/parser"
-                             , "solr/core/src/java/org/apache/solr/pkg"
-                             , "solr/core/src/java/org/apache/solr/query"
-                             , "solr/core/src/java/org/apache/solr/request"
-                             , "solr/core/src/java/org/apache/solr/response"
-                             , "solr/core/src/java/org/apache/solr/rest"
-//  , "solr/core/src/java/org/apache/solr/schema"
-                             , "solr/core/src/java/org/apache/solr/search"
-                             , "solr/core/src/java/org/apache/solr/security"
-                             , "solr/core/src/java/org/apache/solr/servlet"
-                             , "solr/core/src/java/org/apache/solr/spelling"
-                             , "solr/core/src/java/org/apache/solr/store"
-                             , "solr/core/src/java/org/apache/solr/uninverting"
-//  , "solr/core/src/java/org/apache/solr/update"
-                             , "solr/core/src/java/org/apache/solr/util"
-  ]
-
   def logLevels = ["log.trace", "log.debug", "log.info", "log.warn", "log.error", "log.fatal"]
 
   def errsFound = 0;
-  def violations = new TreeSet();
+  def violations = new ArrayList();
 
   def reportViolation(String msg) {
     violations.add(System.lineSeparator + msg);
     errsFound++;
   }
 
-  // We have a log.someting line, check for patterns we're not fond of.
-  def checkLogLine(File file, String line, int lineNumber, String prevLine) {
+  // We have a log.something line, check for patterns we're not fond of.
+  def checkLine(File file, String line, int lineNumber, String previous) {
+    boolean violation = false
+
+    // If the line has been explicitly OK'd, then it's OK!
+    if (line.replaceAll("\\s", "").toLowerCase().contains("//nowarn")) {
+      return
+    }
     // Strip all of the comments, things in quotes and the like.
+    def stripped =
+        line.replaceFirst("//.*", " ") // remove comment to EOL. May be fragile due to the possibility of embedded double slashes
+            .replaceFirst(/.*?\(/, " ") // Get rid of "log.whatever("
+            .replaceFirst(/\);/, " ") // get rid of the closing ");"
+            .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
+            .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
+            .replaceAll(/timeLeft\(.*?\)/, " ") // used all over tests, it's benign
+            .replaceAll(/TimeUnit\..*?\.convert\(.*?\)/, " ") // again, a pattern that's efficient
+            .replaceAll("\\s", "")
+
+    // The compiler will pre-assemble patterns like 'log.info("string const1 {}" + " string const2 {}", obj1, obj2)'
+    // to log.info("string const1 {} string const2 {}", obj1, obj2)', so don't worry about any plus preceded and
+    // followed by double quotes, otherwise flag it.
+    def hasPlus = false
+    for (int idx = 0; idx < stripped.length(); ++idx) {
+      if (stripped.charAt(idx) == '+') {
+        if (idx == 0 || idx == stripped.length() - 1
+            || stripped.charAt(idx - 1) != '"' || stripped.charAt(idx + 1) != '"') {
+          hasPlus = true
+          break
+        }
+      }
+    }
+    //TODO remove me
+    String cause =  ""
+    // Get the level of this log message.
+    // We don't really care about checking for method calls for WARN and more severe, the presumption
+    // is that they _should_ always be reported.
+
     def level = ""
     def lev = (line =~ "log\\.(.*?)\\(")
     if (lev.find()) {
-      level = lev.group(1)
+      level = lev.group(1).toLowerCase().trim()
     }
-    def stripped =
-        line.replaceFirst("//.*", " ") // remove comment to EOL. Again, fragile due to the possibility of embedded double slashes
-            .replaceFirst(/.*?\(/, " ") // Get rid of "log.info("
-            .replaceFirst(/\);/, " ") // get rid of the closing ");"
-            .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
-            .replaceAll(/".*?"/, " ") // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
-            .replaceAll(/timeLeft\(.*?\)/, " ") // used all over tests, it's benign
-            .replaceAll(/TimeUnit\..*?\.convert\(.*?\)/, " ") // again, a pattern that's efficient
+    if (logLevels.contains("log." + level) == false) {
+      reportViolation(String.format("Found an unexpected log level: %s, file: %s:%d"
+          , level, file.getAbsolutePath(), lineNumber))
+    }
+    boolean persnicketyLevel = !(level.equals("fatal") || level.equals("error") || level.equals("warn"))
 
+    // Check that previous line isn't an if statement for always-reported log levels.
+    // There's a convention to declare a member variable for whether a level is enabled and check that rather than
+    // isDebugEnabled so we need to check both.
+    String prevLine = previous.replaceAll("\\s+", "").toLowerCase()
+    boolean prevLineNotIf = ((prevLine.contains("if(log.is" + level + "enabled") == false
+        && prevLine.contains("if(" + level + ")") == false))
 
-    def m = stripped =~ "\\(.*?\\)"
-    def hasParens = m.find()
-    def hasPlus = stripped.contains("+")
-    if (hasParens == false && hasPlus == false) {
-      return
+    if (hasPlus) {
+      cause = "hasPlus: " + hasPlus
+      violation = true
     }
-    // Check that previous line isn't an if statement for this log level
-    if (prevLine.toLowerCase().contains("is" + level + "enabled")) {
-      return
-    }
-    if (level.equals("error") || level.equals("fatal")) {
-      if (checkPlus == false || hasPlus == false) {
-        return
+    if (violation == false) {
+      def m = stripped =~ "\\(.*?\\)"
+      def hasParens = m.find()
+
+      if (hasParens && prevLineNotIf && persnicketyLevel) {
+        cause = "hasParens " + hasParens + " prevLineNotIf " + prevLineNotIf + " pernicketyLevel " + persnicketyLevel
+        violation = true
       }
     }
-    reportViolation(String.format("Suspicious logging call File: '%s' line: '%d' log message: '%s' parent path: '%s'. Parameterize or surround with 'if (log.is*Enabled) {... stripped: '%s', level: '%s' checkPlus '%s' hasParens '%s' errorfatal '%s' hasPlus '%s'"
-        , file.name
-        , lineNumber, line
-        , file.getParentFile().getAbsolutePath()
-        , stripped //nocommit, debugging.
-        , level
-        , checkPlus
-    , hasParens
-    ,level.equals("error") || level.equals("fatal"),
-        hasPlus))
+
+    // Always report toString(). Note, this over-reports some constructs
+    // but just add //nowarn if it's really OK.
+    if (violation == false) {
+      if (line.contains("toString(") == true && prevLineNotIf) {
+        cause = "Line contains toString"
+        violation = true
+      }
+    }
+    if (stripped.contains("getMessage()") || stripped.contains("getCause()")) {
+      cause = "getMessage or getCause in log line";
+      violation = true;
+    }
+    if (violation) {
+      reportViolation(String.format("cause: '%s' Suspicious logging call, Parameterize and possibly surround with 'if (log.is*Enabled) {..}'. Help at: 'gradlew helpValidateLogCalls' %s    %s:%d"
+          , cause , System.lineSeparator, file.getAbsolutePath(), lineNumber))
+    }
+    return
   }
 
-
-// Require all our logger definitions lower case "log", except a couple of special ones.
+// Require all our logger definitions lower case "log", except if they have //nowarn
   def checkLogName(File file, String line) {
     // It's many times faster to do check this way than use a regex
     if (line.contains("static ") && line.contains("getLogger") && line.contains(" log ") == false) {
-      switch (file.name) {
-        case "LoggerFactory.java": break
-        case "SolrCore.java": // Except for two know log files with a different name.
-          if (line.contains("requestLog") || line.contains("slowLog")) {
-            break
-          }
-        case "StartupLoggingUtils.java":
-          if (line.contains("getLoggerImplStr")) {
-            break;
-          }
-        default:
-          reportViolation("Change the logger name to lower-case 'log' in " + file.name + " " + line)
-          break;
+      if (line.replaceAll("\\s", "").toLowerCase().contains("//nowarn")) {
+        return
       }
+      reportViolation("Change the logger name to lower-case 'log' in " + file.name + " " + line + " project" + project)
     }
   }
 
   def checkFile(File file) {
-    int state = 0 // 0 == not collecting a log line, 1 == collecting a log line, 2 == just collected the last.
+    int state = 0
     int lineNumber = 0
     StringBuilder sb = new StringBuilder();
 
@@ -174,7 +174,7 @@ class ValidateLogCallsTask extends DefaultTask {
       lineNumber++
       checkLogName(file, line)
       switch (state) {
-        case 0:
+        case 0: // Not collecting a logging line.
           logLevels.each {
             if (line.contains(it)) {
               if (line.contains(");")) {
@@ -188,8 +188,11 @@ class ValidateLogCallsTask extends DefaultTask {
           }
           break
 
-        case 1: // collecting
-          if (line.contains(");")) {
+        case 1: // collecting a log line
+          if (line.replaceFirst("//.*", " ")
+              .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
+              .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
+              .trim().endsWith(");")) {
             state = 2
           }
           sb.append(line)
@@ -199,38 +202,31 @@ class ValidateLogCallsTask extends DefaultTask {
           reportViolation("Bad state, should be 0-1 in the switch statement") // make people aware the code sucks
           break
       }
-      switch (state) { // It's just easier to do this here rather than read another line in the switch above.
-        case 0:
-          prevLine = line;
-          break;
-        case 1:
-          break;
-        case 2:
-          checkLogLine(file, sb.toString(), lineNumber, prevLine)
+
+      // It's just easier to do this here rather than read another line in the switch above.
+      if (state == 0) {
+          // Not collecting a log line
+          prevLine = line.toLowerCase();
+      } else if (state == 1) {
+          // collecting a logging line.
+      } else if (state == 2) {
+          // We've collected the complete log line.
+          checkLine(file, sb.toString(), lineNumber, prevLine)
           state = 0
-          break;
-        default:
-          break;
+      } else {
+          assert false
       }
     }
   }
 
+  @InputFiles
+  FileCollection sourceFiles
+
   @TaskAction
   def checkLogLines() {
-    dirsToCheck.add(srcDir)
-    project.sourceSets.each { srcSet ->
-      srcSet.java.each { f ->
-        if (dirsToCheck.any {
-          f.getCanonicalPath().contains(it)
-        }) {
-          checkFile(f)
-        }
-        //nocommit move this to project based whenever
-//        if (srcDir != null && f.getCanonicalPath().contains(srcDir)) {
-//          checkFile(f)
-//        }
-      }
-    }
+    sourceFiles.each { checkFile(it) }
+    logger.info("Checked: ${sourceFiles.files.size()}")
+
     if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
           errsFound, violations.join(', ')));

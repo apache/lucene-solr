@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
+
+description = 'Solr Test Framework'
 
 dependencies {
   api project(':solr:core')
@@ -30,3 +31,4 @@ dependencies {
   implementation 'io.dropwizard.metrics:metrics-jetty9'
   implementation 'com.lmax:disruptor'
 }
+

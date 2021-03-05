@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.search;
 
+import static org.apache.lucene.util.LuceneTestCase.usually;
+
 import java.io.IOException;
 import java.util.Random;
 import org.apache.lucene.index.LeafReaderContext;
@@ -34,8 +36,7 @@ class AssertingWeight extends FilterWeight {
   @Override
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
     Matches matches = in.matches(context, doc);
-    if (matches == null)
-      return null;
+    if (matches == null) return null;
     return new AssertingMatches(matches);
   }
 
@@ -66,12 +67,14 @@ class AssertingWeight extends FilterWeight {
     }
     return new ScorerSupplier() {
       private boolean getCalled = false;
+
       @Override
       public Scorer get(long leadCost) throws IOException {
         assert getCalled == false;
         getCalled = true;
         assert leadCost >= 0 : leadCost;
-        return AssertingScorer.wrap(new Random(random.nextLong()), inScorerSupplier.get(leadCost), scoreMode);
+        return AssertingScorer.wrap(
+            new Random(random.nextLong()), inScorerSupplier.get(leadCost), scoreMode);
       }
 
       @Override
@@ -85,11 +88,19 @@ class AssertingWeight extends FilterWeight {
 
   @Override
   public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-    BulkScorer inScorer = in.bulkScorer(context);
+    BulkScorer inScorer;
+    // We explicitly test both the delegate's bulk scorer, and also the normal scorer.
+    // This ensures that normal scorers are sometimes tested with an asserting wrapper.
+    if (usually(random)) {
+      inScorer = in.bulkScorer(context);
+    } else {
+      inScorer = super.bulkScorer(context);
+    }
+
     if (inScorer == null) {
       return null;
     }
-
-    return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer, context.reader().maxDoc(), scoreMode);
+    return AssertingBulkScorer.wrap(
+        new Random(random.nextLong()), inScorer, context.reader().maxDoc(), scoreMode);
   }
 }

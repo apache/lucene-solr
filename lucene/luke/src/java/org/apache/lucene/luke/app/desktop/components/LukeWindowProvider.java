@@ -17,14 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import javax.swing.BorderFactory;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenuBar;
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
-import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -33,7 +25,14 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.io.IOException;
-
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenuBar;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.WindowConstants;
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.DirectoryObserver;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -51,7 +50,8 @@ import org.apache.lucene.util.Version;
 /** Provider of the root window */
 public final class LukeWindowProvider implements LukeWindowOperator {
 
-  private static final String WINDOW_TITLE = MessageUtils.getLocalizedMessage("window.title") + " - v" + Version.LATEST.toString();
+  private static final String WINDOW_TITLE =
+      MessageUtils.getLocalizedMessage("window.title") + " - v" + Version.LATEST.toString();
 
   private final Preferences prefs;
 
@@ -149,7 +149,6 @@ public final class LukeWindowProvider implements LukeWindowOperator {
     multiIcon.setVisible(false);
     iconPanel.add(multiIcon);
 
-
     readOnlyIcon.setText(FontUtils.elegantIconHtml("&#xe06c;"));
     readOnlyIcon.setToolTipText(MessageUtils.getLocalizedMessage("tooltip.read_only"));
     readOnlyIcon.setVisible(false);
@@ -206,9 +205,11 @@ public final class LukeWindowProvider implements LukeWindowOperator {
       noReaderIcon.setVisible(false);
 
       if (state.readOnly()) {
-        messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("message.index_opened_ro"));
+        messageBroker.showStatusMessage(
+            MessageUtils.getLocalizedMessage("message.index_opened_ro"));
       } else if (!state.hasDirectoryReader()) {
-        messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("message.index_opened_multi"));
+        messageBroker.showStatusMessage(
+            MessageUtils.getLocalizedMessage("message.index_opened_multi"));
       } else {
         messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("message.index_opened"));
       }
@@ -222,7 +223,6 @@ public final class LukeWindowProvider implements LukeWindowOperator {
 
       messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("message.index_closed"));
     }
-
   }
 
   private class MessageReceiverImpl implements MessageBroker.MessageReceiver {
@@ -242,9 +242,6 @@ public final class LukeWindowProvider implements LukeWindowOperator {
       messageLbl.setText("");
     }
 
-    private MessageReceiverImpl() {
-    }
-
+    private MessageReceiverImpl() {}
   }
-
 }

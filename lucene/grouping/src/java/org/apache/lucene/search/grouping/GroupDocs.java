@@ -19,39 +19,43 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TotalHits;
 
-/** Represents one group in the results.
- * 
- * @lucene.experimental */
+/**
+ * Represents one group in the results.
+ *
+ * @lucene.experimental
+ */
 public class GroupDocs<T> {
-  /** The groupField value for all docs in this group; this
-   *  may be null if hits did not have the groupField. */
+  /**
+   * The groupField value for all docs in this group; this may be null if hits did not have the
+   * groupField.
+   */
   public final T groupValue;
 
   /** Max score in this group */
   public final float maxScore;
 
-  /** Overall aggregated score of this group (currently only
-   *  set by join queries). */
+  /** Overall aggregated score of this group (currently only set by join queries). */
   public final float score;
 
-  /** Hits; this may be {@link
-   * org.apache.lucene.search.FieldDoc} instances if the
-   * withinGroupSort sorted by fields. */
+  /**
+   * Hits; this may be {@link org.apache.lucene.search.FieldDoc} instances if the withinGroupSort
+   * sorted by fields.
+   */
   public final ScoreDoc[] scoreDocs;
 
   /** Total hits within this group */
   public final TotalHits totalHits;
 
-  /** Matches the groupSort passed to {@link
-   *  FirstPassGroupingCollector}. */
+  /** Matches the groupSort passed to {@link FirstPassGroupingCollector}. */
   public final Object[] groupSortValues;
 
-  public GroupDocs(float score,
-                   float maxScore,
-                   TotalHits totalHits,
-                   ScoreDoc[] scoreDocs,
-                   T groupValue,
-                   Object[] groupSortValues) {
+  public GroupDocs(
+      float score,
+      float maxScore,
+      TotalHits totalHits,
+      ScoreDoc[] scoreDocs,
+      T groupValue,
+      Object[] groupSortValues) {
     this.score = score;
     this.maxScore = maxScore;
     this.totalHits = totalHits;

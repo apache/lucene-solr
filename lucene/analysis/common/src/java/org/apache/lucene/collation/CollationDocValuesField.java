@@ -16,38 +16,35 @@
  */
 package org.apache.lucene.collation;
 
-
 import java.text.Collator;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Indexes collation keys as a single-valued {@link SortedDocValuesField}.
- * <p>
- * This is more efficient that {@link CollationKeyAnalyzer} if the field 
- * only has one value: no uninversion is necessary to sort on the field, 
- * locale-sensitive range queries can still work via {@code DocValuesRangeQuery}, 
- * and the underlying data structures built at index-time are likely more efficient 
- * and use less memory than FieldCache.
+ *
+ * <p>This is more efficient that {@link CollationKeyAnalyzer} if the field only has one value: no
+ * uninversion is necessary to sort on the field, locale-sensitive range queries can still work via
+ * {@code DocValuesRangeQuery}, and the underlying data structures built at index-time are likely
+ * more efficient and use less memory than FieldCache.
  */
 public final class CollationDocValuesField extends Field {
   private final String name;
   private final Collator collator;
   private final BytesRef bytes = new BytesRef();
-  
+
   /**
    * Create a new ICUCollationDocValuesField.
-   * <p>
-   * NOTE: you should not create a new one for each document, instead
-   * just make one and reuse it during your indexing process, setting
-   * the value via {@link #setStringValue(String)}.
+   *
+   * <p>NOTE: you should not create a new one for each document, instead just make one and reuse it
+   * during your indexing process, setting the value via {@link #setStringValue(String)}.
+   *
    * @param name field name
    * @param collator Collator for generating collation keys.
    */
   // TODO: can we make this trap-free? maybe just synchronize on the collator
-  // instead? 
+  // instead?
   public CollationDocValuesField(String name, Collator collator) {
     super(name, SortedDocValuesField.TYPE);
     this.name = name;
@@ -59,7 +56,7 @@ public final class CollationDocValuesField extends Field {
   public String name() {
     return name;
   }
-  
+
   @Override
   public void setStringValue(String value) {
     bytes.bytes = collator.getCollationKey(value).toByteArray();

@@ -34,28 +34,28 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 /**
  *
  */
-public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
+public class RenameCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public RenameCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public RenameCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(CoreAdminParams.NAME);
     String target = message.getStr(CollectionAdminParams.TARGET);
 
-    if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
-      ocmh.zkStateReader.aliasesManager.update();
+    if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
+      ccc.getZkStateReader().aliasesManager.update();
     }
 
     if (extCollectionName == null || target == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "both collection 'name' and 'target' name must be specified");
     }
-    Aliases aliases = ocmh.zkStateReader.getAliases();
+    Aliases aliases = ccc.getZkStateReader().getAliases();
 
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -67,11 +67,11 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
     if (!state.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "source collection '" + collectionName + "' not found.");
     }
-    if (ocmh.zkStateReader.getAliases().hasAlias(target)) {
+    if (ccc.getZkStateReader().getAliases().hasAlias(target)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "target alias '" + target + "' exists: "
-          + ocmh.zkStateReader.getAliases().getCollectionAliasListMap().get(target));
+          + ccc.getZkStateReader().getAliases().getCollectionAliasListMap().get(target));
     }
 
-    ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithRename(extCollectionName, target));
+    ccc.getZkStateReader().aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithRename(extCollectionName, target));
   }
 }

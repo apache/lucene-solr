@@ -16,23 +16,19 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.Objects;
-
-import org.apache.lucene.index.PointValues;
-
+import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
+import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
-import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
-import static org.apache.lucene.geo.GeoUtils.orient;
 
-/**
- * 2D rectangle implementation containing cartesian spatial logic.
- */
+import java.util.Objects;
+import org.apache.lucene.index.PointValues;
+
+/** 2D rectangle implementation containing cartesian spatial logic. */
 final class Rectangle2D implements Component2D {
 
   private final double minX;
@@ -41,10 +37,10 @@ final class Rectangle2D implements Component2D {
   private final double maxY;
 
   private Rectangle2D(double minX, double maxX, double minY, double maxY) {
-    this.minX =  minX;
-    this.maxX =  maxX;
-    this.minY =  minY;
-    this.maxY =  maxY;
+    this.minX = minX;
+    this.maxX = maxX;
+    this.minY = minY;
+    this.maxY = maxY;
   }
 
   @Override
@@ -84,54 +80,133 @@ final class Rectangle2D implements Component2D {
   }
 
   @Override
-  public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                             double ax, double ay, double bx, double by, double cx, double cy) {
-
-
+  public boolean intersectsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
+      return false;
     }
-    int edgesContain = numberOfCorners(ax, ay, bx, by, cx, cy);
-    if (edgesContain == 3) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
-    } else if (edgesContain != 0) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
-    } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,ax, ay, bx, by, cx, cy)
-        || edgesIntersect(ax, ay, bx, by)
-        || edgesIntersect(bx, by, cx, cy)
-        || edgesIntersect(cx, cy, ax, ay)) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
-    }
-    return PointValues.Relation.CELL_OUTSIDE_QUERY;
+    return contains(aX, aY) || contains(bX, bY) || edgesIntersect(aX, aY, bX, bY);
   }
 
   @Override
-  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
-                                       double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    // Short cut, lines and points cannot contain a bbox
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return WithinRelation.DISJOINT;
+  public boolean intersectsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
     }
+    return contains(aX, aY)
+        || contains(bX, bY)
+        || contains(cX, cY)
+        || Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, this.minX, this.minY, aX, aY, bX, bY, cX, cY)
+        || edgesIntersect(aX, aY, bX, bY)
+        || edgesIntersect(bX, bY, cX, cY)
+        || edgesIntersect(cX, cY, aX, aY);
+  }
 
+  @Override
+  public boolean containsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
+    return Component2D.within(minX, maxX, minY, maxY, this.minX, this.maxX, this.minY, this.maxY);
+  }
+
+  @Override
+  public boolean containsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    return Component2D.within(minX, maxX, minY, maxY, this.minX, this.maxX, this.minY, this.maxY);
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return contains(x, y) ? WithinRelation.NOTWITHIN : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY) {
+    if (ab == true
+        && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)
+            == false
+        && edgesIntersect(aX, aY, bX, bY)) {
+      return WithinRelation.NOTWITHIN;
+    }
+    return WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY,
+      boolean bc,
+      double cX,
+      double cY,
+      boolean ca) {
     // Bounding boxes disjoint?
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
     }
 
     // Points belong to the shape so if points are inside the rectangle then it cannot be within.
-    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+    if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
       return WithinRelation.NOTWITHIN;
     }
     // If any of the edges intersects an edge belonging to the shape then it cannot be within.
     WithinRelation relation = WithinRelation.DISJOINT;
-    if (edgesIntersect(ax, ay, bx, by) == true) {
+    if (edgesIntersect(aX, aY, bX, bY) == true) {
       if (ab == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (edgesIntersect(bx, by, cx, cy) == true) {
+    if (edgesIntersect(bX, bY, cX, cY) == true) {
       if (bc == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -139,7 +214,7 @@ final class Rectangle2D implements Component2D {
       }
     }
 
-    if (edgesIntersect(cx, cy, ax, ay) == true) {
+    if (edgesIntersect(cX, cY, aX, aY) == true) {
       if (ca == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -152,61 +227,28 @@ final class Rectangle2D implements Component2D {
       return WithinRelation.CANDIDATE;
     }
     // Check if shape is within the triangle
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY, ax, ay, bx, by, cx, cy)) {
+    if (Component2D.pointInTriangle(
+        minX, maxX, minY, maxY, this.minX, this.minY, aX, aY, bX, bY, cX, cY)) {
       return WithinRelation.CANDIDATE;
     }
     return relation;
   }
 
-  private  boolean edgesIntersect(double ax, double ay, double bx, double by) {
-    // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
-    if (ax == bx && ay == by) {
-      return false;
-    }
-
+  private boolean edgesIntersect(double aX, double aY, double bX, double bY) {
     // shortcut: check bboxes of edges are disjoint
-    if ( Math.max(ax, bx) < minX || Math.min(ax, bx) > maxX || Math.min(ay, by) > maxY || Math.max(ay, by) < minY) {
+    if (Math.max(aX, bX) < minX
+        || Math.min(aX, bX) > maxX
+        || Math.min(aY, bY) > maxY
+        || Math.max(aY, bY) < minY) {
       return false;
     }
-
-    // top
-    if (orient(ax, ay, bx, by, minX, maxY) * orient(ax, ay, bx, by, maxX, maxY) <= 0 &&
-        orient(minX, maxY, maxX, maxY, ax, ay) * orient(minX, maxY, maxX, maxY, bx, by) <= 0) {
-      return true;
-    }
-
-    // right
-    if (orient(ax, ay, bx, by, maxX, maxY) * orient(ax, ay, bx, by, maxX, minY) <= 0 &&
-        orient(maxX, maxY, maxX, minY, ax, ay) * orient(maxX, maxY, maxX, minY, bx, by) <= 0) {
-      return true;
-    }
-
-    // bottom
-    if (orient(ax, ay, bx, by, maxX, minY) * orient(ax, ay, bx, by, minX, minY) <= 0 &&
-        orient(maxX, minY, minX, minY, ax, ay) * orient(maxX, minY, minX, minY, bx, by) <= 0) {
-      return true;
-    }
-
-    // left
-    if (orient(ax, ay, bx, by, minX, minY) * orient(ax, ay, bx, by, minX, maxY) <= 0 &&
-        orient(minX, minY, minX, maxY, ax, ay) * orient(minX, minY, minX, maxY, bx, by) <= 0) {
-      return true;
-    }
-    return false;
-  }
-
-  private int numberOfCorners(double ax, double ay, double bx, double by, double cx, double cy) {
-    int containsCount = 0;
-    if (contains(ax, ay)) {
-      containsCount++;
-    }
-    if (contains(bx, by)) {
-      containsCount++;
-    }
-    if (contains(cx, cy)) {
-      containsCount++;
-    }
-    return containsCount;
+    return GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, maxY, maxX, maxY)
+        || // top
+        GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, maxY, maxX, minY)
+        || // bottom
+        GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, minY, minX, minY)
+        || // left
+        GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, minY, minX, maxY); // right
   }
 
   @Override
@@ -214,10 +256,7 @@ final class Rectangle2D implements Component2D {
     if (this == o) return true;
     if (!(o instanceof Rectangle2D)) return false;
     Rectangle2D that = (Rectangle2D) o;
-    return minX == that.minX &&
-        maxX == that.maxX &&
-        minY == that.minY &&
-        maxY == that.maxY;
+    return minX == that.minX && maxX == that.maxX && minY == that.minY && maxY == that.maxY;
   }
 
   @Override
@@ -251,28 +290,25 @@ final class Rectangle2D implements Component2D {
 
   /** create a component2D from the provided LatLon rectangle */
   static Component2D create(Rectangle rectangle) {
+    // behavior of LatLonPoint.newBoxQuery()
+    double minLongitude = rectangle.minLon;
+    boolean crossesDateline = rectangle.minLon > rectangle.maxLon;
+    if (minLongitude == 180.0 && crossesDateline) {
+      minLongitude = -180;
+      crossesDateline = false;
+    }
     // need to quantize!
     double qMinLat = decodeLatitude(encodeLatitudeCeil(rectangle.minLat));
     double qMaxLat = decodeLatitude(encodeLatitude(rectangle.maxLat));
-    double qMinLon = decodeLongitude(encodeLongitudeCeil(rectangle.minLon));
+    double qMinLon = decodeLongitude(encodeLongitudeCeil(minLongitude));
     double qMaxLon = decodeLongitude(encodeLongitude(rectangle.maxLon));
-    if (qMinLat > qMaxLat) {
-      // encodeLatitudeCeil may cause minY to be > maxY iff
-      // the delta between the longitude < the encoding resolution
-      qMinLat = qMaxLat;
-    }
-    if (rectangle.minLon > rectangle.maxLon) {
+    if (crossesDateline) {
       // for rectangles that cross the dateline we need to create two components
       Component2D[] components = new Component2D[2];
       components[0] = new Rectangle2D(MIN_LON_INCL_QUANTIZE, qMaxLon, qMinLat, qMaxLat);
       components[1] = new Rectangle2D(qMinLon, MAX_LON_INCL_QUANTIZE, qMinLat, qMaxLat);
       return ComponentTree.create(components);
     } else {
-      // encodeLongitudeCeil may cause minX to be > maxX iff
-      // the delta between the longitude < the encoding resolution
-      if (qMinLon > qMaxLon) {
-        qMinLon = qMaxLon;
-      }
       return new Rectangle2D(qMinLon, qMaxLon, qMinLat, qMaxLat);
     }
   }

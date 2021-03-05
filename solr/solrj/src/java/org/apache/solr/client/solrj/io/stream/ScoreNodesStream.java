@@ -42,8 +42,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-
 /**
  *  Iterates over a gatherNodes() expression and scores the Tuples based on tf-idf.
  *
@@ -65,7 +63,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   protected String zkHost;
   private TupleStream stream;
   private transient SolrClientCache clientCache;
-  private Map<String, Tuple> nodes = new HashMap();
+  private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
   private String termFreq;
   private boolean facet;
@@ -165,7 +163,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(stream);
     return l;
   }
@@ -191,7 +189,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
         node.put("field", bucket);
       }
 
-      if(!node.fields.containsKey("node")) {
+      if(!node.getFields().containsKey("node")) {
         throw new IOException("node field not present in the Tuple");
       }
 
@@ -209,12 +207,10 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     CloudSolrClient client = clientCache.getCloudSolrClient(zkHost);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "/terms");
-    params.add(TermsParams.TERMS, "true");
     params.add(TermsParams.TERMS_FIELD, field);
     params.add(TermsParams.TERMS_STATS, "true");
     params.add(TermsParams.TERMS_LIST, builder.toString());
     params.add(TermsParams.TERMS_LIMIT, Integer.toString(nodes.size()));
-    params.add(DISTRIB, "true");
 
     QueryRequest request = new QueryRequest(params);
 
@@ -222,9 +218,12 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     try {
 
       //Get the response from the terms component
+      @SuppressWarnings({"rawtypes"})
       NamedList response = client.request(request, collection);
+      @SuppressWarnings({"unchecked"})
       NamedList<Number> stats = (NamedList<Number>)response.get("indexstats");
       long numDocs = stats.get("numDocs").longValue();
+      @SuppressWarnings({"unchecked"})
       NamedList<NamedList<Number>> fields = (NamedList<NamedList<Number>>)response.get("terms");
 
       int size = fields.size();
@@ -236,7 +235,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
           String term = terms.getName(t);
           Number docFreq = terms.get(term);
           Tuple tuple = nodes.get(term);
-          if(!tuple.fields.containsKey(termFreq)) {
+          if(!tuple.getFields().containsKey(termFreq)) {
             throw new Exception("termFreq field not present in the Tuple");
           }
           Number termFreqValue = (Number)tuple.get(termFreq);
@@ -265,9 +264,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     if(tuples.hasNext()) {
       return tuples.next();
     } else {
-      Map map = new HashMap();
-      map.put("EOF", true);
-      return new Tuple(map);
+      return Tuple.EOF();
     }
   }
 

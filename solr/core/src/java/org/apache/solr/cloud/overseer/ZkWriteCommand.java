@@ -17,34 +17,37 @@
 package org.apache.solr.cloud.overseer;
 
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 
 public class ZkWriteCommand {
+  /**
+   * Single NO_OP instance, can be compared with ==
+   */
+  static final ZkWriteCommand NO_OP = new ZkWriteCommand(null, null);
+
   public final String name;
   public final DocCollection collection;
-  public final boolean noop;
+  public final boolean isPerReplicaStateCollection;
 
-  public ZkWriteCommand(String name, DocCollection collection) {
+  // persist the collection state. If this is false, it means the collection state is not modified
+  public final boolean persistJsonState;
+  public final PerReplicaStatesOps ops;
+
+  public ZkWriteCommand(String name, DocCollection collection, PerReplicaStatesOps replicaOps, boolean persistJsonState) {
+    isPerReplicaStateCollection = collection != null && collection.isPerReplicaState();
     this.name = name;
     this.collection = collection;
-    this.noop = false;
+    this.ops = replicaOps;
+    this.persistJsonState = persistJsonState || !isPerReplicaStateCollection; // Always persist for non "per replica state" collections
   }
 
-  /**
-   * Returns a no-op
-   */
-  protected ZkWriteCommand() {
-    this.noop = true;
-    this.name = null;
-    this.collection = null;
-  }
-
-  public static ZkWriteCommand noop() {
-    return new ZkWriteCommand();
+  public ZkWriteCommand(String name, DocCollection collection) {
+    this(name, collection, null, true);
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + ": " + (noop ? "no-op" : name + "=" + collection);
+    return getClass().getSimpleName() + ": " + (this == NO_OP ? "no-op" : name + "=" + collection);
   }
 }
 

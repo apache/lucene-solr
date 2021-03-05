@@ -88,250 +88,257 @@ public class PercentileFunction {
                          perc,
                          param.getExpressionStr());
   }
+
+  static class IntPercentileFunction extends AbstractIntValue implements ReductionFunction {
+    private SortedIntListCollector collector;
+    private double percentile;
+    public static final String name = PercentileFunction.name;
+    private final String exprStr;
+
+    public IntPercentileFunction(IntValueStream param, double percentile) {
+      this.collector = new SortedIntListCollector(param);
+      this.percentile = percentile;
+      this.exprStr = createPercentileExpressionString(param, percentile);
+    }
+
+    @Override
+    public int getInt() {
+      int size = collector.size();
+      return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedIntListCollector)sync.apply(collector);
+      collector.calcPercentile(percentile);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class LongPercentileFunction extends AbstractLongValue implements ReductionFunction {
+    private SortedLongListCollector collector;
+    private double percentile;
+    public static final String name = PercentileFunction.name;
+    private final String exprStr;
+
+    public LongPercentileFunction(LongValueStream param, double percentile) {
+      this.collector = new SortedLongListCollector(param);
+      this.percentile = percentile;
+      this.exprStr = createPercentileExpressionString(param, percentile);
+    }
+
+    @Override
+    public long getLong() {
+      int size = collector.size();
+      return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedLongListCollector)sync.apply(collector);
+      collector.calcPercentile(percentile);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class FloatPercentileFunction extends AbstractFloatValue implements ReductionFunction {
+    private SortedFloatListCollector collector;
+    private double percentile;
+    public static final String name = PercentileFunction.name;
+    private final String exprStr;
+
+    public FloatPercentileFunction(FloatValueStream param, double percentile) {
+      this.collector = new SortedFloatListCollector(param);
+      this.percentile = percentile;
+      this.exprStr = createPercentileExpressionString(param, percentile);
+    }
+
+    @Override
+    public float getFloat() {
+      int size = collector.size();
+      return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedFloatListCollector)sync.apply(collector);
+      collector.calcPercentile(percentile);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class DoublePercentileFunction extends AbstractDoubleValue implements ReductionFunction {
+    private SortedDoubleListCollector collector;
+    private double percentile;
+    public static final String name = PercentileFunction.name;
+    private final String exprStr;
+
+    public DoublePercentileFunction(DoubleValueStream param, double percentile) {
+      this.collector = new SortedDoubleListCollector(param);
+      this.percentile = percentile;
+      this.exprStr = createPercentileExpressionString(param, percentile);
+    }
+
+    @Override
+    public double getDouble() {
+      int size = collector.size();
+      return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedDoubleListCollector)sync.apply(collector);
+      collector.calcPercentile(percentile);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class DatePercentileFunction extends AbstractDateValue implements ReductionFunction {
+    private SortedLongListCollector collector;
+    private double percentile;
+    public static final String name = PercentileFunction.name;
+    private final String exprStr;
+
+    public DatePercentileFunction(LongValueStream param, double percentile) {
+      this.collector = new SortedLongListCollector(param);
+      this.percentile = percentile;
+      this.exprStr = createPercentileExpressionString(param, percentile);
+    }
+
+    @Override
+    public long getLong() {
+      int size = collector.size();
+      return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
+    }
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedLongListCollector)sync.apply(collector);
+      collector.calcPercentile(percentile);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
+
+  static class StringPercentileFunction extends AbstractStringValue implements ReductionFunction {
+    private SortedStringListCollector collector;
+    private double percentile;
+    public static final String name = PercentileFunction.name;
+    private final String exprStr;
+
+    public StringPercentileFunction(StringValueStream param, double percentile) {
+      this.collector = new SortedStringListCollector(param);
+      this.percentile = percentile;
+      this.exprStr = createPercentileExpressionString(param, percentile);
+    }
+
+    @Override
+    public String getString() {
+      int size = collector.size();
+      return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : null;
+    }
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedStringListCollector)sync.apply(collector);
+      collector.calcPercentile(percentile);
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
+  }
 }
-class IntPercentileFunction extends AbstractIntValue implements ReductionFunction {
-  private SortedIntListCollector collector;
-  private double percentile;
-  public static final String name = PercentileFunction.name;
-  private final String exprStr;
 
-  public IntPercentileFunction(IntValueStream param, double percentile) {
-    this.collector = new SortedIntListCollector(param);
-    this.percentile = percentile;
-    this.exprStr = PercentileFunction.createPercentileExpressionString(param, percentile);
-  }
-
-  @Override
-  public int getInt() {
-    int size = collector.size();
-    return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedIntListCollector)sync.apply(collector);
-    collector.calcPercentile(percentile);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class LongPercentileFunction extends AbstractLongValue implements ReductionFunction {
-  private SortedLongListCollector collector;
-  private double percentile;
-  public static final String name = PercentileFunction.name;
-  private final String exprStr;
-
-  public LongPercentileFunction(LongValueStream param, double percentile) {
-    this.collector = new SortedLongListCollector(param);
-    this.percentile = percentile;
-    this.exprStr = PercentileFunction.createPercentileExpressionString(param, percentile);
-  }
-
-  @Override
-  public long getLong() {
-    int size = collector.size();
-    return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedLongListCollector)sync.apply(collector);
-    collector.calcPercentile(percentile);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class FloatPercentileFunction extends AbstractFloatValue implements ReductionFunction {
-  private SortedFloatListCollector collector;
-  private double percentile;
-  public static final String name = PercentileFunction.name;
-  private final String exprStr;
-
-  public FloatPercentileFunction(FloatValueStream param, double percentile) {
-    this.collector = new SortedFloatListCollector(param);
-    this.percentile = percentile;
-    this.exprStr = PercentileFunction.createPercentileExpressionString(param, percentile);
-  }
-
-  @Override
-  public float getFloat() {
-    int size = collector.size();
-    return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedFloatListCollector)sync.apply(collector);
-    collector.calcPercentile(percentile);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class DoublePercentileFunction extends AbstractDoubleValue implements ReductionFunction {
-  private SortedDoubleListCollector collector;
-  private double percentile;
-  public static final String name = PercentileFunction.name;
-  private final String exprStr;
-
-  public DoublePercentileFunction(DoubleValueStream param, double percentile) {
-    this.collector = new SortedDoubleListCollector(param);
-    this.percentile = percentile;
-    this.exprStr = PercentileFunction.createPercentileExpressionString(param, percentile);
-  }
-
-  @Override
-  public double getDouble() {
-    int size = collector.size();
-    return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedDoubleListCollector)sync.apply(collector);
-    collector.calcPercentile(percentile);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class DatePercentileFunction extends AbstractDateValue implements ReductionFunction {
-  private SortedLongListCollector collector;
-  private double percentile;
-  public static final String name = PercentileFunction.name;
-  private final String exprStr;
-
-  public DatePercentileFunction(LongValueStream param, double percentile) {
-    this.collector = new SortedLongListCollector(param);
-    this.percentile = percentile;
-    this.exprStr = PercentileFunction.createPercentileExpressionString(param, percentile);
-  }
-
-  @Override
-  public long getLong() {
-    int size = collector.size();
-    return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : 0;
-  }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedLongListCollector)sync.apply(collector);
-    collector.calcPercentile(percentile);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class StringPercentileFunction extends AbstractStringValue implements ReductionFunction {
-  private SortedStringListCollector collector;
-  private double percentile;
-  public static final String name = PercentileFunction.name;
-  private final String exprStr;
-
-  public StringPercentileFunction(StringValueStream param, double percentile) {
-    this.collector = new SortedStringListCollector(param);
-    this.percentile = percentile;
-    this.exprStr = PercentileFunction.createPercentileExpressionString(param, percentile);
-  }
-
-  @Override
-  public String getString() {
-    int size = collector.size();
-    return size > 0 ? collector.get((int) Math.round(percentile * size - .5)) : null;
-  }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
-  }
-
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedStringListCollector)sync.apply(collector);
-    collector.calcPercentile(percentile);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}

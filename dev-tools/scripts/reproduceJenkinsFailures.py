@@ -18,6 +18,7 @@ import http.client
 import os
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 import time
@@ -107,7 +108,9 @@ def fetchAndParseJenkinsLog(url, numRetries):
   tests = {}
   print('[repro] Jenkins log URL: %s\n' % url)
   try:
-    with urllib.request.urlopen(url) as consoleText:
+    # HTTPS fails at certificate validation, see LUCENE-9412, PEP-476
+    context = ssl._create_unverified_context()
+    with urllib.request.urlopen(url, context=context) as consoleText:
       for rawLine in consoleText:
         line = rawLine.decode(encoding)
         match = reGitRev.match(line)

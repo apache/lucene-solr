@@ -17,8 +17,8 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import javax.swing.ImageIcon;
 import java.awt.Image;
+import javax.swing.ImageIcon;
 
 /** Image utilities */
 public class ImageUtils {
@@ -33,13 +33,14 @@ public class ImageUtils {
     java.net.URL imgURL = ImageUtils.class.getClassLoader().getResource(IMAGE_BASE_DIR + name);
     if (imgURL != null) {
       ImageIcon originalIcon = new ImageIcon(imgURL, description);
-      ImageIcon icon = new ImageIcon(originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT));
+      ImageIcon icon =
+          new ImageIcon(
+              originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT));
       return icon;
     } else {
       return null;
     }
   }
 
-  private ImageUtils() {
-  }
+  private ImageUtils() {}
 }

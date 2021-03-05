@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -32,7 +31,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     // we nuke files, but verify the reader still works
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     int numDocs = atLeast(100);
-    for(int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newField("foo", "bar", TextField.TYPE_NOT_STORED));
       doc.add(new IntPoint("doc", i));
@@ -49,7 +48,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
       d.deleteFile(name);
     }
 
-    for(LeafReaderContext cxt : r.leaves()) {
+    for (LeafReaderContext cxt : r.leaves()) {
       TestUtil.checkReader(cxt.reader());
     }
 

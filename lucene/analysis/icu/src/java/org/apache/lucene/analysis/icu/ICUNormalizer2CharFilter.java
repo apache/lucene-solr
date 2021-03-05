@@ -16,19 +16,14 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
+import com.ibm.icu.text.Normalizer2;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.analysis.charfilter.BaseCharFilter;
 
-import com.ibm.icu.text.Normalizer2;
-
-/**
- * Normalize token text with ICU's {@link Normalizer2}.
- */
+/** Normalize token text with ICU's {@link Normalizer2}. */
 public final class ICUNormalizer2CharFilter extends BaseCharFilter {
 
   private final Normalizer2 normalizer;
@@ -40,10 +35,9 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
   private int checkedInputBoundary;
   private int charCount;
 
-
   /**
-   * Create a new Normalizer2CharFilter that combines NFKC normalization, Case
-   * Folding, and removes Default Ignorables (NFKC_Casefold)
+   * Create a new Normalizer2CharFilter that combines NFKC normalization, Case Folding, and removes
+   * Default Ignorables (NFKC_Casefold)
    */
   public ICUNormalizer2CharFilter(Reader in) {
     this(in, Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
@@ -51,13 +45,14 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
 
   /**
    * Create a new Normalizer2CharFilter with the specified Normalizer2
+   *
    * @param in text
    * @param normalizer normalizer to use
    */
   public ICUNormalizer2CharFilter(Reader in, Normalizer2 normalizer) {
     this(in, normalizer, 128);
   }
-  
+
   // for testing ONLY
   ICUNormalizer2CharFilter(Reader in, Normalizer2 normalizer, int bufferSize) {
     super(in);
@@ -110,7 +105,8 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
         break;
       }
 
-      final int lastCodePoint = Character.codePointBefore(tmpBuffer.getBuffer(), tmpBuffer.getLength(), 0);
+      final int lastCodePoint =
+          Character.codePointBefore(tmpBuffer.getBuffer(), tmpBuffer.getLength(), 0);
       if (normalizer.isInert(lastCodePoint)) {
         // we require an inert char so that we can normalize content before and
         // after this character independently
@@ -133,7 +129,7 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
       if (resLen > 0) return resLen;
     }
     int resLen = readFromIoNormalizeUptoBoundary();
-    if(resLen > 0){
+    if (resLen > 0) {
       afterQuickCheckYes = false;
     }
     return resLen;
@@ -162,8 +158,8 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
     while (checkedInputBoundary <= bufLen - 1) {
       int charLen = Character.charCount(inputBuffer.codePointAt(checkedInputBoundary));
       checkedInputBoundary += charLen;
-      if (checkedInputBoundary < bufLen && normalizer.hasBoundaryBefore(inputBuffer
-        .codePointAt(checkedInputBoundary))) {
+      if (checkedInputBoundary < bufLen
+          && normalizer.hasBoundaryBefore(inputBuffer.codePointAt(checkedInputBoundary))) {
         foundBoundary = true;
         break;
       }
@@ -182,8 +178,7 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
 
   private int normalizeInputUpto(final int length) {
     final int destOrigLen = resultBuffer.length();
-    normalizer.normalizeSecondAndAppend(resultBuffer,
-      inputBuffer.subSequence(0, length));
+    normalizer.normalizeSecondAndAppend(resultBuffer, inputBuffer.subSequence(0, length));
     inputBuffer.delete(0, length);
     checkedInputBoundary = Math.max(checkedInputBoundary - length, 0);
     final int resultLength = resultBuffer.length() - destOrigLen;
@@ -199,7 +194,7 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
     final int diff = inputLength - outputLength;
     final int cumuDiff = getLastCumulativeDiff();
     if (diff < 0) {
-      for (int i = 1;  i <= -diff; ++i) {
+      for (int i = 1; i <= -diff; ++i) {
         addOffCorrectMap(charCount + i, cumuDiff - i);
       }
     } else {

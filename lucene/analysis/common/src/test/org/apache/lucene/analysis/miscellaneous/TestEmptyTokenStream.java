@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
-
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -43,7 +41,7 @@ public class TestEmptyTokenStream extends BaseTokenStreamTestCase {
     ts.end();
     ts.close();
   }
-  
+
   public void testConsume2() throws IOException {
     BaseTokenStreamTestCase.assertTokenStreamContents(new EmptyTokenStream(), new String[0]);
   }
@@ -58,14 +56,13 @@ public class TestEmptyTokenStream extends BaseTokenStreamTestCase {
     Document doc = new Document();
     doc.add(new StringField("id", "0", Field.Store.YES));
     doc.add(new TextField("description", ts));
-    
+
     // this should not fail because we have no TermToBytesRefAttribute
     writer.addDocument(doc);
-    
+
     assertEquals(1, writer.getDocStats().numDocs);
 
     writer.close();
     directory.close();
   }
-
 }

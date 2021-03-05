@@ -17,12 +17,11 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafReader;
 
 /**
- * Uses offsets in postings -- {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.  This
+ * Uses offsets in postings -- {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}. This
  * does not support multi-term queries; the highlighter will fallback on analysis for that.
  *
  * @lucene.internal
@@ -34,10 +33,10 @@ public class PostingsOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content)
+      throws IOException {
     return createOffsetsEnumFromReader(reader, docId);
   }
-
 
   @Override
   public UnifiedHighlighter.OffsetSource getOffsetSource() {

@@ -44,6 +44,7 @@ public abstract class AggValueSource extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     // FUTURE
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);

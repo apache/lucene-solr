@@ -1,5 +1,4 @@
 = Major Changes in Solr 9
-:page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -27,11 +26,14 @@ Before starting an upgrade to Solr 9, please take the time to review all informa
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 8.1, you should review changes made in all subsequent 8.x releases in addition to changes for 9.0.
 
-A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
+A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
 
 == Solr 9.0
 
 _(raw; not yet edited)_
+
+* SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar
+  (instead of solr-cell-*). (Dawid Weiss)
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.
   (Adrien Grand, Uwe Schindler)
@@ -71,7 +73,7 @@ _(raw; not yet edited)_
 * SOLR-13854, SOLR-13858: SolrMetricProducer / SolrInfoBean APIs have changed and third-party components that implement these APIs need to be updated. (ab)
 
 * SOLR-13783: In situations where a NamedList must be output as plain text, commas between key-value pairs will now be
-  followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
+  followed by a space (e.g., {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
   other java.util.Map implementations based on AbstractMap (Chris Hennick).
 
 * SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
@@ -105,8 +107,60 @@ _(raw; not yet edited)_
   (marcussorealheis, shalin)
 
 * SOLR-11775: Return long value for facet count in Json Facet module irrespective of number of shards (hossman, Munendra S N)
-  
+
+* SOLR-12823: Remove /clusterstate.json support, i.e., support for collections created with stateFormat=1 as well as support
+  for Collection API MIGRATESTATEFORMAT action. Also removes support for cluster property `legacyCloud` (as if always false now).
+
+* SOLR-14656: Autoscaling framework removed
+  This includes:
+    Autoscaling, policy, triggers etc.
+    withCollection handling (SOLR-14964)
+    UTILIZENODE command
+    Sim framework
+    Suggestions tab in UI
+    Reference guide pages for autoscaling
+    autoAddReplicas feature
+
+* SOLR-14702: All references to "master" and "slave" were replaced in the code with "leader"
+  and "follower". This includes API calls for the replication handler and metrics. For rolling
+  upgrades into 9.0, you need to be on Solr version 8.7 or greater. Some metrics also changed, alerts and
+  monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
+
+* SOLR-14783: Data Import Handler (DIH) has been removed from Solr. The community package is available at: https://github.com/rohitbemax/dataimporthandler (Alexandre Rafalovitch)
+
+* SOLR-14792: VelocityResponseWriter has been removed from Solr.  This encompasses all previous included `/browse` and
+  `wt=velocity` examples.  This feature has been migrated to an installable package at
+  https://github.com/erikhatcher/solritas
+
+* SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
+  Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
+
+* SOLR-14036: Implicit /terms handler now returns terms across all shards in SolrCloud instead of only the local core.  Users/apps may be assuming the old behavior.  A request can be modified via the standard distrib=false param to only use the local core receiving the request.
+
+* SOLR-12847: maxShardsPerNode parameter has been removed because it was broken and inconsistent with other replica placement strategies. Other relevant placement strategies
+  should be used instead, such as autoscaling policy or rules-based placement.
+
+* SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
+
+* SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
+
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name.
+
+* SOLR-15121: XSLTResponseWriter moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.
+
+* SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
+escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
+
 === Upgrade Prerequisites in Solr 9
+
+* Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
+older format and no longer supports migrating collections from the older format to the current format (previously known
+as stateFormat=2).
+Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a previous version of Solr.
+See for example https://lucene.apache.org/solr/guide/8_5/cluster-node-management.html#migratestateforma[Solr 8.5 Ref Guide].
+// Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
 === Rolling Upgrades with Solr 9
 
@@ -115,6 +169,15 @@ _(raw; not yet edited)_
 == New Features & Enhancements in Solr 9
 
 == Configuration and Default Parameter Changes in Solr 9
+
+* base_url removed from stored state*
+
+If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1)
+to better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be
+persisted in stored state. However, if you are not able to upgrade SolrJ to 8.8.x for all client applications, then you should
+set `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url` in Zookeeper. For background, see: SOLR-12182 and SOLR-15145.
+
+Support for the `solr.storeBaseUrl` system property will be removed in Solr 10.x and `base_url` will no longer be stored.
 
 === Schema Changes in 9
 

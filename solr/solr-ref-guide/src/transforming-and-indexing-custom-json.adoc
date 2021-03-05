@@ -35,7 +35,7 @@ Provides multivalued mapping to map document field names to Solr field names. Th
 Wildcards can be used here, see <<Using Wildcards for Field Names>> below for more information.
 
 `mapUniqueKeyOnly`::
-(boolean) This parameter is particularly convenient when the fields in the input JSON are not available in the schema and <<schemaless-mode.adoc#schemaless-mode,schemaless mode>> is not enabled. This will index all the fields into the default search field (using the `df` parameter, below) and only the `uniqueKey` field is mapped to the corresponding field in the schema. If the input JSON does not have a value for the `uniqueKey` field then a UUID is generated for the same.
+(boolean) This parameter is particularly convenient when the fields in the input JSON are not available in the schema and <<schemaless-mode.adoc#,schemaless mode>> is not enabled. This will index all the fields into the default search field (using the `df` parameter, below) and only the `uniqueKey` field is mapped to the corresponding field in the schema. If the input JSON does not have a value for the `uniqueKey` field then a UUID is generated for the same.
 
 `df`::
 If the `mapUniqueKeyOnly` flag is used, the update handler needs a field where the data should be indexed to. This is the same field that other handlers use as a default search field.
@@ -276,12 +276,12 @@ In this example, we simply named the field paths (such as `/exams/test`). Solr w
 
 [TIP]
 ====
-Documents will be rejected during indexing if the fields do not exist in the schema before indexing. So, if you are NOT using schemaless mode, you must pre-create all fields. If you are working in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, however, fields that don't exist will be created on the fly with Solr's best guess for the field type.
+Documents will be rejected during indexing if the fields do not exist in the schema before indexing. So, if you are NOT using schemaless mode, you must pre-create all fields. If you are working in <<schemaless-mode.adoc#,Schemaless Mode>>, however, fields that don't exist will be created on the fly with Solr's best guess for the field type.
 ====
 
 === Reusing Parameters in Multiple Requests
 
-You can store and re-use parameters with Solr's <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>.
+You can store and re-use parameters with Solr's <<request-parameters-api.adoc#,Request Parameters API>>.
 
 Say we wanted to define parameters to split documents at the `exams` field, and map several other fields. We could make an API request such as:
 

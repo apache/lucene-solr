@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -48,29 +46,33 @@ public class TestLiveFieldValues extends LuceneTestCase {
 
     final IndexWriter w = new IndexWriter(dir, iwc);
 
-    final SearcherManager mgr = new SearcherManager(w, new SearcherFactory() {
-        @Override
-        public IndexSearcher newSearcher(IndexReader r, IndexReader previous) {
-          return new IndexSearcher(r);
-        }
-      });
+    final SearcherManager mgr =
+        new SearcherManager(
+            w,
+            new SearcherFactory() {
+              @Override
+              public IndexSearcher newSearcher(IndexReader r, IndexReader previous) {
+                return new IndexSearcher(r);
+              }
+            });
 
     final Integer missing = -1;
 
-    final LiveFieldValues<IndexSearcher,Integer> rt = new LiveFieldValues<IndexSearcher,Integer>(mgr, missing) {
-        @Override
-        protected Integer lookupFromSearcher(IndexSearcher s, String id) throws IOException {
-          TermQuery tq = new TermQuery(new Term("id", id));
-          TopDocs hits = s.search(tq, 1);
-          assertTrue(hits.totalHits.value <= 1);
-          if (hits.totalHits.value == 0) {
-            return null;
-          } else {
-            Document doc = s.doc(hits.scoreDocs[0].doc);
-            return (Integer) doc.getField("field").numericValue();
+    final LiveFieldValues<IndexSearcher, Integer> rt =
+        new LiveFieldValues<IndexSearcher, Integer>(mgr, missing) {
+          @Override
+          protected Integer lookupFromSearcher(IndexSearcher s, String id) throws IOException {
+            TermQuery tq = new TermQuery(new Term("id", id));
+            TopDocs hits = s.search(tq, 1);
+            assertTrue(hits.totalHits.value <= 1);
+            if (hits.totalHits.value == 0) {
+              return null;
+            } else {
+              Document doc = s.doc(hits.scoreDocs[0].doc);
+              return (Integer) doc.getField("field").numericValue();
+            }
           }
-        }
-    };
+        };
 
     int numThreads = TestUtil.nextInt(random(), 2, 5);
     if (VERBOSE) {
@@ -83,85 +85,88 @@ public class TestLiveFieldValues extends LuceneTestCase {
     final int iters = atLeast(1000);
     final int idCount = TestUtil.nextInt(random(), 100, 10000);
 
-    final double reopenChance = random().nextDouble()*0.01;
-    final double deleteChance = random().nextDouble()*0.25;
-    final double addChance = random().nextDouble()*0.5;
-    
-    for(int t=0;t<numThreads;t++) {
+    final double reopenChance = random().nextDouble() * 0.01;
+    final double deleteChance = random().nextDouble() * 0.25;
+    final double addChance = random().nextDouble() * 0.5;
+
+    for (int t = 0; t < numThreads; t++) {
       final int threadID = t;
       final Random threadRandom = new Random(random().nextLong());
-      Thread thread = new Thread() {
+      Thread thread =
+          new Thread() {
 
-          @Override
-          public void run() {
-            try {
-              Map<String,Integer> values = new HashMap<>();
-              List<String> allIDs = Collections.synchronizedList(new ArrayList<String>());
+            @Override
+            public void run() {
+              try {
+                Map<String, Integer> values = new HashMap<>();
+                List<String> allIDs = Collections.synchronizedList(new ArrayList<String>());
 
-              startingGun.await();
-              for(int iter=0; iter<iters;iter++) {
-                // Add/update a document
-                Document doc = new Document();
-                // Threads must not update the same id at the
-                // same time:
-                if (threadRandom.nextDouble() <= addChance) {
-                  String id = String.format(Locale.ROOT, "%d_%04x", threadID, threadRandom.nextInt(idCount));
-                  Integer field = threadRandom.nextInt(Integer.MAX_VALUE);
-                  doc.add(newStringField("id", new BytesRef(id), Field.Store.YES));
-                  doc.add(new StoredField("field", field.intValue()));
-                  w.updateDocument(new Term("id", id), doc);
-                  rt.add(id, field);
-                  if (values.put(id, field) == null) {
-                    allIDs.add(id);
-                  }
-                }
-
-                if (allIDs.size() > 0 && threadRandom.nextDouble() <= deleteChance) {
-                  String randomID = allIDs.get(threadRandom.nextInt(allIDs.size()));
-                  w.deleteDocuments(new Term("id", new BytesRef(randomID)));
-                  rt.delete(randomID);
-                  values.put(randomID, missing);
-                }
-
-                if (threadRandom.nextDouble() <= reopenChance || rt.size() > 10000) {
-                  //System.out.println("refresh @ " + rt.size());
-                  mgr.maybeRefresh();
-                  if (VERBOSE) {
-                    IndexSearcher s = mgr.acquire();
-                    try {
-                      System.out.println("TEST: reopen " + s);
-                    } finally {
-                      mgr.release(s);
+                startingGun.await();
+                for (int iter = 0; iter < iters; iter++) {
+                  // Add/update a document
+                  Document doc = new Document();
+                  // Threads must not update the same id at the
+                  // same time:
+                  if (threadRandom.nextDouble() <= addChance) {
+                    String id =
+                        String.format(
+                            Locale.ROOT, "%d_%04x", threadID, threadRandom.nextInt(idCount));
+                    Integer field = threadRandom.nextInt(Integer.MAX_VALUE);
+                    doc.add(newStringField("id", new BytesRef(id), Field.Store.YES));
+                    doc.add(new StoredField("field", field.intValue()));
+                    w.updateDocument(new Term("id", id), doc);
+                    rt.add(id, field);
+                    if (values.put(id, field) == null) {
+                      allIDs.add(id);
                     }
-                    System.out.println("TEST: " + values.size() + " values");
+                  }
+
+                  if (allIDs.size() > 0 && threadRandom.nextDouble() <= deleteChance) {
+                    String randomID = allIDs.get(threadRandom.nextInt(allIDs.size()));
+                    w.deleteDocuments(new Term("id", new BytesRef(randomID)));
+                    rt.delete(randomID);
+                    values.put(randomID, missing);
+                  }
+
+                  if (threadRandom.nextDouble() <= reopenChance || rt.size() > 10000) {
+                    // System.out.println("refresh @ " + rt.size());
+                    mgr.maybeRefresh();
+                    if (VERBOSE) {
+                      IndexSearcher s = mgr.acquire();
+                      try {
+                        System.out.println("TEST: reopen " + s);
+                      } finally {
+                        mgr.release(s);
+                      }
+                      System.out.println("TEST: " + values.size() + " values");
+                    }
+                  }
+
+                  if (threadRandom.nextInt(10) == 7) {
+                    assertEquals(null, rt.get("foo"));
+                  }
+
+                  if (allIDs.size() > 0) {
+                    String randomID = allIDs.get(threadRandom.nextInt(allIDs.size()));
+                    Integer expected = values.get(randomID);
+                    if (expected == missing) {
+                      expected = null;
+                    }
+                    assertEquals("id=" + randomID, expected, rt.get(randomID));
                   }
                 }
-
-                if (threadRandom.nextInt(10) == 7) {
-                  assertEquals(null, rt.get("foo"));
-                }
-
-                if (allIDs.size() > 0) {
-                  String randomID = allIDs.get(threadRandom.nextInt(allIDs.size()));
-                  Integer expected = values.get(randomID);
-                  if (expected == missing) {
-                    expected = null;
-                  }
-                  assertEquals("id=" + randomID, expected, rt.get(randomID));
-                }
+              } catch (Throwable t) {
+                throw new RuntimeException(t);
               }
-            } catch (Throwable t) {
-              throw new RuntimeException(t);
             }
-          }
-        };
+          };
       threads.add(thread);
       thread.start();
     }
 
     startingGun.countDown();
 
-    for(Thread thread : threads) {
+    for (Thread thread : threads) {
       thread.join();
     }
     mgr.maybeRefresh();

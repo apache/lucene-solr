@@ -39,6 +39,7 @@ public class MatrixEvaluator extends RecursiveNumericListEvaluator implements Ma
   public Object doWork(Object... values) throws IOException {
     double[][] data = new double[values.length][];
     for(int i=0; i<values.length; i++) {
+      @SuppressWarnings({"unchecked"})
       List<Number> vec = (List<Number>)values[i];
       double[] array = new double[vec.size()];
       for(int j=0; j<array.length; j++) {

@@ -131,667 +131,684 @@ public class RemoveFunction {
     }
     return new StreamRemoveFunction(baseExpr,removeExpr);
   });
-}
-class StreamRemoveFunction extends AbstractAnalyticsValueStream {
-  private final AnalyticsValueStream baseExpr;
-  private final AnalyticsValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
 
-  public StreamRemoveFunction(AnalyticsValueStream baseExpr, AnalyticsValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
+  static class StreamRemoveFunction extends AbstractAnalyticsValueStream {
+    private final AnalyticsValueStream baseExpr;
+    private final AnalyticsValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  @Override
-  public void streamObjects(Consumer<Object> cons) {
-    Object removeValue = removeExpr.getObject();
-    if (removeExpr.exists()) {
-      baseExpr.streamObjects(value -> {
-        if (!removeValue.equals(value)) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamObjects(cons);
+    public StreamRemoveFunction(AnalyticsValueStream baseExpr, AnalyticsValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    @Override
+    public void streamObjects(Consumer<Object> cons) {
+      Object removeValue = removeExpr.getObject();
+      if (removeExpr.exists()) {
+        baseExpr.streamObjects(value -> {
+          if (!removeValue.equals(value)) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamObjects(cons);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
+  static class ValueRemoveFunction extends AbstractAnalyticsValue {
+    private final AnalyticsValue baseExpr;
+    private final AnalyticsValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class ValueRemoveFunction extends AbstractAnalyticsValue {
-  private final AnalyticsValue baseExpr;
-  private final AnalyticsValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public ValueRemoveFunction(AnalyticsValue baseExpr, AnalyticsValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public Object getObject() {
-    Object value = baseExpr.getObject();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value.equals(removeExpr.getObject()) ? (removeExpr.exists() ? false : true) : true;
+    public ValueRemoveFunction(AnalyticsValue baseExpr, AnalyticsValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
 
-  @Override
-  public boolean exists() {
-    return exists;
-  }
+    boolean exists = false;
 
-  @Override
-  public String getName() {
-    return name;
-  }
+    @Override
+    public Object getObject() {
+      Object value = baseExpr.getObject();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value.equals(removeExpr.getObject()) ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
 
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
 
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanStreamRemoveFunction extends AbstractBooleanValueStream {
-  private final BooleanValueStream baseExpr;
-  private final BooleanValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    @Override
+    public String getName() {
+      return name;
+    }
 
-  public BooleanStreamRemoveFunction(BooleanValueStream baseExpr, BooleanValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
 
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    boolean removeValue = removeExpr.getBoolean();
-    if (removeExpr.exists()) {
-      baseExpr.streamBooleans(value -> {
-        if (removeValue != value) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamBooleans(cons);
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
+  static class BooleanStreamRemoveFunction extends AbstractBooleanValueStream {
+    private final BooleanValueStream baseExpr;
+    private final BooleanValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanRemoveFunction extends AbstractBooleanValue {
-  private final BooleanValue baseExpr;
-  private final BooleanValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public BooleanRemoveFunction(BooleanValue baseExpr, BooleanValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public boolean getBoolean() {
-    boolean value = baseExpr.getBoolean();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value==removeExpr.getBoolean() ? (removeExpr.exists() ? false : true) : true;
+    public BooleanStreamRemoveFunction(BooleanValueStream baseExpr, BooleanValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntStreamRemoveFunction extends AbstractIntValueStream {
-  private final IntValueStream baseExpr;
-  private final IntValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      boolean removeValue = removeExpr.getBoolean();
+      if (removeExpr.exists()) {
+        baseExpr.streamBooleans(value -> {
+          if (removeValue != value) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamBooleans(cons);
+      }
+    }
 
-  public IntStreamRemoveFunction(IntValueStream baseExpr, IntValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
+    @Override
+    public String getName() {
+      return name;
+    }
 
-  @Override
-  public void streamInts(IntConsumer cons) {
-    int removeValue = removeExpr.getInt();
-    if (removeExpr.exists()) {
-      baseExpr.streamInts(value -> {
-        if (removeValue != value) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamInts(cons);
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntRemoveFunction extends AbstractIntValue {
-  private final IntValue baseExpr;
-  private final IntValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class BooleanRemoveFunction extends AbstractBooleanValue {
+    private final BooleanValue baseExpr;
+    private final BooleanValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public IntRemoveFunction(IntValue baseExpr, IntValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public int getInt() {
-    int value = baseExpr.getInt();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value==removeExpr.getInt() ? (removeExpr.exists() ? false : true) : true;
+    public BooleanRemoveFunction(BooleanValue baseExpr, BooleanValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongStreamRemoveFunction extends AbstractLongValueStream {
-  private final LongValueStream baseExpr;
-  private final LongValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    boolean exists = false;
 
-  public LongStreamRemoveFunction(LongValueStream baseExpr, LongValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
+    @Override
+    public boolean getBoolean() {
+      boolean value = baseExpr.getBoolean();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value==removeExpr.getBoolean() ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
 
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long removeValue = removeExpr.getLong();
-    if (removeExpr.exists()) {
-      baseExpr.streamLongs(value -> {
-        if (removeValue != value) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamLongs(cons);
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongRemoveFunction extends AbstractLongValue {
-  private final LongValue baseExpr;
-  private final LongValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class IntStreamRemoveFunction extends AbstractIntValueStream {
+    private final IntValueStream baseExpr;
+    private final IntValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public LongRemoveFunction(LongValue baseExpr, LongValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = baseExpr.getLong();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value==removeExpr.getLong() ? (removeExpr.exists() ? false : true) : true;
+    public IntStreamRemoveFunction(IntValueStream baseExpr, IntValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatStreamRemoveFunction extends AbstractFloatValueStream {
-  private final FloatValueStream baseExpr;
-  private final FloatValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    @Override
+    public void streamInts(IntConsumer cons) {
+      int removeValue = removeExpr.getInt();
+      if (removeExpr.exists()) {
+        baseExpr.streamInts(value -> {
+          if (removeValue != value) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamInts(cons);
+      }
+    }
 
-  public FloatStreamRemoveFunction(FloatValueStream baseExpr, FloatValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  @Override
-  public void streamFloats(FloatConsumer cons) {
-    float removeValue = removeExpr.getFloat();
-    if (removeExpr.exists()) {
-      baseExpr.streamFloats(value -> {
-        if (removeValue != value) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamFloats(cons);
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatRemoveFunction extends AbstractFloatValue {
-  private final FloatValue baseExpr;
-  private final FloatValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class IntRemoveFunction extends AbstractIntValue {
+    private final IntValue baseExpr;
+    private final IntValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public FloatRemoveFunction(FloatValue baseExpr, FloatValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public float getFloat() {
-    float value = baseExpr.getFloat();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value==removeExpr.getFloat() ? (removeExpr.exists() ? false : true) : true;
+    public IntRemoveFunction(IntValue baseExpr, IntValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleStreamRemoveFunction extends AbstractDoubleValueStream {
-  private final DoubleValueStream baseExpr;
-  private final DoubleValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    boolean exists = false;
 
-  public DoubleStreamRemoveFunction(DoubleValueStream baseExpr, DoubleValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
+    @Override
+    public int getInt() {
+      int value = baseExpr.getInt();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value==removeExpr.getInt() ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
 
-  @Override
-  public void streamDoubles(DoubleConsumer cons) {
-    double removeValue = removeExpr.getDouble();
-    if (removeExpr.exists()) {
-      baseExpr.streamDoubles(value -> {
-        if (removeValue != value) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamDoubles(cons);
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleRemoveFunction extends AbstractDoubleValue {
-  private final DoubleValue baseExpr;
-  private final DoubleValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class LongStreamRemoveFunction extends AbstractLongValueStream {
+    private final LongValueStream baseExpr;
+    private final LongValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public DoubleRemoveFunction(DoubleValue baseExpr, DoubleValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public double getDouble() {
-    double value = baseExpr.getDouble();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value==removeExpr.getDouble() ? (removeExpr.exists() ? false : true) : true;
+    public LongStreamRemoveFunction(LongValueStream baseExpr, LongValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateStreamRemoveFunction extends AbstractDateValueStream {
-  private final DateValueStream baseExpr;
-  private final DateValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long removeValue = removeExpr.getLong();
+      if (removeExpr.exists()) {
+        baseExpr.streamLongs(value -> {
+          if (removeValue != value) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamLongs(cons);
+      }
+    }
 
-  public DateStreamRemoveFunction(DateValueStream baseExpr, DateValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long removeValue = removeExpr.getLong();
-    if (removeExpr.exists()) {
-      baseExpr.streamLongs(value -> {
-        if (removeValue != value) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamLongs(cons);
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateRemoveFunction extends AbstractDateValue {
-  private final DateValue baseExpr;
-  private final DateValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class LongRemoveFunction extends AbstractLongValue {
+    private final LongValue baseExpr;
+    private final LongValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public DateRemoveFunction(DateValue baseExpr, DateValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = baseExpr.getLong();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value==removeExpr.getLong() ? (removeExpr.exists() ? false : true) : true;
+    public LongRemoveFunction(LongValue baseExpr, LongValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class StringStreamRemoveFunction extends AbstractStringValueStream {
-  private final StringValueStream baseExpr;
-  private final StringValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    boolean exists = false;
 
-  public StringStreamRemoveFunction(StringValueStream baseExpr, StringValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
+    @Override
+    public long getLong() {
+      long value = baseExpr.getLong();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value==removeExpr.getLong() ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
 
-  @Override
-  public void streamStrings(Consumer<String> cons) {
-    String removeValue = removeExpr.getString();
-    if (removeExpr.exists()) {
-      baseExpr.streamStrings(value -> {
-        if (!removeValue.equals(value)) cons.accept(value);
-      });
-    } else {
-      baseExpr.streamStrings(cons);
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class StringRemoveFunction extends AbstractStringValue {
-  private final StringValue baseExpr;
-  private final StringValue removeExpr;
-  public static final String name = RemoveFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class FloatStreamRemoveFunction extends AbstractFloatValueStream {
+    private final FloatValueStream baseExpr;
+    private final FloatValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public StringRemoveFunction(StringValue baseExpr, StringValue removeExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.removeExpr = removeExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public String getString() {
-    String value = baseExpr.getString();
-    exists = false;
-    if (baseExpr.exists()) {
-      exists = value.equals(removeExpr.getString()) ? (removeExpr.exists() ? false : true) : true;
+    public FloatStreamRemoveFunction(FloatValueStream baseExpr, FloatValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    @Override
+    public void streamFloats(FloatConsumer cons) {
+      float removeValue = removeExpr.getFloat();
+      if (removeExpr.exists()) {
+        baseExpr.streamFloats(value -> {
+          if (removeValue != value) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamFloats(cons);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
+  static class FloatRemoveFunction extends AbstractFloatValue {
+    private final FloatValue baseExpr;
+    private final FloatValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public FloatRemoveFunction(FloatValue baseExpr, FloatValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    boolean exists = false;
+
+    @Override
+    public float getFloat() {
+      float value = baseExpr.getFloat();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value==removeExpr.getFloat() ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
+
+  static class DoubleStreamRemoveFunction extends AbstractDoubleValueStream {
+    private final DoubleValueStream baseExpr;
+    private final DoubleValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleStreamRemoveFunction(DoubleValueStream baseExpr, DoubleValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    @Override
+    public void streamDoubles(DoubleConsumer cons) {
+      double removeValue = removeExpr.getDouble();
+      if (removeExpr.exists()) {
+        baseExpr.streamDoubles(value -> {
+          if (removeValue != value) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamDoubles(cons);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
+
+  static class DoubleRemoveFunction extends AbstractDoubleValue {
+    private final DoubleValue baseExpr;
+    private final DoubleValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleRemoveFunction(DoubleValue baseExpr, DoubleValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    boolean exists = false;
+
+    @Override
+    public double getDouble() {
+      double value = baseExpr.getDouble();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value==removeExpr.getDouble() ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class DateStreamRemoveFunction extends AbstractDateValueStream {
+    private final DateValueStream baseExpr;
+    private final DateValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DateStreamRemoveFunction(DateValueStream baseExpr, DateValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long removeValue = removeExpr.getLong();
+      if (removeExpr.exists()) {
+        baseExpr.streamLongs(value -> {
+          if (removeValue != value) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamLongs(cons);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class DateRemoveFunction extends AbstractDateValue {
+    private final DateValue baseExpr;
+    private final DateValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DateRemoveFunction(DateValue baseExpr, DateValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    boolean exists = false;
+
+    @Override
+    public long getLong() {
+      long value = baseExpr.getLong();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value==removeExpr.getLong() ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class StringStreamRemoveFunction extends AbstractStringValueStream {
+    private final StringValueStream baseExpr;
+    private final StringValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringStreamRemoveFunction(StringValueStream baseExpr, StringValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    @Override
+    public void streamStrings(Consumer<String> cons) {
+      String removeValue = removeExpr.getString();
+      if (removeExpr.exists()) {
+        baseExpr.streamStrings(value -> {
+          if (!removeValue.equals(value)) cons.accept(value);
+        });
+      } else {
+        baseExpr.streamStrings(cons);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class StringRemoveFunction extends AbstractStringValue {
+    private final StringValue baseExpr;
+    private final StringValue removeExpr;
+    public static final String name = RemoveFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringRemoveFunction(StringValue baseExpr, StringValue removeExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.removeExpr = removeExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,removeExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,removeExpr);
+    }
+
+    boolean exists = false;
+
+    @Override
+    public String getString() {
+      String value = baseExpr.getString();
+      exists = false;
+      if (baseExpr.exists()) {
+        exists = value.equals(removeExpr.getString()) ? (removeExpr.exists() ? false : true) : true;
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 }
+

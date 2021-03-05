@@ -19,7 +19,7 @@ package org.apache.lucene.search.uhighlight;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-
+import java.util.function.Supplier;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.FuzzyQuery;
@@ -34,22 +34,22 @@ import org.apache.lucene.util.automaton.ByteRunAutomaton;
  * @lucene.internal
  */
 final class MultiTermHighlighting {
-  private MultiTermHighlighting() {
-  }
+  private MultiTermHighlighting() {}
 
   /**
-   * Extracts MultiTermQueries that match the provided field predicate.
-   * Returns equivalent automata that will match terms.
+   * Extracts MultiTermQueries that match the provided field predicate. Returns equivalent automata
+   * that will match terms.
    */
-  static LabelledCharArrayMatcher[] extractAutomata(Query query, Predicate<String> fieldMatcher, boolean lookInSpan) {
+  static LabelledCharArrayMatcher[] extractAutomata(
+      Query query, Predicate<String> fieldMatcher, boolean lookInSpan) {
     AutomataCollector collector = new AutomataCollector(lookInSpan, fieldMatcher);
     query.visit(collector);
     return collector.runAutomata.toArray(new LabelledCharArrayMatcher[0]);
   }
 
   /**
-   * Indicates if the the leaf query (from {@link QueryVisitor#visitLeaf(Query)}) is a type of query that
-   * we can extract automata from.
+   * Indicates if the the leaf query (from {@link QueryVisitor#visitLeaf(Query)}) is a type of query
+   * that we can extract automata from.
    */
   public static boolean canExtractAutomataFromLeafQuery(Query query) {
     return query instanceof AutomatonQuery || query instanceof FuzzyQuery;
@@ -80,10 +80,9 @@ final class MultiTermHighlighting {
     }
 
     @Override
-    public void consumeTermsMatching(Query query, String field, ByteRunAutomaton automaton) {
-      runAutomata.add(LabelledCharArrayMatcher.wrap(query.toString(), automaton));
+    public void consumeTermsMatching(
+        Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+      runAutomata.add(LabelledCharArrayMatcher.wrap(query.toString(), automaton.get()));
     }
-
   }
-
 }

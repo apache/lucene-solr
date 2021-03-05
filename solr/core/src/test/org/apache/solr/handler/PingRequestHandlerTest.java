@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -50,6 +51,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Before
+  @SuppressWarnings({"unchecked"})
   public void before() throws IOException {
     // by default, use relative file in dataDir
     healthcheckFile = new File(initAndGetDataDir(), fileName);
@@ -63,6 +65,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     if (healthcheckFile.exists()) FileUtils.forceDelete(healthcheckFile);
 
     handler = new PingRequestHandler();
+    @SuppressWarnings({"rawtypes"})
     NamedList initParams = new NamedList();
     initParams.add(PingRequestHandler.HEALTHCHECK_FILE_PARAM,
                    fileNameParam);
@@ -70,6 +73,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     handler.inform(h.getCore());
   }
   
+  @SuppressWarnings({"rawtypes"})
   public void testPingWithNoHealthCheck() throws Exception {
     
     // for this test, we don't want any healthcheck file configured at all
@@ -185,6 +189,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
       CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(miniCluster.getSolrClient());
 
       // Send distributed and non-distributed ping query

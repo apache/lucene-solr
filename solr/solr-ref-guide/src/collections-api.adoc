@@ -1,6 +1,6 @@
 = Collections API
 :page-children: cluster-node-management, collection-management, collection-aliasing, shard-management, replica-management
-:page-toc: false
+:page-show-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -22,15 +22,15 @@ A SolrCloud cluster includes a number of components. The Collections API is prov
 
 Because this API has a large number of commands and options, we've grouped the commands into the following sub-sections:
 
-*<<cluster-node-management.adoc#cluster-node-management,Cluster and Node Management>>*: Define properties for the entire cluster; check the status of a cluster; remove replicas from a node; utilize a newly added node; add or remove roles for a node.
+*<<cluster-node-management.adoc#,Cluster and Node Management>>*: Define properties for the entire cluster; check the status of a cluster; remove replicas from a node; utilize a newly added node; add or remove roles for a node.
 
-*<<collection-management.adoc#collection-management,Collection Management>>*: Create, list, reload and delete collections; set collection properties; migrate documents to another collection; rebalance leaders; backup and restore collections.
+*<<collection-management.adoc#,Collection Management>>*: Create, list, reload and delete collections; set collection properties; migrate documents to another collection; rebalance leaders; backup and restore collections.
 
-*<<collection-aliasing.adoc#collection-aliasing,Collection Aliasing>>*: Create, list or delete collection aliases; set alias properties.
+*<<collection-aliasing.adoc#,Collection Aliasing>>*: Create, list or delete collection aliases; set alias properties.
 
-*<<shard-management.adoc#shard-management,Shard Management>>*: Create and delete a shard; split a shard into two or more additional shards; force a shard leader.
+*<<shard-management.adoc#,Shard Management>>*: Create and delete a shard; split a shard into two or more additional shards; force a shard leader.
 
-*<<replica-management.adoc#replica-management,Replica Management>>*: Add or delete a replica; set replica properties; move a replica to a different node.
+*<<replica-management.adoc#,Replica Management>>*: Add or delete a replica; set replica properties; move a replica to a different node.
 
 == Asynchronous Calls
 

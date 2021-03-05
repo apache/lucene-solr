@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
@@ -31,10 +30,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Just like the default point format but with additional asserts.
- */
-
+/** Just like the default point format but with additional asserts. */
 public final class AssertingPointsFormat extends PointsFormat {
   private final PointsFormat in;
 
@@ -44,15 +40,15 @@ public final class AssertingPointsFormat extends PointsFormat {
   }
 
   /**
-   * Expert: Create an AssertingPointsFormat.
-   * This is only intended to pass special parameters for testing.
+   * Expert: Create an AssertingPointsFormat. This is only intended to pass special parameters for
+   * testing.
    */
   // TODO: can we randomize this a cleaner way? e.g. stored fields and vectors do
   // this with a separate codec...
   public AssertingPointsFormat(PointsFormat in) {
     this.in = in;
   }
-  
+
   @Override
   public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
     return new AssertingPointsWriter(state, in.fieldsWriter(state));
@@ -63,13 +59,12 @@ public final class AssertingPointsFormat extends PointsFormat {
     return new AssertingPointsReader(state.segmentInfo.maxDoc(), in.fieldsReader(state), false);
   }
 
-  
   static class AssertingPointsReader extends PointsReader {
     private final PointsReader in;
     private final int maxDoc;
     private final boolean merging;
     private final Thread creationThread;
-    
+
     AssertingPointsReader(int maxDoc, PointsReader in, boolean merging) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -80,7 +75,7 @@ public final class AssertingPointsFormat extends PointsFormat {
       assert ramBytesUsed() >= 0;
       assert getChildResources() != null;
     }
-    
+
     @Override
     public void close() throws IOException {
       in.close();
@@ -105,7 +100,7 @@ public final class AssertingPointsFormat extends PointsFormat {
       assert v >= 0;
       return v;
     }
-    
+
     @Override
     public Collection<Accountable> getChildResources() {
       Collection<Accountable> res = in.getChildResources();
@@ -117,7 +112,7 @@ public final class AssertingPointsFormat extends PointsFormat {
     public void checkIntegrity() throws IOException {
       in.checkIntegrity();
     }
-    
+
     @Override
     public PointsReader getMergeInstance() {
       return new AssertingPointsReader(maxDoc, in.getMergeInstance(), true);
@@ -135,11 +130,12 @@ public final class AssertingPointsFormat extends PointsFormat {
     AssertingPointsWriter(SegmentWriteState writeState, PointsWriter in) {
       this.in = in;
     }
-    
+
     @Override
     public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
       if (fieldInfo.getPointDimensionCount() == 0) {
-        throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but pointDimensionalCount is 0");
+        throw new IllegalArgumentException(
+            "writing field=\"" + fieldInfo.name + "\" but pointDimensionalCount is 0");
       }
       in.writeField(fieldInfo, values);
     }

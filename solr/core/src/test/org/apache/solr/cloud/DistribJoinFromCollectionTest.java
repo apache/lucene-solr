@@ -123,7 +123,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   
   @AfterClass
   public static void shutdown() {
-    log.info("DistribJoinFromCollectionTest logic complete ... deleting the " + toColl + " and " + fromColl + " collections");
+    log.info("DistribJoinFromCollectionTest logic complete ... deleting the {} and {} collections", toColl, fromColl);
 
     // try to clean up
     for (String c : new String[]{ toColl, fromColl }) {
@@ -132,7 +132,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
         req.process(cluster.getSolrClient());
       } catch (Exception e) {
         // don't fail the test
-        log.warn("Could not delete collection {} after test completed due to: " + e, c);
+        log.warn("Could not delete collection {} after test completed due to:", c, e);
       }
     }
 

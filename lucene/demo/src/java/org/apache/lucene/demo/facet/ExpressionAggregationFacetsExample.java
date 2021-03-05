@@ -18,7 +18,6 @@ package org.apache.lucene.demo.facet;
 
 import java.io.IOException;
 import java.text.ParseException;
-
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -40,12 +39,11 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-
 
 /** Shows facets aggregation by an expression. */
 public class ExpressionAggregationFacetsExample {
@@ -56,11 +54,12 @@ public class ExpressionAggregationFacetsExample {
 
   /** Empty constructor */
   public ExpressionAggregationFacetsExample() {}
-  
+
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
+    IndexWriter indexWriter =
+        new IndexWriter(
+            indexDir, new IndexWriterConfig(new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
 
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
@@ -76,7 +75,7 @@ public class ExpressionAggregationFacetsExample {
     doc.add(new NumericDocValuesField("popularity", 3L));
     doc.add(new FacetField("A", "C"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
-    
+
     indexWriter.close();
     taxoWriter.close();
   }
@@ -91,8 +90,10 @@ public class ExpressionAggregationFacetsExample {
     // and its popularity field
     Expression expr = JavascriptCompiler.compile("_score * sqrt(popularity)");
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("_score", SortField.Type.SCORE)); // the score of the document
-    bindings.add(new SortField("popularity", SortField.Type.LONG)); // the value of the 'popularity' field
+    bindings.add("_score", DoubleValuesSource.SCORES); // the score of the document
+    bindings.add(
+        "popularity",
+        DoubleValuesSource.fromLongField("popularity")); // the value of the 'popularity' field
 
     // Aggregates the facet values
     FacetsCollector fc = new FacetsCollector(true);
@@ -103,21 +104,23 @@ public class ExpressionAggregationFacetsExample {
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, expr.getDoubleValuesSource(bindings));
+    Facets facets =
+        new TaxonomyFacetSumValueSource(
+            taxoReader, config, fc, expr.getDoubleValuesSource(bindings));
     FacetResult result = facets.getTopChildren(10, "A");
-    
+
     indexReader.close();
     taxoReader.close();
-    
+
     return result;
   }
-  
+
   /** Runs the search example. */
   public FacetResult runSearch() throws IOException, ParseException {
     index();
     return search();
   }
-  
+
   /** Runs the search and drill-down examples and prints the results. */
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");

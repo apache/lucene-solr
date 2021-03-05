@@ -88,7 +88,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     // Search for product
     assertJQ(req("q", "{!join from=" + idField + " to=" + toField + " score=None}name:name2", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'docs':[{'id':'5'},{'id':'6'}]}");
+        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'5'},{'id':'6'}]}");
     
     /*Query joinQuery =
         JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("name", "name2")), indexSearcher, ScoreMode.None);
@@ -99,7 +99,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     assertEquals(5, result.scoreDocs[1].doc);
     */
     assertJQ(req("q", "{!join from=" + idField + " to=" + toField + " score=None}name:name1", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'docs':[{'id':'2'},{'id':'3'}]}");
+        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
 
     /*joinQuery = JoinUtil.createJoinQuery(idField, false, toField, new TermQuery(new Term("name", "name1")), indexSearcher, ScoreMode.None);
     result = indexSearcher.search(joinQuery, 10);
@@ -109,7 +109,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     // Search for offer
     assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=None}id:5", "fl", "id")
-        , "/response=={'numFound':1,'start':0,'docs':[{'id':'4'}]}");
+        , "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'4'}]}");
     /*joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("id", "5")), indexSearcher, ScoreMode.None);
     result = indexSearcher.search(joinQuery, 10);
     assertEquals(1, result.totalHits);
@@ -122,10 +122,10 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   public void testDeleteByScoreJoinQuery() throws Exception {
     indexDataForScorring();
     String joinQuery = "{!join from=" + toField + " to=" + idField + " score=Max}title:random";
-    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'4'}]}");
+    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
     assertU(delQ(joinQuery));
     assertU(commit());
-    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':0,'start':0,'docs':[]}");
+    assertJQ(req("q", joinQuery, "fl", "id"), "/response=={'numFound':0,'start':0,'numFoundExact':true,'docs':[]}");
   }
 
   public void testSimpleWithScoring() throws Exception {
@@ -133,7 +133,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     // Search for movie via subtitle
     assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Max}title:random", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'4'}]}");
+        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
     //dump(req("q","{!scorejoin from="+toField+" to="+idField+" score=Max}title:random", "fl","id,score", "debug", "true"));
     /*
     Query joinQuery =
@@ -149,7 +149,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     // dump(req("q","title:movie", "fl","id,score", "debug", "true"));
     assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Max}title:movie", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'docs':[{'id':'4'},{'id':'1'}]}");
+        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'4'},{'id':'1'}]}");
     
     /*joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Max);
     result = indexSearcher.search(joinQuery, 10);
@@ -159,7 +159,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
     // Score mode total
     assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Total}title:movie", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'4'}]}");
+        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'}]}");
   /*  joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Total);
     result = indexSearcher.search(joinQuery, 10);
     assertEquals(2, result.totalHits);
@@ -168,7 +168,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 */
     //Score mode avg
     assertJQ(req("q", "{!join from=" + toField + " to=" + idField + " score=Avg}title:movie", "fl", "id")
-        , "/response=={'numFound':2,'start':0,'docs':[{'id':'4'},{'id':'1'}]}");
+        , "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'4'},{'id':'1'}]}");
     
   /*  joinQuery = JoinUtil.createJoinQuery(toField, false, idField, new TermQuery(new Term("title", "movie")), indexSearcher, ScoreMode.Avg);
     result = indexSearcher.search(joinQuery, 10);

@@ -16,20 +16,19 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -39,10 +38,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
-public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory
+    implements ResourceLoaderAware {
 
   public static final String NAME = "japanesePartOfSpeechStop";
 
@@ -50,14 +51,17 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   private Set<String> stopTags;
 
   /** Creates a new JapanesePartOfSpeechStopFilterFactory */
-  public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
+  public JapanesePartOfSpeechStopFilterFactory(Map<String, String> args) {
     super(args);
     stopTagFiles = get(args, "tags");
+    if (stopTagFiles == null) {
+      stopTags = JapaneseAnalyzer.getDefaultStopTags();
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public JapanesePartOfSpeechStopFilterFactory() {
     throw defaultCtorException();
@@ -65,13 +69,15 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    stopTags = null;
-    CharArraySet cas = getWordSet(loader, stopTagFiles, false);
-    if (cas != null) {
-      stopTags = new HashSet<>();
-      for (Object element : cas) {
-        char chars[] = (char[]) element;
-        stopTags.add(new String(chars));
+    if (stopTagFiles != null) {
+      stopTags = null;
+      CharArraySet cas = getWordSet(loader, stopTagFiles, false);
+      if (cas != null) {
+        stopTags = new HashSet<>();
+        for (Object element : cas) {
+          char chars[] = (char[]) element;
+          stopTags.add(new String(chars));
+        }
       }
     }
   }

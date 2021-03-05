@@ -16,36 +16,33 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.search.TwoPhaseIterator;
 
 /**
- * A {@link Spans} implementation wrapping another spans instance,
- * allowing to filter spans matches easily by implementing {@link #accept}
+ * A {@link Spans} implementation wrapping another spans instance, allowing to filter spans matches
+ * easily by implementing {@link #accept}
  */
 public abstract class FilterSpans extends Spans {
- 
+
   /** The wrapped spans instance. */
   protected final Spans in;
-  
+
   private boolean atFirstInCurrentDoc = false;
   private int startPos = -1;
-  
+
   /** Wrap the given {@link Spans}. */
   protected FilterSpans(Spans in) {
     this.in = Objects.requireNonNull(in);
   }
-  
-  /** 
-   * Returns YES if the candidate should be an accepted match,
-   * NO if it should not, and NO_MORE_IN_CURRENT_DOC if iteration
-   * should move on to the next document.
+
+  /**
+   * Returns YES if the candidate should be an accepted match, NO if it should not, and
+   * NO_MORE_IN_CURRENT_DOC if iteration should move on to the next document.
    */
   protected abstract AcceptStatus accept(Spans candidate) throws IOException;
-  
+
   @Override
   public final int nextDoc() throws IOException {
     while (true) {
@@ -83,12 +80,12 @@ public abstract class FilterSpans extends Spans {
       return startPos;
     }
 
-    for (;;) {
+    for (; ; ) {
       startPos = in.nextStartPosition();
       if (startPos == NO_MORE_POSITIONS) {
         return NO_MORE_POSITIONS;
       }
-      switch(accept(in)) {
+      switch (accept(in)) {
         case YES:
           return startPos;
         case NO:
@@ -106,8 +103,9 @@ public abstract class FilterSpans extends Spans {
 
   @Override
   public final int endPosition() {
-    return atFirstInCurrentDoc ? -1
-          : (startPos != NO_MORE_POSITIONS) ? in.endPosition() : NO_MORE_POSITIONS;
+    return atFirstInCurrentDoc
+        ? -1
+        : (startPos != NO_MORE_POSITIONS) ? in.endPosition() : NO_MORE_POSITIONS;
   }
 
   @Override
@@ -124,12 +122,12 @@ public abstract class FilterSpans extends Spans {
   public final long cost() {
     return in.cost();
   }
-  
+
   @Override
   public String toString() {
     return "Filter(" + in.toString() + ")";
   }
-  
+
   @Override
   public final TwoPhaseIterator asTwoPhaseIterator() {
     TwoPhaseIterator inner = in.asTwoPhaseIterator();
@@ -152,7 +150,7 @@ public abstract class FilterSpans extends Spans {
         }
       };
     } else {
-      // wrapped instance has no approximation, but 
+      // wrapped instance has no approximation, but
       // we can still defer matching until absolutely needed.
       return new TwoPhaseIterator(in) {
         @Override
@@ -172,7 +170,7 @@ public abstract class FilterSpans extends Spans {
       };
     }
   }
-  
+
   @Override
   public float positionsCost() {
     throw new UnsupportedOperationException(); // asTwoPhaseIterator never returns null
@@ -180,8 +178,8 @@ public abstract class FilterSpans extends Spans {
 
   /**
    * Returns true if the current document matches.
-   * <p>
-   * This is called during two-phase processing.
+   *
+   * <p>This is called during two-phase processing.
    */
   // return true if the current document matches
   @SuppressWarnings("fallthrough")
@@ -189,8 +187,8 @@ public abstract class FilterSpans extends Spans {
     atFirstInCurrentDoc = false;
     startPos = in.nextStartPosition();
     assert startPos != NO_MORE_POSITIONS;
-    for (;;) {
-      switch(accept(in)) {
+    for (; ; ) {
+      switch (accept(in)) {
         case YES:
           atFirstInCurrentDoc = true;
           return true;
@@ -208,9 +206,8 @@ public abstract class FilterSpans extends Spans {
   }
 
   /**
-   * Status returned from {@link FilterSpans#accept(Spans)} that indicates
-   * whether a candidate match should be accepted, rejected, or rejected
-   * and move on to the next document.
+   * Status returned from {@link FilterSpans#accept(Spans)} that indicates whether a candidate match
+   * should be accepted, rejected, or rejected and move on to the next document.
    */
   public static enum AcceptStatus {
     /** Indicates the match should be accepted */
@@ -220,8 +217,8 @@ public abstract class FilterSpans extends Spans {
     NO,
 
     /**
-     * Indicates the match should be rejected, and the enumeration may continue
-     * with the next document.
+     * Indicates the match should be rejected, and the enumeration may continue with the next
+     * document.
      */
     NO_MORE_IN_CURRENT_DOC
   };

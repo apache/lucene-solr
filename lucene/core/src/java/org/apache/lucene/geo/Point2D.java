@@ -17,15 +17,15 @@
 
 package org.apache.lucene.geo;
 
+import static org.apache.lucene.geo.GeoUtils.orient;
+
 import org.apache.lucene.index.PointValues;
 
-/**
- * 2D point implementation containing geo spatial logic.
- */
+/** 2D point implementation containing geo spatial logic. */
 final class Point2D implements Component2D {
 
-  final private double x;
-  final private double y;
+  private final double x;
+  private final double y;
 
   private Point2D(double x, double y) {
     this.x = x;
@@ -66,20 +66,99 @@ final class Point2D implements Component2D {
   }
 
   @Override
-  public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                             double ax, double ay, double bx, double by, double cx, double cy) {
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      return contains(ax, ay) ? PointValues.Relation.CELL_INSIDE_QUERY : PointValues.Relation.CELL_OUTSIDE_QUERY;
-    }
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy)) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
-    }
-    return PointValues.Relation.CELL_OUTSIDE_QUERY;
+  public boolean intersectsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
+    return Component2D.containsPoint(x, y, minX, maxX, minY, maxY)
+        && orient(aX, aY, bX, bY, x, y) == 0;
   }
 
   @Override
-  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
-                                       double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
+  public boolean intersectsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    return Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, aX, aY, bX, bY, cX, cY);
+  }
+
+  @Override
+  public boolean containsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
+    return false;
+  }
+
+  @Override
+  public boolean containsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    return false;
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return contains(x, y) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY) {
+    // can be improved?
+    return intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)
+        ? WithinRelation.CANDIDATE
+        : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY,
+      boolean bc,
+      double cX,
+      double cY,
+      boolean ca) {
     if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, aX, aY, bX, bY, cX, cY)) {
       return WithinRelation.CANDIDATE;
     }
@@ -88,8 +167,17 @@ final class Point2D implements Component2D {
 
   /** create a Point2D component tree from a LatLon point */
   static Component2D create(Point point) {
-    return new Point2D(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(point.getLon())),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(point.getLat())));
+    // Points behave as rectangles
+    double qLat =
+        point.getLat() == GeoUtils.MAX_LAT_INCL
+            ? point.getLat()
+            : GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitudeCeil(point.getLat()));
+    double qLon =
+        point.getLon() == GeoUtils.MAX_LON_INCL
+            ? point.getLon()
+            : GeoEncodingUtils.decodeLongitude(
+                GeoEncodingUtils.encodeLongitudeCeil(point.getLon()));
+    return new Point2D(qLon, qLat);
   }
 
   /** create a Point2D component tree from a XY point */

@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Lucene codecs and postings formats'
+
 dependencies {
     implementation project(':lucene:core')
     testImplementation project(':lucene:test-framework')

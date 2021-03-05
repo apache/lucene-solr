@@ -18,10 +18,8 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.HashKey;
@@ -206,15 +204,14 @@ public class RollupStream extends TupleStream implements Expressible {
             return tuple;
           }
 
-          Map<String,Object> map = new HashMap<String,Object>();
+          Tuple t = new Tuple();
           for(Metric metric : currentMetrics) {
-            map.put(metric.getIdentifier(), metric.getValue());
+            t.put(metric.getIdentifier(), metric.getValue());
           }
 
           for(int i=0; i<buckets.length; i++) {
-            map.put(buckets[i].toString(), currentKey.getParts()[i]);
+            t.put(buckets[i].toString(), currentKey.getParts()[i]);
           }
-          Tuple t = new Tuple(map);
           tupleStream.pushBack(tuple);
           finished = true;
           return t;
@@ -237,15 +234,14 @@ public class RollupStream extends TupleStream implements Expressible {
       } else {
         Tuple t = null;
         if(currentMetrics != null) {
-          Map<String,Object> map = new HashMap<String,Object>();
+          t = new Tuple();
           for(Metric metric : currentMetrics) {
-            map.put(metric.getIdentifier(), metric.getValue());
+            t.put(metric.getIdentifier(), metric.getValue());
           }
 
           for(int i=0; i<buckets.length; i++) {
-            map.put(buckets[i].toString(), currentKey.getParts()[i]);
+            t.put(buckets[i].toString(), currentKey.getParts()[i]);
           }
-          t = new Tuple(map);
         }
 
         currentKey = hashKey;

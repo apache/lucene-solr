@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.util.FrequencyTrackingRingBuffer;
 
 /**
- * A {@link QueryCachingPolicy} that tracks usage statistics of recently-used
- * filters in order to decide on which filters are worth caching.
+ * A {@link QueryCachingPolicy} that tracks usage statistics of recently-used filters in order to
+ * decide on which filters are worth caching.
  *
  * @lucene.experimental
  */
@@ -48,10 +46,10 @@ public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
     // This does not measure the cost of iterating over the filter (for this we
     // already have the DocIdSetIterator#cost API) but the cost to build the
     // DocIdSet in the first place
-    return query instanceof MultiTermQuery ||
-        query instanceof MultiTermQueryConstantScoreWrapper ||
-        query instanceof TermInSetQuery ||
-        isPointQuery(query);
+    return query instanceof MultiTermQuery
+        || query instanceof MultiTermQueryConstantScoreWrapper
+        || query instanceof TermInSetQuery
+        || isPointQuery(query);
   }
 
   private static boolean shouldNeverCache(Query query) {
@@ -61,7 +59,8 @@ public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
     }
 
     if (query instanceof DocValuesFieldExistsQuery) {
-      // We do not bother caching DocValuesFieldExistsQuery queries since they are already plenty fast.
+      // We do not bother caching DocValuesFieldExistsQuery queries since they are already plenty
+      // fast.
       return true;
     }
 
@@ -96,31 +95,31 @@ public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
   private final FrequencyTrackingRingBuffer recentlyUsedFilters;
 
   /**
-   * Expert: Create a new instance with a configurable history size. Beware of
-   * passing too large values for the size of the history, either
-   * {@link #minFrequencyToCache} returns low values and this means some filters
-   * that are rarely used will be cached, which would hurt performance. Or
-   * {@link #minFrequencyToCache} returns high values that are function of the
-   * size of the history but then filters will be slow to make it to the cache.
+   * Expert: Create a new instance with a configurable history size. Beware of passing too large
+   * values for the size of the history, either {@link #minFrequencyToCache} returns low values and
+   * this means some filters that are rarely used will be cached, which would hurt performance. Or
+   * {@link #minFrequencyToCache} returns high values that are function of the size of the history
+   * but then filters will be slow to make it to the cache.
    *
-   * @param historySize               the number of recently used filters to track
+   * @param historySize the number of recently used filters to track
    */
   public UsageTrackingQueryCachingPolicy(int historySize) {
     this.recentlyUsedFilters = new FrequencyTrackingRingBuffer(historySize, SENTINEL);
   }
 
-  /** Create a new instance with an history size of 256. This should be a good
-   *  default for most cases. */
+  /**
+   * Create a new instance with an history size of 256. This should be a good default for most
+   * cases.
+   */
   public UsageTrackingQueryCachingPolicy() {
     this(256);
   }
 
   /**
-   * For a given filter, return how many times it should appear in the history
-   * before being cached. The default implementation returns 2 for filters that
-   * need to evaluate against the entire index to build a {@link DocIdSetIterator},
-   * like {@link MultiTermQuery}, point-based queries or {@link TermInSetQuery},
-   * and 5 for other filters.
+   * For a given filter, return how many times it should appear in the history before being cached.
+   * The default implementation returns 2 for filters that need to evaluate against the entire index
+   * to build a {@link DocIdSetIterator}, like {@link MultiTermQuery}, point-based queries or {@link
+   * TermInSetQuery}, and 5 for other filters.
    */
   protected int minFrequencyToCache(Query query) {
     if (isCostly(query)) {
@@ -128,8 +127,7 @@ public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
     } else {
       // default: cache after the filter has been seen 5 times
       int minFrequency = 5;
-      if (query instanceof BooleanQuery
-          || query instanceof DisjunctionMaxQuery) {
+      if (query instanceof BooleanQuery || query instanceof DisjunctionMaxQuery) {
         // Say you keep reusing a boolean query that looks like "A OR B" and
         // never use the A and B queries out of that context. 5 times after it
         // has been used, we would cache both A, B and A OR B, which is
@@ -184,5 +182,4 @@ public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
     final int minFrequency = minFrequencyToCache(query);
     return frequency >= minFrequency;
   }
-
 }

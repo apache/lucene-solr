@@ -99,6 +99,7 @@ public class SolrSuggester implements Accountable {
    * Uses the <code>config</code> and the <code>core</code> to initialize the underlying 
    * Lucene suggester
    * */
+  @SuppressWarnings({"unchecked"})
   public String init(NamedList<?> config, SolrCore core) {
     log.info("init: {}", config);
     
@@ -148,7 +149,7 @@ public class SolrSuggester implements Accountable {
         storeDir.mkdirs();
       } else if (getStoreFile().exists()) {
         if (log.isDebugEnabled()) {
-          log.debug("attempt reload of the stored lookup from file " + getStoreFile());
+          log.debug("attempt reload of the stored lookup from file {}", getStoreFile());
         }
         try {
           lookup.load(new FileInputStream(getStoreFile()));

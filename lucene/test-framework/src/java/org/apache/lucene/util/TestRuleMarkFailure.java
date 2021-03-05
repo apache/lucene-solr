@@ -18,23 +18,20 @@ package org.apache.lucene.util;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-/**
- * A rule for marking failed tests and suites.
- */
+/** A rule for marking failed tests and suites. */
 public final class TestRuleMarkFailure implements TestRule {
-  private final TestRuleMarkFailure [] chained;
+  private final TestRuleMarkFailure[] chained;
   private volatile boolean failures;
 
   public TestRuleMarkFailure(TestRuleMarkFailure... chained) {
     this.chained = chained;
   }
-  
+
   @Override
   public Statement apply(final Statement s, Description d) {
     return new Statement() {
@@ -56,8 +53,7 @@ public final class TestRuleMarkFailure implements TestRule {
   }
 
   /**
-   * Is a given exception (or a MultipleFailureException) an 
-   * {@link AssumptionViolatedException}?
+   * Is a given exception (or a MultipleFailureException) an {@link AssumptionViolatedException}?
    */
   public static boolean isAssumption(Throwable t) {
     for (Throwable t2 : expandFromMultiple(t)) {
@@ -68,9 +64,7 @@ public final class TestRuleMarkFailure implements TestRule {
     return true;
   }
 
-  /**
-   * Expand from multi-exception wrappers.
-   */
+  /** Expand from multi-exception wrappers. */
   private static List<Throwable> expandFromMultiple(Throwable t) {
     return expandFromMultiple(t, new ArrayList<Throwable>());
   }
@@ -88,9 +82,7 @@ public final class TestRuleMarkFailure implements TestRule {
     return list;
   }
 
-  /**
-   * Taints this object and any chained as having failures.
-   */
+  /** Taints this object and any chained as having failures. */
   public void markFailed() {
     failures = true;
     for (TestRuleMarkFailure next : chained) {
@@ -98,16 +90,12 @@ public final class TestRuleMarkFailure implements TestRule {
     }
   }
 
-  /**
-   * Check if this object had any marked failures.
-   */
+  /** Check if this object had any marked failures. */
   public boolean hadFailures() {
     return failures;
   }
 
-  /**
-   * Check if this object was successful (the opposite of {@link #hadFailures()}). 
-   */
+  /** Check if this object was successful (the opposite of {@link #hadFailures()}). */
   public boolean wasSuccessful() {
     return !hadFailures();
   }

@@ -16,75 +16,66 @@
  */
 package org.apache.lucene.analysis.cjk;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Tests for {@link CJKWidthFilter}
- */
+/** Tests for {@link CJKWidthFilter} */
 public class TestCJKWidthFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new CJKWidthFilter(source));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new CJKWidthFilter(source));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
-  /**
-   * Full-width ASCII forms normalized to half-width (basic latin)
-   */
+
+  /** Full-width ASCII forms normalized to half-width (basic latin) */
   public void testFullWidthASCII() throws IOException {
-    assertAnalyzesTo(analyzer, "Ｔｅｓｔ １２３４",
-      new String[] { "Test",  "1234" },
-      new int[] { 0, 5 },
-      new int[] { 4, 9 });
+    assertAnalyzesTo(
+        analyzer, "Ｔｅｓｔ １２３４", new String[] {"Test", "1234"}, new int[] {0, 5}, new int[] {4, 9});
   }
-  
+
   /**
-   * Half-width katakana forms normalized to standard katakana.
-   * A bit trickier in some cases, since half-width forms are decomposed
-   * and voice marks need to be recombined with a preceding base form. 
+   * Half-width katakana forms normalized to standard katakana. A bit trickier in some cases, since
+   * half-width forms are decomposed and voice marks need to be recombined with a preceding base
+   * form.
    */
   public void testHalfWidthKana() throws IOException {
-    assertAnalyzesTo(analyzer, "ｶﾀｶﾅ",
-      new String[] { "カタカナ" });
-    assertAnalyzesTo(analyzer, "ｳﾞｨｯﾂ",
-      new String[] { "ヴィッツ" });
-    assertAnalyzesTo(analyzer, "ﾊﾟﾅｿﾆｯｸ",
-      new String[] { "パナソニック" });
+    assertAnalyzesTo(analyzer, "ｶﾀｶﾅ", new String[] {"カタカナ"});
+    assertAnalyzesTo(analyzer, "ｳﾞｨｯﾂ", new String[] {"ヴィッツ"});
+    assertAnalyzesTo(analyzer, "ﾊﾟﾅｿﾆｯｸ", new String[] {"パナソニック"});
   }
-  
+
   public void testRandomData() throws IOException {
     checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new CJKWidthFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new CJKWidthFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

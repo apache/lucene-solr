@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-
 import org.apache.lucene.benchmark.byTask.feeds.AbstractQueryMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
@@ -45,58 +44,72 @@ public class TestPerfTasksParse extends LuceneTestCase {
   static final String INDENT = "  ";
 
   // properties in effect in all tests here
-  static final String propPart = 
-    INDENT + "directory=ByteBuffersDirectory" + NEW_LINE +
-    INDENT + "print.props=false" + NEW_LINE;
+  static final String propPart =
+      INDENT
+          + "directory=ByteBuffersDirectory"
+          + NEW_LINE
+          + INDENT
+          + "print.props=false"
+          + NEW_LINE;
 
   /** Test the repetiotion parsing for parallel tasks */
   public void testParseParallelTaskSequenceRepetition() throws Exception {
     String taskStr = "AddDoc";
-    String parsedTasks = "[ "+taskStr+" ] : 1000";
-    Benchmark benchmark = new Benchmark(new StringReader(propPart+parsedTasks));
+    String parsedTasks = "[ " + taskStr + " ] : 1000";
+    Benchmark benchmark = new Benchmark(new StringReader(propPart + parsedTasks));
     Algorithm alg = benchmark.getAlgorithm();
     ArrayList<PerfTask> algTasks = alg.extractTasks();
     boolean foundAdd = false;
     for (final PerfTask task : algTasks) {
-       if (task.toString().indexOf(taskStr)>=0) {
-          foundAdd = true;
-       }
-       if (task instanceof TaskSequence) {
-         assertEquals("repetions should be 1000 for "+parsedTasks, 1000, ((TaskSequence) task).getRepetitions());
-         assertTrue("sequence for "+parsedTasks+" should be parallel!", ((TaskSequence) task).isParallel());
-       }
-       assertTrue("Task "+taskStr+" was not found in "+alg.toString(),foundAdd);
+      if (task.toString().indexOf(taskStr) >= 0) {
+        foundAdd = true;
+      }
+      if (task instanceof TaskSequence) {
+        assertEquals(
+            "repetions should be 1000 for " + parsedTasks,
+            1000,
+            ((TaskSequence) task).getRepetitions());
+        assertTrue(
+            "sequence for " + parsedTasks + " should be parallel!",
+            ((TaskSequence) task).isParallel());
+      }
+      assertTrue("Task " + taskStr + " was not found in " + alg.toString(), foundAdd);
     }
   }
 
-  /** Test the repetiotion parsing for sequential  tasks */
+  /** Test the repetiotion parsing for sequential tasks */
   public void testParseTaskSequenceRepetition() throws Exception {
     String taskStr = "AddDoc";
-    String parsedTasks = "{ "+taskStr+" } : 1000";
-    Benchmark benchmark = new Benchmark(new StringReader(propPart+parsedTasks));
+    String parsedTasks = "{ " + taskStr + " } : 1000";
+    Benchmark benchmark = new Benchmark(new StringReader(propPart + parsedTasks));
     Algorithm alg = benchmark.getAlgorithm();
     ArrayList<PerfTask> algTasks = alg.extractTasks();
     boolean foundAdd = false;
     for (final PerfTask task : algTasks) {
-       if (task.toString().indexOf(taskStr)>=0) {
-          foundAdd = true;
-       }
-       if (task instanceof TaskSequence) {
-         assertEquals("repetions should be 1000 for "+parsedTasks, 1000, ((TaskSequence) task).getRepetitions());
-         assertFalse("sequence for "+parsedTasks+" should be sequential!", ((TaskSequence) task).isParallel());
-       }
-       assertTrue("Task "+taskStr+" was not found in "+alg.toString(),foundAdd);
+      if (task.toString().indexOf(taskStr) >= 0) {
+        foundAdd = true;
+      }
+      if (task instanceof TaskSequence) {
+        assertEquals(
+            "repetions should be 1000 for " + parsedTasks,
+            1000,
+            ((TaskSequence) task).getRepetitions());
+        assertFalse(
+            "sequence for " + parsedTasks + " should be sequential!",
+            ((TaskSequence) task).isParallel());
+      }
+      assertTrue("Task " + taskStr + " was not found in " + alg.toString(), foundAdd);
     }
   }
-  
+
   public static class MockContentSource extends ContentSource {
     @Override
-    public DocData getNextDocData(DocData docData)
-        throws NoMoreDataException, IOException {
+    public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
       return docData;
     }
+
     @Override
-    public void close() throws IOException { }
+    public void close() throws IOException {}
   }
 
   public static class MockQueryMaker extends AbstractQueryMaker {
@@ -105,8 +118,8 @@ public class TestPerfTasksParse extends LuceneTestCase {
       return new Query[0];
     }
   }
-  
-  /** Test the parsing of example scripts **/
+
+  /** Test the parsing of example scripts * */
   @SuppressWarnings("try")
   public void testParseExamples() throws Exception {
     // hackedy-hack-hack
@@ -116,14 +129,23 @@ public class TestPerfTasksParse extends LuceneTestCase {
       for (Path path : stream) {
         Config config = new Config(Files.newBufferedReader(path, StandardCharsets.UTF_8));
         String contentSource = config.get("content.source", null);
-        if (contentSource != null) { Class.forName(contentSource); }
-        config.set("work.dir", createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toAbsolutePath().toString());
+        if (contentSource != null) {
+          Class.forName(contentSource);
+        }
+        config.set(
+            "work.dir",
+            createTempDir(LuceneTestCase.getTestClass().getSimpleName())
+                .toAbsolutePath()
+                .toString());
         config.set("content.source", MockContentSource.class.getName());
         String dir = config.get("content.source", null);
-        if (dir != null) { Class.forName(dir); }
+        if (dir != null) {
+          Class.forName(dir);
+        }
         config.set("directory", "ByteBuffersDirectory");
         if (config.get("line.file.out", null) != null) {
-          config.set("line.file.out", createTempFile("linefile", ".txt").toAbsolutePath().toString());
+          config.set(
+              "line.file.out", createTempFile("linefile", ".txt").toAbsolutePath().toString());
         }
         if (config.get("query.maker", null) != null) {
           Class.forName(config.get("query.maker", null));

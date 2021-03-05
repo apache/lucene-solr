@@ -53,20 +53,20 @@ public interface NavigableObject {
   /**Iterate through the entries of a navigable Object at a certain path
    * @param path the json path
    */
-  default void _forEachEntry(String path, BiConsumer fun) {
+  default void _forEachEntry(String path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Utils.forEachMapEntry(this, path, fun);
   }
 
   /**Iterate through the entries of a navigable Object at a certain path
    * @param path the json path
    */
-  default void _forEachEntry(List<String> path, BiConsumer fun) {
+  default void _forEachEntry(List<String> path, @SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Utils.forEachMapEntry(this, path, fun);
   }
 
   /**Iterate through each entry in this object
    */
-  default void _forEachEntry(BiConsumer fun) {
+  default void _forEachEntry(@SuppressWarnings({"rawtypes"})BiConsumer fun) {
     Utils.forEachMapEntry(this, fun);
   }
 
@@ -85,5 +85,11 @@ public interface NavigableObject {
   default String _getStr(List<String> path, String def) {
     Object v = Utils.getObjectByPath(this, false, path);
     return v == null ? def : String.valueOf(v);
+  }
+
+  default int _size() {
+    int[] size = new int[1];
+    _forEachEntry((k, v) -> size[0]++);
+    return size[0];
   }
 }

@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
@@ -32,7 +31,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
   public void testFeature() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     doc.add(new FeatureField("field", "name", 30F));
@@ -66,7 +66,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
   public void testFeatureMissing() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
@@ -98,14 +99,15 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
   public void testFeatureMissingFieldInSegment() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
     writer.commit();
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     assertEquals(1, ir.leaves().size());
     LeafReaderContext context = ir.leaves().get(0);
     DoubleValuesSource valuesSource = FeatureField.newDoubleValues("field", "name");
@@ -120,7 +122,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
   public void testFeatureMissingFeatureNameInSegment() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     doc.add(new FeatureField("field", "different_name", 0.5F));
@@ -128,7 +131,7 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     writer.commit();
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     assertEquals(1, ir.leaves().size());
     LeafReaderContext context = ir.leaves().get(0);
     DoubleValuesSource valuesSource = FeatureField.newDoubleValues("field", "name");
@@ -143,7 +146,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
   public void testFeatureMultipleMissing() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
@@ -184,51 +188,56 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   public void testHashCodeAndEquals() {
-    FeatureDoubleValuesSource valuesSource = new FeatureDoubleValuesSource("test_field", "test_feature");
+    FeatureDoubleValuesSource valuesSource =
+        new FeatureDoubleValuesSource("test_field", "test_feature");
     FeatureDoubleValuesSource equal = new FeatureDoubleValuesSource("test_field", "test_feature");
 
-    FeatureDoubleValuesSource differentField = new FeatureDoubleValuesSource("other field", "test_feature");
-    FeatureDoubleValuesSource differentFeature = new FeatureDoubleValuesSource("test_field", "other_feature");
-    DoubleValuesSource otherImpl = new DoubleValuesSource() {
-      
-      @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return false;
-      }
-      
-      @Override
-      public String toString() {
-        return null;
-      }
-      
-      @Override
-      public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
-        return null;
-      }
-      
-      @Override
-      public boolean needsScores() {
-        return false;
-      }
-      
-      @Override
-      public int hashCode() {
-        return 0;
-      }
-      
-      @Override
-      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        return null;
-      }
-      
-      @Override
-      public boolean equals(Object obj) {
-        return false;
-      }
-    };
-    
+    FeatureDoubleValuesSource differentField =
+        new FeatureDoubleValuesSource("other field", "test_feature");
+    FeatureDoubleValuesSource differentFeature =
+        new FeatureDoubleValuesSource("test_field", "other_feature");
+    DoubleValuesSource otherImpl =
+        new DoubleValuesSource() {
+
+          @Override
+          public boolean isCacheable(LeafReaderContext ctx) {
+            return false;
+          }
+
+          @Override
+          public String toString() {
+            return null;
+          }
+
+          @Override
+          public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
+            return null;
+          }
+
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
+
+          @Override
+          public int hashCode() {
+            return 0;
+          }
+
+          @Override
+          public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores)
+              throws IOException {
+            return null;
+          }
+
+          @Override
+          public boolean equals(Object obj) {
+            return false;
+          }
+        };
+
     assertTrue(valuesSource.equals(equal));
     assertEquals(valuesSource.hashCode(), equal.hashCode());
     assertFalse(valuesSource.equals(null));

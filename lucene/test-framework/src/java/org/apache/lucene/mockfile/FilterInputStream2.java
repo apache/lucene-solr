@@ -21,31 +21,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
-/**  
- * A {@code FilterInputStream2} contains another 
- * {@code InputStream}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
- * <p>
- * Note: unlike {@link FilterInputStream} this class
- * delegates every method by default. This means to transform
- * {@code read} calls, you need to override multiple methods.
- * On the other hand, it is less trappy: a simple implementation 
- * that just overrides {@code close} will not force bytes to be 
- * read one-at-a-time.
+/**
+ * A {@code FilterInputStream2} contains another {@code InputStream}, which it uses as its basic
+ * source of data, possibly transforming the data along the way or providing additional
+ * functionality.
+ *
+ * <p>Note: unlike {@link FilterInputStream} this class delegates every method by default. This
+ * means to transform {@code read} calls, you need to override multiple methods. On the other hand,
+ * it is less trappy: a simple implementation that just overrides {@code close} will not force bytes
+ * to be read one-at-a-time.
  */
 public class FilterInputStream2 extends InputStream {
-  
-  /** 
-   * The underlying {@code InputStream} instance. 
-   */
+
+  /** The underlying {@code InputStream} instance. */
   protected final InputStream delegate;
-  
+
   /**
-   * Construct a {@code FilterInputStream2} based on 
-   * the specified base stream.
-   * <p>
-   * Note that base stream is closed if this stream is closed.
+   * Construct a {@code FilterInputStream2} based on the specified base stream.
+   *
+   * <p>Note that base stream is closed if this stream is closed.
+   *
    * @param delegate specified base stream.
    */
   public FilterInputStream2(InputStream delegate) {

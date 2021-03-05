@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
- * Bounding box wider than PI but limited on left and right sides (
- * left lon, right lon).
+ * Bounding box wider than PI but limited on left and right sides ( left lon, right lon).
  *
  * @lucene.internal
  */
@@ -44,28 +43,33 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
   protected final GeoPoint centerPoint;
 
   /** A point on the edge of the shape */
-  protected final GeoPoint[] edgePoints; 
+  protected final GeoPoint[] edgePoints;
 
   /**
-   * Accepts only values in the following ranges: lon: {@code -PI -> PI}.
-   * Horizantal angle must be greater than or equal to PI.
-   *@param planetModel is the planet model.
-   *@param leftLon is the left longitude.
-   *@param rightLon is the right longitude.
+   * Accepts only values in the following ranges: lon: {@code -PI -> PI}. Horizantal angle must be
+   * greater than or equal to PI.
+   *
+   * @param planetModel is the planet model.
+   * @param leftLon is the left longitude.
+   * @param rightLon is the right longitude.
    */
-  public GeoWideLongitudeSlice(final PlanetModel planetModel, final double leftLon, double rightLon) {
+  public GeoWideLongitudeSlice(
+      final PlanetModel planetModel, final double leftLon, double rightLon) {
     super(planetModel);
     // Argument checking
-    if (leftLon < -Math.PI || leftLon > Math.PI)
+    if (leftLon < -Math.PI || leftLon > Math.PI) {
       throw new IllegalArgumentException("Left longitude out of range");
-    if (rightLon < -Math.PI || rightLon > Math.PI)
+    }
+    if (rightLon < -Math.PI || rightLon > Math.PI) {
       throw new IllegalArgumentException("Right longitude out of range");
+    }
     double extent = rightLon - leftLon;
     if (extent < 0.0) {
       extent += 2.0 * Math.PI;
     }
-    if (extent < Math.PI)
+    if (extent < Math.PI) {
       throw new IllegalArgumentException("Width of rectangle too small");
+    }
 
     this.leftLon = leftLon;
     this.rightLon = rightLon;
@@ -81,27 +85,32 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
     }
     double middleLon = (leftLon + rightLon) * 0.5;
     while (middleLon > Math.PI) {
-        middleLon -= Math.PI * 2.0;
+      middleLon -= Math.PI * 2.0;
     }
     while (middleLon < -Math.PI) {
-        middleLon += Math.PI * 2.0;
+      middleLon += Math.PI * 2.0;
     }
     this.centerPoint = new GeoPoint(planetModel, 0.0, middleLon);
 
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
-    
-    this.planePoints = new GeoPoint[]{planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
-    this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
+
+    this.planePoints = new GeoPoint[] {planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
+    this.edgePoints = new GeoPoint[] {planetModel.NORTH_POLE};
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoWideLongitudeSlice(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  public GeoWideLongitudeSlice(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
+    this(
+        planetModel,
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream));
   }
 
   @Override
@@ -114,29 +123,31 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
   public GeoBBox expand(final double angle) {
     // Figuring out when we escalate to a special case requires some prefiguring
     double currentLonSpan = rightLon - leftLon;
-    if (currentLonSpan < 0.0)
+    if (currentLonSpan < 0.0) {
       currentLonSpan += Math.PI * 2.0;
+    }
     double newLeftLon = leftLon - angle;
     double newRightLon = rightLon + angle;
     if (currentLonSpan + 2.0 * angle >= Math.PI * 2.0) {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(planetModel, Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(
+        planetModel, Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
   }
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return leftPlane.isWithin(x, y, z) ||
-        rightPlane.isWithin(x, y, z);
+    return leftPlane.isWithin(x, y, z) || rightPlane.isWithin(x, y, z);
   }
 
   @Override
   public double getRadius() {
     // Compute the extent and divide by two
     double extent = rightLon - leftLon;
-    if (extent < 0.0)
+    if (extent < 0.0) {
       extent += Math.PI * 2.0;
+    }
     return Math.max(Math.PI * 0.5, extent * 0.5);
   }
 
@@ -151,51 +162,55 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
-    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-    return p.intersects(planetModel, leftPlane, notablePoints, planePoints, bounds) ||
-        p.intersects(planetModel, rightPlane, notablePoints, planePoints, bounds);
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part
+    // of one requires crossing into the right part of the other.  So intersection can ignore the
+    // left/right bounds.
+    return p.intersects(planetModel, leftPlane, notablePoints, planePoints, bounds)
+        || p.intersects(planetModel, rightPlane, notablePoints, planePoints, bounds);
   }
 
   @Override
   public boolean intersects(final GeoShape geoShape) {
-    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
-    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-    return geoShape.intersects(leftPlane, planePoints) ||
-        geoShape.intersects(rightPlane, planePoints);
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part
+    // of one requires crossing into the right part of the other.  So intersection can ignore the
+    // left/right bounds.
+    return geoShape.intersects(leftPlane, planePoints)
+        || geoShape.intersects(rightPlane, planePoints);
   }
 
   @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
-    bounds.isWide()
-      .addVerticalPlane(planetModel, leftLon, leftPlane)
-      .addVerticalPlane(planetModel, rightLon, rightPlane)
-      .addIntersection(planetModel, leftPlane, rightPlane)
-      .addPoint(planetModel.NORTH_POLE)
-      .addPoint(planetModel.SOUTH_POLE);
+    bounds
+        .isWide()
+        .addVerticalPlane(planetModel, leftLon, leftPlane)
+        .addVerticalPlane(planetModel, rightLon, rightPlane)
+        .addIntersection(planetModel, leftPlane, rightPlane)
+        .addPoint(planetModel.NORTH_POLE)
+        .addPoint(planetModel.SOUTH_POLE);
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    // Because the rectangle exceeds 180 degrees, it is safe to compute the horizontally 
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    // Because the rectangle exceeds 180 degrees, it is safe to compute the horizontally
     // unbounded distance to both the left and the right and only take the minimum of the two.
-    final double leftDistance = distanceStyle.computeDistance(planetModel, leftPlane, x,y,z);
-    final double rightDistance = distanceStyle.computeDistance(planetModel, rightPlane, x,y,z);
-    
-    final double northDistance = distanceStyle.computeDistance(planetModel.NORTH_POLE, x,y,z);
-    final double southDistance = distanceStyle.computeDistance(planetModel.SOUTH_POLE, x,y,z);
-    
-    return Math.min(
-      Math.min(leftDistance, rightDistance),
-      Math.min(northDistance, southDistance));
+    final double leftDistance = distanceStyle.computeDistance(planetModel, leftPlane, x, y, z);
+    final double rightDistance = distanceStyle.computeDistance(planetModel, rightPlane, x, y, z);
+
+    final double northDistance = distanceStyle.computeDistance(planetModel.NORTH_POLE, x, y, z);
+    final double southDistance = distanceStyle.computeDistance(planetModel.SOUTH_POLE, x, y, z);
+
+    return Math.min(Math.min(leftDistance, rightDistance), Math.min(northDistance, southDistance));
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoWideLongitudeSlice))
+    if (!(o instanceof GeoWideLongitudeSlice)) {
       return false;
+    }
     GeoWideLongitudeSlice other = (GeoWideLongitudeSlice) o;
     return super.equals(other) && other.leftLon == leftLon && other.rightLon == rightLon;
   }
@@ -212,7 +227,16 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
 
   @Override
   public String toString() {
-    return "GeoWideLongitudeSlice: {planetmodel="+planetModel+", leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
+    return "GeoWideLongitudeSlice: {planetmodel="
+        + planetModel
+        + ", leftlon="
+        + leftLon
+        + "("
+        + leftLon * 180.0 / Math.PI
+        + "), rightlon="
+        + rightLon
+        + "("
+        + rightLon * 180.0 / Math.PI
+        + ")}";
   }
 }
-  

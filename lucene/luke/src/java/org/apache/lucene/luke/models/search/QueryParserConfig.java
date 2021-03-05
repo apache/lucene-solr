@@ -22,17 +22,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.document.DateTools;
 
-/**
- * Configurations for query parser.
- */
+/** Configurations for query parser. */
 public final class QueryParserConfig {
 
   /** query operators */
   public enum Operator {
-    AND, OR
+    AND,
+    OR
   }
 
   private final boolean useClassicParser;
@@ -169,7 +167,8 @@ public final class QueryParserConfig {
     this.locale = builder.locale;
     this.timeZone = builder.timeZone;
     this.phraseSlop = builder.phraseSlop;
-    this.autoGenerateMultiTermSynonymsPhraseQuery = builder.autoGenerateMultiTermSynonymsPhraseQuery;
+    this.autoGenerateMultiTermSynonymsPhraseQuery =
+        builder.autoGenerateMultiTermSynonymsPhraseQuery;
     this.autoGeneratePhraseQueries = builder.autoGeneratePhraseQueries;
     this.splitOnWhitespace = builder.splitOnWhitespace;
     this.typeMap = Map.copyOf(builder.typeMap);
@@ -233,19 +232,43 @@ public final class QueryParserConfig {
 
   @Override
   public String toString() {
-    return "QueryParserConfig: [" +
-        " default operator=" + defaultOperator.name() + ";" +
-        " enable position increment=" + enablePositionIncrements + ";" +
-        " allow leading wildcard=" + allowLeadingWildcard + ";" +
-        " split whitespace=" + splitOnWhitespace + ";" +
-        " generate phrase query=" + autoGeneratePhraseQueries + ";" +
-        " generate multiterm sysnonymsphrase query=" + autoGenerateMultiTermSynonymsPhraseQuery + ";" +
-        " phrase slop=" + phraseSlop + ";" +
-        " date resolution=" + dateResolution.name() +
-        " locale=" + locale.toLanguageTag() + ";" +
-        " time zone=" + timeZone.getID() + ";" +
-        " numeric types=" + String.join(",", getTypeMap().entrySet().stream()
-        .map(e -> e.getKey() + "=" + e.getValue().toString()).collect(Collectors.toSet())) + ";" +
-        "]";
+    return "QueryParserConfig: ["
+        + " default operator="
+        + defaultOperator.name()
+        + ";"
+        + " enable position increment="
+        + enablePositionIncrements
+        + ";"
+        + " allow leading wildcard="
+        + allowLeadingWildcard
+        + ";"
+        + " split whitespace="
+        + splitOnWhitespace
+        + ";"
+        + " generate phrase query="
+        + autoGeneratePhraseQueries
+        + ";"
+        + " generate multiterm sysnonymsphrase query="
+        + autoGenerateMultiTermSynonymsPhraseQuery
+        + ";"
+        + " phrase slop="
+        + phraseSlop
+        + ";"
+        + " date resolution="
+        + dateResolution.name()
+        + " locale="
+        + locale.toLanguageTag()
+        + ";"
+        + " time zone="
+        + timeZone.getID()
+        + ";"
+        + " numeric types="
+        + String.join(
+            ",",
+            getTypeMap().entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue().toString())
+                .collect(Collectors.toSet()))
+        + ";"
+        + "]";
   }
 }

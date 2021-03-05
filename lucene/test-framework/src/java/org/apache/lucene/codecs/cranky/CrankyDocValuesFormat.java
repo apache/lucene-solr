@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.cranky;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -29,7 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 class CrankyDocValuesFormat extends DocValuesFormat {
   final DocValuesFormat delegate;
   final Random random;
-  
+
   CrankyDocValuesFormat(DocValuesFormat delegate, Random random) {
     // we impersonate the passed-in codec, so we don't need to be in SPI,
     // and so we dont change file formats
@@ -50,16 +49,16 @@ class CrankyDocValuesFormat extends DocValuesFormat {
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
     return delegate.fieldsProducer(state);
   }
-  
+
   static class CrankyDocValuesConsumer extends DocValuesConsumer {
     final DocValuesConsumer delegate;
     final Random random;
-    
+
     CrankyDocValuesConsumer(DocValuesConsumer delegate, Random random) {
       this.delegate = delegate;
       this.random = random;
     }
-    
+
     @Override
     public void close() throws IOException {
       delegate.close();
@@ -69,7 +68,8 @@ class CrankyDocValuesFormat extends DocValuesFormat {
     }
 
     @Override
-    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addNumericField()");
       }
@@ -77,7 +77,8 @@ class CrankyDocValuesFormat extends DocValuesFormat {
     }
 
     @Override
-    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addBinaryField()");
       }
@@ -85,15 +86,17 @@ class CrankyDocValuesFormat extends DocValuesFormat {
     }
 
     @Override
-    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedField()");
       }
       delegate.addSortedField(field, valuesProducer);
     }
-    
+
     @Override
-    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedNumericField()");
       }
@@ -101,7 +104,8 @@ class CrankyDocValuesFormat extends DocValuesFormat {
     }
 
     @Override
-    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedSetField()");
       }

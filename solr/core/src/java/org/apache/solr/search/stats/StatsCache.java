@@ -176,7 +176,7 @@ public abstract class StatsCache implements PluginInfoInitialized {
   protected abstract void doMergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses);
 
   /**
-   * Receive global stats data from the master and update a local cache of global stats
+   * Receive global stats data from the leader and update a local cache of global stats
    * with this global data. This event occurs either as a separate request, or
    * together with the regular query request, in which case this method is
    * called first, before preparing a {@link QueryCommand} to be submitted to

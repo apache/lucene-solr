@@ -17,9 +17,7 @@
 
 package org.apache.lucene.geo;
 
-/**
- * Lat/Lon Geometry object.
- */
+/** Lat/Lon Geometry object. */
 public abstract class LatLonGeometry {
 
   /** get a {@link Component2D} from this geometry */

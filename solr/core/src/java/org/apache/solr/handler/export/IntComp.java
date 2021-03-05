@@ -19,27 +19,29 @@ package org.apache.solr.handler.export;
 
 public interface IntComp {
   int compare(int a, int b);
+
   int resetValue();
-}
 
-class IntAsc implements IntComp {
 
-  public int resetValue() {
-    return Integer.MAX_VALUE;
+  static class IntAsc implements IntComp {
+
+    public int resetValue() {
+      return Integer.MAX_VALUE;
+    }
+
+    public int compare(int a, int b) {
+      return Integer.compare(b, a);
+    }
   }
 
-  public int compare(int a, int b) {
-    return Integer.compare(b, a);
-  }
-}
+  static class IntDesc implements IntComp {
 
-class IntDesc implements IntComp {
+    public int resetValue() {
+      return Integer.MIN_VALUE;
+    }
 
-  public int resetValue() {
-    return Integer.MIN_VALUE;
-  }
-
-  public int compare(int a, int b) {
-    return Integer.compare(a, b);
+    public int compare(int a, int b) {
+      return Integer.compare(a, b);
+    }
   }
 }

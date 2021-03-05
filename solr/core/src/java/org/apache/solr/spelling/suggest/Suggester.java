@@ -85,7 +85,7 @@ public class Suggester extends SolrSpellChecker {
   private LookupFactory factory;
   
   @Override
-  public String init(NamedList config, SolrCore core) {
+  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
     log.info("init: {}", config);
     String name = super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
@@ -164,13 +164,9 @@ public class Suggester extends SolrSpellChecker {
       if(!lookup.store(new FileOutputStream(target))) {
         if (sourceLocation == null) {
           assert reader != null && field != null;
-          if (log.isErrorEnabled()) {
-            log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
-          }
+          log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
         } else {
-          if (log.isErrorEnabled()) {
-            log.error("Store Lookup build from sourceloaction: {} failed", sourceLocation);
-          }
+          log.error("Store Lookup build from sourceloaction: {} failed", sourceLocation);
         }
       } else {
         if (log.isInfoEnabled()) {

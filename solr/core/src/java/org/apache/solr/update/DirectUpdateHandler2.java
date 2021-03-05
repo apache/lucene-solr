@@ -211,7 +211,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void deleteAll() throws IOException {
-    log.info(core.getLogId() + "REMOVING ALL DOCUMENTS FROM INDEX");
+    if (log.isInfoEnabled()) {
+      log.info("{} REMOVING ALL DOCUMENTS FROM INDEX", core.getLogId());
+    }
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       iw.get().deleteAll();
@@ -317,12 +319,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       IndexWriter writer = iw.get();
-      Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
-      if (nestedDocs != null) {
-        writer.addDocuments(nestedDocs);
-      } else {
-        writer.addDocument(cmd.getLuceneDocument());
-      }
+      writer.addDocuments(cmd.makeLuceneDocs());
       if (ulog != null) ulog.add(cmd);
 
     } finally {
@@ -354,8 +351,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   private void addAndDelete(AddUpdateCommand cmd, List<UpdateLog.DBQ> deletesAfter) throws IOException {
     // this logic is different enough from doNormalUpdate that it's separate
-    log.info("Reordered DBQs detected.  Update=" + cmd + " DBQs="
-        + deletesAfter);
+    log.info("Reordered DBQs detected.  Update={} DBQs={}", cmd, deletesAfter);
     List<Query> dbqList = new ArrayList<>(deletesAfter.size());
     for (UpdateLog.DBQ dbq : deletesAfter) {
       try {
@@ -364,7 +360,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         tmpDel.version = -dbq.version;
         dbqList.add(getQuery(tmpDel));
       } catch (Exception e) {
-        log.error("Exception parsing reordered query : " + dbq, e);
+        log.error("Exception parsing reordered query : {}", dbq, e);
       }
     }
 
@@ -424,7 +420,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       return;
     }
 
-    Term deleteTerm = getIdTerm(cmd.getIndexedId(), false);
+    Term deleteTerm = getIdTerm(cmd.getIndexedId());
     // SolrCore.verbose("deleteDocuments",deleteTerm,writer);
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
@@ -549,7 +545,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     mergeIndexesCommands.mark();
     int rc;
 
-    log.info("start " + cmd);
+    log.info("start {}", cmd);
     
     List<DirectoryReader> readers = cmd.readers;
     if (readers != null && readers.size() > 0) {
@@ -586,7 +582,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     boolean error=true;
 
     try {
-      log.info("start "+cmd);
+      log.debug("start {}", cmd);
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
         SolrIndexWriter.setCommitData(iw.get(), cmd.getVersion());
@@ -595,7 +591,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         iw.decref();
       }
 
-      log.info("end_prepareCommit");
+      log.debug("end_prepareCommit");
 
       error=false;
     }
@@ -608,6 +604,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void commit(CommitUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {
@@ -634,7 +631,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         solrCoreState.getCommitLock().lock();
       }
 
-      log.info("start "+cmd);
+      log.debug("start {}", cmd);
 
       // We must cancel pending commits *before* we actually execute the commit.
 
@@ -671,7 +668,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             SolrIndexWriter.setCommitData(writer, cmd.getVersion());
             writer.commit();
           } else {
-            log.info("No uncommitted changes. Skipping IW.commit.");
+            log.debug("No uncommitted changes. Skipping IW.commit.");
           }
 
           // SolrCore.verbose("writer.commit() end");
@@ -720,7 +717,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         commitTracker.didCommit();
       }
       
-      log.info("end_commit_flush");
+      log.debug("end_commit_flush");
 
       error=false;
     }
@@ -769,7 +766,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     boolean error=true;
 
     try {
-      log.info("start "+cmd);
+      log.info("start {}", cmd);
 
       rollbackWriter();
 
@@ -801,7 +798,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void close() throws IOException {
-    log.debug("closing " + this);
+    log.debug("closing {}", this);
 
     commitTracker.close();
     softCommitTracker.close();
@@ -853,8 +850,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       solrCoreState.getCommitLock().lock();
       try {
         try {
-          log.info("Committing on IndexWriter.close() {}.",
-                   (tryToCommit ? "" : " ... SKIPPED (unnecessary)"));
+          if (log.isInfoEnabled()) {
+            log.info("Committing on IndexWriter.close() {}.",
+                (tryToCommit ? "" : " ... SKIPPED (unnecessary)"));
+          }
           if (tryToCommit) {
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
             cmd.openSearcher = false;
@@ -928,7 +927,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    * needed based on {@link AddUpdateCommand#isInPlaceUpdate}.
    * <p>
    * If the this is an UPDATE_INPLACE cmd, then all fields included in 
-   * {@link AddUpdateCommand#getLuceneDocument} must either be the uniqueKey field, or be DocValue 
+   * {@link AddUpdateCommand#makeLuceneDocForInPlaceUpdate} must either be the uniqueKey field, or be DocValue
    * only fields.
    * </p>
    *
@@ -945,33 +944,21 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
       // we don't support the solrInputDoc with nested child docs either but we'll throw an exception if attempted
 
-      Term updateTerm = new Term(idField.getName(), cmd.getIndexedId());
-      Document luceneDocument = cmd.getLuceneDocument();
-
-      final List<IndexableField> origDocFields = luceneDocument.getFields();
-      final List<Field> fieldsToUpdate = new ArrayList<>(origDocFields.size());
-      for (IndexableField field : origDocFields) {
-        if (! field.name().equals(updateTerm.field()) ) {
-          fieldsToUpdate.add((Field)field);
-        }
-      }
+      // can't use cmd.getIndexedId because it will be a root doc if this doc is a child
+      Term updateTerm = new Term(idField.getName(),
+          core.getLatestSchema().indexableUniqueKey(cmd.getChildDocIdStr()));
+      List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields(); // skips uniqueKey and _root_
       log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fieldsToUpdate.toArray(new Field[fieldsToUpdate.size()]));
+      writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));
 
     } else { // more normal path
 
-      Iterable<Document> nestedDocs = cmd.getLuceneDocsIfNested();
-      boolean isNested = nestedDocs != null; // AKA nested child docs
-      Term idTerm = getIdTerm(isNested? new BytesRef(cmd.getRootIdUsingRouteParam()): cmd.getIndexedId(), isNested);
+      Iterable<Document> nestedDocs = cmd.makeLuceneDocs();
+      Term idTerm = getIdTerm(cmd.getIndexedId());
       Term updateTerm = hasUpdateTerm ? cmd.updateTerm : idTerm;
-      if (isNested) {
-        log.debug("updateDocuments({})", cmd);
-        writer.updateDocuments(updateTerm, nestedDocs);
-      } else {
-        Document luceneDocument = cmd.getLuceneDocument();
-        log.debug("updateDocument({})", cmd);
-        writer.updateDocument(updateTerm, luceneDocument);
-      }
+
+      log.debug("updateDocuments({})", cmd);
+      writer.updateDocuments(updateTerm, nestedDocs);
 
       // If hasUpdateTerm, then delete any existing documents with the same ID other than the one added above
       //   (used in near-duplicate replacement)
@@ -984,8 +971,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
   }
 
-  private Term getIdTerm(BytesRef termVal, boolean isNested) {
-    boolean useRootId = isNested || core.getLatestSchema().isUsableForChildDocs();
+  private Term getIdTerm(BytesRef termVal) {
+    boolean useRootId = core.getLatestSchema().isUsableForChildDocs();
     return new Term(useRootId ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), termVal);
   }
 
@@ -1020,11 +1007,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // allow access for tests
   public CommitTracker getSoftCommitTracker() {
     return softCommitTracker;
-  }
-  
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
   }
 
 }

@@ -52,12 +52,12 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise boundary cases.
-      // shards, replicationfactor, maxreplicaspernode
+      // shards, replicationfactor
       int shards = random().nextInt(7);
       if (shards < 2) shards = 2;
       int rFactor = random().nextInt(4);
       if (rFactor < 2) rFactor = 2;
-      createCollection(null, COLLECTION_NAME, shards, rFactor, shards * rFactor + 1, client, null, "conf1");
+      createCollection(null, COLLECTION_NAME, shards, rFactor, client, null, "conf1");
     }
 
     waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
@@ -73,10 +73,12 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.LIST.toString());
+      @SuppressWarnings({"rawtypes"})
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
+      @SuppressWarnings({"unchecked"})
       List<String> collections = (List<String>) rsp.get("collections");
       assertTrue("control_collection was not found in list", collections.contains("control_collection"));
       assertTrue(DEFAULT_COLLECTION + " was not found in list", collections.contains(DEFAULT_COLLECTION));

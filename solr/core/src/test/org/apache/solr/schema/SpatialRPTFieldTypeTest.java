@@ -202,6 +202,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     setupRPTField("miles", "true", "WKT", random().nextBoolean()
         ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
 
+    @SuppressWarnings({"rawtypes"})
     AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
         h.getCore().getLatestSchema().getField("geo").getType();
 
@@ -220,6 +221,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     setupRPTField("miles", "true", "GeoJSON", random().nextBoolean()
         ? new SpatialRecursivePrefixTreeFieldType() : new RptWithGeometrySpatialField());
 
+    @SuppressWarnings({"rawtypes"})
     AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
         h.getCore().getLatestSchema().getField("geo").getType();
 
@@ -260,7 +262,8 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     }
     fieldType.init(oldSchema, rptMap);
     fieldType.setTypeName("location_rpt");
-    SchemaField newField = new SchemaField("geo", fieldType, SchemaField.STORED | SchemaField.INDEXED, null);
+    SchemaField newField = new SchemaField("geo", fieldType, SchemaField.STORED | SchemaField.INDEXED | SchemaField.OMIT_NORMS | SchemaField.OMIT_TF_POSITIONS,
+            null);
     IndexSchema newSchema = oldSchema.addField(newField);
 
     h.getCore().setLatestSchema(newSchema);

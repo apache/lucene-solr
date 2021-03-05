@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Miscellaneous index tools. 
- */
+/** Miscellaneous index tools. */
 package org.apache.lucene.misc;

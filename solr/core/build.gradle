@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Apache Solr Core'
+
 dependencies {
   api project(':lucene:core')
   api project(':lucene:analysis:common')
@@ -57,6 +59,7 @@ dependencies {
   api 'commons-cli:commons-cli'
   api 'commons-codec:commons-codec'
   api 'commons-collections:commons-collections'
+  api 'org.apache.commons:commons-collections4'
 
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
 
@@ -73,7 +76,6 @@ dependencies {
   })
 
   implementation 'com.tdunning:t-digest'
-  implementation 'commons-fileupload:commons-fileupload'
 
   implementation 'io.opentracing:opentracing-api'
   implementation 'io.opentracing:opentracing-noop'
@@ -93,9 +95,7 @@ dependencies {
   implementation 'org.codehaus.janino:commons-compiler'
   implementation 'org.codehaus.janino:janino'
 
-  api 'org.restlet.jee:org.restlet'
   implementation 'org.rrd4j:rrd4j'
-  implementation 'org.restlet.jee:org.restlet.ext.servlet'
 
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-core') { transitive = false }
@@ -137,6 +137,9 @@ dependencies {
 
   testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
 
+  // required for instantiating a Zookeeper server in tests or embedded
+  runtimeOnly ('org.xerial.snappy:snappy-java')
+  
   testImplementation 'com.google.protobuf:protobuf-java'
   testImplementation 'commons-logging:commons-logging'
   testImplementation('org.mockito:mockito-core', {

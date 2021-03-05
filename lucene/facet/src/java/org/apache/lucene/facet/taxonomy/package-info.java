@@ -17,36 +17,34 @@
 
 /**
  * Taxonomy of Categories.
- * <p>
- * Facets are defined using a hierarchy of categories, known as a <i>Taxonomy</i>.
- * For example, the taxonomy of a book store application might have the following structure:
- * 
+ *
+ * <p>Facets are defined using a hierarchy of categories, known as a <i>Taxonomy</i>. For example,
+ * the taxonomy of a book store application might have the following structure:
+ *
  * <ul>
  *   <li>Author
- *     <ul>
- *       <li>Mark Twain</li>
- *       <li>J. K. Rowling</li>
- *     </ul>
- *   </li>
+ *       <ul>
+ *         <li>Mark Twain
+ *         <li>J. K. Rowling
+ *       </ul>
  * </ul>
- * 
+ *
  * <ul>
  *   <li>Date
- *     <ul>
- *       <li>2010</li>
- *     </ul>
- *     <ul>
- *       <li>March</li>
- *       <li>April</li>
- *     </ul>
- *   </li>
- *   <li>2009</li>
+ *       <ul>
+ *         <li>2010
+ *       </ul>
+ *       <ul>
+ *         <li>March
+ *         <li>April
+ *       </ul>
+ *   <li>2009
  * </ul>
- * 
- * <p>
- * The <i>Taxonomy</i> translates category-paths into integer identifiers (often termed <i>ordinals</i>) and vice versa.
- * The category <code>Author/Mark Twain</code> adds two nodes to the taxonomy: <code>Author</code> and 
- * <code>Author/Mark Twain</code>, each is assigned a different ordinal. The taxonomy maintains the invariant that a 
- * node always has an ordinal that is &lt; all its children.
+ *
+ * <p>The <i>Taxonomy</i> translates category-paths into integer identifiers (often termed
+ * <i>ordinals</i>) and vice versa. The category <code>Author/Mark Twain</code> adds two nodes to
+ * the taxonomy: <code>Author</code> and <code>Author/Mark Twain</code>, each is assigned a
+ * different ordinal. The taxonomy maintains the invariant that a node always has an ordinal that is
+ * &lt; all its children.
  */
 package org.apache.lucene.facet.taxonomy;

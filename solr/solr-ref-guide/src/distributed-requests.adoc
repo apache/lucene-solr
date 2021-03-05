@@ -83,8 +83,8 @@ To add a `shardHandlerFactory` to the standard search handler, provide a configu
 <requestHandler name="/select" class="solr.SearchHandler">
   <!-- other params go here -->
   <shardHandlerFactory class="HttpShardHandlerFactory">
-    <int name="socketTimeOut">1000</int>
-    <int name="connTimeOut">5000</int>
+    <int name="socketTimeout">1000</int>
+    <int name="connTimeout">5000</int>
   </shardHandlerFactory>
 </requestHandler>
 ----
@@ -122,7 +122,7 @@ In SolrCloud mode this whitelist is automatically configured to include all live
 +
 In standalone mode the whitelist defaults to empty (sharding not allowed).
 +
-If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.:
+If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`. The value of this parameter is a comma separated list of the nodes that will be whitelisted, i.e.,
 `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
 +
 NOTE: In SolrCloud mode, if at least one node is included in the whitelist, then the `live_nodes` will no longer be used as source for the list. This means that if you need to do a cross-cluster request using the `shards` parameter in SolrCloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist.
@@ -149,10 +149,6 @@ The implementation can be selected by setting `<statsCache>` in `solrconfig.xml`
 Each shard serves top-level query requests and then makes sub-requests to all of the other shards. Care should be taken to ensure that the max number of threads serving HTTP requests is greater than the possible number of requests from both top-level clients and other shards. If this is not the case, the configuration may result in a distributed deadlock.
 
 For example, a deadlock might occur in the case of two shards, each with just a single thread to service HTTP requests. Both threads could receive a top-level request concurrently, and make sub-requests to each other. Because there are no more remaining threads to service requests, the incoming requests will be blocked until the other pending requests are finished, but they will not finish since they are waiting for the sub-requests. By ensuring that Solr is configured to handle a sufficient number of threads, you can avoid deadlock situations like this.
-
-== preferLocalShards Parameter
-
-Deprecated, use `shards.preference=replica.location:local` instead (see below).
 
 == shards.preference Parameter
 
@@ -188,6 +184,10 @@ Applied after sorting by inherent replica attributes, this property defines a fa
 `stable:dividend:_paramName_` parses an integer from the value associated with the given parameter name; this integer is used as the dividend (mod equivalent replica count) to determine (via list rotation) order of preference among equivalent replicas.
 +
 `stable[:hash[:_paramName_]]` the string value associated with the given parameter name is hashed to a dividend that is used to determine replica preference order (analogous to the explicit `dividend` property above); `_paramName_` defaults to `q` if not specified, providing stable routing keyed to the string value of the "main query". Note that this may be inappropriate for some use cases (e.g., static main queries that leverage parameter substitution)
+
+`node.sysprop`::
+Query will be routed to nodes with same defined system properties as the current one. For example, if you start Solr nodes on different racks, you'll want to identify those nodes by a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`). Then, queries can contain `shards.preference=node.sysprop:sysprop.rack`, to make sure you always hit shards with the same value of `rack`.
+
 
 Examples:
 

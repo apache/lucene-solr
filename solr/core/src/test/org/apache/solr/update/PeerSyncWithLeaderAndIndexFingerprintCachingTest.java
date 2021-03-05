@@ -30,6 +30,7 @@ public class PeerSyncWithLeaderAndIndexFingerprintCachingTest extends PeerSyncWi
   @Override
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "syncWithLeader", StrUtils.join(Arrays.asList(syncWith), ',')));
+    @SuppressWarnings({"rawtypes"})
     NamedList rsp = client.request(qr);
     assertEquals(expectedResult, (Boolean) rsp.get("syncWithLeader"));
   }

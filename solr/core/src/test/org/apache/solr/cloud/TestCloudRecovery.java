@@ -58,6 +58,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
   }
@@ -74,7 +75,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
                           // TestInjection#waitForInSyncWithLeader is broken
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, nrtReplicas, tlogReplicas, 0)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
 

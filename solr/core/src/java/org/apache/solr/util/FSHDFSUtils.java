@@ -134,12 +134,9 @@ public class FSHDFSUtils {
   static boolean checkIfTimedout(final Configuration conf, final long recoveryTimeout,
       final int nbAttempt, final Path p, final long startWaiting) {
     if (recoveryTimeout < System.nanoTime()) {
-      if (log.isWarnEnabled()) {
-        log.warn("Cannot recoverLease after trying for " +
-            conf.getInt("solr.hdfs.lease.recovery.timeout", 900000) +
-            "ms (solr.hdfs.lease.recovery.timeout); continuing, but may be DATALOSS!!!; " +
-            getLogMessageDetail(nbAttempt, p, startWaiting));
-      }
+      log.warn("Cannot recoverLease after trying for {}ms (solr.hdfs.lease.recovery.timeout); continuing, but may be DATALOSS!!!; {}"
+          , conf.getInt("solr.hdfs.lease.recovery.timeout", 900000)
+          , getLogMessageDetail(nbAttempt, p, startWaiting));
       return true;
     }
     return false;
@@ -164,9 +161,7 @@ public class FSHDFSUtils {
       } else if (e instanceof FileNotFoundException) {
         throw (FileNotFoundException)e;
       }
-      if (log.isWarnEnabled()) {
-        log.warn(getLogMessageDetail(nbAttempt, p, startWaiting), e);
-      }
+      log.warn(getLogMessageDetail(nbAttempt, p, startWaiting), e);
     }
     return recovered;
   }

@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.demo.facet;
 
-
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -28,7 +26,9 @@ public class TestDistanceFacetsExample extends LuceneTestCase {
     DistanceFacetsExample example = new DistanceFacetsExample();
     example.index();
     FacetResult result = example.search();
-    assertEquals("dim=field path=[] value=3 childCount=4\n  < 1 km (1)\n  < 2 km (2)\n  < 5 km (2)\n  < 10 km (3)\n", result.toString());
+    assertEquals(
+        "dim=field path=[] value=3 childCount=4\n  < 1 km (1)\n  < 2 km (2)\n  < 5 km (2)\n  < 10 km (3)\n",
+        result.toString());
     example.close();
   }
 

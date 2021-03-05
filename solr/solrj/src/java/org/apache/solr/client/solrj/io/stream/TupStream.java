@@ -50,8 +50,8 @@ public class TupStream extends TupleStream implements Expressible {
   private Map<String,String> stringParams = new HashMap<>();
   private Map<String,StreamEvaluator> evaluatorParams = new HashMap<>();
   private Map<String,TupleStream> streamParams = new HashMap<>();
-  private List<String> fieldNames = new ArrayList();
-  private Map<String, String> fieldLabels = new HashMap();
+  private List<String> fieldNames = new ArrayList<>();
+  private Map<String, String> fieldLabels = new HashMap<>();
   private Tuple tup = null;
   private Tuple unnestedTuple = null;
   private Iterator<Tuple>  unnestedTuples = null;
@@ -152,9 +152,7 @@ public class TupStream extends TupleStream implements Expressible {
 
     if(unnestedTuples == null) {
       if (finished) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("EOF", true);
-        return new Tuple(m);
+        return Tuple.EOF();
       } else {
         finished = true;
         if(unnestedTuple != null) {
@@ -167,9 +165,7 @@ public class TupStream extends TupleStream implements Expressible {
       if(unnestedTuples.hasNext()) {
         return unnestedTuples.next();
       } else {
-        Map<String, Object> m = new HashMap<>();
-        m.put("EOF", true);
-        return new Tuple(m);
+        return Tuple.EOF();
       }
     }
   }
@@ -178,6 +174,7 @@ public class TupStream extends TupleStream implements Expressible {
     // Nothing to do here
   }
 
+  @SuppressWarnings({"unchecked"})
   public void open() throws IOException {
     Map<String, Object> values = new HashMap<>();
 
@@ -201,7 +198,7 @@ public class TupStream extends TupleStream implements Expressible {
     for(Entry<String,TupleStream> param : streamParams.entrySet()){
 
       try{
-        List<Tuple> streamTuples = new ArrayList();
+        List<Tuple> streamTuples = new ArrayList<>();
         // open the stream, closed in finally block
         param.getValue().open();
 
@@ -225,6 +222,7 @@ public class TupStream extends TupleStream implements Expressible {
         if(o instanceof Tuple) {
           unnestedTuple = (Tuple)o;
         } else if(o instanceof List) {
+          @SuppressWarnings({"rawtypes"})
           List l = (List)o;
           if(l.size() > 0 && l.get(0) instanceof Tuple) {
             List<Tuple> tl = (List<Tuple>)l;
@@ -234,8 +232,8 @@ public class TupStream extends TupleStream implements Expressible {
       }
     }
     this.tup = new Tuple(values);
-    tup.fieldNames = fieldNames;
-    tup.fieldLabels = fieldLabels;
+    tup.setFieldNames(fieldNames);
+    tup.setFieldLabels(fieldLabels);
     // nothing to do here
   }
 

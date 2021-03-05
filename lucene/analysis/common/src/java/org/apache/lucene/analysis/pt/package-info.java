@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Portuguese.
- */
+/** Analyzer for Portuguese. */
 package org.apache.lucene.analysis.pt;

@@ -1,0 +1,30 @@
+= Developer Utilities
+:toc: left
+// This is probably going to get split soon, but for the moment, since we only have one dev-docs directory...
+
+== Lucene
+TODO: add something here :)
+
+== Solr
+
+=== Cluster on localhost
+
+At times, it is important to do manual testing on a running server, and in many cases it is a good idea to test in a clustered environment to ensure that features play nice both locally and across nodes. To lower the barrier for realistic local testing, there is a script at `solr/cloud-dev/cloud.sh`. Typical usage of the script is:
+
+NOTE: This script only supports POSIX environments. There is no similar .bat script at this time.
+
+1. Copy the script to a location outside the lucene-solr working copy. Trying to use it from within the working copy will leave you fighting version control to avoid checking in files.
+2. Edit the script to provide a proper back reference to your working copy for `DEFAULT_VCS_WORKSPACE` (the default is `../code/lucene-solr`)
+3. Chmod cloud.sh to make it executable
+4. Start a local zookeeper instance. This zookeeper must be running on localhost, but the port can be adjusted with a `-z` option passed to the script.
+5. run ./cloud.sh new -r
+
+The command in the final step will:
+
+1. Recompile and package (`-r`) the solr checkout found at `DEFAULT_VCS_WORKSPACE` (but not run the tests).
+2. The tarball produced by step 1 is then extracted in a directory that is a peer to cloud.sh and named for the current date (such as `./2021-02-21`).
+3. A node at the top level of zookeeper is created and named for the canonical path of this directory to serve as a zkchroot for this deployment.
+4. Start solr on ports 8981, 8982, 8983 and 8984 with listening debugger ports on 5001, 5002, 5003, and 5004.
+5. Each solr instance will place its data and solr.log in a corresponding directory such as `./2021-02-21/n1`, `./2021-02-21/n2` etc.
+
+The script supports `start`, `stop` and `restart` commands, and a variety of options detailed in the extensive introductory comment in cloud.sh. You should expect that comment to contain the latest information and if it contradicts this document it likely is more correct.

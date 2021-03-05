@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.hi;
 
-
 import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -24,13 +23,9 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Test HindiNormalizer
- */
+/** Test HindiNormalizer */
 public class TestHindiNormalizer extends BaseTokenStreamTestCase {
-  /**
-   * Test some basic normalization, with an example from the paper.
-   */
+  /** Test some basic normalization, with an example from the paper. */
   public void testBasics() throws IOException {
     check("अँगरेज़ी", "अंगरेजि");
     check("अँगरेजी", "अंगरेजि");
@@ -41,7 +36,7 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
     check("अंग्रेज़ी", "अंगरेजि");
     check("अंग्रेजी", "अंगरेजि");
   }
-  
+
   public void testDecompositions() throws IOException {
     // removing nukta dot
     check("क़िताब", "किताब");
@@ -57,20 +52,22 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
     // vowel shortening
     check("आईऊॠॡऐऔीूॄॣैौ", "अइउऋऌएओिुृॢेो");
   }
+
   private void check(String input, String output) throws IOException {
     Tokenizer tokenizer = whitespaceMockTokenizer(input);
     TokenFilter tf = new HindiNormalizationFilter(tokenizer);
-    assertTokenStreamContents(tf, new String[] { output });
+    assertTokenStreamContents(tf, new String[] {output});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new HindiNormalizationFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new HindiNormalizationFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

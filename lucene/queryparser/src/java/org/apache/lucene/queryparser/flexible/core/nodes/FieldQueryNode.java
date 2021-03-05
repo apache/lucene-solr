@@ -16,59 +16,40 @@
  */
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
+import java.util.Locale;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
-import java.util.Locale;
+/** A {@link FieldQueryNode} represents a element that contains field/text tuple */
+public class FieldQueryNode extends QueryNodeImpl
+    implements FieldValuePairQueryNode<CharSequence>, TextableQueryNode {
 
-
-/**
- * A {@link FieldQueryNode} represents a element that contains field/text tuple
- */
-public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQueryNode<CharSequence>, TextableQueryNode {
-
-  /**
-   * The term's field
-   */
+  /** The term's field */
   protected CharSequence field;
 
-  /**
-   * The term's text.
-   */
+  /** The term's text. */
   protected CharSequence text;
 
-  /**
-   * The term's begin position.
-   */
+  /** The term's begin position. */
   protected int begin;
 
-  /**
-   * The term's end position.
-   */
+  /** The term's end position. */
   protected int end;
 
-  /**
-   * The term's position increment.
-   */
+  /** The term's position increment. */
   protected int positionIncrement;
 
   /**
-   * @param field
-   *          - field name
-   * @param text
-   *          - value
-   * @param begin
-   *          - position in the query string
-   * @param end
-   *          - position in the query string
+   * @param field - field name
+   * @param text - value
+   * @param begin - position in the query string
+   * @param end - position in the query string
    */
-  public FieldQueryNode(CharSequence field, CharSequence text, int begin,
-      int end) {
+  public FieldQueryNode(CharSequence field, CharSequence text, int begin, int end) {
     this.field = field;
     this.text = text;
     this.begin = begin;
     this.end = end;
     this.setLeaf(true);
-
   }
 
   protected CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
@@ -90,30 +71,31 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
 
   @Override
   public String toString() {
-    return "<field start='" + this.begin + "' end='" + this.end + "' field='"
-        + this.field + "' text='" + this.text + "'/>";
+    return "<field start='"
+        + this.begin
+        + "' end='"
+        + this.end
+        + "' field='"
+        + this.field
+        + "' text='"
+        + this.text
+        + "'/>";
   }
 
-  /**
-   * @return the term
-   */
+  /** @return the term */
   public String getTextAsString() {
-    if (this.text == null)
-      return null;
-    else
-      return this.text.toString();
+    if (this.text == null) return null;
+    else return this.text.toString();
   }
 
   /**
    * returns null if the field was not specified in the query string
-   * 
+   *
    * @return the field
    */
   public String getFieldAsString() {
-    if (this.field == null)
-      return null;
-    else
-      return this.field.toString();
+    if (this.field == null) return null;
+    else return this.field.toString();
   }
 
   public int getBegin() {
@@ -152,7 +134,7 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
 
   /**
    * Returns the term.
-   * 
+   *
    * @return The "original" form of the term.
    */
   @Override
@@ -160,10 +142,7 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
     return this.text;
   }
 
-  /**
-   * @param text
-   *          the text to set
-   */
+  /** @param text the text to set */
   @Override
   public void setText(CharSequence text) {
     this.text = text;
@@ -180,7 +159,6 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
     fqn.toQueryStringIgnoreFields = this.toQueryStringIgnoreFields;
 
     return fqn;
-
   }
 
   @Override
@@ -192,5 +170,4 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
   public void setValue(CharSequence value) {
     setText(value);
   }
-
 }

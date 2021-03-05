@@ -30,11 +30,12 @@
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
   <str name="sharedLib">${solr.sharedLib:}</str>
+  <str name="allowPaths">${solr.allowPaths:}</str>
 
   <solrcloud>
 
     <str name="host">${host:}</str>
-    <int name="hostPort">${jetty.port:8983}</int>
+    <int name="hostPort">${solr.port.advertise:0}</int>
     <str name="hostContext">${hostContext:solr}</str>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
@@ -44,6 +45,7 @@
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
 
   </solrcloud>
 
@@ -53,5 +55,7 @@
     <int name="connTimeout">${connTimeout:60000}</int>
     <str name="shardsWhitelist">${solr.shardsWhitelist:}</str>
   </shardHandlerFactory>
+
+  <metrics enabled="${metricsEnabled:true}"/>
 
 </solr>

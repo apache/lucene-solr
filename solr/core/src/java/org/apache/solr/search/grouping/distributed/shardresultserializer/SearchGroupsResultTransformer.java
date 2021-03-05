@@ -35,6 +35,7 @@ import java.util.*;
 /**
  * Implementation for transforming {@link SearchGroup} into a {@link NamedList} structure and visa versa.
  */
+@SuppressWarnings({"rawtypes"})
 public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, SearchGroupsFieldCommandResult>> {
 
   private static final String TOP_GROUPS = "topGroups";
@@ -47,6 +48,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public NamedList transform(List<Command> data) throws IOException {
     final NamedList<NamedList> result = new NamedList<>(data.size());
     for (Command command : data) {
@@ -71,6 +73,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
+  @SuppressWarnings({"rawtypes"})
   private SearchGroup<BytesRef> deserializeOneSearchGroup(SchemaField groupField, String groupValue,
       SortField[] groupSortField, List<Comparable> rawSearchGroupData) {
     SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
@@ -93,12 +96,13 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
     final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
     for (Map.Entry<String, NamedList> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
       NamedList topGroupsAndGroupCount = command.getValue();
-      @SuppressWarnings("unchecked")
+      @SuppressWarnings({"unchecked"})
       final NamedList<List<Comparable>> rawSearchGroups = (NamedList<List<Comparable>>) topGroupsAndGroupCount.get(TOP_GROUPS);
       if (rawSearchGroups != null) {
         final SchemaField groupField = searcher.getSchema().getFieldOrNull(command.getKey());
@@ -128,6 +132,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return convertedSortValues;
   }
 
+  @SuppressWarnings({"rawtypes"})
   private NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
     final NamedList<Object[]> result = new NamedList<>(data.size());
 

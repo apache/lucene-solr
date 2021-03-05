@@ -20,9 +20,9 @@ import java.io.IOException;
 
 /**
  * A {@link MergePolicy} that only returns forced merges.
- * <p>
- * <b>NOTE</b>: Use this policy if you wish to disallow background merges but wish to run optimize/forceMerge segment
- * merges.
+ *
+ * <p><b>NOTE</b>: Use this policy if you wish to disallow background merges but wish to run
+ * optimize/forceMerge segment merges.
  *
  * @lucene.experimental
  */
@@ -34,9 +34,9 @@ public final class ForceMergePolicy extends FilterMergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+  public MergeSpecification findMerges(
+      MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException {
     return null;
   }
-
 }

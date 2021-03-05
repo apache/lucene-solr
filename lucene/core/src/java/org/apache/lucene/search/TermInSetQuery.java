@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -43,13 +42,20 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.Operations;
 
 /**
- * Specialization for a disjunction over many terms that behaves like a
- * {@link ConstantScoreQuery} over a {@link BooleanQuery} containing only
- * {@link org.apache.lucene.search.BooleanClause.Occur#SHOULD} clauses.
- * <p>For instance in the following example, both {@code q1} and {@code q2}
- * would yield the same scores:
+ * Specialization for a disjunction over many terms that behaves like a {@link ConstantScoreQuery}
+ * over a {@link BooleanQuery} containing only {@link
+ * org.apache.lucene.search.BooleanClause.Occur#SHOULD} clauses.
+ *
+ * <p>For instance in the following example, both {@code q1} and {@code q2} would yield the same
+ * scores:
+ *
  * <pre class="prettyprint">
  * Query q1 = new TermInSetQuery("field", new BytesRef("foo"), new BytesRef("bar"));
  *
@@ -58,15 +64,17 @@ import org.apache.lucene.util.RamUsageEstimator;
  * bq.add(new TermQuery(new Term("field", "bar")), Occur.SHOULD);
  * Query q2 = new ConstantScoreQuery(bq);
  * </pre>
- * <p>When there are few terms, this query executes like a regular disjunction.
- * However, when there are many terms, instead of merging iterators on the fly,
- * it will populate a bit set with matching docs and return a {@link Scorer}
- * over this bit set.
+ *
+ * <p>When there are few terms, this query executes like a regular disjunction. However, when there
+ * are many terms, instead of merging iterators on the fly, it will populate a bit set with matching
+ * docs and return a {@link Scorer} over this bit set.
+ *
  * <p>NOTE: This query produces scores that are equal to its boost
  */
 public class TermInSetQuery extends Query implements Accountable {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermInSetQuery.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(TermInSetQuery.class);
   // Same threshold as MultiTermQueryConstantScoreWrapper
   static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
 
@@ -74,13 +82,12 @@ public class TermInSetQuery extends Query implements Accountable {
   private final PrefixCodedTerms termData;
   private final int termDataHashCode; // cached hashcode of termData
 
-  /**
-   * Creates a new {@link TermInSetQuery} from the given collection of terms.
-   */
+  /** Creates a new {@link TermInSetQuery} from the given collection of terms. */
   public TermInSetQuery(String field, Collection<BytesRef> terms) {
     BytesRef[] sortedTerms = terms.toArray(new BytesRef[0]);
     // already sorted if we are a SortedSet with natural order
-    boolean sorted = terms instanceof SortedSet && ((SortedSet<BytesRef>)terms).comparator() == null;
+    boolean sorted =
+        terms instanceof SortedSet && ((SortedSet<BytesRef>) terms).comparator() == null;
     if (!sorted) {
       ArrayUtil.timSort(sortedTerms);
     }
@@ -100,16 +107,15 @@ public class TermInSetQuery extends Query implements Accountable {
     termDataHashCode = termData.hashCode();
   }
 
-  /**
-   * Creates a new {@link TermInSetQuery} from the given array of terms.
-   */
-  public TermInSetQuery(String field, BytesRef...terms) {
+  /** Creates a new {@link TermInSetQuery} from the given array of terms. */
+  public TermInSetQuery(String field, BytesRef... terms) {
     this(field, Arrays.asList(terms));
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
+    final int threshold =
+        Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
     if (termData.size() <= threshold) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       TermIterator iterator = termData.iterator();
@@ -126,26 +132,32 @@ public class TermInSetQuery extends Query implements Accountable {
     if (visitor.acceptField(field) == false) {
       return;
     }
-    QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
-    List<Term> terms = new ArrayList<>();
-    TermIterator iterator = termData.iterator();
-    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-      terms.add(new Term(field, BytesRef.deepCopyOf(term)));
+    if (termData.size() == 1) {
+      visitor.consumeTerms(this, new Term(field, termData.iterator().next()));
     }
-    v.consumeTerms(this, terms.toArray(new Term[0]));
+    if (termData.size() > 1) {
+      visitor.consumeTermsMatching(this, field, this::asByteRunAutomaton);
+    }
+  }
+
+  private ByteRunAutomaton asByteRunAutomaton() {
+    TermIterator iterator = termData.iterator();
+    List<Automaton> automata = new ArrayList<>();
+    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      automata.add(Automata.makeBinary(term));
+    }
+    return new CompiledAutomaton(Operations.union(automata)).runAutomaton;
   }
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-        equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(TermInSetQuery other) {
     // no need to check 'field' explicitly since it is encoded in 'termData'
     // termData might be heavy to compare so check the hash code first
-    return termDataHashCode == other.termDataHashCode &&
-        termData.equals(other.termData);
+    return termDataHashCode == other.termDataHashCode && termData.equals(other.termData);
   }
 
   @Override
@@ -222,7 +234,8 @@ public class TermInSetQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
@@ -231,12 +244,16 @@ public class TermInSetQuery extends Query implements Accountable {
         if (terms == null || terms.hasPositions() == false) {
           return super.matches(context, doc);
         }
-        return MatchesUtils.forField(field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, getQuery(), field, termData.iterator()));
+        return MatchesUtils.forField(
+            field,
+            () ->
+                DisjunctionMatchesIterator.fromTermsEnum(
+                    context, doc, getQuery(), field, termData.iterator()));
       }
 
       /**
-       * On the given leaf context, try to either rewrite to a disjunction if
-       * there are few matching terms, or build a bitset containing matching docs.
+       * On the given leaf context, try to either rewrite to a disjunction if there are few matching
+       * terms, or build a bitset containing matching docs.
        */
       private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
         final LeafReader reader = context.reader();
@@ -251,7 +268,8 @@ public class TermInSetQuery extends Query implements Accountable {
 
         // We will first try to collect up to 'threshold' terms into 'matchingTerms'
         // if there are two many terms, we will fall back to building the 'builder'
-        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
+        final int threshold =
+            Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
         assert termData.size() > threshold : "Query should have been rewritten";
         List<TermAndState> matchingTerms = new ArrayList<>(threshold);
         DocIdSetBuilder builder = null;
@@ -337,10 +355,10 @@ public class TermInSetQuery extends Query implements Accountable {
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
         // Only cache instances that have a reasonable size. Otherwise it might cause memory issues
-        // with the query cache if most memory ends up being spent on queries rather than doc id sets.
+        // with the query cache if most memory ends up being spent on queries rather than doc id
+        // sets.
         return ramBytesUsed() <= RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
       }
-
     };
   }
 }

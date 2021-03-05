@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 import java.util.Random;
-
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
@@ -26,7 +25,9 @@ public class TestByteSlices extends LuceneTestCase {
 
   public void testBasic() throws Throwable {
     Random random = random();
-    ByteBlockPool pool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, random().nextInt(100)));
+    ByteBlockPool pool =
+        new ByteBlockPool(
+            new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, random().nextInt(100)));
 
     final int NUM_STREAM = atLeast(random, 100);
 
@@ -38,13 +39,13 @@ public class TestByteSlices extends LuceneTestCase {
 
     ByteSliceReader reader = new ByteSliceReader();
 
-    for(int ti=0;ti<100;ti++) {
+    for (int ti = 0; ti < 100; ti++) {
 
-      for(int stream=0;stream<NUM_STREAM;stream++) {
+      for (int stream = 0; stream < NUM_STREAM; stream++) {
         starts[stream] = -1;
         counters[stream] = 0;
       }
-      
+
       int num = atLeast(random, 3000);
       for (int iter = 0; iter < num; iter++) {
         int stream;
@@ -76,29 +77,27 @@ public class TestByteSlices extends LuceneTestCase {
           numValue = random.nextInt(20);
         }
 
-        for(int j=0;j<numValue;j++) {
+        for (int j = 0; j < numValue; j++) {
           if (VERBOSE) {
-            System.out.println("    write " + (counters[stream]+j));
+            System.out.println("    write " + (counters[stream] + j));
           }
           // write some large (incl. negative) ints:
           writer.writeVInt(random.nextInt());
-          writer.writeVInt(counters[stream]+j);
+          writer.writeVInt(counters[stream] + j);
         }
         counters[stream] += numValue;
         uptos[stream] = writer.getAddress();
-        if (VERBOSE)
-          System.out.println("    addr now " + uptos[stream]);
+        if (VERBOSE) System.out.println("    addr now " + uptos[stream]);
       }
-    
-      for(int stream=0;stream<NUM_STREAM;stream++) {
-        if (VERBOSE)
-          System.out.println("  stream=" + stream + " count=" + counters[stream]);
+
+      for (int stream = 0; stream < NUM_STREAM; stream++) {
+        if (VERBOSE) System.out.println("  stream=" + stream + " count=" + counters[stream]);
 
         if (starts[stream] != -1 && starts[stream] != uptos[stream]) {
           reader.init(pool, starts[stream], uptos[stream]);
-          for(int j=0;j<counters[stream];j++) {
+          for (int j = 0; j < counters[stream]; j++) {
             reader.readVInt();
-            assertEquals(j, reader.readVInt()); 
+            assertEquals(j, reader.readVInt());
           }
         }
       }

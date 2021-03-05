@@ -92,7 +92,7 @@ public class StrUtils {
 
     /***
      if (SolrCore.log.isLoggable(Level.FINEST)) {
-     SolrCore.log.trace("splitCommand=" + lst);
+     SolrCore.log.trace("splitCommand={}", lst);
      }
      ***/
 

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldComparator;
@@ -33,14 +32,14 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
- * This collector specializes in collecting the most relevant document (group head) for each
- * group that matches the query.
+ * This collector specializes in collecting the most relevant document (group head) for each group
+ * that matches the query.
  *
- * Clients should create new collectors by calling {@link #newCollector(GroupSelector, Sort)}
+ * <p>Clients should create new collectors by calling {@link #newCollector(GroupSelector, Sort)}
  *
  * @lucene.experimental
  */
-@SuppressWarnings({"unchecked","rawtypes"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   private final GroupSelector<T> groupSelector;
@@ -56,13 +55,15 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
 
   /**
    * Create a new AllGroupHeadsCollector based on the type of within-group Sort required
+   *
    * @param selector a GroupSelector to define the groups
-   * @param sort     the within-group sort to use to choose the group head document
-   * @param <T>      the group value type
+   * @param sort the within-group sort to use to choose the group head document
+   * @param <T> the group value type
    */
   public static <T> AllGroupHeadsCollector<T> newCollector(GroupSelector<T> selector, Sort sort) {
-    if (sort.equals(Sort.RELEVANCE))
+    if (sort.equals(Sort.RELEVANCE)) {
       return new ScoringGroupHeadsCollector<>(selector, sort);
+    }
     return new SortingGroupHeadsCollector<>(selector, sort);
   }
 
@@ -93,7 +94,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
   }
 
   /**
-   * @return an int array containing all group heads. The size of the array is equal to number of collected unique groups.
+   * @return an int array containing all group heads. The size of the array is equal to number of
+   *     collected unique groups.
    */
   public int[] retrieveGroupHeads() {
     Collection<? extends GroupHead<T>> groupHeads = getCollectedGroupHeads();
@@ -107,16 +109,13 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     return docHeads;
   }
 
-  /**
-   * @return the number of group heads found for a query.
-   */
+  /** @return the number of group heads found for a query. */
   public int groupHeadsSize() {
     return getCollectedGroupHeads().size();
   }
 
   /**
-   * Returns the collected group heads.
-   * Subsequent calls should return the same group heads.
+   * Returns the collected group heads. Subsequent calls should return the same group heads.
    *
    * @return the collected group heads
    */
@@ -179,49 +178,46 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
   /**
    * Create a new GroupHead for the given group value, initialized with a doc, context and scorer
    */
-  protected abstract GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext context, Scorable scorer) throws IOException;
+  protected abstract GroupHead<T> newGroupHead(
+      int doc, T value, LeafReaderContext context, Scorable scorer) throws IOException;
 
   /**
-   * Represents a group head. A group head is the most relevant document for a particular group.
-   * The relevancy is based is usually based on the sort.
+   * Represents a group head. A group head is the most relevant document for a particular group. The
+   * relevancy is based is usually based on the sort.
    *
-   * The group head contains a group value with its associated most relevant document id.
+   * <p>The group head contains a group value with its associated most relevant document id.
    */
-  public static abstract class GroupHead<T> {
+  public abstract static class GroupHead<T> {
 
     public final T groupValue;
     public int doc;
 
     protected int docBase;
 
-    /**
-     * Create a new GroupHead for the given value
-     */
+    /** Create a new GroupHead for the given value */
     protected GroupHead(T groupValue, int doc, int docBase) {
       this.groupValue = groupValue;
       this.doc = doc + docBase;
       this.docBase = docBase;
     }
 
-    /**
-     * Called for each segment
-     */
+    /** Called for each segment */
     protected void setNextReader(LeafReaderContext ctx) throws IOException {
       this.docBase = ctx.docBase;
     }
 
-    /**
-     * Called for each segment
-     */
+    /** Called for each segment */
     protected abstract void setScorer(Scorable scorer) throws IOException;
 
     /**
-     * Compares the specified document for a specified comparator against the current most relevant document.
+     * Compares the specified document for a specified comparator against the current most relevant
+     * document.
      *
      * @param compIDX The comparator index of the specified comparator.
      * @param doc The specified document.
-     * @return -1 if the specified document wasn't competitive against the current most relevant document, 1 if the
-     *         specified document was competitive against the current most relevant document. Otherwise 0.
+     * @return -1 if the specified document wasn't competitive against the current most relevant
+     *     document, 1 if the specified document was competitive against the current most relevant
+     *     document. Otherwise 0.
      * @throws IOException If I/O related errors occur
      */
     protected abstract int compare(int compIDX, int doc) throws IOException;
@@ -233,12 +229,9 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
      * @throws IOException If I/O related errors occur
      */
     protected abstract void updateDocHead(int doc) throws IOException;
-
   }
 
-  /**
-   * General implementation using a {@link FieldComparator} to select the group head
-   */
+  /** General implementation using a {@link FieldComparator} to select the group head */
   private static class SortingGroupHeadsCollector<T> extends AllGroupHeadsCollector<T> {
 
     protected SortingGroupHeadsCollector(GroupSelector<T> selector, Sort sort) {
@@ -246,7 +239,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     }
 
     @Override
-    protected GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext ctx, Scorable scorer) throws IOException {
+    protected GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext ctx, Scorable scorer)
+        throws IOException {
       return new SortingGroupHead<>(sort, value, doc, ctx, scorer);
     }
   }
@@ -256,7 +250,9 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     final FieldComparator[] comparators;
     final LeafFieldComparator[] leafComparators;
 
-    protected SortingGroupHead(Sort sort, T groupValue, int doc, LeafReaderContext context, Scorable scorer) throws IOException {
+    protected SortingGroupHead(
+        Sort sort, T groupValue, int doc, LeafReaderContext context, Scorable scorer)
+        throws IOException {
       super(groupValue, doc, context.docBase);
       final SortField[] sortFields = sort.getSort();
       comparators = new FieldComparator[sortFields.length];
@@ -300,9 +296,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     }
   }
 
-  /**
-   * Specialized implementation for sorting by score
-   */
+  /** Specialized implementation for sorting by score */
   private static class ScoringGroupHeadsCollector<T> extends AllGroupHeadsCollector<T> {
 
     protected ScoringGroupHeadsCollector(GroupSelector<T> selector, Sort sort) {
@@ -310,7 +304,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     }
 
     @Override
-    protected GroupHead<T> newGroupHead(int doc, T value, LeafReaderContext context, Scorable scorer) throws IOException {
+    protected GroupHead<T> newGroupHead(
+        int doc, T value, LeafReaderContext context, Scorable scorer) throws IOException {
       return new ScoringGroupHead<>(scorer, value, doc, context.docBase);
     }
   }
@@ -320,7 +315,8 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
     private Scorable scorer;
     private float topScore;
 
-    protected ScoringGroupHead(Scorable scorer, T groupValue, int doc, int docBase) throws IOException {
+    protected ScoringGroupHead(Scorable scorer, T groupValue, int doc, int docBase)
+        throws IOException {
       super(groupValue, doc, docBase);
       assert scorer.docID() == doc;
       this.scorer = scorer;
@@ -338,8 +334,9 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
       assert compIDX == 0;
       float score = scorer.score();
       int c = Float.compare(score, topScore);
-      if (c > 0)
+      if (c > 0) {
         topScore = score;
+      }
       return c;
     }
 
@@ -348,5 +345,4 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
       this.doc = doc + docBase;
     }
   }
-
 }

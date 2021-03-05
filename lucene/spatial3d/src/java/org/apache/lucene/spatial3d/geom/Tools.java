@@ -22,20 +22,18 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.experimental
  */
 public class Tools {
-  private Tools() {
-  }
+  private Tools() {}
 
   /**
-   * Java acos yields a NAN if you take an arc-cos of an
-   * angle that's just a tiny bit greater than 1.0, so
-   * here's a more resilient version.
+   * Java acos yields a NAN if you take an arc-cos of an angle that's just a tiny bit greater than
+   * 1.0, so here's a more resilient version.
    */
   public static double safeAcos(double value) {
-    if (value > 1.0)
+    if (value > 1.0) {
       value = 1.0;
-    else if (value < -1.0)
+    } else if (value < -1.0) {
       value = -1.0;
+    }
     return Math.acos(value);
   }
-
 }

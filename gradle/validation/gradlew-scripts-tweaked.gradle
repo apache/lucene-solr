@@ -21,14 +21,16 @@ import java.nio.charset.StandardCharsets
 // don't fork a daemon subprocess on the initial run.
 
 configure(rootProject) {
-  task gradlewScriptsTweaked() {
+  task gradlewScriptsTweaked() { task ->
     def scripts = [
         file("gradlew"),
         file("gradlew.bat")
     ]
 
     inputs.files(scripts)
-    outputs.upToDateWhen { true }
+
+    // This task has no proper outputs.
+    setupDummyOutputs(task)
 
     doFirst {
       scripts.each { file ->

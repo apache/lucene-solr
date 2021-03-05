@@ -32,6 +32,7 @@ import org.junit.Test;
 public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
 
     @Test
+    @SuppressWarnings({"rawtypes"})
     public void testPathIsAddedToContext() throws IOException, SolrServerException {
 
         final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", TEST_PATH())
@@ -59,6 +60,11 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
         @Override
         protected QueryResponse createResponse(final SolrClient client) {
             return new QueryResponse();
+        }
+
+        @Override
+        public String getRequestType() {
+            return SolrRequest.SolrRequestType.ADMIN.toString();
         }
     }
 

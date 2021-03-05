@@ -21,18 +21,6 @@ import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
-import org.apache.solr.analytics.function.mapping.LambdaFunction.BoolInBoolOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.DoubleInDoubleOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.FloatInFloatOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.IntInIntOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.LongInLongOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.StringInStringOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.TwoBoolInBoolOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.TwoDoubleInDoubleOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.TwoFloatInFloatOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.TwoIntInIntOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.TwoLongInLongOutLambda;
-import org.apache.solr.analytics.function.mapping.LambdaFunction.TwoStringInStringOutLambda;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -958,2263 +946,2313 @@ public class LambdaFunction {
   public static interface TwoDoubleInStringOutLambda { String apply(double  a, double  b); }
   @FunctionalInterface
   public static interface TwoStringInStringOutLambda { String apply(String  a, String  b); }
-}
-class BooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
-  private final BooleanValue param;
-  private final BoolInBoolOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
 
-  public BooleanValueInBooleanValueOutFunction(String name, BoolInBoolOutLambda lambda, BooleanValue param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
+  static class BooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
+    private final BooleanValue param;
+    private final BoolInBoolOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  private boolean exists = false;
+    public BooleanValueInBooleanValueOutFunction(String name, BoolInBoolOutLambda lambda, BooleanValue param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
 
-  @Override
-  public boolean getBoolean() {
-    boolean value = lambda.apply(param.getBoolean());
-    exists = param.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
+    private boolean exists = false;
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanStreamInBooleanStreamOutFunction extends AbstractBooleanValueStream {
-  private final BooleanValueStream param;
-  private final BoolInBoolOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    @Override
+    public boolean getBoolean() {
+      boolean value = lambda.apply(param.getBoolean());
+      exists = param.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
 
-  public BooleanStreamInBooleanStreamOutFunction(String name, BoolInBoolOutLambda lambda, BooleanValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    param.streamBooleans(value -> cons.accept(lambda.apply(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanStreamInBooleanValueOutFunction extends AbstractBooleanValue implements BooleanConsumer {
-  private final BooleanValueStream param;
-  private final TwoBoolInBoolOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public BooleanStreamInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-  private boolean value;
-
-  @Override
-  public boolean getBoolean() {
-    exists = false;
-    param.streamBooleans(this);
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-  public void accept(boolean paramValue) {
-    if (!exists) {
-      exists = true;
-      value = paramValue;
-    } else {
-      value = lambda.apply(value, paramValue);
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class TwoBooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
-  private final BooleanValue param1;
-  private final BooleanValue param2;
-  private final TwoBoolInBoolOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class BooleanStreamInBooleanStreamOutFunction extends AbstractBooleanValueStream {
+    private final BooleanValueStream param;
+    private final BoolInBoolOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public TwoBooleanValueInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue param1, BooleanValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
+    public BooleanStreamInBooleanStreamOutFunction(String name, BoolInBoolOutLambda lambda, BooleanValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
 
-  private boolean exists = false;
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      param.streamBooleans(value -> cons.accept(lambda.apply(value)));
+    }
 
-  @Override
-  public boolean getBoolean() {
-    boolean value = lambda.apply(param1.getBoolean(), param2.getBoolean());
-    exists = param1.exists() && param2.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanValueBooleanStreamInBooleanStreamOutFunction extends AbstractBooleanValueStream {
-  private final BooleanValue param1;
-  private final BooleanValueStream param2;
-  private final TwoBoolInBoolOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public BooleanValueBooleanStreamInBooleanStreamOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue param1, BooleanValueStream param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    boolean value1 = param1.getBoolean();
-    if (param1.exists()) {
-      param2.streamBooleans(value2 -> cons.accept(lambda.apply(value1,value2)));
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanStreamBooleanValueInBooleanStreamOutFunction extends AbstractBooleanValueStream {
-  private final BooleanValueStream param1;
-  private final BooleanValue param2;
-  private final TwoBoolInBoolOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class BooleanStreamInBooleanValueOutFunction extends AbstractBooleanValue implements BooleanConsumer {
+    private final BooleanValueStream param;
+    private final TwoBoolInBoolOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public BooleanStreamBooleanValueInBooleanStreamOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValueStream param1, BooleanValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    boolean value2 = param2.getBoolean();
-    if (param2.exists()) {
-      param1.streamBooleans(value1 -> cons.accept(lambda.apply(value1,value2)));
+    public BooleanStreamInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
     }
-  }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-abstract class MultiBooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
-  protected final BooleanValue[] params;
-  protected final TwoBoolInBoolOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+    private boolean exists = false;
+    private boolean value;
 
-  public MultiBooleanValueInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
-    this.name = name;
-    this.lambda = lambda;
-    this.params = params;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
-  }
-
-  protected boolean exists = false;
-  protected boolean temp;
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class MultiBooleanValueInBooleanValueOutRequireAllFunction extends MultiBooleanValueInBooleanValueOutFunction {
-
-  public MultiBooleanValueInBooleanValueOutRequireAllFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public boolean getBoolean() {
-    boolean value = params[0].getBoolean();
-    exists = params[0].exists();
-    for (int i = 1; i < params.length && exists; ++i) {
-      value = lambda.apply(value, params[i].getBoolean());
-      exists = params[i].exists();
+    @Override
+    public boolean getBoolean() {
+      exists = false;
+      param.streamBooleans(this);
+      return value;
     }
-    return value;
-  }
-}
-class MultiBooleanValueInBooleanValueOutRequireOneFunction extends MultiBooleanValueInBooleanValueOutFunction {
-
-  public MultiBooleanValueInBooleanValueOutRequireOneFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public boolean getBoolean() {
-    int i = -1;
-    boolean value = false;
-    exists = false;
-    while (++i < params.length) {
-      value = params[i].getBoolean();
-      exists = params[i].exists();
-      if (exists) {
-        break;
-      }
+    @Override
+    public boolean exists() {
+      return exists;
     }
-    while (++i < params.length) {
-      temp = params[i].getBoolean();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
-      }
-    }
-    return value;
-  }
-}
-class IntValueInIntValueOutFunction extends AbstractIntValue {
-  private final IntValue param;
-  private final IntInIntOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public IntValueInIntValueOutFunction(String name, IntInIntOutLambda lambda, IntValue param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public int getInt() {
-    int value = lambda.apply(param.getInt());
-    exists = param.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntStreamInIntStreamOutFunction extends AbstractIntValueStream {
-  private final IntValueStream param;
-  private final IntInIntOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public IntStreamInIntStreamOutFunction(String name, IntInIntOutLambda lambda, IntValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public void streamInts(IntConsumer cons) {
-    param.streamInts(value -> cons.accept(lambda.apply(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntStreamInIntValueOutFunction extends AbstractIntValue implements IntConsumer {
-  private final IntValueStream param;
-  private final TwoIntInIntOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public IntStreamInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-  private int value;
-
-  @Override
-  public int getInt() {
-    exists = false;
-    param.streamInts(this);
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-  public void accept(int paramValue) {
-    if (!exists) {
-      exists = true;
-      value = paramValue;
-    } else {
-      value = lambda.apply(value, paramValue);
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class TwoIntValueInIntValueOutFunction extends AbstractIntValue {
-  private final IntValue param1;
-  private final IntValue param2;
-  private final TwoIntInIntOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public TwoIntValueInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue param1, IntValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public int getInt() {
-    int value = lambda.apply(param1.getInt(), param2.getInt());
-    exists = param1.exists() && param2.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntValueIntStreamInIntStreamOutFunction extends AbstractIntValueStream {
-  private final IntValue param1;
-  private final IntValueStream param2;
-  private final TwoIntInIntOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public IntValueIntStreamInIntStreamOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue param1, IntValueStream param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamInts(IntConsumer cons) {
-    int value1 = param1.getInt();
-    if (param1.exists()) {
-      param2.streamInts(value2 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntStreamIntValueInIntStreamOutFunction extends AbstractIntValueStream {
-  private final IntValueStream param1;
-  private final IntValue param2;
-  private final TwoIntInIntOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public IntStreamIntValueInIntStreamOutFunction(String name, TwoIntInIntOutLambda lambda, IntValueStream param1, IntValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamInts(IntConsumer cons) {
-    int value2 = param2.getInt();
-    if (param2.exists()) {
-      param1.streamInts(value1 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-abstract class MultiIntValueInIntValueOutFunction extends AbstractIntValue {
-  protected final IntValue[] params;
-  protected final TwoIntInIntOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public MultiIntValueInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
-    this.name = name;
-    this.lambda = lambda;
-    this.params = params;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
-  }
-
-  protected boolean exists = false;
-  protected int temp;
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class MultiIntValueInIntValueOutRequireAllFunction extends MultiIntValueInIntValueOutFunction {
-
-  public MultiIntValueInIntValueOutRequireAllFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public int getInt() {
-    int value = params[0].getInt();
-    exists = params[0].exists();
-    for (int i = 1; i < params.length && exists; ++i) {
-      value = lambda.apply(value, params[i].getInt());
-      exists = params[i].exists();
-    }
-    return value;
-  }
-}
-class MultiIntValueInIntValueOutRequireOneFunction extends MultiIntValueInIntValueOutFunction {
-
-  public MultiIntValueInIntValueOutRequireOneFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public int getInt() {
-    int i = -1;
-    int value = 0;
-    exists = false;
-    while (++i < params.length) {
-      value = params[i].getInt();
-      exists = params[i].exists();
-      if (exists) {
-        break;
-      }
-    }
-    while (++i < params.length) {
-      temp = params[i].getInt();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
-      }
-    }
-    return value;
-  }
-}
-class LongValueInLongValueOutFunction extends AbstractLongValue {
-  private final LongValue param;
-  private final LongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public LongValueInLongValueOutFunction(String name, LongInLongOutLambda lambda, LongValue param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = lambda.apply(param.getLong());
-    exists = param.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongStreamInLongStreamOutFunction extends AbstractLongValueStream {
-  private final LongValueStream param;
-  private final LongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public LongStreamInLongStreamOutFunction(String name, LongInLongOutLambda lambda, LongValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    param.streamLongs(value -> cons.accept(lambda.apply(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongStreamInLongValueOutFunction extends AbstractLongValue implements LongConsumer {
-  private final LongValueStream param;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public LongStreamInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-  private long value;
-
-  @Override
-  public long getLong() {
-    exists = false;
-    param.streamLongs(this);
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-  public void accept(long paramValue) {
-    if (!exists) {
-      exists = true;
-      value = paramValue;
-    } else {
-      value = lambda.apply(value, paramValue);
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class TwoLongValueInLongValueOutFunction extends AbstractLongValue {
-  private final LongValue param1;
-  private final LongValue param2;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public TwoLongValueInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue param1, LongValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = lambda.apply(param1.getLong(), param2.getLong());
-    exists = param1.exists() && param2.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongValueLongStreamInLongStreamOutFunction extends AbstractLongValueStream {
-  private final LongValue param1;
-  private final LongValueStream param2;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public LongValueLongStreamInLongStreamOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue param1, LongValueStream param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long value1 = param1.getLong();
-    if (param1.exists()) {
-      param2.streamLongs(value2 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongStreamLongValueInLongStreamOutFunction extends AbstractLongValueStream {
-  private final LongValueStream param1;
-  private final LongValue param2;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public LongStreamLongValueInLongStreamOutFunction(String name, TwoLongInLongOutLambda lambda, LongValueStream param1, LongValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long value2 = param2.getLong();
-    if (param2.exists()) {
-      param1.streamLongs(value1 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-abstract class MultiLongValueInLongValueOutFunction extends AbstractLongValue {
-  protected final LongValue[] params;
-  protected final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public MultiLongValueInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
-    this.name = name;
-    this.lambda = lambda;
-    this.params = params;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
-  }
-
-  protected boolean exists = false;
-  protected long temp;
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class MultiLongValueInLongValueOutRequireAllFunction extends MultiLongValueInLongValueOutFunction {
-
-  public MultiLongValueInLongValueOutRequireAllFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public long getLong() {
-    long value = params[0].getLong();
-    exists = params[0].exists();
-    for (int i = 1; i < params.length && exists; ++i) {
-      value = lambda.apply(value, params[i].getLong());
-      exists = params[i].exists();
-    }
-    return value;
-  }
-}
-class MultiLongValueInLongValueOutRequireOneFunction extends MultiLongValueInLongValueOutFunction {
-
-  public MultiLongValueInLongValueOutRequireOneFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public long getLong() {
-    int i = -1;
-    long value = 0;
-    exists = false;
-    while (++i < params.length) {
-      value = params[i].getLong();
-      exists = params[i].exists();
-      if (exists) {
-        break;
-      }
-    }
-    while (++i < params.length) {
-      temp = params[i].getLong();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
-      }
-    }
-    return value;
-  }
-}
-class FloatValueInFloatValueOutFunction extends AbstractFloatValue {
-  private final FloatValue param;
-  private final FloatInFloatOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public FloatValueInFloatValueOutFunction(String name, FloatInFloatOutLambda lambda, FloatValue param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public float getFloat() {
-    float value = lambda.apply(param.getFloat());
-    exists = param.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatStreamInFloatStreamOutFunction extends AbstractFloatValueStream {
-  private final FloatValueStream param;
-  private final FloatInFloatOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public FloatStreamInFloatStreamOutFunction(String name, FloatInFloatOutLambda lambda, FloatValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public void streamFloats(FloatConsumer cons) {
-    param.streamFloats(value -> cons.accept(lambda.apply(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatStreamInFloatValueOutFunction extends AbstractFloatValue implements FloatConsumer {
-  private final FloatValueStream param;
-  private final TwoFloatInFloatOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public FloatStreamInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-  private float value;
-
-  @Override
-  public float getFloat() {
-    exists = false;
-    param.streamFloats(this);
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-  public void accept(float paramValue) {
-    if (!exists) {
-      exists = true;
-      value = paramValue;
-    } else {
-      value = lambda.apply(value, paramValue);
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class TwoFloatValueInFloatValueOutFunction extends AbstractFloatValue {
-  private final FloatValue param1;
-  private final FloatValue param2;
-  private final TwoFloatInFloatOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public TwoFloatValueInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue param1, FloatValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public float getFloat() {
-    float value = lambda.apply(param1.getFloat(), param2.getFloat());
-    exists = param1.exists() && param2.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatValueFloatStreamInFloatStreamOutFunction extends AbstractFloatValueStream {
-  private final FloatValue param1;
-  private final FloatValueStream param2;
-  private final TwoFloatInFloatOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public FloatValueFloatStreamInFloatStreamOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue param1, FloatValueStream param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamFloats(FloatConsumer cons) {
-    float value1 = param1.getFloat();
-    if (param1.exists()) {
-      param2.streamFloats(value2 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatStreamFloatValueInFloatStreamOutFunction extends AbstractFloatValueStream {
-  private final FloatValueStream param1;
-  private final FloatValue param2;
-  private final TwoFloatInFloatOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public FloatStreamFloatValueInFloatStreamOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValueStream param1, FloatValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamFloats(FloatConsumer cons) {
-    float value2 = param2.getFloat();
-    if (param2.exists()) {
-      param1.streamFloats(value1 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-abstract class MultiFloatValueInFloatValueOutFunction extends AbstractFloatValue {
-  protected final FloatValue[] params;
-  protected final TwoFloatInFloatOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public MultiFloatValueInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
-    this.name = name;
-    this.lambda = lambda;
-    this.params = params;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
-  }
-
-  protected boolean exists = false;
-  protected float temp;
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class MultiFloatValueInFloatValueOutRequireAllFunction extends MultiFloatValueInFloatValueOutFunction {
-
-  public MultiFloatValueInFloatValueOutRequireAllFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public float getFloat() {
-    float value = params[0].getFloat();
-    exists = params[0].exists();
-    for (int i = 1; i < params.length && exists; ++i) {
-      value = lambda.apply(value, params[i].getFloat());
-      exists = params[i].exists();
-    }
-    return value;
-  }
-}
-class MultiFloatValueInFloatValueOutRequireOneFunction extends MultiFloatValueInFloatValueOutFunction {
-
-  public MultiFloatValueInFloatValueOutRequireOneFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public float getFloat() {
-    int i = -1;
-    float value = 0;
-    exists = false;
-    while (++i < params.length) {
-      value = params[i].getFloat();
-      exists = params[i].exists();
-      if (exists) {
-        break;
-      }
-    }
-    while (++i < params.length) {
-      temp = params[i].getFloat();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
-      }
-    }
-    return value;
-  }
-}
-class DoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
-  private final DoubleValue param;
-  private final DoubleInDoubleOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DoubleValueInDoubleValueOutFunction(String name, DoubleInDoubleOutLambda lambda, DoubleValue param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public double getDouble() {
-    double value = lambda.apply(param.getDouble());
-    exists = param.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleStreamInDoubleStreamOutFunction extends AbstractDoubleValueStream {
-  private final DoubleValueStream param;
-  private final DoubleInDoubleOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DoubleStreamInDoubleStreamOutFunction(String name, DoubleInDoubleOutLambda lambda, DoubleValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public void streamDoubles(DoubleConsumer cons) {
-    param.streamDoubles(value -> cons.accept(lambda.apply(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleStreamInDoubleValueOutFunction extends AbstractDoubleValue implements DoubleConsumer {
-  private final DoubleValueStream param;
-  private final TwoDoubleInDoubleOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DoubleStreamInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-  private double value;
-
-  @Override
-  public double getDouble() {
-    exists = false;
-    param.streamDoubles(this);
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-  public void accept(double paramValue) {
-    if (!exists) {
-      exists = true;
-      value = paramValue;
-    } else {
-      value = lambda.apply(value, paramValue);
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class TwoDoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
-  private final DoubleValue param1;
-  private final DoubleValue param2;
-  private final TwoDoubleInDoubleOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public TwoDoubleValueInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue param1, DoubleValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public double getDouble() {
-    double value = lambda.apply(param1.getDouble(), param2.getDouble());
-    exists = param1.exists() && param2.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleValueDoubleStreamInDoubleStreamOutFunction extends AbstractDoubleValueStream {
-  private final DoubleValue param1;
-  private final DoubleValueStream param2;
-  private final TwoDoubleInDoubleOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DoubleValueDoubleStreamInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue param1, DoubleValueStream param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamDoubles(DoubleConsumer cons) {
-    double value1 = param1.getDouble();
-    if (param1.exists()) {
-      param2.streamDoubles(value2 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleStreamDoubleValueInDoubleStreamOutFunction extends AbstractDoubleValueStream {
-  private final DoubleValueStream param1;
-  private final DoubleValue param2;
-  private final TwoDoubleInDoubleOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DoubleStreamDoubleValueInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param1, DoubleValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamDoubles(DoubleConsumer cons) {
-    double value2 = param2.getDouble();
-    if (param2.exists()) {
-      param1.streamDoubles(value1 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-abstract class MultiDoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
-  protected final DoubleValue[] params;
-  protected final TwoDoubleInDoubleOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public MultiDoubleValueInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
-    this.name = name;
-    this.lambda = lambda;
-    this.params = params;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
-  }
-
-  protected boolean exists = false;
-  protected double temp;
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class MultiDoubleValueInDoubleValueOutRequireAllFunction extends MultiDoubleValueInDoubleValueOutFunction {
-
-  public MultiDoubleValueInDoubleValueOutRequireAllFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public double getDouble() {
-    double value = params[0].getDouble();
-    exists = params[0].exists();
-    for (int i = 1; i < params.length && exists; ++i) {
-      value = lambda.apply(value, params[i].getDouble());
-      exists = params[i].exists();
-    }
-    return value;
-  }
-}
-class MultiDoubleValueInDoubleValueOutRequireOneFunction extends MultiDoubleValueInDoubleValueOutFunction {
-
-  public MultiDoubleValueInDoubleValueOutRequireOneFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public double getDouble() {
-    int i = -1;
-    double value = 0;
-    exists = false;
-    while (++i < params.length) {
-      value = params[i].getDouble();
-      exists = params[i].exists();
-      if (exists) {
-        break;
-      }
-    }
-    while (++i < params.length) {
-      temp = params[i].getDouble();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
-      }
-    }
-    return value;
-  }
-}
-class DateValueInDateValueOutFunction extends AbstractDateValue {
-  private final DateValue param;
-  private final LongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DateValueInDateValueOutFunction(String name, LongInLongOutLambda lambda, DateValue param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = lambda.apply(param.getLong());
-    exists = param.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateStreamInDateStreamOutFunction extends AbstractDateValueStream {
-  private final DateValueStream param;
-  private final LongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DateStreamInDateStreamOutFunction(String name, LongInLongOutLambda lambda, DateValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    param.streamLongs(value -> cons.accept(lambda.apply(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateStreamInDateValueOutFunction extends AbstractDateValue implements LongConsumer {
-  private final DateValueStream param;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DateStreamInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-  private long value;
-
-  @Override
-  public long getLong() {
-    exists = false;
-    param.streamLongs(this);
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-  public void accept(long paramValue) {
-    if (!exists) {
-      exists = true;
-      value = paramValue;
-    } else {
-      value = lambda.apply(value, paramValue);
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class TwoDateValueInDateValueOutFunction extends AbstractDateValue {
-  private final DateValue param1;
-  private final DateValue param2;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public TwoDateValueInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue param1, DateValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = lambda.apply(param1.getLong(), param2.getLong());
-    exists = param1.exists() && param2.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateValueDateStreamInDateStreamOutFunction extends AbstractDateValueStream {
-  private final DateValue param1;
-  private final DateValueStream param2;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DateValueDateStreamInDateStreamOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue param1, DateValueStream param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long value1 = param1.getLong();
-    if (param1.exists()) {
-      param2.streamLongs(value2 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateStreamDateValueInDateStreamOutFunction extends AbstractDateValueStream {
-  private final DateValueStream param1;
-  private final DateValue param2;
-  private final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public DateStreamDateValueInDateStreamOutFunction(String name, TwoLongInLongOutLambda lambda, DateValueStream param1, DateValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long value2 = param2.getLong();
-    if (param2.exists()) {
-      param1.streamLongs(value1 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-abstract class MultiDateValueInDateValueOutFunction extends AbstractDateValue {
-  protected final DateValue[] params;
-  protected final TwoLongInLongOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public MultiDateValueInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
-    this.name = name;
-    this.lambda = lambda;
-    this.params = params;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
-  }
-
-  protected boolean exists = false;
-  protected long temp;
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class MultiDateValueInDateValueOutRequireAllFunction extends MultiDateValueInDateValueOutFunction {
-
-  public MultiDateValueInDateValueOutRequireAllFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public long getLong() {
-    long value = params[0].getLong();
-    exists = params[0].exists();
-    for (int i = 1; i < params.length && exists; ++i) {
-      value = lambda.apply(value, params[i].getLong());
-      exists = params[i].exists();
-    }
-    return value;
-  }
-}
-class MultiDateValueInDateValueOutRequireOneFunction extends MultiDateValueInDateValueOutFunction {
-
-  public MultiDateValueInDateValueOutRequireOneFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public long getLong() {
-    int i = -1;
-    long value = 0;
-    exists = false;
-    while (++i < params.length) {
-      value = params[i].getLong();
-      exists = params[i].exists();
-      if (exists) {
-        break;
-      }
-    }
-    while (++i < params.length) {
-      temp = params[i].getLong();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
-      }
-    }
-    return value;
-  }
-}
-class StringValueInStringValueOutFunction extends AbstractStringValue {
-  private final StringValue param;
-  private final StringInStringOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public StringValueInStringValueOutFunction(String name, StringInStringOutLambda lambda, StringValue param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public String getString() {
-    String value = lambda.apply(param.getString());
-    exists = param.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class StringStreamInStringStreamOutFunction extends AbstractStringValueStream {
-  private final StringValueStream param;
-  private final StringInStringOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public StringStreamInStringStreamOutFunction(String name, StringInStringOutLambda lambda, StringValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  @Override
-  public void streamStrings(Consumer<String> cons) {
-    param.streamStrings(value -> cons.accept(lambda.apply(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class StringStreamInStringValueOutFunction extends AbstractStringValue implements Consumer<String> {
-  private final StringValueStream param;
-  private final TwoStringInStringOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public StringStreamInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValueStream param) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
-  }
-
-  private boolean exists = false;
-  private String value;
-
-  @Override
-  public String getString() {
-    exists = false;
-    param.streamStrings(this);
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-  public void accept(String paramValue) {
-    if (!exists) {
-      exists = true;
-      value = paramValue;
-    } else {
-      value = lambda.apply(value, paramValue);
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class TwoStringValueInStringValueOutFunction extends AbstractStringValue {
-  private final StringValue param1;
-  private final StringValue param2;
-  private final TwoStringInStringOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public TwoStringValueInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue param1, StringValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  private boolean exists = false;
-
-  @Override
-  public String getString() {
-    String value = lambda.apply(param1.getString(), param2.getString());
-    exists = param1.exists() && param2.exists();
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class StringValueStringStreamInStringStreamOutFunction extends AbstractStringValueStream {
-  private final StringValue param1;
-  private final StringValueStream param2;
-  private final TwoStringInStringOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public StringValueStringStreamInStringStreamOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue param1, StringValueStream param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamStrings(Consumer<String> cons) {
-    String value1 = param1.getString();
-    if (param1.exists()) {
-      param2.streamStrings(value2 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class StringStreamStringValueInStringStreamOutFunction extends AbstractStringValueStream {
-  private final StringValueStream param1;
-  private final StringValue param2;
-  private final TwoStringInStringOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public StringStreamStringValueInStringStreamOutFunction(String name, TwoStringInStringOutLambda lambda, StringValueStream param1, StringValue param2) {
-    this.name = name;
-    this.lambda = lambda;
-    this.param1 = param1;
-    this.param2 = param2;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
-  }
-
-  @Override
-  public void streamStrings(Consumer<String> cons) {
-    String value2 = param2.getString();
-    if (param2.exists()) {
-      param1.streamStrings(value1 -> cons.accept(lambda.apply(value1,value2)));
-    }
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-abstract class MultiStringValueInStringValueOutFunction extends AbstractStringValue {
-  protected final StringValue[] params;
-  protected final TwoStringInStringOutLambda lambda;
-  private final String name;
-  private final String exprStr;
-  private final ExpressionType funcType;
-
-  public MultiStringValueInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
-    this.name = name;
-    this.lambda = lambda;
-    this.params = params;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
-  }
-
-  protected boolean exists = false;
-  protected String temp = null;
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class MultiStringValueInStringValueOutRequireAllFunction extends MultiStringValueInStringValueOutFunction {
-
-  public MultiStringValueInStringValueOutRequireAllFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public String getString() {
-    String value = params[0].getString();
-    exists = params[0].exists();
-    for (int i = 1; i < params.length && exists; ++i) {
-      temp = params[i].getString();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
+    public void accept(boolean paramValue) {
+      if (!exists) {
+        exists = true;
+        value = paramValue;
       } else {
-        exists = false;
-        value = null;
+        value = lambda.apply(value, paramValue);
       }
     }
-    return value;
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class TwoBooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
+    private final BooleanValue param1;
+    private final BooleanValue param2;
+    private final TwoBoolInBoolOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public TwoBooleanValueInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue param1, BooleanValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public boolean getBoolean() {
+      boolean value = lambda.apply(param1.getBoolean(), param2.getBoolean());
+      exists = param1.exists() && param2.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class BooleanValueBooleanStreamInBooleanStreamOutFunction extends AbstractBooleanValueStream {
+    private final BooleanValue param1;
+    private final BooleanValueStream param2;
+    private final TwoBoolInBoolOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public BooleanValueBooleanStreamInBooleanStreamOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue param1, BooleanValueStream param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      boolean value1 = param1.getBoolean();
+      if (param1.exists()) {
+        param2.streamBooleans(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class BooleanStreamBooleanValueInBooleanStreamOutFunction extends AbstractBooleanValueStream {
+    private final BooleanValueStream param1;
+    private final BooleanValue param2;
+    private final TwoBoolInBoolOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public BooleanStreamBooleanValueInBooleanStreamOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValueStream param1, BooleanValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      boolean value2 = param2.getBoolean();
+      if (param2.exists()) {
+        param1.streamBooleans(value1 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  abstract static class MultiBooleanValueInBooleanValueOutFunction extends AbstractBooleanValue {
+    protected final BooleanValue[] params;
+    protected final TwoBoolInBoolOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public MultiBooleanValueInBooleanValueOutFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
+      this.name = name;
+      this.lambda = lambda;
+      this.params = params;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
+    }
+
+    protected boolean exists = false;
+    protected boolean temp;
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class MultiBooleanValueInBooleanValueOutRequireAllFunction extends MultiBooleanValueInBooleanValueOutFunction {
+
+    public MultiBooleanValueInBooleanValueOutRequireAllFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public boolean getBoolean() {
+      boolean value = params[0].getBoolean();
+      exists = params[0].exists();
+      for (int i = 1; i < params.length && exists; ++i) {
+        value = lambda.apply(value, params[i].getBoolean());
+        exists = params[i].exists();
+      }
+      return value;
+    }
+  }
+
+  static class MultiBooleanValueInBooleanValueOutRequireOneFunction extends MultiBooleanValueInBooleanValueOutFunction {
+
+    public MultiBooleanValueInBooleanValueOutRequireOneFunction(String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public boolean getBoolean() {
+      int i = -1;
+      boolean value = false;
+      exists = false;
+      while (++i < params.length) {
+        value = params[i].getBoolean();
+        exists = params[i].exists();
+        if (exists) {
+          break;
+        }
+      }
+      while (++i < params.length) {
+        temp = params[i].getBoolean();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        }
+      }
+      return value;
+    }
+  }
+
+  static class IntValueInIntValueOutFunction extends AbstractIntValue {
+    private final IntValue param;
+    private final IntInIntOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public IntValueInIntValueOutFunction(String name, IntInIntOutLambda lambda, IntValue param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public int getInt() {
+      int value = lambda.apply(param.getInt());
+      exists = param.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class IntStreamInIntStreamOutFunction extends AbstractIntValueStream {
+    private final IntValueStream param;
+    private final IntInIntOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public IntStreamInIntStreamOutFunction(String name, IntInIntOutLambda lambda, IntValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    @Override
+    public void streamInts(IntConsumer cons) {
+      param.streamInts(value -> cons.accept(lambda.apply(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class IntStreamInIntValueOutFunction extends AbstractIntValue implements IntConsumer {
+    private final IntValueStream param;
+    private final TwoIntInIntOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public IntStreamInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+    private int value;
+
+    @Override
+    public int getInt() {
+      exists = false;
+      param.streamInts(this);
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+    public void accept(int paramValue) {
+      if (!exists) {
+        exists = true;
+        value = paramValue;
+      } else {
+        value = lambda.apply(value, paramValue);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class TwoIntValueInIntValueOutFunction extends AbstractIntValue {
+    private final IntValue param1;
+    private final IntValue param2;
+    private final TwoIntInIntOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public TwoIntValueInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue param1, IntValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public int getInt() {
+      int value = lambda.apply(param1.getInt(), param2.getInt());
+      exists = param1.exists() && param2.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class IntValueIntStreamInIntStreamOutFunction extends AbstractIntValueStream {
+    private final IntValue param1;
+    private final IntValueStream param2;
+    private final TwoIntInIntOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public IntValueIntStreamInIntStreamOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue param1, IntValueStream param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamInts(IntConsumer cons) {
+      int value1 = param1.getInt();
+      if (param1.exists()) {
+        param2.streamInts(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class IntStreamIntValueInIntStreamOutFunction extends AbstractIntValueStream {
+    private final IntValueStream param1;
+    private final IntValue param2;
+    private final TwoIntInIntOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public IntStreamIntValueInIntStreamOutFunction(String name, TwoIntInIntOutLambda lambda, IntValueStream param1, IntValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamInts(IntConsumer cons) {
+      int value2 = param2.getInt();
+      if (param2.exists()) {
+        param1.streamInts(value1 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  abstract static class MultiIntValueInIntValueOutFunction extends AbstractIntValue {
+    protected final IntValue[] params;
+    protected final TwoIntInIntOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public MultiIntValueInIntValueOutFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
+      this.name = name;
+      this.lambda = lambda;
+      this.params = params;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
+    }
+
+    protected boolean exists = false;
+    protected int temp;
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class MultiIntValueInIntValueOutRequireAllFunction extends MultiIntValueInIntValueOutFunction {
+
+    public MultiIntValueInIntValueOutRequireAllFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public int getInt() {
+      int value = params[0].getInt();
+      exists = params[0].exists();
+      for (int i = 1; i < params.length && exists; ++i) {
+        value = lambda.apply(value, params[i].getInt());
+        exists = params[i].exists();
+      }
+      return value;
+    }
+  }
+
+  static class MultiIntValueInIntValueOutRequireOneFunction extends MultiIntValueInIntValueOutFunction {
+
+    public MultiIntValueInIntValueOutRequireOneFunction(String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public int getInt() {
+      int i = -1;
+      int value = 0;
+      exists = false;
+      while (++i < params.length) {
+        value = params[i].getInt();
+        exists = params[i].exists();
+        if (exists) {
+          break;
+        }
+      }
+      while (++i < params.length) {
+        temp = params[i].getInt();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        }
+      }
+      return value;
+    }
+  }
+
+  static class LongValueInLongValueOutFunction extends AbstractLongValue {
+    private final LongValue param;
+    private final LongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public LongValueInLongValueOutFunction(String name, LongInLongOutLambda lambda, LongValue param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public long getLong() {
+      long value = lambda.apply(param.getLong());
+      exists = param.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class LongStreamInLongStreamOutFunction extends AbstractLongValueStream {
+    private final LongValueStream param;
+    private final LongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public LongStreamInLongStreamOutFunction(String name, LongInLongOutLambda lambda, LongValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      param.streamLongs(value -> cons.accept(lambda.apply(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class LongStreamInLongValueOutFunction extends AbstractLongValue implements LongConsumer {
+    private final LongValueStream param;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public LongStreamInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+    private long value;
+
+    @Override
+    public long getLong() {
+      exists = false;
+      param.streamLongs(this);
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+    public void accept(long paramValue) {
+      if (!exists) {
+        exists = true;
+        value = paramValue;
+      } else {
+        value = lambda.apply(value, paramValue);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class TwoLongValueInLongValueOutFunction extends AbstractLongValue {
+    private final LongValue param1;
+    private final LongValue param2;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public TwoLongValueInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue param1, LongValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public long getLong() {
+      long value = lambda.apply(param1.getLong(), param2.getLong());
+      exists = param1.exists() && param2.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class LongValueLongStreamInLongStreamOutFunction extends AbstractLongValueStream {
+    private final LongValue param1;
+    private final LongValueStream param2;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public LongValueLongStreamInLongStreamOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue param1, LongValueStream param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long value1 = param1.getLong();
+      if (param1.exists()) {
+        param2.streamLongs(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class LongStreamLongValueInLongStreamOutFunction extends AbstractLongValueStream {
+    private final LongValueStream param1;
+    private final LongValue param2;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public LongStreamLongValueInLongStreamOutFunction(String name, TwoLongInLongOutLambda lambda, LongValueStream param1, LongValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long value2 = param2.getLong();
+      if (param2.exists()) {
+        param1.streamLongs(value1 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  abstract static class MultiLongValueInLongValueOutFunction extends AbstractLongValue {
+    protected final LongValue[] params;
+    protected final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public MultiLongValueInLongValueOutFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
+      this.name = name;
+      this.lambda = lambda;
+      this.params = params;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
+    }
+
+    protected boolean exists = false;
+    protected long temp;
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class MultiLongValueInLongValueOutRequireAllFunction extends MultiLongValueInLongValueOutFunction {
+
+    public MultiLongValueInLongValueOutRequireAllFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public long getLong() {
+      long value = params[0].getLong();
+      exists = params[0].exists();
+      for (int i = 1; i < params.length && exists; ++i) {
+        value = lambda.apply(value, params[i].getLong());
+        exists = params[i].exists();
+      }
+      return value;
+    }
+  }
+
+  static class MultiLongValueInLongValueOutRequireOneFunction extends MultiLongValueInLongValueOutFunction {
+
+    public MultiLongValueInLongValueOutRequireOneFunction(String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public long getLong() {
+      int i = -1;
+      long value = 0;
+      exists = false;
+      while (++i < params.length) {
+        value = params[i].getLong();
+        exists = params[i].exists();
+        if (exists) {
+          break;
+        }
+      }
+      while (++i < params.length) {
+        temp = params[i].getLong();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        }
+      }
+      return value;
+    }
+  }
+
+  static class FloatValueInFloatValueOutFunction extends AbstractFloatValue {
+    private final FloatValue param;
+    private final FloatInFloatOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public FloatValueInFloatValueOutFunction(String name, FloatInFloatOutLambda lambda, FloatValue param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public float getFloat() {
+      float value = lambda.apply(param.getFloat());
+      exists = param.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class FloatStreamInFloatStreamOutFunction extends AbstractFloatValueStream {
+    private final FloatValueStream param;
+    private final FloatInFloatOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public FloatStreamInFloatStreamOutFunction(String name, FloatInFloatOutLambda lambda, FloatValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    @Override
+    public void streamFloats(FloatConsumer cons) {
+      param.streamFloats(value -> cons.accept(lambda.apply(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class FloatStreamInFloatValueOutFunction extends AbstractFloatValue implements FloatConsumer {
+    private final FloatValueStream param;
+    private final TwoFloatInFloatOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public FloatStreamInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+    private float value;
+
+    @Override
+    public float getFloat() {
+      exists = false;
+      param.streamFloats(this);
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+    public void accept(float paramValue) {
+      if (!exists) {
+        exists = true;
+        value = paramValue;
+      } else {
+        value = lambda.apply(value, paramValue);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class TwoFloatValueInFloatValueOutFunction extends AbstractFloatValue {
+    private final FloatValue param1;
+    private final FloatValue param2;
+    private final TwoFloatInFloatOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public TwoFloatValueInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue param1, FloatValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public float getFloat() {
+      float value = lambda.apply(param1.getFloat(), param2.getFloat());
+      exists = param1.exists() && param2.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class FloatValueFloatStreamInFloatStreamOutFunction extends AbstractFloatValueStream {
+    private final FloatValue param1;
+    private final FloatValueStream param2;
+    private final TwoFloatInFloatOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public FloatValueFloatStreamInFloatStreamOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue param1, FloatValueStream param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamFloats(FloatConsumer cons) {
+      float value1 = param1.getFloat();
+      if (param1.exists()) {
+        param2.streamFloats(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class FloatStreamFloatValueInFloatStreamOutFunction extends AbstractFloatValueStream {
+    private final FloatValueStream param1;
+    private final FloatValue param2;
+    private final TwoFloatInFloatOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public FloatStreamFloatValueInFloatStreamOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValueStream param1, FloatValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamFloats(FloatConsumer cons) {
+      float value2 = param2.getFloat();
+      if (param2.exists()) {
+        param1.streamFloats(value1 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  abstract static class MultiFloatValueInFloatValueOutFunction extends AbstractFloatValue {
+    protected final FloatValue[] params;
+    protected final TwoFloatInFloatOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public MultiFloatValueInFloatValueOutFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
+      this.name = name;
+      this.lambda = lambda;
+      this.params = params;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
+    }
+
+    protected boolean exists = false;
+    protected float temp;
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class MultiFloatValueInFloatValueOutRequireAllFunction extends MultiFloatValueInFloatValueOutFunction {
+
+    public MultiFloatValueInFloatValueOutRequireAllFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public float getFloat() {
+      float value = params[0].getFloat();
+      exists = params[0].exists();
+      for (int i = 1; i < params.length && exists; ++i) {
+        value = lambda.apply(value, params[i].getFloat());
+        exists = params[i].exists();
+      }
+      return value;
+    }
+  }
+
+  static class MultiFloatValueInFloatValueOutRequireOneFunction extends MultiFloatValueInFloatValueOutFunction {
+
+    public MultiFloatValueInFloatValueOutRequireOneFunction(String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public float getFloat() {
+      int i = -1;
+      float value = 0;
+      exists = false;
+      while (++i < params.length) {
+        value = params[i].getFloat();
+        exists = params[i].exists();
+        if (exists) {
+          break;
+        }
+      }
+      while (++i < params.length) {
+        temp = params[i].getFloat();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        }
+      }
+      return value;
+    }
+  }
+
+  static class DoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
+    private final DoubleValue param;
+    private final DoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleValueInDoubleValueOutFunction(String name, DoubleInDoubleOutLambda lambda, DoubleValue param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public double getDouble() {
+      double value = lambda.apply(param.getDouble());
+      exists = param.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class DoubleStreamInDoubleStreamOutFunction extends AbstractDoubleValueStream {
+    private final DoubleValueStream param;
+    private final DoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleStreamInDoubleStreamOutFunction(String name, DoubleInDoubleOutLambda lambda, DoubleValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    @Override
+    public void streamDoubles(DoubleConsumer cons) {
+      param.streamDoubles(value -> cons.accept(lambda.apply(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class DoubleStreamInDoubleValueOutFunction extends AbstractDoubleValue implements DoubleConsumer {
+    private final DoubleValueStream param;
+    private final TwoDoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleStreamInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+    private double value;
+
+    @Override
+    public double getDouble() {
+      exists = false;
+      param.streamDoubles(this);
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+    public void accept(double paramValue) {
+      if (!exists) {
+        exists = true;
+        value = paramValue;
+      } else {
+        value = lambda.apply(value, paramValue);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class TwoDoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
+    private final DoubleValue param1;
+    private final DoubleValue param2;
+    private final TwoDoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public TwoDoubleValueInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue param1, DoubleValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public double getDouble() {
+      double value = lambda.apply(param1.getDouble(), param2.getDouble());
+      exists = param1.exists() && param2.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class DoubleValueDoubleStreamInDoubleStreamOutFunction extends AbstractDoubleValueStream {
+    private final DoubleValue param1;
+    private final DoubleValueStream param2;
+    private final TwoDoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleValueDoubleStreamInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue param1, DoubleValueStream param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamDoubles(DoubleConsumer cons) {
+      double value1 = param1.getDouble();
+      if (param1.exists()) {
+        param2.streamDoubles(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class DoubleStreamDoubleValueInDoubleStreamOutFunction extends AbstractDoubleValueStream {
+    private final DoubleValueStream param1;
+    private final DoubleValue param2;
+    private final TwoDoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DoubleStreamDoubleValueInDoubleStreamOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param1, DoubleValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamDoubles(DoubleConsumer cons) {
+      double value2 = param2.getDouble();
+      if (param2.exists()) {
+        param1.streamDoubles(value1 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  abstract static class MultiDoubleValueInDoubleValueOutFunction extends AbstractDoubleValue {
+    protected final DoubleValue[] params;
+    protected final TwoDoubleInDoubleOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public MultiDoubleValueInDoubleValueOutFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
+      this.name = name;
+      this.lambda = lambda;
+      this.params = params;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
+    }
+
+    protected boolean exists = false;
+    protected double temp;
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class MultiDoubleValueInDoubleValueOutRequireAllFunction extends MultiDoubleValueInDoubleValueOutFunction {
+
+    public MultiDoubleValueInDoubleValueOutRequireAllFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public double getDouble() {
+      double value = params[0].getDouble();
+      exists = params[0].exists();
+      for (int i = 1; i < params.length && exists; ++i) {
+        value = lambda.apply(value, params[i].getDouble());
+        exists = params[i].exists();
+      }
+      return value;
+    }
+  }
+
+  static class MultiDoubleValueInDoubleValueOutRequireOneFunction extends MultiDoubleValueInDoubleValueOutFunction {
+
+    public MultiDoubleValueInDoubleValueOutRequireOneFunction(String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public double getDouble() {
+      int i = -1;
+      double value = 0;
+      exists = false;
+      while (++i < params.length) {
+        value = params[i].getDouble();
+        exists = params[i].exists();
+        if (exists) {
+          break;
+        }
+      }
+      while (++i < params.length) {
+        temp = params[i].getDouble();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        }
+      }
+      return value;
+    }
+  }
+  static class DateValueInDateValueOutFunction extends AbstractDateValue {
+    private final DateValue param;
+    private final LongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DateValueInDateValueOutFunction(String name, LongInLongOutLambda lambda, DateValue param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public long getLong() {
+      long value = lambda.apply(param.getLong());
+      exists = param.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class DateStreamInDateStreamOutFunction extends AbstractDateValueStream {
+    private final DateValueStream param;
+    private final LongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DateStreamInDateStreamOutFunction(String name, LongInLongOutLambda lambda, DateValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      param.streamLongs(value -> cons.accept(lambda.apply(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class DateStreamInDateValueOutFunction extends AbstractDateValue implements LongConsumer {
+    private final DateValueStream param;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DateStreamInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+    private long value;
+
+    @Override
+    public long getLong() {
+      exists = false;
+      param.streamLongs(this);
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+    public void accept(long paramValue) {
+      if (!exists) {
+        exists = true;
+        value = paramValue;
+      } else {
+        value = lambda.apply(value, paramValue);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class TwoDateValueInDateValueOutFunction extends AbstractDateValue {
+    private final DateValue param1;
+    private final DateValue param2;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public TwoDateValueInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue param1, DateValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public long getLong() {
+      long value = lambda.apply(param1.getLong(), param2.getLong());
+      exists = param1.exists() && param2.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class DateValueDateStreamInDateStreamOutFunction extends AbstractDateValueStream {
+    private final DateValue param1;
+    private final DateValueStream param2;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DateValueDateStreamInDateStreamOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue param1, DateValueStream param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long value1 = param1.getLong();
+      if (param1.exists()) {
+        param2.streamLongs(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class DateStreamDateValueInDateStreamOutFunction extends AbstractDateValueStream {
+    private final DateValueStream param1;
+    private final DateValue param2;
+    private final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public DateStreamDateValueInDateStreamOutFunction(String name, TwoLongInLongOutLambda lambda, DateValueStream param1, DateValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long value2 = param2.getLong();
+      if (param2.exists()) {
+        param1.streamLongs(value1 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  abstract static class MultiDateValueInDateValueOutFunction extends AbstractDateValue {
+    protected final DateValue[] params;
+    protected final TwoLongInLongOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public MultiDateValueInDateValueOutFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
+      this.name = name;
+      this.lambda = lambda;
+      this.params = params;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
+    }
+
+    protected boolean exists = false;
+    protected long temp;
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class MultiDateValueInDateValueOutRequireAllFunction extends LambdaFunction.MultiDateValueInDateValueOutFunction {
+
+    public MultiDateValueInDateValueOutRequireAllFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public long getLong() {
+      long value = params[0].getLong();
+      exists = params[0].exists();
+      for (int i = 1; i < params.length && exists; ++i) {
+        value = lambda.apply(value, params[i].getLong());
+        exists = params[i].exists();
+      }
+      return value;
+    }
+  }
+  static class MultiDateValueInDateValueOutRequireOneFunction extends LambdaFunction.MultiDateValueInDateValueOutFunction {
+
+    public MultiDateValueInDateValueOutRequireOneFunction(String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public long getLong() {
+      int i = -1;
+      long value = 0;
+      exists = false;
+      while (++i < params.length) {
+        value = params[i].getLong();
+        exists = params[i].exists();
+        if (exists) {
+          break;
+        }
+      }
+      while (++i < params.length) {
+        temp = params[i].getLong();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        }
+      }
+      return value;
+    }
+  }
+  static class StringValueInStringValueOutFunction extends AbstractStringValue {
+    private final StringValue param;
+    private final StringInStringOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringValueInStringValueOutFunction(String name, StringInStringOutLambda lambda, StringValue param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public String getString() {
+      String value = lambda.apply(param.getString());
+      exists = param.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class StringStreamInStringStreamOutFunction extends AbstractStringValueStream {
+    private final StringValueStream param;
+    private final StringInStringOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringStreamInStringStreamOutFunction(String name, StringInStringOutLambda lambda, StringValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    @Override
+    public void streamStrings(Consumer<String> cons) {
+      param.streamStrings(value -> cons.accept(lambda.apply(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class StringStreamInStringValueOutFunction extends AbstractStringValue implements Consumer<String> {
+    private final StringValueStream param;
+    private final TwoStringInStringOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringStreamInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValueStream param) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param = param;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+    }
+
+    private boolean exists = false;
+    private String value;
+
+    @Override
+    public String getString() {
+      exists = false;
+      param.streamStrings(this);
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+    public void accept(String paramValue) {
+      if (!exists) {
+        exists = true;
+        value = paramValue;
+      } else {
+        value = lambda.apply(value, paramValue);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class TwoStringValueInStringValueOutFunction extends AbstractStringValue {
+    private final StringValue param1;
+    private final StringValue param2;
+    private final TwoStringInStringOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public TwoStringValueInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue param1, StringValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    private boolean exists = false;
+
+    @Override
+    public String getString() {
+      String value = lambda.apply(param1.getString(), param2.getString());
+      exists = param1.exists() && param2.exists();
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class StringValueStringStreamInStringStreamOutFunction extends AbstractStringValueStream {
+    private final StringValue param1;
+    private final StringValueStream param2;
+    private final TwoStringInStringOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringValueStringStreamInStringStreamOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue param1, StringValueStream param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamStrings(Consumer<String> cons) {
+      String value1 = param1.getString();
+      if (param1.exists()) {
+        param2.streamStrings(value2 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+  static class StringStreamStringValueInStringStreamOutFunction extends AbstractStringValueStream {
+    private final StringValueStream param1;
+    private final StringValue param2;
+    private final TwoStringInStringOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringStreamStringValueInStringStreamOutFunction(String name, TwoStringInStringOutLambda lambda, StringValueStream param1, StringValue param2) {
+      this.name = name;
+      this.lambda = lambda;
+      this.param1 = param1;
+      this.param2 = param2;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param1,param2);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param1,param2);
+    }
+
+    @Override
+    public void streamStrings(Consumer<String> cons) {
+      String value2 = param2.getString();
+      if (param2.exists()) {
+        param1.streamStrings(value1 -> cons.accept(lambda.apply(value1,value2)));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  abstract static class MultiStringValueInStringValueOutFunction extends AbstractStringValue {
+    protected final StringValue[] params;
+    protected final TwoStringInStringOutLambda lambda;
+    private final String name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public MultiStringValueInStringValueOutFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
+      this.name = name;
+      this.lambda = lambda;
+      this.params = params;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,params);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,params);
+    }
+
+    protected boolean exists = false;
+    protected String temp = null;
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  static class MultiStringValueInStringValueOutRequireAllFunction extends MultiStringValueInStringValueOutFunction {
+
+    public MultiStringValueInStringValueOutRequireAllFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public String getString() {
+      String value = params[0].getString();
+      exists = params[0].exists();
+      for (int i = 1; i < params.length && exists; ++i) {
+        temp = params[i].getString();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        } else {
+          exists = false;
+          value = null;
+        }
+      }
+      return value;
+    }
+  }
+
+  static class MultiStringValueInStringValueOutRequireOneFunction extends MultiStringValueInStringValueOutFunction {
+
+    public MultiStringValueInStringValueOutRequireOneFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
+      super(name, lambda, params);
+    }
+
+    @Override
+    public String getString() {
+      int i = -1;
+      String value = null;
+      exists = false;
+      while (++i < params.length) {
+        value = params[i].getString();
+        exists = params[i].exists();
+        if (exists) {
+          break;
+        }
+      }
+      while (++i < params.length) {
+        temp = params[i].getString();
+        if (params[i].exists()) {
+          value = lambda.apply(value, temp);
+        }
+      }
+      return value;
+    }
   }
 }
-class MultiStringValueInStringValueOutRequireOneFunction extends MultiStringValueInStringValueOutFunction {
 
-  public MultiStringValueInStringValueOutRequireOneFunction(String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
-    super(name, lambda, params);
-  }
-
-  @Override
-  public String getString() {
-    int i = -1;
-    String value = null;
-    exists = false;
-    while (++i < params.length) {
-      value = params[i].getString();
-      exists = params[i].exists();
-      if (exists) {
-        break;
-      }
-    }
-    while (++i < params.length) {
-      temp = params[i].getString();
-      if (params[i].exists()) {
-        value = lambda.apply(value, temp);
-      }
-    }
-    return value;
-  }
-}

@@ -1,38 +1,27 @@
-# .
-/eclipse-build
-/maven-build
-/classes
-build
-/idea-build
-dist
-lib
-test-lib
-/*~
-/velocity.log
-/build.properties
-/.idea
-lucene/**/*.iml
-parent.iml
-*.ipr
-*.iws
+# Gradle
+#    Ignore the generated local settings file.
+/gradle.properties
+.gradle/
+build/
+
+# IntelliJ IDEA
+/.idea/
+#    IntelliJ creates this folder, ignore.
+/dev-tools/missing-doclet/out/
+
+# Eclipse
 /.project
 /.classpath
-/.settings
-/.caches
-/prj.el
-/bin
-/bin.*
-pom.xml
-/nbproject
-/nb-build
-.pydevproject
-__pycache__
-/dev-tools/scripts/scripts.iml
+/.settings/
+#    Eclipse Gradle oddity
+**/bin/default/
+
+# macOS
 .DS_Store
 
-build/
-.gradle/
-.idea/
+# Python
+.pydevproject
+__pycache__
 
-# Ignore the generated local settings file.
-gradle.properties
+# Emacs backup
+*~

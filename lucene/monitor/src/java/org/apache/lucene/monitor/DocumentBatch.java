@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Supplier;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -49,11 +48,18 @@ abstract class DocumentBatch implements Closeable, Supplier<LeafReader> {
   /**
    * Create a DocumentBatch containing a set of InputDocuments
    *
-   * @param docs Collection of documents to add
+   * @param docs Collection of documents to add. There must be at least one document in the
+   *     collection.
    * @return the batch containing the input documents
    */
   public static DocumentBatch of(Analyzer analyzer, Document... docs) {
-    return new MultiDocumentBatch(analyzer, docs);
+    if (docs.length == 0) {
+      throw new IllegalArgumentException("A DocumentBatch must contain at least one document");
+    } else if (docs.length == 1) {
+      return new SingletonDocumentBatch(analyzer, docs[0]);
+    } else {
+      return new MultiDocumentBatch(analyzer, docs);
+    }
   }
 
   // Implementation of DocumentBatch for collections of documents
@@ -63,11 +69,12 @@ abstract class DocumentBatch implements Closeable, Supplier<LeafReader> {
     private final LeafReader reader;
 
     MultiDocumentBatch(Analyzer analyzer, Document... docs) {
+      assert (docs.length > 0);
       IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
       try (IndexWriter writer = new IndexWriter(directory, iwc)) {
         this.reader = build(writer, docs);
       } catch (IOException e) {
-        throw new RuntimeException(e);  // This is a RAMDirectory, so should never happen...
+        throw new RuntimeException(e); // This is a RAMDirectory, so should never happen...
       }
     }
 
@@ -89,7 +96,6 @@ abstract class DocumentBatch implements Closeable, Supplier<LeafReader> {
     public void close() throws IOException {
       IOUtils.close(reader, directory);
     }
-
   }
 
   // Specialized class for batches containing a single object - MemoryIndex benchmarks as
@@ -117,5 +123,4 @@ abstract class DocumentBatch implements Closeable, Supplier<LeafReader> {
       reader.close();
     }
   }
-
 }

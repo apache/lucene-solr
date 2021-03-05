@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.analysis.ko.tokenattributes;
 
-import org.apache.lucene.analysis.ko.POS.Type;
 import org.apache.lucene.analysis.ko.POS.Tag;
+import org.apache.lucene.analysis.ko.POS.Type;
 import org.apache.lucene.analysis.ko.Token;
 import org.apache.lucene.analysis.ko.dict.Dictionary.Morpheme;
 import org.apache.lucene.util.AttributeImpl;
@@ -25,9 +25,11 @@ import org.apache.lucene.util.AttributeReflector;
 
 /**
  * Part of Speech attributes for Korean.
+ *
  * @lucene.experimental
  */
-public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSpeechAttribute, Cloneable {
+public class PartOfSpeechAttributeImpl extends AttributeImpl
+    implements PartOfSpeechAttribute, Cloneable {
   private Token token;
 
   @Override
@@ -63,8 +65,12 @@ public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSp
   @Override
   public void reflectWith(AttributeReflector reflector) {
     String posName = getPOSType() == null ? null : getPOSType().name();
-    String rightPOS = getRightPOS() == null ? null : getRightPOS().name() + "(" + getRightPOS().description() + ")";
-    String leftPOS = getLeftPOS() == null ? null : getLeftPOS().name() + "(" + getLeftPOS().description() + ")";
+    String rightPOS =
+        getRightPOS() == null
+            ? null
+            : getRightPOS().name() + "(" + getRightPOS().description() + ")";
+    String leftPOS =
+        getLeftPOS() == null ? null : getLeftPOS().name() + "(" + getLeftPOS().description() + ")";
     reflector.reflect(PartOfSpeechAttribute.class, "posType", posName);
     reflector.reflect(PartOfSpeechAttribute.class, "leftPOS", leftPOS);
     reflector.reflect(PartOfSpeechAttribute.class, "rightPOS", rightPOS);
@@ -80,7 +86,13 @@ public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSp
       if (builder.length() > 0) {
         builder.append("+");
       }
-      builder.append(morpheme.surfaceForm).append('/').append(morpheme.posTag.name()).append('(').append(morpheme.posTag.description()).append(')');
+      builder
+          .append(morpheme.surfaceForm)
+          .append('/')
+          .append(morpheme.posTag.name())
+          .append('(')
+          .append(morpheme.posTag.description())
+          .append(')');
     }
     return builder.toString();
   }

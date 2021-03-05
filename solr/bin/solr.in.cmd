@@ -35,6 +35,7 @@ REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+Prin
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.
+REM set GC_TUNE=-XX:+ExplicitGCInvokesConcurrent
 REM set GC_TUNE=-XX:SurvivorRatio=4
 REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
 REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
@@ -55,7 +56,7 @@ REM Leave empty if not using SolrCloud
 REM set ZK_HOST=
 
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
-REM set ZK_CLIENT_TIMEOUT=15000
+REM set ZK_CLIENT_TIMEOUT=30000
 
 REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
@@ -131,9 +132,9 @@ REM to enable https module with custom jetty configuration.
 REM set SOLR_SSL_ENABLED=true
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
-REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
-REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
 REM Require clients to authenticate
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
@@ -167,13 +168,13 @@ REM * javax.net.ssl.keyStorePassword
 REM * javax.net.ssl.trustStorePassword
 REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
 REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-REM set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.ssl.credential.provider.chain=hadoop
 
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory
 REM set SOLR_AUTH_TYPE=basic
-REM set SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
+REM set SOLR_AUTHENTICATION_OPTS=-Dbasicauth=solr:SolrRocks
 
 REM Settings for ZK ACL
 REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
@@ -186,20 +187,29 @@ REM When running Solr in non-cloud mode and if planning to do distributed search
 REM list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
 REM or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
 REM host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
-REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984
 
 REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
 REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
 REM label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
-REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.environment=prod"
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.environment=prod
 
 REM Specifies the path to a common library directory that will be shared across all cores.
 REM Any JAR files in this directory will be added to the search path for Solr plugins.
 REM If the specified path is not absolute, it will be relative to `%SOLR_HOME%`.
-REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.sharedLib=/path/to/lib"
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.sharedLib=/path/to/lib
 
 REM Runs solr in a java security manager sandbox. This can protect against some attacks.
 REM Runtime properties are passed to the security policy file (server\etc\security.policy)
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
 REM set SOLR_SECURITY_MANAGER_ENABLED=true
+REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
+REM change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+REM scripts.
+REM set SOLR_ADMIN_UI_DISABLED=false
+
+REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path"

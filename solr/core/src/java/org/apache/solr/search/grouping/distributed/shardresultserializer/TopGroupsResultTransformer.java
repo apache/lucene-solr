@@ -54,6 +54,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * Implementation for transforming {@link TopGroups} and {@link TopDocs} into a {@link NamedList} structure and
  * vice versa.
  */
+@SuppressWarnings({"rawtypes"})
 public class TopGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, ?>> {
 
   private final ResponseBuilder rb;
@@ -138,7 +139,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         groupDocs.add(new GroupDocs<>(Float.NaN, maxScore, new TotalHits(totalGroupHits.longValue(), TotalHits.Relation.EQUAL_TO), scoreDocs, groupValueRef, null));
       }
 
-      @SuppressWarnings("unchecked")
+      @SuppressWarnings({"unchecked"})
       GroupDocs<BytesRef>[] groupDocsArr = groupDocs.toArray(new GroupDocs[groupDocs.size()]);
       TopGroups<BytesRef> topGroups = new TopGroups<>(
            groupSort.getSort(), withinGroupSort.getSort(), totalHitCount, totalGroupedHitCount, groupDocsArr, Float.NaN

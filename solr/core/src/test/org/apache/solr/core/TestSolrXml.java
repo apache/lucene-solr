@@ -22,8 +22,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import org.apache.commons.exec.OS;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -56,6 +59,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     Path testSrcRoot = TEST_PATH();
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
+    System.setProperty("solr.allowPaths", OS.isFamilyWindows() ? "C:\\tmp,C:\\home\\john" : "/tmp,/home/john");
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
@@ -98,6 +102,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("a.b.C", backupRepoConfigs[0].className);
     assertEquals("true", backupRepoConfigs[0].attributes.get("default"));
     assertEquals(0, backupRepoConfigs[0].initArgs.size());
+    assertTrue("allowPaths", cfg.getAllowPaths().containsAll(OS.isFamilyWindows() ?
+            Set.of("C:\\tmp", "C:\\home\\john").stream().map(s -> Path.of(s)).collect(Collectors.toSet()) :
+            Set.of("/tmp", "/home/john").stream().map(s -> Path.of(s)).collect(Collectors.toSet())
+        )
+    );
+    System.clearProperty("solr.allowPaths");
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
@@ -119,11 +129,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   }
 
   public void testExplicitNullGivesDefaults() {
+    System.setProperty("jetty.port", "8000");
     String solrXml = "<solr>" +
         "<null name=\"maxBooleanClauses\"/>" +
         "<solrcloud>" +
         "<str name=\"host\">host</str>" +
-        "<int name=\"hostPort\">8983</int>" +
+        "<int name=\"hostPort\">0</int>" +
         "<str name=\"hostContext\">solr</str>" +
         "<null name=\"leaderVoteWait\"/>" +
         "</solrcloud></solr>";
@@ -131,6 +142,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
     assertNull("maxBooleanClauses", cfg.getBooleanQueryMaxClauseCount()); // default is null
     assertEquals("leaderVoteWait", 180000, cfg.getCloudConfig().getLeaderVoteWait());
+    assertEquals("hostPort", 8000, cfg.getCloudConfig().getSolrHostPort());
   }
 
   public void testIntAsLongBad() {
@@ -303,18 +315,25 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
 
-  public void testCloudConfigRequiresHost() {
-    expectedException.expect(SolrException.class);
-    expectedException.expectMessage("solrcloud section missing required entry 'host'");
-
-    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
-  }
-
   public void testCloudConfigRequiresHostPort() {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("solrcloud section missing required entry 'hostPort'");
 
-    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud><str name=\"host\">host</str></solrcloud></solr>");
+    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
+  }
+
+  public void testCloudConfigDefaultHostPort() {
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage("solrcloud section missing required entry 'hostPort'");
+
+    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
+  }
+
+  public void testCloudConfigRequiresHost() {
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage("solrcloud section missing required entry 'host'");
+
+    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud><int name=\"hostPort\">8983</int></solrcloud></solr>");
   }
 
   public void testCloudConfigRequiresHostContext() {

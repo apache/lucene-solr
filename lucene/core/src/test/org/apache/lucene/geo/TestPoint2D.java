@@ -30,9 +30,22 @@ public class TestPoint2D extends LuceneTestCase {
     double by = 5;
     double cx = 5;
     double cy = 4;
-    assertEquals(Relation.CELL_OUTSIDE_QUERY, point2D.relateTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(Component2D.WithinRelation.DISJOINT,
-        point2D.withinTriangle(ax, ay, random().nextBoolean(), bx, by, random().nextBoolean(), cx, cy, random().nextBoolean()));
+    assertFalse(point2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+    assertFalse(point2D.intersectsLine(ax, ay, bx, by));
+    assertFalse(point2D.containsTriangle(ax, ay, bx, by, cx, cy));
+    assertFalse(point2D.containsLine(ax, ay, bx, by));
+    assertEquals(
+        Component2D.WithinRelation.DISJOINT,
+        point2D.withinTriangle(
+            ax,
+            ay,
+            random().nextBoolean(),
+            bx,
+            by,
+            random().nextBoolean(),
+            cx,
+            cy,
+            random().nextBoolean()));
   }
 
   public void testTriangleIntersects() {
@@ -43,29 +56,48 @@ public class TestPoint2D extends LuceneTestCase {
     double by = 0;
     double cx = 0;
     double cy = 1;
-    assertEquals(Relation.CELL_CROSSES_QUERY, point2D.relateTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(Component2D.WithinRelation.CANDIDATE,
-        point2D.withinTriangle(ax, ay, random().nextBoolean(), bx, by, random().nextBoolean(), cx, cy, random().nextBoolean()));
+    assertTrue(point2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+    assertTrue(point2D.intersectsLine(ax, ay, bx, by));
+    assertFalse(point2D.containsTriangle(ax, ay, bx, by, cx, cy));
+    assertFalse(point2D.containsLine(ax, ay, bx, by));
+    assertEquals(
+        Component2D.WithinRelation.CANDIDATE,
+        point2D.withinTriangle(
+            ax,
+            ay,
+            random().nextBoolean(),
+            bx,
+            by,
+            random().nextBoolean(),
+            cx,
+            cy,
+            random().nextBoolean()));
   }
 
   public void testTriangleContains() {
     Component2D point2D = Point2D.create(new Point(0, 0));
     double ax = 0.0;
     double ay = 0.0;
-    double bx = 0;
-    double by = 0;
-    double cx = 0;
-    double cy = 0;
-    assertEquals(Relation.CELL_INSIDE_QUERY, point2D.relateTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(Component2D.WithinRelation.CANDIDATE,
-        point2D.withinTriangle(ax, ay, random().nextBoolean(), bx, by, random().nextBoolean(), cx, cy, random().nextBoolean()));
+    assertTrue(point2D.contains(ax, ay));
+    assertEquals(
+        Component2D.WithinRelation.CANDIDATE,
+        point2D.withinTriangle(
+            ax,
+            ay,
+            random().nextBoolean(),
+            ax,
+            ay,
+            random().nextBoolean(),
+            ax,
+            ay,
+            random().nextBoolean()));
   }
 
-
   public void testRandomTriangles() {
-    Component2D point2D = Point2D.create(new Point(GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()));
+    Component2D point2D =
+        Point2D.create(new Point(GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()));
 
-    for (int i =0; i < 100; i++) {
+    for (int i = 0; i < 100; i++) {
       double ax = GeoTestUtil.nextLongitude();
       double ay = GeoTestUtil.nextLatitude();
       double bx = GeoTestUtil.nextLongitude();
@@ -80,9 +112,22 @@ public class TestPoint2D extends LuceneTestCase {
 
       Relation r = point2D.relate(tMinX, tMaxX, tMinY, tMaxY);
       if (r == Relation.CELL_OUTSIDE_QUERY) {
-        assertEquals(Relation.CELL_OUTSIDE_QUERY, point2D.relateTriangle(ax, ay, bx, by, cx, cy));
-        assertEquals(Component2D.WithinRelation.DISJOINT,
-            point2D.withinTriangle(ax, ay, random().nextBoolean(), bx, by, random().nextBoolean(), cx, cy, random().nextBoolean()));
+        assertFalse(point2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+        assertFalse(point2D.intersectsLine(ax, ay, bx, by));
+        assertFalse(point2D.containsTriangle(ax, ay, bx, by, cx, cy));
+        assertFalse(point2D.containsLine(ax, ay, bx, by));
+        assertEquals(
+            Component2D.WithinRelation.DISJOINT,
+            point2D.withinTriangle(
+                ax,
+                ay,
+                random().nextBoolean(),
+                bx,
+                by,
+                random().nextBoolean(),
+                cx,
+                cy,
+                random().nextBoolean()));
       }
     }
   }

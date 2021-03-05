@@ -17,10 +17,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -49,20 +47,20 @@ public class DescribeEvaluator extends RecursiveNumericEvaluator implements OneV
     DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
     ((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).forEach(innerValue -> descriptiveStatistics.addValue(innerValue));
 
-    Map<String,Number> map = new HashMap<>();
-    map.put("max", descriptiveStatistics.getMax());
-    map.put("mean", descriptiveStatistics.getMean());
-    map.put("min", descriptiveStatistics.getMin());
-    map.put("stdev", descriptiveStatistics.getStandardDeviation());
-    map.put("sum", descriptiveStatistics.getSum());
-    map.put("N", descriptiveStatistics.getN());
-    map.put("var", descriptiveStatistics.getVariance());
-    map.put("kurtosis", descriptiveStatistics.getKurtosis());
-    map.put("skewness", descriptiveStatistics.getSkewness());
-    map.put("popVar", descriptiveStatistics.getPopulationVariance());
-    map.put("geometricMean", descriptiveStatistics.getGeometricMean());
-    map.put("sumsq", descriptiveStatistics.getSumsq());
+    Tuple tuple = new Tuple();
+    tuple.put("max", descriptiveStatistics.getMax());
+    tuple.put("mean", descriptiveStatistics.getMean());
+    tuple.put("min", descriptiveStatistics.getMin());
+    tuple.put("stdev", descriptiveStatistics.getStandardDeviation());
+    tuple.put("sum", descriptiveStatistics.getSum());
+    tuple.put("N", descriptiveStatistics.getN());
+    tuple.put("var", descriptiveStatistics.getVariance());
+    tuple.put("kurtosis", descriptiveStatistics.getKurtosis());
+    tuple.put("skewness", descriptiveStatistics.getSkewness());
+    tuple.put("popVar", descriptiveStatistics.getPopulationVariance());
+    tuple.put("geometricMean", descriptiveStatistics.getGeometricMean());
+    tuple.put("sumsq", descriptiveStatistics.getSumsq());
 
-    return new Tuple(map);
+    return tuple;
   }  
 }

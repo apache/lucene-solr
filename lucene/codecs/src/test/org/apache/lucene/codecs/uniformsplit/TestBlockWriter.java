@@ -19,19 +19,17 @@ package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
 import java.util.Collections;
-
-import org.apache.lucene.codecs.lucene84.MockTermStateFactory;
+import org.apache.lucene.codecs.lucene90.MockTermStateFactory;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Tests {@link BlockWriter}.
- */
+/** Tests {@link BlockWriter}. */
 public class TestBlockWriter extends LuceneTestCase {
 
   private BlockWriter blockWriter;
@@ -40,7 +38,8 @@ public class TestBlockWriter extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    blockOutput = new ByteBuffersIndexOutput(ByteBuffersDataOutput.newResettableInstance(), "Test", "Test");
+    blockOutput =
+        new ByteBuffersIndexOutput(ByteBuffersDataOutput.newResettableInstance(), "Test", "Test");
     blockWriter = new BlockWriter(blockOutput, 10, 2, null);
   }
 
@@ -52,13 +51,7 @@ public class TestBlockWriter extends LuceneTestCase {
   }
 
   public void testAddMultipleLinesSingleBlock() throws IOException {
-    String[] terms = new String[]{
-        "ana",
-        "bark",
-        "condor",
-        "dice",
-        "elephant"
-    };
+    String[] terms = new String[] {"ana", "bark", "condor", "dice", "elephant"};
     for (String t : terms) {
       blockWriter.addLine(new BytesRef(t), MockTermStateFactory.create(), null);
     }
@@ -67,20 +60,21 @@ public class TestBlockWriter extends LuceneTestCase {
   }
 
   public void testAddMultipleLinesMultiBlock() throws IOException {
-    String[] terms = new String[]{
-        "ana",
-        "bark",
-        "condor",
-        "dice",
-        "elephant",
-        "fork",
-        "gain",
-        "hyper",
-        "identifier",
-        "judge",
-        "ko",
-        "large",
-    };
+    String[] terms =
+        new String[] {
+          "ana",
+          "bark",
+          "condor",
+          "dice",
+          "elephant",
+          "fork",
+          "gain",
+          "hyper",
+          "identifier",
+          "judge",
+          "ko",
+          "large",
+        };
     // in order to build a block a FieldMetadata must be set
     blockWriter.setField(new FieldMetadata(getMockFieldInfo("content", 0), 0));
 
@@ -89,7 +83,7 @@ public class TestBlockWriter extends LuceneTestCase {
     for (String t : terms) {
       blockWriter.addLine(new BytesRef(t), MockTermStateFactory.create(), dictionaryBuilder);
     }
-    //at least one block was flushed
+    // at least one block was flushed
     assertTrue(blockOutput.getFilePointer() > 0);
 
     // last term is always the last term to be writen
@@ -108,7 +102,8 @@ public class TestBlockWriter extends LuceneTestCase {
   }
 
   private static FieldInfo getMockFieldInfo(String fieldName, int number) {
-    return new FieldInfo(fieldName,
+    return new FieldInfo(
+        fieldName,
         number,
         false,
         false,
@@ -120,7 +115,8 @@ public class TestBlockWriter extends LuceneTestCase {
         0,
         0,
         0,
-        true
-    );
+        0,
+        VectorValues.SearchStrategy.NONE,
+        true);
   }
 }

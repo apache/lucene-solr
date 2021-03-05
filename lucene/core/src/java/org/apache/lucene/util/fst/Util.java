@@ -16,13 +16,7 @@
  */
 package org.apache.lucene.util.fst;
 
-
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.FST.Arc;
-import org.apache.lucene.util.fst.FST.BytesReader;
+import static org.apache.lucene.util.fst.FST.Arc.BitTable;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -32,19 +26,23 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST.BytesReader;
 
-import static org.apache.lucene.util.fst.FST.Arc.BitTable;
-
-/** Static helper methods.
+/**
+ * Static helper methods.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public final class Util {
-  private Util() {
-  }
+  private Util() {}
 
-  /** Looks up the output for this input, or null if the
-   *  input is not accepted. */
-  public static<T> T get(FST<T> fst, IntsRef input) throws IOException {
+  /** Looks up the output for this input, or null if the input is not accepted. */
+  public static <T> T get(FST<T> fst, IntsRef input) throws IOException {
 
     // TODO: would be nice not to alloc this on every lookup
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
@@ -53,7 +51,7 @@ public final class Util {
 
     // Accumulate output as we go
     T output = fst.outputs.getNoOutput();
-    for(int i=0;i<input.length;i++) {
+    for (int i = 0; i < input.length; i++) {
       if (fst.findTargetArc(input.ints[input.offset + i], arc, arc, fstReader) == null) {
         return null;
       }
@@ -69,9 +67,8 @@ public final class Util {
 
   // TODO: maybe a CharsRef version for BYTE2
 
-  /** Looks up the output for this input, or null if the
-   *  input is not accepted */
-  public static<T> T get(FST<T> fst, BytesRef input) throws IOException {
+  /** Looks up the output for this input, or null if the input is not accepted */
+  public static <T> T get(FST<T> fst, BytesRef input) throws IOException {
     assert fst.inputType == FST.INPUT_TYPE.BYTE1;
 
     final BytesReader fstReader = fst.getBytesReader();
@@ -81,8 +78,8 @@ public final class Util {
 
     // Accumulate output as we go
     T output = fst.outputs.getNoOutput();
-    for(int i=0;i<input.length;i++) {
-      if (fst.findTargetArc(input.bytes[i+input.offset] & 0xFF, arc, arc, fstReader) == null) {
+    for (int i = 0; i < input.length; i++) {
+      if (fst.findTargetArc(input.bytes[i + input.offset] & 0xFF, arc, arc, fstReader) == null) {
         return null;
       }
       output = fst.outputs.add(output, arc.output());
@@ -95,18 +92,15 @@ public final class Util {
     }
   }
 
-  /** Reverse lookup (lookup by output instead of by input),
-   *  in the special case when your FSTs outputs are
-   *  strictly ascending.  This locates the input/output
-   *  pair where the output is equal to the target, and will
-   *  return null if that output does not exist.
+  /**
+   * Reverse lookup (lookup by output instead of by input), in the special case when your FSTs
+   * outputs are strictly ascending. This locates the input/output pair where the output is equal to
+   * the target, and will return null if that output does not exist.
    *
-   *  <p>NOTE: this only works with {@code FST<Long>}, only
-   *  works when the outputs are ascending in order with
-   *  the inputs.
-   *  For example, simple ordinals (0, 1,
-   *  2, ...), or file offsets (when appending to a file)
-   *  fit this. */
+   * <p>NOTE: this only works with {@code FST<Long>}, only works when the outputs are ascending in
+   * order with the inputs. For example, simple ordinals (0, 1, 2, ...), or file offsets (when
+   * appending to a file) fit this.
+   */
   @Deprecated
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput) throws IOException {
 
@@ -114,56 +108,64 @@ public final class Util {
 
     // TODO: would be nice not to alloc this on every lookup
     FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
-    
+
     FST.Arc<Long> scratchArc = new FST.Arc<>();
 
     final IntsRefBuilder result = new IntsRefBuilder();
     return getByOutput(fst, targetOutput, in, arc, scratchArc, result);
   }
-    
-  /** 
-   * Expert: like {@link Util#getByOutput(FST, long)} except reusing 
-   * BytesReader, initial and scratch Arc, and result.
+
+  /**
+   * Expert: like {@link Util#getByOutput(FST, long)} except reusing BytesReader, initial and
+   * scratch Arc, and result.
    */
   @Deprecated
-  public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRefBuilder result) throws IOException {
+  public static IntsRef getByOutput(
+      FST<Long> fst,
+      long targetOutput,
+      BytesReader in,
+      Arc<Long> arc,
+      Arc<Long> scratchArc,
+      IntsRefBuilder result)
+      throws IOException {
     long output = arc.output();
     int upto = 0;
 
-    //System.out.println("reverseLookup output=" + targetOutput);
+    // System.out.println("reverseLookup output=" + targetOutput);
 
-    while(true) {
-      //System.out.println("loop: output=" + output + " upto=" + upto + " arc=" + arc);
+    while (true) {
+      // System.out.println("loop: output=" + output + " upto=" + upto + " arc=" + arc);
       if (arc.isFinal()) {
         final long finalOutput = output + arc.nextFinalOutput();
-        //System.out.println("  isFinal finalOutput=" + finalOutput);
+        // System.out.println("  isFinal finalOutput=" + finalOutput);
         if (finalOutput == targetOutput) {
           result.setLength(upto);
-          //System.out.println("    found!");
+          // System.out.println("    found!");
           return result.get();
         } else if (finalOutput > targetOutput) {
-          //System.out.println("    not found!");
+          // System.out.println("    not found!");
           return null;
         }
       }
 
       if (FST.targetHasArcs(arc)) {
-        //System.out.println("  targetHasArcs");
-        result.grow(1+upto);
-        
+        // System.out.println("  targetHasArcs");
+        result.grow(1 + upto);
+
         fst.readFirstRealTargetArc(arc.target(), arc, in);
 
         if (arc.bytesPerArc() != 0 && arc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH) {
 
           int low = 0;
-          int high = arc.numArcs() -1;
+          int high = arc.numArcs() - 1;
           int mid = 0;
-          //System.out.println("bsearch: numArcs=" + arc.numArcs + " target=" + targetOutput + " output=" + output);
+          // System.out.println("bsearch: numArcs=" + arc.numArcs + " target=" + targetOutput + "
+          // output=" + output);
           boolean exact = false;
           while (low <= high) {
             mid = (low + high) >>> 1;
             in.setPosition(arc.posArcsStart());
-            in.skipBytes(arc.bytesPerArc() *mid);
+            in.skipBytes(arc.bytesPerArc() * mid);
             final byte flags = in.readByte();
             fst.readLabel(in);
             final long minArcOutput;
@@ -173,7 +175,7 @@ public final class Util {
             } else {
               minArcOutput = output;
             }
-            //System.out.println("  cycle mid=" + mid + " output=" + minArcOutput);
+            // System.out.println("  cycle mid=" + mid + " output=" + minArcOutput);
             if (minArcOutput == targetOutput) {
               exact = true;
               break;
@@ -201,8 +203,8 @@ public final class Util {
 
           FST.Arc<Long> prevArc = null;
 
-          while(true) {
-            //System.out.println("    cycle label=" + arc.label + " output=" + arc.output);
+          while (true) {
+            // System.out.println("    cycle label=" + arc.label + " output=" + arc.output);
 
             // This is the min output we'd hit if we follow
             // this arc:
@@ -210,7 +212,7 @@ public final class Util {
 
             if (minArcOutput == targetOutput) {
               // Recurse on this arc:
-              //System.out.println("  match!  break");
+              // System.out.println("  match!  break");
               output = minArcOutput;
               result.setIntAt(upto++, arc.label());
               break;
@@ -223,48 +225,60 @@ public final class Util {
                 arc.copyFrom(prevArc);
                 result.setIntAt(upto++, arc.label());
                 output += arc.output();
-                //System.out.println("    recurse prev label=" + (char) arc.label + " output=" + output);
+                // System.out.println("    recurse prev label=" + (char) arc.label + " output=" +
+                // output);
                 break;
               }
             } else if (arc.isLast()) {
               // Recurse on this arc:
               output = minArcOutput;
-              //System.out.println("    recurse last label=" + (char) arc.label + " output=" + output);
+              // System.out.println("    recurse last label=" + (char) arc.label + " output=" +
+              // output);
               result.setIntAt(upto++, arc.label());
               break;
             } else {
               // Read next arc in this node:
               prevArc = scratchArc;
               prevArc.copyFrom(arc);
-              //System.out.println("      after copy label=" + (char) prevArc.label + " vs " + (char) arc.label);
+              // System.out.println("      after copy label=" + (char) prevArc.label + " vs " +
+              // (char) arc.label);
               fst.readNextRealArc(arc, in);
             }
           }
         }
       } else {
-        //System.out.println("  no target arcs; not found!");
+        // System.out.println("  no target arcs; not found!");
         return null;
       }
-    }    
+    }
   }
 
-  /** Represents a path in TopNSearcher.
+  /**
+   * Represents a path in TopNSearcher.
    *
-   *  @lucene.experimental
+   * @lucene.experimental
    */
   public static class FSTPath<T> {
     /** Holds the last arc appended to this path */
     public FST.Arc<T> arc;
     /** Holds cost plus any usage-specific output: */
     public T output;
+
     public final IntsRefBuilder input;
     public final float boost;
     public final CharSequence context;
 
-    // Custom int payload for consumers; the NRT suggester uses this to record if this path has already enumerated a surface form
+    // Custom int payload for consumers; the NRT suggester uses this to record if this path has
+    // already enumerated a surface form
     public int payload;
 
-    FSTPath(T output, FST.Arc<T> arc, IntsRefBuilder input, float boost, CharSequence context, int payload) {
+    FSTPath(
+        T output,
+        FST.Arc<T> arc,
+        IntsRefBuilder input,
+        float boost,
+        CharSequence context,
+        int payload) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.output = output;
       this.input = input;
@@ -279,12 +293,20 @@ public final class Util {
 
     @Override
     public String toString() {
-      return "input=" + input.get() + " output=" + output + " context=" + context + " boost=" + boost + " payload=" + payload;
+      return "input="
+          + input.get()
+          + " output="
+          + output
+          + " context="
+          + context
+          + " boost="
+          + boost
+          + " payload="
+          + payload;
     }
   }
 
-  /** Compares first by the provided comparator, and then
-   *  tie breaks by path.input. */
+  /** Compares first by the provided comparator, and then tie breaks by path.input. */
   private static class TieBreakByInputComparator<T> implements Comparator<FSTPath<T>> {
     private final Comparator<T> comparator;
 
@@ -303,8 +325,7 @@ public final class Util {
     }
   }
 
-  /** Utility class to find top N shortest paths from start
-   *  point(s). */
+  /** Utility class to find top N shortest paths from start point(s). */
   public static class TopNSearcher<T> {
 
     private final FST<T> fst;
@@ -313,7 +334,7 @@ public final class Util {
     private final int maxQueueDepth;
 
     private final FST.Arc<T> scratchArc = new FST.Arc<>();
-    
+
     private final Comparator<T> comparator;
     private final Comparator<FSTPath<T>> pathComparator;
 
@@ -321,6 +342,7 @@ public final class Util {
 
     /**
      * Creates an unbounded TopNSearcher
+     *
      * @param fst the {@link org.apache.lucene.util.fst.FST} to search on
      * @param topN the number of top scoring entries to retrieve
      * @param maxQueueDepth the maximum size of the queue of possible top entries
@@ -330,8 +352,12 @@ public final class Util {
       this(fst, topN, maxQueueDepth, comparator, new TieBreakByInputComparator<>(comparator));
     }
 
-    public TopNSearcher(FST<T> fst, int topN, int maxQueueDepth, Comparator<T> comparator,
-                        Comparator<FSTPath<T>> pathComparator) {
+    public TopNSearcher(
+        FST<T> fst,
+        int topN,
+        int maxQueueDepth,
+        Comparator<T> comparator,
+        Comparator<FSTPath<T>> pathComparator) {
       this.fst = fst;
       this.bytesReader = fst.getBytesReader();
       this.topN = topN;
@@ -381,20 +407,31 @@ public final class Util {
       FSTPath<T> newPath = path.newPath(output, newInput);
       if (acceptPartialPath(newPath)) {
         queue.add(newPath);
-        if (queue.size() == maxQueueDepth+1) {
+        if (queue.size() == maxQueueDepth + 1) {
           queue.pollLast();
         }
       }
     }
 
-    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input) throws IOException {
+    public void addStartPaths(
+        FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input)
+        throws IOException {
       addStartPaths(node, startOutput, allowEmptyString, input, 0, null, -1);
     }
 
-    /** Adds all leaving arcs, including 'finished' arc, if
-     *  the node is final, from this node into the queue.  */
-    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRefBuilder input,
-                              float boost, CharSequence context, int payload) throws IOException {
+    /**
+     * Adds all leaving arcs, including 'finished' arc, if the node is final, from this node into
+     * the queue.
+     */
+    public void addStartPaths(
+        FST.Arc<T> node,
+        T startOutput,
+        boolean allowEmptyString,
+        IntsRefBuilder input,
+        float boost,
+        CharSequence context,
+        int payload)
+        throws IOException {
 
       // De-dup NO_OUTPUT since it must be a singleton:
       if (startOutput.equals(fst.outputs.getNoOutput())) {
@@ -449,7 +486,7 @@ public final class Util {
           // There were less than topN paths available:
           break;
         }
-        //System.out.println("pop path=" + path + " arc=" + path.arc.output);
+        // System.out.println("pop path=" + path + " arc=" + path.arc.output);
 
         if (acceptPartialPath(path) == false) {
           continue;
@@ -462,7 +499,7 @@ public final class Util {
           continue;
         }
 
-        if (results.size() == topN-1 && maxQueueDepth == topN) {
+        if (results.size() == topN - 1 && maxQueueDepth == topN) {
           // Last path -- don't bother w/ queue anymore:
           queue = null;
         }
@@ -481,7 +518,7 @@ public final class Util {
           // For each arc leaving this node:
           boolean foundZero = false;
           boolean arcCopyIsPending = false;
-          while(true) {
+          while (true) {
             // tricky: instead of comparing output == 0, we must
             // express it via the comparator compare(output, 0) == 0
             if (comparator.compare(NO_OUTPUT, path.arc.output()) == 0) {
@@ -548,32 +585,29 @@ public final class Util {
     }
   }
 
-  /** Holds a single input (IntsRef) + output, returned by
-   *  {@link #shortestPaths shortestPaths()}. */
-  public final static class Result<T> {
+  /**
+   * Holds a single input (IntsRef) + output, returned by {@link #shortestPaths shortestPaths()}.
+   */
+  public static final class Result<T> {
     public final IntsRef input;
     public final T output;
+
     public Result(IntsRef input, T output) {
       this.input = input;
       this.output = output;
     }
   }
 
-
-  /**
-   * Holds the results for a top N search using {@link TopNSearcher}
-   */
+  /** Holds the results for a top N search using {@link TopNSearcher} */
   public static final class TopResults<T> implements Iterable<Result<T>> {
 
     /**
-     * <code>true</code> iff this is a complete result ie. if
-     * the specified queue size was large enough to find the complete list of results. This might
-     * be <code>false</code> if the {@link TopNSearcher} rejected too many results.
+     * <code>true</code> iff this is a complete result ie. if the specified queue size was large
+     * enough to find the complete list of results. This might be <code>false</code> if the {@link
+     * TopNSearcher} rejected too many results.
      */
     public final boolean isComplete;
-    /**
-     * The top results
-     */
+    /** The top results */
     public final List<Result<T>> topN;
 
     TopResults(boolean isComplete, List<Result<T>> topN) {
@@ -587,58 +621,56 @@ public final class Util {
     }
   }
 
-
-  /** Starting from node, find the top N min cost 
-   *  completions to a final node. */
-  public static <T> TopResults<T> shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
-                                                 boolean allowEmptyString) throws IOException {
+  /** Starting from node, find the top N min cost completions to a final node. */
+  public static <T> TopResults<T> shortestPaths(
+      FST<T> fst,
+      FST.Arc<T> fromNode,
+      T startOutput,
+      Comparator<T> comparator,
+      int topN,
+      boolean allowEmptyString)
+      throws IOException {
 
     // All paths are kept, so we can pass topN for
     // maxQueueDepth and the pruning is admissible:
     TopNSearcher<T> searcher = new TopNSearcher<>(fst, topN, topN, comparator);
 
-    // since this search is initialized with a single start node 
+    // since this search is initialized with a single start node
     // it is okay to start with an empty input path here
     searcher.addStartPaths(fromNode, startOutput, allowEmptyString, new IntsRefBuilder());
     return searcher.search();
-  } 
+  }
 
   /**
-   * Dumps an {@link FST} to a GraphViz's <code>dot</code> language description
-   * for visualization. Example of use:
-   * 
+   * Dumps an {@link FST} to a GraphViz's <code>dot</code> language description for visualization.
+   * Example of use:
+   *
    * <pre class="prettyprint">
    * PrintWriter pw = new PrintWriter(&quot;out.dot&quot;);
    * Util.toDot(fst, pw, true, true);
    * pw.close();
    * </pre>
-   * 
+   *
    * and then, from command line:
-   * 
+   *
    * <pre>
    * dot -Tpng -o out.png out.dot
    * </pre>
-   * 
-   * <p>
-   * Note: larger FSTs (a few thousand nodes) won't even
-   * render, don't bother.
-   * 
-   * @param sameRank
-   *          If <code>true</code>, the resulting <code>dot</code> file will try
-   *          to order states in layers of breadth-first traversal. This may
-   *          mess up arcs, but makes the output FST's structure a bit clearer.
-   * 
-   * @param labelStates
-   *          If <code>true</code> states will have labels equal to their offsets in their
-   *          binary format. Expands the graph considerably. 
-   * 
+   *
+   * <p>Note: larger FSTs (a few thousand nodes) won't even render, don't bother.
+   *
+   * @param sameRank If <code>true</code>, the resulting <code>dot</code> file will try to order
+   *     states in layers of breadth-first traversal. This may mess up arcs, but makes the output
+   *     FST's structure a bit clearer.
+   * @param labelStates If <code>true</code> states will have labels equal to their offsets in their
+   *     binary format. Expands the graph considerably.
    * @see <a href="http://www.graphviz.org/">graphviz project</a>
    */
-  public static <T> void toDot(FST<T> fst, Writer out, boolean sameRank, boolean labelStates) 
-    throws IOException {    
+  public static <T> void toDot(FST<T> fst, Writer out, boolean sameRank, boolean labelStates)
+      throws IOException {
     final String expandedNodeColor = "blue";
 
-    // This is the start arc in the automaton (from the epsilon state to the first state 
+    // This is the start arc in the automaton (from the epsilon state to the first state
     // with outgoing transitions.
     final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<>());
 
@@ -648,8 +680,8 @@ public final class Util {
     // A queue of transitions to consider when processing the next level.
     final List<FST.Arc<T>> nextLevelQueue = new ArrayList<>();
     nextLevelQueue.add(startArc);
-    //System.out.println("toDot: startArc: " + startArc);
-    
+    // System.out.println("toDot: startArc: " + startArc);
+
     // A list of states on the same level (for ranking).
     final List<Integer> sameLevelStates = new ArrayList<>();
 
@@ -666,7 +698,7 @@ public final class Util {
     out.write("  rankdir = LR; splines=true; concentrate=true; ordering=out; ranksep=2.5; \n");
 
     if (!labelStates) {
-      out.write("  node [shape=circle, width=.2, height=.2, style=filled]\n");      
+      out.write("  node [shape=circle, width=.2, height=.2, style=filled]\n");
     }
 
     emitDotState(out, "initial", "point", "white", "");
@@ -693,8 +725,13 @@ public final class Util {
         isFinal = false;
         finalOutput = null;
       }
-      
-      emitDotState(out, Long.toString(startArc.target()), isFinal ? finalStateShape : stateShape, stateColor, finalOutput == null ? "" : fst.outputs.outputToString(finalOutput));
+
+      emitDotState(
+          out,
+          Long.toString(startArc.target()),
+          isFinal ? finalStateShape : stateShape,
+          stateColor,
+          finalOutput == null ? "" : fst.outputs.outputToString(finalOutput));
     }
 
     out.write("  initial -> " + startArc.target() + "\n");
@@ -703,7 +740,7 @@ public final class Util {
 
     while (!nextLevelQueue.isEmpty()) {
       // we could double buffer here, but it doesn't matter probably.
-      //System.out.println("next level=" + level);
+      // System.out.println("next level=" + level);
       thisLevelQueue.addAll(nextLevelQueue);
       nextLevelQueue.clear();
 
@@ -711,20 +748,20 @@ public final class Util {
       out.write("\n  // Transitions and states at level: " + level + "\n");
       while (!thisLevelQueue.isEmpty()) {
         final FST.Arc<T> arc = thisLevelQueue.remove(thisLevelQueue.size() - 1);
-        //System.out.println("  pop: " + arc);
+        // System.out.println("  pop: " + arc);
         if (FST.targetHasArcs(arc)) {
           // scan all target arcs
-          //System.out.println("  readFirstTarget...");
+          // System.out.println("  readFirstTarget...");
 
           final long node = arc.target();
 
           fst.readFirstRealTargetArc(arc.target(), arc, r);
 
-          //System.out.println("    firstTarget: " + arc);
+          // System.out.println("    firstTarget: " + arc);
 
           while (true) {
 
-            //System.out.println("  cycle arc=" + arc);
+            // System.out.println("  cycle arc=" + arc);
             // Emit the unseen state and add it to the queue for the next level.
             if (arc.target() >= 0 && !seen.get((int) arc.target())) {
 
@@ -755,7 +792,8 @@ public final class Util {
 
               emitDotState(out, Long.toString(arc.target()), stateShape, stateColor, finalOutput);
               // To see the node address, use this instead:
-              //emitDotState(out, Integer.toString(arc.target), stateShape, stateColor, String.valueOf(arc.target));
+              // emitDotState(out, Integer.toString(arc.target), stateShape, stateColor,
+              // String.valueOf(arc.target));
               seen.set((int) arc.target());
               nextLevelQueue.add(new FST.Arc<T>().copyFrom(arc));
               sameLevelStates.add((int) arc.target());
@@ -786,11 +824,23 @@ public final class Util {
             }
 
             assert arc.label() != FST.END_LABEL;
-            out.write("  " + node + " -> " + arc.target() + " [label=\"" + printableLabel(arc.label()) + outs + "\"" + (arc.isFinal() ? " style=\"bold\"" : "" ) + " color=\"" + arcColor + "\"]\n");
-                   
+            out.write(
+                "  "
+                    + node
+                    + " -> "
+                    + arc.target()
+                    + " [label=\""
+                    + printableLabel(arc.label())
+                    + outs
+                    + "\""
+                    + (arc.isFinal() ? " style=\"bold\"" : "")
+                    + " color=\""
+                    + arcColor
+                    + "\"]\n");
+
             // Break the loop if we're on the last arc of this state.
             if (arc.isLast()) {
-              //System.out.println("    break");
+              // System.out.println("    break");
               break;
             }
             fst.readNextRealArc(arc, r);
@@ -806,44 +856,44 @@ public final class Util {
         }
         out.write(" }\n");
       }
-      sameLevelStates.clear();                
+      sameLevelStates.clear();
     }
 
     // Emit terminating state (always there anyway).
     out.write("  -1 [style=filled, color=black, shape=doublecircle, label=\"\"]\n\n");
     out.write("  {rank=sink; -1 }\n");
-    
+
     out.write("}\n");
     out.flush();
   }
 
-  /**
-   * Emit a single state in the <code>dot</code> language. 
-   */
-  private static void emitDotState(Writer out, String name, String shape,
-      String color, String label) throws IOException {
-    out.write("  " + name 
-        + " [" 
-        + (shape != null ? "shape=" + shape : "") + " "
-        + (color != null ? "color=" + color : "") + " "
-        + (label != null ? "label=\"" + label + "\"" : "label=\"\"") + " "
-        + "]\n");
+  /** Emit a single state in the <code>dot</code> language. */
+  private static void emitDotState(
+      Writer out, String name, String shape, String color, String label) throws IOException {
+    out.write(
+        "  "
+            + name
+            + " ["
+            + (shape != null ? "shape=" + shape : "")
+            + " "
+            + (color != null ? "color=" + color : "")
+            + " "
+            + (label != null ? "label=\"" + label + "\"" : "label=\"\"")
+            + " "
+            + "]\n");
   }
 
-  /**
-   * Ensures an arc's label is indeed printable (dot uses US-ASCII). 
-   */
+  /** Ensures an arc's label is indeed printable (dot uses US-ASCII). */
   private static String printableLabel(int label) {
     // Any ordinary ascii character, except for " or \, are
     // printed as the character; else, as a hex string:
-    if (label >= 0x20 && label <= 0x7d && label != 0x22 && label != 0x5c) {  // " OR \
+    if (label >= 0x20 && label <= 0x7d && label != 0x22 && label != 0x5c) { // " OR \
       return Character.toString((char) label);
     }
     return "0x" + Integer.toHexString(label);
   }
 
-  /** Just maps each UTF16 unit (char) to the ints in an
-   *  IntsRef. */
+  /** Just maps each UTF16 unit (char) to the ints in an IntsRef. */
   public static IntsRef toUTF16(CharSequence s, IntsRefBuilder scratch) {
     final int charLimit = s.length();
     scratch.setLength(charLimit);
@@ -852,17 +902,18 @@ public final class Util {
       scratch.setIntAt(idx, (int) s.charAt(idx));
     }
     return scratch.get();
-  }    
+  }
 
-  /** Decodes the Unicode codepoints from the provided
-   *  CharSequence and places them in the provided scratch
-   *  IntsRef, which must not be null, returning it. */
+  /**
+   * Decodes the Unicode codepoints from the provided CharSequence and places them in the provided
+   * scratch IntsRef, which must not be null, returning it.
+   */
   public static IntsRef toUTF32(CharSequence s, IntsRefBuilder scratch) {
     int charIdx = 0;
     int intIdx = 0;
     final int charLimit = s.length();
-    while(charIdx < charLimit) {
-      scratch.grow(intIdx+1);
+    while (charIdx < charLimit) {
+      scratch.grow(intIdx + 1);
       final int utf32 = Character.codePointAt(s, charIdx);
       scratch.setIntAt(intIdx, utf32);
       charIdx += Character.charCount(utf32);
@@ -872,15 +923,16 @@ public final class Util {
     return scratch.get();
   }
 
-  /** Decodes the Unicode codepoints from the provided
-   *  char[] and places them in the provided scratch
-   *  IntsRef, which must not be null, returning it. */
+  /**
+   * Decodes the Unicode codepoints from the provided char[] and places them in the provided scratch
+   * IntsRef, which must not be null, returning it.
+   */
   public static IntsRef toUTF32(char[] s, int offset, int length, IntsRefBuilder scratch) {
     int charIdx = offset;
     int intIdx = 0;
     final int charLimit = offset + length;
-    while(charIdx < charLimit) {
-      scratch.grow(intIdx+1);
+    while (charIdx < charLimit) {
+      scratch.grow(intIdx + 1);
       final int utf32 = Character.codePointAt(s, charIdx, charLimit);
       scratch.setIntAt(intIdx, utf32);
       charIdx += Character.charCount(utf32);
@@ -890,24 +942,22 @@ public final class Util {
     return scratch.get();
   }
 
-  /** Just takes unsigned byte values from the BytesRef and
-   *  converts into an IntsRef. */
+  /** Just takes unsigned byte values from the BytesRef and converts into an IntsRef. */
   public static IntsRef toIntsRef(BytesRef input, IntsRefBuilder scratch) {
     scratch.clear();
-    for(int i=0;i<input.length;i++) {
-      scratch.append(input.bytes[i+input.offset] & 0xFF);
+    for (int i = 0; i < input.length; i++) {
+      scratch.append(input.bytes[i + input.offset] & 0xFF);
     }
     return scratch.get();
   }
 
-  /** Just converts IntsRef to BytesRef; you must ensure the
-   *  int values fit into a byte. */
+  /** Just converts IntsRef to BytesRef; you must ensure the int values fit into a byte. */
   public static BytesRef toBytesRef(IntsRef input, BytesRefBuilder scratch) {
     scratch.grow(input.length);
-    for(int i=0;i<input.length;i++) {
-      int value = input.ints[i+input.offset];
+    for (int i = 0; i < input.length; i++) {
+      int value = input.ints[i + input.offset];
       // NOTE: we allow -128 to 255
-      assert value >= Byte.MIN_VALUE && value <= 255: "value " + value + " doesn't fit into byte";
+      assert value >= Byte.MIN_VALUE && value <= 255 : "value " + value + " doesn't fit into byte";
       scratch.setByteAt(i, (byte) value);
     }
     scratch.setLength(input.length);
@@ -925,16 +975,17 @@ public final class Util {
   */
 
   /**
-   * Reads the first arc greater or equal than the given label into the provided
-   * arc in place and returns it iff found, otherwise return <code>null</code>.
-   * 
+   * Reads the first arc greater or equal than the given label into the provided arc in place and
+   * returns it iff found, otherwise return <code>null</code>.
+   *
    * @param label the label to ceil on
    * @param fst the fst to operate on
    * @param follow the arc to follow reading the label from
    * @param arc the arc to read into in place
    * @param in the fst's {@link BytesReader}
    */
-  public static <T> Arc<T> readCeilArc(int label, FST<T> fst, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
+  public static <T> Arc<T> readCeilArc(
+      int label, FST<T> fst, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
     if (label == FST.END_LABEL) {
       return FST.readEndArc(follow, arc);
     }
@@ -973,7 +1024,7 @@ public final class Util {
         // DEAD END!
         return null;
       }
-      return fst.readArcByIndex(arc, in , idx);
+      return fst.readArcByIndex(arc, in, idx);
     }
 
     // Variable length arcs in a linear scan list,
@@ -998,21 +1049,26 @@ public final class Util {
 
   /**
    * Perform a binary search of Arcs encoded as a packed array
+   *
    * @param fst the FST from which to read
-   * @param arc the starting arc; sibling arcs greater than this will be searched. Usually the first arc in the array.
+   * @param arc the starting arc; sibling arcs greater than this will be searched. Usually the first
+   *     arc in the array.
    * @param targetLabel the label to search for
    * @param <T> the output type of the FST
-   * @return the index of the Arc having the target label, or if no Arc has the matching label, {@code -1 - idx)},
-   * where {@code idx} is the index of the Arc with the next highest label, or the total number of arcs
-   * if the target label exceeds the maximum.
+   * @return the index of the Arc having the target label, or if no Arc has the matching label,
+   *     {@code -1 - idx)}, where {@code idx} is the index of the Arc with the next highest label,
+   *     or the total number of arcs if the target label exceeds the maximum.
    * @throws IOException when the FST reader does
    */
   static <T> int binarySearch(FST<T> fst, FST.Arc<T> arc, int targetLabel) throws IOException {
-    assert arc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH : "Arc is not encoded as packed array for binary search (nodeFlags=" + arc.nodeFlags() + ")";
+    assert arc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH
+        : "Arc is not encoded as packed array for binary search (nodeFlags="
+            + arc.nodeFlags()
+            + ")";
     BytesReader in = fst.getBytesReader();
     int low = arc.arcIdx();
     int mid = 0;
-    int high = arc.numArcs() -1;
+    int high = arc.numArcs() - 1;
     while (low <= high) {
       mid = (low + high) >>> 1;
       in.setPosition(arc.posArcsStart());

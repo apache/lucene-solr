@@ -47,14 +47,17 @@ import org.slf4j.LoggerFactory;
 public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @SuppressWarnings({"rawtypes"})
   private LogWatcher watcher;
+  private final CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
+    this.cc = cc;
     this.watcher = cc.getLogging();
   }
   
   public LoggingHandler() {
-    
+    this.cc = null;
   }
   
   @Override
@@ -82,9 +85,10 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     if(params.get("test")!=null) {
       log.trace("trace message");
       log.debug( "debug message");
-      log.info("info (with exception)", new RuntimeException("test") );
-      log.warn("warn (with exception)", new RuntimeException("test") );
-      log.error("error (with exception)", new RuntimeException("test") );
+      RuntimeException exc = new RuntimeException("test");
+      log.info("info (with exception) INFO", exc );
+      log.warn("warn (with exception) WARN", exc );
+      log.error("error (with exception) ERROR", exc );
     }
     
     String[] set = params.getParams("set");
@@ -138,6 +142,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     else {
       rsp.add("levels", watcher.getAllLevels());
   
+      @SuppressWarnings({"unchecked"})
       List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
       Collections.sort(loggers);
   
@@ -148,6 +153,9 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
       rsp.add("loggers", info);
     }
     rsp.setHttpCaching(false);
+    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
+      return; // Request was proxied to other node
+    }
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////

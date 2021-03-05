@@ -133,6 +133,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     return super.getResponseParser();
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
+
   public static class Builder {
     private String resource;
     private METHOD method = METHOD.GET;
@@ -157,6 +162,26 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
     public Builder withMethod(METHOD m) {
       this.method = m;
+      return this;
+    }
+
+    public Builder POST() {
+      this.method = METHOD.POST;
+      return this;
+    }
+
+    public Builder GET() {
+      this.method = METHOD.GET;
+      return this;
+    }
+
+    public Builder PUT() {
+      this.method = METHOD.PUT;
+      return this;
+    }
+
+    public Builder DELETE() {
+      this.method = METHOD.DELETE;
       return this;
     }
 

@@ -16,21 +16,17 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.ja.tokenattributes.ReadingAttribute;
 import org.apache.lucene.analysis.ja.util.ToStringUtil;
-
-import java.io.IOException;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * A {@link org.apache.lucene.analysis.TokenFilter} that replaces the term
- * attribute with the reading of a token in either katakana or romaji form.
- * The default reading form is katakana.
+ * A {@link org.apache.lucene.analysis.TokenFilter} that replaces the term attribute with the
+ * reading of a token in either katakana or romaji form. The default reading form is katakana.
  */
-
 public final class JapaneseReadingFormFilter extends TokenFilter {
   private final CharTermAttribute termAttr = addAttribute(CharTermAttribute.class);
   private final ReadingAttribute readingAttr = addAttribute(ReadingAttribute.class);
@@ -51,7 +47,7 @@ public final class JapaneseReadingFormFilter extends TokenFilter {
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       String reading = readingAttr.getReading();
-      
+
       if (useRomaji) {
         if (reading == null) {
           // if it's an OOV term, just try the term text

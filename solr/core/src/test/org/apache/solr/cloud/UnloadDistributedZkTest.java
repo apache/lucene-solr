@@ -40,6 +40,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
@@ -64,6 +65,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   @Test
   public void test() throws Exception {
+    jettys.forEach(j -> j.getCoreContainer().getAllowPaths().add(Path.of("_ALL_"))); // Allow non-standard core instance path
     testCoreUnloadAndLeaders(); // long
     testUnloadLotsOfCores(); // long
 

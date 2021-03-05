@@ -1,4 +1,4 @@
-/*
+  /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,8 @@
 // This configures application of forbidden API rules
 // via https://github.com/policeman-tools/forbidden-apis
 
+def resources = scriptResources(buildscript)
+
 // Only apply forbidden-apis to java projects.
 allprojects { prj ->
   plugins.withId("java", {
@@ -26,8 +28,9 @@ allprojects { prj ->
     // This helper method appends signature files based on a set of true
     // dependencies from a given configuration.
     def dynamicSignatures = { configuration, suffix ->
-      def deps = configuration.resolvedConfiguration.resolvedArtifacts
+      def resolvedMods = configuration.resolvedConfiguration.resolvedArtifacts
           .collect { a -> a.moduleVersion.id }
+      def deps = resolvedMods
           .collect { id -> [
               "${id.group}.${id.name}.all.txt",
               "${id.group}.${id.name}.${suffix}.txt",
@@ -38,7 +41,7 @@ allprojects { prj ->
       deps += ["defaults.all.txt", "defaults.${suffix}.txt"]
 
       deps.each { sig ->
-        def signaturesFile = rootProject.file("gradle/validation/forbidden-apis/${sig}")
+        def signaturesFile = file("${resources}/${sig}")
         if (signaturesFile.exists()) {
           logger.info("Signature file applied: ${sig}")
           signaturesFiles += files(signaturesFile)
@@ -46,6 +49,11 @@ allprojects { prj ->
           logger.debug("Signature file omitted (does not exist): ${sig}")
         }
       }
+      
+      // commons-io is special: forbiddenapis has a versioned bundledSignature.
+      bundledSignatures += resolvedMods
+        .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
+        .collect { id -> "${id.name}-unsafe-${id.version}" as String }
     }
 
     // Configure defaults for sourceSets.main
@@ -73,7 +81,7 @@ allprojects { prj ->
       ]
 
       signaturesFiles = files(
-          rootProject.file("gradle/validation/forbidden-apis/defaults.tests.txt")
+          file("${resources}/defaults.tests.txt")
       )
 
       suppressAnnotations += [
@@ -81,8 +89,22 @@ allprojects { prj ->
       ]
     }
 
-    // Attach validation to check task.
-    check.dependsOn forbiddenApisMain, forbiddenApisTest
+    // Configure defaults for sourceSets.tools (if present).
+    tasks.matching { it.name == "forbiddenApisTools" }.all {
+      bundledSignatures += [
+          'jdk-unsafe',
+          'jdk-deprecated',
+          'jdk-non-portable',
+          'jdk-reflection',
+      ]
+
+      suppressAnnotations += [
+          "**.SuppressForbidden"
+      ]
+
+      doFirst dynamicSignatures.curry(configurations.toolsCompileClasspath, "lucene")
+      inputs.dir(file(resources))
+    }
 
     // Disable sysout signatures for these projects.
     if (prj.path in [
@@ -112,6 +134,7 @@ allprojects { prj ->
     if (prj.path.startsWith(":solr")) {
       forbiddenApisMain {
         doFirst dynamicSignatures.curry(configurations.compileClasspath, "solr")
+        signaturesFiles += files(file("${resources}/java.solr.txt"))
       }
 
       forbiddenApisTest {
@@ -127,7 +150,7 @@ allprojects { prj ->
     // This is the simplest workaround possible: just point at all the rule files and indicate
     // them as inputs. This way if a rule is modified, checks will be reapplied.
     configure([forbiddenApisMain, forbiddenApisTest]) { task ->
-      task.inputs.dir(rootProject.file("gradle/validation/forbidden-apis"))
+      task.inputs.dir(file(resources))
     }
   })
 }

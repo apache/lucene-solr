@@ -78,7 +78,7 @@ public class KerberosTestServices {
         FileUtils.deleteDirectory(workDir); // clean directory
         numTries++;
         if (numTries == 3) {
-          log.error("Failed setting up MiniKDC. Tried " + numTries + " times.");
+          log.error("Failed setting up MiniKDC. Tried {} times.", numTries);
           throw e;
         }
         log.error("BindException encountered when setting up MiniKdc. Trying again.");
@@ -132,7 +132,7 @@ public class KerberosTestServices {
      */
     public JaasConfiguration(String clientPrincipal, File clientKeytab,
                              String serverPrincipal, File serverKeytab) {
-      Map<String, String> clientOptions = new HashMap();
+      Map<String, String> clientOptions = new HashMap<>();
       clientOptions.put("principal", clientPrincipal);
       clientOptions.put("keyTab", clientKeytab.getAbsolutePath());
       clientOptions.put("useKeyTab", "true");
@@ -148,7 +148,7 @@ public class KerberosTestServices {
               AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
               clientOptions)};
       if(serverPrincipal!=null && serverKeytab!=null) {
-        Map<String, String> serverOptions = new HashMap(clientOptions);
+        Map<String, String> serverOptions = new HashMap<>(clientOptions);
         serverOptions.put("principal", serverPrincipal);
         serverOptions.put("keytab", serverKeytab.getAbsolutePath());
         serverEntry =  new AppConfigurationEntry[]{

@@ -71,12 +71,16 @@ public abstract class FieldValueMutatingUpdateProcessor
       final Object destVal = mutateValue(srcVal);
       if (DELETE_VALUE_SINGLETON == destVal) { 
         /* NOOP */
-        log.debug("removing value from field '{}': {}", 
-                  src.getName(), srcVal);
+        if (log.isDebugEnabled()) {
+          log.debug("removing value from field '{}': {}",
+              src.getName(), srcVal);
+        }
       } else {
         if (destVal != srcVal) {
-          log.debug("replace value from field '{}': {} with {}", 
-                    new Object[] { src.getName(), srcVal, destVal });
+          if (log.isDebugEnabled()) {
+            log.debug("replace value from field '{}': {} with {}",
+                new Object[]{src.getName(), srcVal, destVal});
+          }
         }
         result.addValue(destVal);
       }

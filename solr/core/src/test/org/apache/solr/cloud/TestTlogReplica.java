@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -59,6 +60,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
@@ -88,15 +91,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     System.setProperty("solr.waitToSeeReplicasInStateTimeoutSeconds", "30");
     configureCluster(2) // 2 + random().nextInt(3)
         .addConfig("conf", configset("cloud-minimal-inplace-updates"))
         .configure();
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
-    CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
-    assertEquals(0, response.getStatus());
   }
 
   @AfterClass
@@ -152,18 +151,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
-        .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
         cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
       case 1:
         // Sometimes don't use SolrJ
-        String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&tlogReplicas=%s&maxShardsPerNode=%s",
+        String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&tlogReplicas=%s",
             cluster.getRandomJetty(random()).getBaseUrl(),
             collectionName, "conf",
             2,    // numShards
-            4,    // tlogReplicas
-            100); // maxShardsPerNode
+            4);   // tlogReplicas
         HttpGet createCollectionGet = new HttpGet(url);
         HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
@@ -172,11 +169,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
       case 2:
         // Sometimes use V2 API
         url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
-        String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, tlogReplicas:%s, maxShardsPerNode:%s}}",
+        String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, tlogReplicas:%s}}",
             collectionName, "conf",
             2,    // numShards
-            4,    // tlogReplicas
-            100); // maxShardsPerNode
+            4);   // tlogReplicas
+
         HttpPost createCollectionPost = new HttpPost(url);
         createCollectionPost.setHeader("Content-type", "application/json");
         createCollectionPost.setEntity(new StringEntity(requestBody));
@@ -248,7 +245,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 "stats", "true");
             QueryResponse statsResponse = tlogReplicaClient.query(req);
             assertEquals("Append replicas should recive all updates. Replica: " + r + ", response: " + statsResponse,
-                1L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.cumulativeAdds.count"));
+                1L, ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.cumulativeAdds.count"));
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
@@ -328,7 +325,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     int numReplicas = random().nextBoolean()?1:2;
     int numNrtReplicas = random().nextBoolean()?0:2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numNrtReplicas, numReplicas, 0)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Unexpected replica count", collectionName, activeReplicaCount(numNrtReplicas, numReplicas, 0));
     DocCollection docCollection = assertNumberOfReplicas(numNrtReplicas, numReplicas, 0, false, true);
@@ -434,7 +430,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         }
         log.error("Unsuccessful attempt to add replica. Attempt: {}/{}", i, maxAttempts);
       } catch (SolrException e) {
-        log.error("Exception while adding replica. Attempt: " + i + "/" +  maxAttempts, e);
+        log.error("Exception while adding replica. Attempt: {}/{}", i, maxAttempts, e);
       }
     }
   }
@@ -677,7 +673,81 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .commit(cloudClient, collectionName);
     waitForNumDocsInAllActiveReplicas(4, 0);
   }
+  public void testRebalanceLeaders() throws Exception {
+    createAndWaitForCollection(1,0,2,0);
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    new UpdateRequest()
+        .deleteByQuery("*:*")
+        .commit(cluster.getSolrClient(), collectionName);
 
+    // Find a replica which isn't leader
+    DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    Slice slice = docCollection.getSlices().iterator().next();
+    Replica newLeader = null;
+    for (Replica replica : slice.getReplicas()) {
+      if (slice.getLeader() == replica) continue;
+      newLeader = replica;
+      break;
+    }
+    assertNotNull("Failed to find a candidate of new leader", newLeader);
+
+    // Set preferredLeader flag to the replica
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString());
+    params.set("collection", collectionName);
+    params.set("shard", slice.getName());
+    params.set("replica", newLeader.getName());
+    params.set("property", "preferredLeader");
+    params.set("property.value", "true");
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    cloudClient.request(request);
+
+    // Wait until a preferredleader flag is set to the new leader candidate
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      Map<String, Slice> slices = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlicesMap();
+      Replica me = slices.get(slice.getName()).getReplica(newLeader.getName());
+      if (me.getBool("property.preferredleader", false)) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertFalse("Timeout waiting for setting preferredleader flag", timeout.hasTimedOut());
+
+    // Rebalance leaders
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.REBALANCELEADERS.toString());
+    params.set("collection", collectionName);
+    params.set("maxAtOnce", "10");
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    cloudClient.request(request);
+
+    // Wait until a new leader is elected
+    timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      docCollection = getCollectionState(collectionName);
+      Replica leader = docCollection.getSlice(slice.getName()).getLeader();
+      if (leader != null && leader.getName().equals(newLeader.getName()) &&
+          leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertFalse("Timeout waiting for a new leader to be elected", timeout.hasTimedOut());
+
+    new UpdateRequest()
+        .add(sdoc("id", "1"))
+        .add(sdoc("id", "2"))
+        .add(sdoc("id", "3"))
+        .add(sdoc("id", "4"))
+        .process(cloudClient, collectionName);
+    checkRTG(1,4, cluster.getJettySolrRunners());
+    new UpdateRequest()
+        .commit(cloudClient, collectionName);
+    waitForNumDocsInAllActiveReplicas(4);
+  }
   private void waitForLeaderChange(JettySolrRunner oldLeaderJetty, String shardName) {
     waitForState("Expect new leader", collectionName,
         (liveNodes, collectionState) -> {
@@ -753,7 +823,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private DocCollection createAndWaitForCollection(int numShards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) throws SolrServerException, IOException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, numNrtReplicas, numTlogReplicas, numPullReplicas)
-    .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     int numReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
     waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas",

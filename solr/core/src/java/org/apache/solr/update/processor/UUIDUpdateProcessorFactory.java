@@ -47,7 +47,7 @@ import org.apache.solr.schema.SchemaField;
  *
  *
  * <p>
- * You can also incoke the processor with request handler param(s)
+ * You can also invoke the processor with request handler param(s)
  * as <code>uuid.fieldname</code> with <code>processor=uuid</code>
  *
  * curl -X POST -H Content-Type: application/json
@@ -77,7 +77,7 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   protected String fieldName = null;
 
   @SuppressWarnings("unchecked")
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     Object obj = args.remove(FIELD_PARAM);
     if (null != obj) {

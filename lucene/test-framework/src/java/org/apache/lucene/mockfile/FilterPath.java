@@ -28,30 +28,24 @@ import java.nio.file.WatchEvent.Modifier;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.Iterator;
-
 import org.apache.lucene.util.SuppressForbidden;
 
-/**  
- * A {@code FilterPath} contains another 
- * {@code Path}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterPath} contains another {@code Path}, which it uses as its basic source of data,
+ * possibly transforming the data along the way or providing additional functionality.
  */
 public class FilterPath implements Path {
-  
-  /** 
-   * The underlying {@code Path} instance. 
-   */
+
+  /** The underlying {@code Path} instance. */
   protected final Path delegate;
-  
-  /** 
-   * The parent {@code FileSystem} for this path. 
-   */
+
+  /** The parent {@code FileSystem} for this path. */
   protected final FileSystem fileSystem;
-  
+
   /**
-   * Construct a {@code FilterPath} with parent
-   * {@code fileSystem}, based on the specified base path.
+   * Construct a {@code FilterPath} with parent {@code fileSystem}, based on the specified base
+   * path.
+   *
    * @param delegate specified base path.
    * @param fileSystem parent fileSystem.
    */
@@ -59,9 +53,10 @@ public class FilterPath implements Path {
     this.delegate = delegate;
     this.fileSystem = fileSystem;
   }
-  
-  /** 
+
+  /**
    * Get the underlying wrapped path.
+   *
    * @return wrapped path.
    */
   public Path getDelegate() {
@@ -171,13 +166,13 @@ public class FilterPath implements Path {
   }
 
   // TODO: should these methods not expose delegate result directly?
-  // it could allow code to "escape" the sandbox... 
+  // it could allow code to "escape" the sandbox...
 
   @Override
   public URI toUri() {
     return delegate.toUri();
   }
-  
+
   @Override
   public String toString() {
     return delegate.toString();
@@ -201,7 +196,8 @@ public class FilterPath implements Path {
   }
 
   @Override
-  public WatchKey register(WatchService watcher, Kind<?>[] events, Modifier... modifiers) throws IOException {
+  public WatchKey register(WatchService watcher, Kind<?>[] events, Modifier... modifiers)
+      throws IOException {
     return delegate.register(watcher, events, modifiers);
   }
 
@@ -235,7 +231,7 @@ public class FilterPath implements Path {
   public int compareTo(Path other) {
     return delegate.compareTo(toDelegate(other));
   }
-  
+
   @Override
   public int hashCode() {
     return delegate.hashCode();
@@ -257,38 +253,40 @@ public class FilterPath implements Path {
   }
 
   /**
-   * Unwraps all {@code FilterPath}s, returning
-   * the innermost {@code Path}.
-   * <p>
-   * WARNING: this is exposed for testing only!
+   * Unwraps all {@code FilterPath}s, returning the innermost {@code Path}.
+   *
+   * <p>WARNING: this is exposed for testing only!
+   *
    * @param path specified path.
    * @return innermost Path instance
    */
   public static Path unwrap(Path path) {
     while (path instanceof FilterPath) {
-      path = ((FilterPath)path).delegate;
+      path = ((FilterPath) path).delegate;
     }
     return path;
   }
-  
-  /** Override this to customize the return wrapped
-   *  path from various operations */
+
+  /** Override this to customize the return wrapped path from various operations */
   protected Path wrap(Path other) {
     return new FilterPath(other, fileSystem);
   }
-  
-  /** Override this to customize the unboxing of Path
-   *  from various operations
-   */
+
+  /** Override this to customize the unboxing of Path from various operations */
   protected Path toDelegate(Path path) {
     if (path instanceof FilterPath) {
       FilterPath fp = (FilterPath) path;
       if (fp.fileSystem != fileSystem) {
-        throw new ProviderMismatchException("mismatch, expected: " + fileSystem.provider().getClass() + ", got: " + fp.fileSystem.provider().getClass());
+        throw new ProviderMismatchException(
+            "mismatch, expected: "
+                + fileSystem.provider().getClass()
+                + ", got: "
+                + fp.fileSystem.provider().getClass());
       }
       return fp.delegate;
     } else {
-      throw new ProviderMismatchException("mismatch, expected: FilterPath, got: " + path.getClass());
+      throw new ProviderMismatchException(
+          "mismatch, expected: FilterPath, got: " + path.getClass());
     }
   }
 }

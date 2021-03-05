@@ -179,10 +179,11 @@ public abstract class Tagger {
 
     if(!loggedSkippedAltTokenWarning && skippedTokens){
       loggedSkippedAltTokenWarning = true; //only log once
-      log.warn("The Tagger skipped some alternate tokens (tokens with posInc == 0) "
-          + "while processing text. This may cause problems with some Analyzer "
-          + "configurations (e.g. query time synonym expansion). For details see "
-          + "https://github.com/OpenSextant/SolrTextTagger/pull/11#issuecomment-24936225");
+      log.warn("{}{}{}{}"
+          , "The Tagger skipped some alternate tokens (tokens with posInc == 0) "
+          , "while processing text. This may cause problems with some Analyzer "
+          , "configurations (e.g. query time synonym expansion). For details see "
+          , "https://github.com/OpenSextant/SolrTextTagger/pull/11#issuecomment-24936225");
     }
 
     tokenStream.end();

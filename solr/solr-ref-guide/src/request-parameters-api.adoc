@@ -20,7 +20,7 @@ The Request Parameters API allows creating parameter sets, a.k.a. paramsets, tha
 
 The parameter sets defined with this API can be used in requests to Solr, or referenced directly in `solrconfig.xml` request handler definitions.
 
-It is really another endpoint of the <<config-api.adoc#config-api,Config API>> instead of a separate API, and has distinct commands. It does not replace or modify any sections of `solrconfig.xml`, but instead provides another approach to handling parameters used in requests. It behaves in the same way as the Config API, by storing parameters in another file that will be used at runtime. In this case, the parameters are stored in a file named `params.json`. This file is kept in ZooKeeper or in the `conf` directory of a standalone Solr instance.
+It is really another endpoint of the <<config-api.adoc#,Config API>> instead of a separate API, and has distinct commands. It does not replace or modify any sections of `solrconfig.xml`, but instead provides another approach to handling parameters used in requests. It behaves in the same way as the Config API, by storing parameters in another file that will be used at runtime. In this case, the parameters are stored in a file named `params.json`. This file is kept in ZooKeeper or in the `conf` directory of a standalone Solr instance.
 
 The settings stored in `params.json` are used at query time to override settings defined in `solrconfig.xml` in some cases as described below.
 
@@ -135,7 +135,7 @@ It will be equivalent to a standard request handler definition such as this one:
 
 === Implicit RequestHandlers with the Request Parameters API
 
-Solr ships with many out-of-the-box request handlers that may only be configured via the Request Parameters API, because their configuration is not present in `solrconfig.xml`. See <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> for the paramset to use when configuring an implicit request handler.
+Solr ships with many out-of-the-box request handlers that may only be configured via the Request Parameters API, because their configuration is not present in `solrconfig.xml`. See <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>> for the paramset to use when configuring an implicit request handler.
 
 === Viewing Expanded Paramsets and Effective Parameters with RequestHandlers
 
@@ -208,4 +208,4 @@ The RequestParams Object can be accessed using the method `SolrConfig#getRequest
 
 == Examples Using the Request Parameters API
 
-The Solr "films" example demonstrates the use of the parameters API. You can use this example in your Solr installation (in the `example/films` directory) or view the files in the Apache GitHub mirror at https://github.com/apache/lucene-solr/tree/master/solr/example/films.
+The Solr "films" example demonstrates the use of the parameters API. You can use this example in your Solr installation (in the `example/films` directory) or view the files in the Apache GitHub mirror at https://github.com/apache/lucene-solr/tree/leader/solr/example/films.

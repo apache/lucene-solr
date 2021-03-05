@@ -291,8 +291,10 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
           .getResults().getNumFound();
       
       assertTrue("Found " + ctrlDocs + " control docs", cloudClientDocs > 0);
-      
-      log.info("collection state: " + printClusterStateInfo(DEFAULT_COLLECTION));
+
+      if (log.isInfoEnabled()) {
+        log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION));
+      }
       
       if (VERBOSE) System.out.println("control docs:"
           + controlClient.query(new SolrQuery("*:*")).getResults()
@@ -306,9 +308,8 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       }
 
       try (CloudSolrClient client = createCloudClient("collection1", 30000)) {
-        // We don't really know how many live nodes we have at this point, so "maxShardsPerNode" needs to be > 1
         createCollection(null, "testcollection",
-              1, 1, 10, client, null, "conf1"); 
+              1, 1, client, null, "conf1");
       }
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);

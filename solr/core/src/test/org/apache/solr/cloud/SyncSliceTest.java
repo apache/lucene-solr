@@ -102,6 +102,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     params.set("action", CollectionAction.SYNCSHARD.toString());
     params.set("collection", "collection1");
     params.set("shard", "shard1");
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     
@@ -130,6 +131,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // this doc won't be on one node
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "to come to the aid of their country.");
+    commit();
     
     
     Set<CloudJettyRunner> jetties = new HashSet<>();

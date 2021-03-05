@@ -24,9 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Configurations for a custom analyzer.
- */
+/** Configurations for a custom analyzer. */
 public final class CustomAnalyzerConfig {
 
   private final String configDir;
@@ -81,30 +79,22 @@ public final class CustomAnalyzerConfig {
     this.tokenFilterConfigs = builder.tokenFilterConfigs;
   }
 
-  /**
-   * Returns directory path for configuration files, or empty.
-   */
+  /** Returns directory path for configuration files, or empty. */
   Optional<String> getConfigDir() {
     return Optional.ofNullable(configDir);
   }
 
-  /**
-   * Returns Tokenizer configurations.
-   */
+  /** Returns Tokenizer configurations. */
   ComponentConfig getTokenizerConfig() {
     return tokenizerConfig;
   }
 
-  /**
-   * Returns CharFilters configurations.
-   */
+  /** Returns CharFilters configurations. */
   List<ComponentConfig> getCharFilterConfigs() {
     return List.copyOf(charFilterConfigs);
   }
 
-  /**
-   * Returns TokenFilters configurations.
-   */
+  /** Returns TokenFilters configurations. */
   List<ComponentConfig> getTokenFilterConfigs() {
     return List.copyOf(tokenFilterConfigs);
   }

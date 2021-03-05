@@ -17,21 +17,22 @@
 
 /**
  * Analyzer for Simplified Chinese, which indexes words.
- * @lucene.experimental
- * <div>
- * Three analyzers are provided for Chinese, each of which treats Chinese text in a different way.
- * <ul>
- *   <li>StandardAnalyzer: Index unigrams (individual Chinese characters) as a token.
- *   <li>CJKAnalyzer (in the analyzers/cjk package): Index bigrams (overlapping groups of two adjacent Chinese characters) as tokens.
- *   <li>SmartChineseAnalyzer (in this package): Index words (attempt to segment Chinese text into words) as tokens.
- * </ul>
- * 
- * Example phrase： "我是中国人"
- * <ol>
- *   <li>StandardAnalyzer: 我－是－中－国－人</li>
- *   <li>CJKAnalyzer: 我是－是中－中国－国人</li>
- *   <li>SmartChineseAnalyzer: 我－是－中国－人</li>
- * </ol>
- * </div>
+ *
+ * @lucene.experimental <div> Three analyzers are provided for Chinese, each of which treats Chinese
+ *     text in a different way.
+ *     <ul>
+ *       <li>StandardAnalyzer: Index unigrams (individual Chinese characters) as a token.
+ *       <li>CJKAnalyzer (in the analyzers/cjk package): Index bigrams (overlapping groups of two
+ *           adjacent Chinese characters) as tokens.
+ *       <li>SmartChineseAnalyzer (in this package): Index words (attempt to segment Chinese text
+ *           into words) as tokens.
+ *     </ul>
+ *     Example phrase： "我是中国人"
+ *     <ol>
+ *       <li>StandardAnalyzer: 我－是－中－国－人
+ *       <li>CJKAnalyzer: 我是－是中－中国－国人
+ *       <li>SmartChineseAnalyzer: 我－是－中国－人
+ *     </ol>
+ *     </div>
  */
 package org.apache.lucene.analysis.cn.smart;

@@ -116,25 +116,9 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
           "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
           "type":"object",
           "properties":{
-            "rule":{
-              "type":"array",
-              "documentation":"https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
-              "description":"Modifies the rules for where replicas should be located in a cluster.",
-              "items":{"type":"string"}},
-            "snitch":{
-              "type":"array",
-              "documentation":"https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
-              "description":"Details of the snitch provider",
-              "items":{"type":"string"}},
-            "autoAddReplicas":{
-              "type":"boolean",
-              "description":"When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://lucene.apache.org/solr/guide/running-solr-on-hdfs.html for more details on settings and overrides."},
             "replicationFactor":{
               "type":"string",
-              "description":"The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Note that changing this value on an existing collection does not automatically add more replicas to the collection. However, it will allow add-replica commands to succeed."},
-            "maxShardsPerNode":{
-              "type":"integer",
-              "description":"When creating collections, the shards and/or replicas are spread across all available, live, nodes, and two replicas of the same shard will never be on the same node. If a node is not live when the collection is created, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining maxShardsPerNode sets a limit on the number of replicas can be spread to each node. If the entire collection can not be fit into the live nodes, no collection will be created at all."}}}}}],
+              "description":"The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Note that changing this value on an existing collection does not automatically add more replicas to the collection. However, it will allow add-replica commands to succeed."}}}}}],
   "WARNING":"This response format is experimental.  It is likely to change in the future.",
   "availableSubPaths":{
     "/c/gettingstarted/select":["POST", "GET"],
@@ -155,7 +139,7 @@ For the "gettingstarted" collection, set the replication factor and whether to a
 [source,bash]
 ----
 $ curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/json' -d '
-{ modify: { replicationFactor: "3", autoAddReplicas: false } }'
+{ modify: { replicationFactor: "3" } }'
 
 {"responseHeader":{"status":0,"QTime":842}}
 ----
@@ -174,7 +158,7 @@ Set a cluster property:
 [source,bash]
 ----
 $ curl http://localhost:8983/api/cluster -H 'Content-type: application/json' -d '
-{ set-property: { name: autoAddReplicas, val: "false" } }'
+{ set-property: { name: maxCoresPerNode, val: "100" } }'
 
 {"responseHeader":{"status":0,"QTime":4}}
 ----

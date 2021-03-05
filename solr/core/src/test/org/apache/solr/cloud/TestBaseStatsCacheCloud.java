@@ -80,6 +80,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     // create control core & client
     System.setProperty("solr.statsCache", getImplementationName());
     System.setProperty("solr.similarity", CustomSimilarityFactory.class.getName());
@@ -95,7 +96,6 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
 
   protected void createTestCollection() throws Exception {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, numNodes)
-        .setMaxShardsPerNode(2)
         .process(solrClient);
     indexDocs(solrClient, collectionName, NUM_DOCS, 0, generator);
     indexDocs(control, "collection1", NUM_DOCS, 0, generator);
@@ -108,6 +108,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testBasicStats() throws Exception {
     QueryResponse cloudRsp = solrClient.query(collectionName,
         params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));

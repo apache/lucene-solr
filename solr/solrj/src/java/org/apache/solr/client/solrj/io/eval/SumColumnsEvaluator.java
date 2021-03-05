@@ -48,7 +48,7 @@ public class SumColumnsEvaluator extends RecursiveObjectEvaluator implements One
       double[][] data = matrix.getData();
       RealMatrix realMatrix = new Array2DRowRealMatrix(data, false);
 
-      List<Number> sums = new ArrayList(data[0].length);
+      List<Number> sums = new ArrayList<>(data[0].length);
 
       for(int i=0; i<data[0].length; i++) {
         double sum = 0;

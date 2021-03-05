@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Lucene index files replication utility'
+
 dependencies {
   api project(':lucene:core')
 
@@ -34,3 +36,4 @@ dependencies {
 
   testImplementation project(':lucene:test-framework')
 }
+

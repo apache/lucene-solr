@@ -35,6 +35,10 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated since 8.6
+ */
+@Deprecated
 public class HdfsLocalityReporter implements SolrInfoBean {
   public static final String LOCALITY_BYTES_TOTAL = "locality.bytes.total";
   public static final String LOCALITY_BYTES_LOCAL = "locality.bytes.local";
@@ -89,7 +93,7 @@ public class HdfsLocalityReporter implements SolrInfoBean {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
+    MetricsMap metricsMap = new MetricsMap(map -> {
       long totalBytes = 0;
       long localBytes = 0;
       int totalCount = 0;
@@ -118,10 +122,8 @@ public class HdfsLocalityReporter implements SolrInfoBean {
               }
             }
           } catch (IOException e) {
-            if (log.isWarnEnabled()) {
-              log.warn("Could not retrieve locality information for {} due to exception: {}",
-                  hdfsDirectory.getHdfsDirPath(), e);
-            }
+            log.warn("Could not retrieve locality information for {} due to exception: {}",
+                hdfsDirectory.getHdfsDirPath(), e);
           }
         }
       }
@@ -152,7 +154,9 @@ public class HdfsLocalityReporter implements SolrInfoBean {
    */
   public void registerDirectory(HdfsDirectory dir) {
     if (log.isInfoEnabled()) {
-      log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath().toString());
+      if (log.isInfoEnabled()) {
+        log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath());
+      }
     }
     cache.put(dir, new ConcurrentHashMap<FileStatus, BlockLocation[]>());
   }

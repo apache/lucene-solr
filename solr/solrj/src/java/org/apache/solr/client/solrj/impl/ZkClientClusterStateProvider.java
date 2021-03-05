@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+@SuppressWarnings({"unchecked"})
 public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -238,7 +239,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
     /* Log the constructed connection string and then initialize. */
     final String zkHostString = zkBuilder.toString();
-    log.debug("Final constructed zkHost string: " + zkHostString);
+    log.debug("Final constructed zkHost string: {}", zkHostString);
     return zkHostString;
   }
 

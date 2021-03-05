@@ -145,8 +145,10 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     }
     public boolean matches(Set<String> liveNodes, DocCollection collectionState) {
       final boolean result = inner.matches(liveNodes, collectionState);
-      log.info("Predicate called: result={}, (pre)latch={}, liveNodes={}, state={}",
-               result, latch.getCount(), liveNodes, collectionState);
+      if (log.isInfoEnabled()) {
+        log.info("Predicate called: result={}, (pre)latch={}, liveNodes={}, state={}",
+            result, latch.getCount(), liveNodes, collectionState);
+      }
       latch.countDown();
       return result;
     }

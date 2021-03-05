@@ -68,7 +68,6 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(COLLECTION_NAME, COLLECTION_NAME,
         numShards, numReplicas, 0, 0)
-        .setMaxShardsPerNode((numShards * numReplicas) / numNodes + 1)
         .process(cluster.getSolrClient());
     assertEquals("Admin request failed; ", 0, resp.getStatus());
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * numReplicas);
@@ -447,6 +446,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       params.set("shardUnique", "true");
     }
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);

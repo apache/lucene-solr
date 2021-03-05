@@ -172,20 +172,20 @@ public class JettySolrRunner {
     private void executeDelay() {
       int delayMs = 0;
       for (Delay delay: delays) {
-        this.log.info("Delaying {}, for reason: {}", delay.delayValue, delay.reason);
+        log.info("Delaying {}, for reason: {}", delay.delayValue, delay.reason);
         if (delay.counter.decrementAndGet() == 0) {
           delayMs += delay.delayValue;
         }
       }
 
       if (delayMs > 0) {
-        this.log.info("Pausing this socket connection for {}ms...", delayMs);
+        log.info("Pausing this socket connection for {}ms...", delayMs);
         try {
           Thread.sleep(delayMs);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
-        this.log.info("Waking up after the delay of {}ms...", delayMs);
+        log.info("Waking up after the delay of {}ms...", delayMs);
       }
     }
 

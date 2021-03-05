@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
@@ -101,7 +102,9 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     this.timeSource = timeSource;
     this.collection = collection;
     this.syncPeriod = syncPeriod;
-    log.debug("Created " + hashCode());
+    if (log.isDebugEnabled()) {
+      log.debug("Created {}", hashCode());
+    }
     this.idPrefixLength = ID_PREFIX.length() + ID_SEP.length();
     syncService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2,
         new SolrNamedThreadFactory("SolrRrdBackendFactory"));
@@ -280,7 +283,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     backends.forEach((name, db) -> {
       long lastModifiedTime = db.getLastModifiedTime();
       Pair<String, Long> stored = byName.get(name);
-      Pair<String, Long> inMemory = new Pair(name, lastModifiedTime);
+      Pair<String, Long> inMemory = new Pair<>(name, lastModifiedTime);
       if (stored != null) {
         if (stored.second() < lastModifiedTime) {
           byName.put(name, inMemory);
@@ -333,7 +336,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     try {
       solrClient.deleteByQuery(collection, "{!term f=id}" + ID_PREFIX + ID_SEP + path);
     } catch (SolrServerException | SolrException e) {
-      log.warn("Error deleting RRD for path " + path, e);
+      log.warn("Error deleting RRD for path {}", path, e);
     }
   }
 
@@ -347,7 +350,9 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     if (Thread.interrupted()) {
       return;
     }
-    log.debug("-- maybe sync backends: " + backends.keySet());
+    if (log.isDebugEnabled()) {
+      log.debug("-- maybe sync backends: {}", backends.keySet());
+    }
     Map<String, SolrRrdBackend.SyncData> syncDatas = new HashMap<>();
     backends.forEach((path, backend) -> {
       SolrRrdBackend.SyncData syncData = backend.getSyncDataAndMarkClean();
@@ -358,7 +363,9 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     if (syncDatas.isEmpty()) {
       return;
     }
-    log.debug("-- syncing " + syncDatas.keySet());
+    if (log.isDebugEnabled()) {
+      log.debug("-- syncing {}", syncDatas.keySet());
+    }
     // write updates
     try {
       syncDatas.forEach((path, syncData) -> {
@@ -370,7 +377,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         try {
           solrClient.add(collection, doc);
         } catch (SolrServerException | IOException e) {
-          log.warn("Error updating RRD data for " + path, e);
+          log.warn("Error updating RRD data for {}", path, e);
         }
       });
       if (Thread.interrupted()) {
@@ -449,11 +456,13 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     if (closed) {
       return;
     }
-    log.debug("Closing " + hashCode());
+    if (log.isDebugEnabled()) {
+      log.debug("Closing {}", hashCode());
+    }
     closed = true;
-    backends.forEach((p, b) -> IOUtils.closeQuietly(b));
+    backends.values().forEach(IOUtils::closeQuietly);
     backends.clear();
-    syncService.shutdownNow();
+    ExecutorUtil.shutdownNowAndAwaitTermination(syncService);
     syncService = null;
   }
 }

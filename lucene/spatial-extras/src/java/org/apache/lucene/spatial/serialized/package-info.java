@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Strategies that serialize the shape (non-indexed).
- */
+/** Strategies that serialize the shape (non-indexed). */
 package org.apache.lucene.spatial.serialized;

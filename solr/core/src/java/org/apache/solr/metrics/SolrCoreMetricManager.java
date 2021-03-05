@@ -92,10 +92,10 @@ public class SolrCoreMetricManager implements Closeable {
    * are carried over and will be used under the new core name.
    * This method also reloads reporters so that they use the new core name.
    */
-  public void afterCoreSetName() {
+  public void afterCoreRename() {
+    assert core.getCoreDescriptor().getCloudDescriptor() == null;
     String oldRegistryName = solrMetricsContext.getRegistryName();
     String oldLeaderRegistryName = leaderRegistryName;
-    initCloudMode();
     String newRegistryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
     leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
     if (oldRegistryName.equals(newRegistryName)) {

@@ -17,17 +17,13 @@
 package org.apache.lucene.queryparser.surround.query;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
 class DistanceRewriteQuery extends RewriteQuery<DistanceQuery> {
 
-  DistanceRewriteQuery(
-      DistanceQuery srndQuery,
-      String fieldName,
-      BasicQueryFactory qf) {
+  DistanceRewriteQuery(DistanceQuery srndQuery, String fieldName, BasicQueryFactory qf) {
     super(srndQuery, fieldName, qf);
   }
 
@@ -42,4 +38,3 @@ class DistanceRewriteQuery extends RewriteQuery<DistanceQuery> {
     visitor.visitLeaf(this);
   }
 }
-

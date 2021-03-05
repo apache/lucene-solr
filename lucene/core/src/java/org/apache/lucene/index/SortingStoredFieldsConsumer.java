@@ -19,62 +19,105 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
+import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.compressing.Compressor;
+import org.apache.lucene.codecs.compressing.Decompressor;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
+
+  static final CompressionMode NO_COMPRESSION =
+      new CompressionMode() {
+        @Override
+        public Compressor newCompressor() {
+          return new Compressor() {
+            @Override
+            public void close() throws IOException {}
+
+            @Override
+            public void compress(byte[] bytes, int off, int len, DataOutput out)
+                throws IOException {
+              out.writeBytes(bytes, off, len);
+            }
+          };
+        }
+
+        @Override
+        public Decompressor newDecompressor() {
+          return new Decompressor() {
+            @Override
+            public void decompress(
+                DataInput in, int originalLength, int offset, int length, BytesRef bytes)
+                throws IOException {
+              bytes.bytes = ArrayUtil.grow(bytes.bytes, length);
+              in.skipBytes(offset);
+              in.readBytes(bytes.bytes, 0, length);
+              bytes.offset = 0;
+              bytes.length = length;
+            }
+
+            @Override
+            public Decompressor clone() {
+              return this;
+            }
+          };
+        }
+      };
+  private static final StoredFieldsFormat TEMP_STORED_FIELDS_FORMAT =
+      new CompressingStoredFieldsFormat("TempStoredFields", NO_COMPRESSION, 128 * 1024, 1, 10);
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
-  SortingStoredFieldsConsumer(DocumentsWriterPerThread docWriter) {
-    super(docWriter);
+  SortingStoredFieldsConsumer(Codec codec, Directory directory, SegmentInfo info) {
+    super(codec, directory, info);
   }
 
   @Override
   protected void initStoredFieldsWriter() throws IOException {
     if (writer == null) {
-      this.tmpDirectory = new TrackingTmpOutputDirectoryWrapper(docWriter.directory);
-      this.writer = docWriter.codec.storedFieldsFormat().fieldsWriter(tmpDirectory, docWriter.getSegmentInfo(),
-          IOContext.DEFAULT);
+      this.tmpDirectory = new TrackingTmpOutputDirectoryWrapper(directory);
+      this.writer = TEMP_STORED_FIELDS_FORMAT.fieldsWriter(tmpDirectory, info, IOContext.DEFAULT);
     }
   }
 
   @Override
   void flush(SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
     super.flush(state, sortMap);
-    if (sortMap == null) {
-      // we're lucky the index is already sorted, just rename the temporary file and return
-      for (Map.Entry<String, String> entry : tmpDirectory.getTemporaryFiles().entrySet()) {
-        tmpDirectory.rename(entry.getValue(), entry.getKey());
-      }
-      return;
-    }
-    StoredFieldsReader reader = docWriter.codec.storedFieldsFormat()
-        .fieldsReader(tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
-    StoredFieldsReader mergeReader = reader.getMergeInstance();
-    StoredFieldsWriter sortWriter = docWriter.codec.storedFieldsFormat()
-        .fieldsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
+    StoredFieldsReader reader =
+        TEMP_STORED_FIELDS_FORMAT.fieldsReader(
+            tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
+    // Don't pull a merge instance, since merge instances optimize for
+    // sequential access while we consume stored fields in random order here.
+    StoredFieldsWriter sortWriter =
+        codec
+            .storedFieldsFormat()
+            .fieldsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
     try {
       reader.checkIntegrity();
       CopyVisitor visitor = new CopyVisitor(sortWriter);
       for (int docID = 0; docID < state.segmentInfo.maxDoc(); docID++) {
         sortWriter.startDocument();
-        mergeReader.visitDocument(sortMap.newToOld(docID), visitor);
+        reader.visitDocument(sortMap == null ? docID : sortMap.newToOld(docID), visitor);
         sortWriter.finishDocument();
       }
       sortWriter.finish(state.fieldInfos, state.segmentInfo.maxDoc());
     } finally {
       IOUtils.close(reader, sortWriter);
-      IOUtils.deleteFiles(tmpDirectory,
-          tmpDirectory.getTemporaryFiles().values());
+      IOUtils.deleteFiles(tmpDirectory, tmpDirectory.getTemporaryFiles().values());
     }
   }
 
@@ -84,22 +127,19 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
       super.abort();
     } finally {
       if (tmpDirectory != null) {
-        IOUtils.deleteFilesIgnoringExceptions(tmpDirectory,
-            tmpDirectory.getTemporaryFiles().values());
+        IOUtils.deleteFilesIgnoringExceptions(
+            tmpDirectory, tmpDirectory.getTemporaryFiles().values());
       }
     }
   }
 
-  /**
-   * A visitor that copies every field it sees in the provided {@link StoredFieldsWriter}.
-   */
+  /** A visitor that copies every field it sees in the provided {@link StoredFieldsWriter}. */
   private static class CopyVisitor extends StoredFieldVisitor implements IndexableField {
     final StoredFieldsWriter writer;
     BytesRef binaryValue;
     String stringValue;
     Number numericValue;
     FieldInfo currentField;
-
 
     CopyVisitor(StoredFieldsWriter writer) {
       this.writer = writer;

@@ -16,15 +16,17 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 
 public class TestSimpleTextTermVectorsFormat extends BaseTermVectorsFormatTestCase {
+  @Override
+  protected Class<? extends Throwable> getReadPastLastPositionExceptionClass() {
+    return AssertionError.class;
+  }
 
   @Override
   protected Codec getCodec() {
     return new SimpleTextCodec();
   }
-  
 }

@@ -27,6 +27,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -123,6 +124,9 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws SyntaxError {
         String fname = localParams.get(QueryParsing.F);
+        if (fname == null || fname.isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing field to query");
+        }
         FieldType ft = req.getSchema().getFieldType(fname);
         String separator = localParams.get(SEPARATOR, ",");
         String qstr = localParams.get(QueryParsing.V);//never null
@@ -202,8 +206,8 @@ public class TermsQParserPlugin extends QParserPlugin {
           if (! matchesAtLeastOneTerm) {
             return null;
           }
-          
-          SortedSetDocValues segmentDocValues = context.reader().getSortedSetDocValues(fieldName);
+
+          SortedSetDocValues segmentDocValues = DocValues.getSortedSet(context.reader(), fieldName);
           if (segmentDocValues == null) {
             return null;
           }

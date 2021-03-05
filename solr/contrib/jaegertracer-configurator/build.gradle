@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Jaeger tracer configurator for tracing Solr using OpenTracing with Jaeger backend'
+
 dependencies {
   implementation project(':solr:core')
 

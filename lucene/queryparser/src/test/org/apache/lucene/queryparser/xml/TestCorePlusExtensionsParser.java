@@ -28,11 +28,10 @@ public class TestCorePlusExtensionsParser extends TestCorePlusQueriesParser {
 
   public void testFuzzyLikeThisQueryXML() throws Exception {
     Query q = parse("FuzzyLikeThisQuery.xml");
-    //show rewritten fuzzyLikeThisQuery - see what is being matched on
+    // show rewritten fuzzyLikeThisQuery - see what is being matched on
     if (VERBOSE) {
       System.out.println(rewrite(q));
     }
     dumpResults("FuzzyLikeThis", q, 5);
   }
-
 }

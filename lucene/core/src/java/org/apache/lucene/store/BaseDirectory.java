@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 
 /**
  * Base implementation for a concrete {@link Directory} that uses a {@link LockFactory} for locking.
+ *
  * @lucene.experimental
  */
 public abstract class BaseDirectory extends Directory {
 
-  volatile protected boolean isOpen = true;
+  protected volatile boolean isOpen = true;
 
-  /** Holds the LockFactory instance (implements locking for
-   * this Directory instance). */
+  /** Holds the LockFactory instance (implements locking for this Directory instance). */
   protected final LockFactory lockFactory;
 
   /** Sole constructor. */
@@ -54,6 +53,6 @@ public abstract class BaseDirectory extends Directory {
 
   @Override
   public String toString() {
-    return super.toString()  + " lockFactory=" + lockFactory;
+    return super.toString() + " lockFactory=" + lockFactory;
   }
 }

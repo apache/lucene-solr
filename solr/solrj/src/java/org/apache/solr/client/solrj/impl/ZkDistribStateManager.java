@@ -18,29 +18,23 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.NotEmptyException;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-
-import static org.apache.solr.common.util.Utils.fromJSON;
 
 /**
  * Implementation of {@link DistribStateManager} that uses Zookeeper.
@@ -181,29 +175,16 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws InterruptedException, IOException {
-    Map<String, Object> map = new HashMap<>();
-    Stat stat = new Stat();
-    try {
-      byte[] bytes = zkClient.getData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, watcher, stat, true);
-      if (bytes != null && bytes.length > 0) {
-        map = (Map<String, Object>) fromJSON(bytes);
-      }
-    } catch (KeeperException.NoNodeException e) {
-      // ignore
-    } catch (KeeperException e) {
-      throw new IOException(e);
-    }
-    map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
-    return new AutoScalingConfig(map);
-  }
-
-  @Override
   public void close() throws IOException {
 
   }
 
   public SolrZkClient getZkClient() {
     return zkClient;
+  }
+
+  @Override
+  public PerReplicaStates getReplicaStates(String path) throws KeeperException, InterruptedException {
+    return PerReplicaStates.fetch(path, zkClient, null);
   }
 }

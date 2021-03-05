@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.IndexReader;
@@ -31,9 +30,12 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
 
   public void testCostlyFilter() {
-    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(new PrefixQuery(new Term("field", "prefix"))));
-    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(IntPoint.newRangeQuery("intField", 1, 1000)));
-    assertFalse(UsageTrackingQueryCachingPolicy.isCostly(new TermQuery(new Term("field", "value"))));
+    assertTrue(
+        UsageTrackingQueryCachingPolicy.isCostly(new PrefixQuery(new Term("field", "prefix"))));
+    assertTrue(
+        UsageTrackingQueryCachingPolicy.isCostly(IntPoint.newRangeQuery("intField", 1, 1000)));
+    assertFalse(
+        UsageTrackingQueryCachingPolicy.isCostly(new TermQuery(new Term("field", "value"))));
   }
 
   public void testNeverCacheMatchAll() throws Exception {
@@ -69,19 +71,22 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     w.addDocument(new Document());
     IndexReader reader = w.getReader();
     w.close();
-    
+
     IndexSearcher searcher = new IndexSearcher(reader);
     UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
-    LRUQueryCache cache = new LRUQueryCache(10, Long.MAX_VALUE, new LRUQueryCache.MinSegmentSizePredicate(1, 0f), Float.POSITIVE_INFINITY);
+    LRUQueryCache cache =
+        new LRUQueryCache(
+            10,
+            Long.MAX_VALUE,
+            new LRUQueryCache.MinSegmentSizePredicate(1, 0f),
+            Float.POSITIVE_INFINITY);
     searcher.setQueryCache(cache);
     searcher.setQueryCachingPolicy(policy);
 
     DummyQuery q1 = new DummyQuery(1);
     DummyQuery q2 = new DummyQuery(2);
-    BooleanQuery bq = new BooleanQuery.Builder()
-        .add(q1, Occur.SHOULD)
-        .add(q2, Occur.SHOULD)
-        .build();
+    BooleanQuery bq =
+        new BooleanQuery.Builder().add(q1, Occur.SHOULD).add(q2, Occur.SHOULD).build();
 
     for (int i = 0; i < 3; ++i) {
       searcher.count(bq);
@@ -94,7 +99,8 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     for (int i = 0; i < 10; ++i) {
       searcher.count(bq);
     }
-    assertEquals(1, cache.getCacheSize()); // q1 and q2 still not cached since we do not pull scorers on them
+    assertEquals(
+        1, cache.getCacheSize()); // q1 and q2 still not cached since we do not pull scorers on them
 
     searcher.count(q1);
     assertEquals(2, cache.getCacheSize()); // q1 used on its own -> cached
@@ -127,7 +133,8 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       return new ConstantScoreWeight(DummyQuery.this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -142,10 +149,6 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
-
+    public void visit(QueryVisitor visitor) {}
   }
-
 }

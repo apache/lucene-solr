@@ -31,7 +31,7 @@ import org.junit.Test;
  * How to use this test class:
  * #1 Run the test, e.g.
  *    in Eclipse 'Run As JUnit Test' or
- *    on the command line:  cd solr/core ; ant test -Dtestcase=HelloWorldSolrCloudTestCase
+ *    on the command line:  ./gradlew -p solr/core test --tests HelloWorldSolrCloudTestCase
  * #2 Modify the test, e.g.
  *    in setupCluster add further documents and then re-run the test.
  */
@@ -41,8 +41,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
   private static final int numShards = 3;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = 2;
-  private static final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+  private static final int nodeCount = numShards*numReplicas;
 
   private static final String id = "id";
 
@@ -56,7 +55,6 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
     // create an empty collection
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
 
     // add a document

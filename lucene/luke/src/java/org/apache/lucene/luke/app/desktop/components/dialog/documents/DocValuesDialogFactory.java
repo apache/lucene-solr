@@ -17,18 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -44,7 +32,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -73,7 +72,7 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
 
   private DocValues docValues;
 
-  public synchronized static DocValuesDialogFactory getInstance() throws IOException {
+  public static synchronized DocValuesDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new DocValuesDialogFactory();
     }
@@ -91,14 +90,10 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
     DefaultListModel<String> values = new DefaultListModel<>();
     if (docValues.getValues().size() > 0) {
       decodersCombo.setEnabled(false);
-      docValues.getValues().stream()
-          .map(BytesRefUtils::decode)
-          .forEach(values::addElement);
+      docValues.getValues().stream().map(BytesRefUtils::decode).forEach(values::addElement);
     } else if (docValues.getNumericValues().size() > 0) {
       decodersCombo.setEnabled(true);
-      docValues.getNumericValues().stream()
-          .map(String::valueOf)
-          .forEach(values::addElement);
+      docValues.getNumericValues().stream().map(String::valueOf).forEach(values::addElement);
     }
 
     valueList.setModel(values);
@@ -138,7 +133,8 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
 
     JPanel fieldHeader = new JPanel(new FlowLayout(FlowLayout.LEADING, 3, 3));
     fieldHeader.setOpaque(false);
-    fieldHeader.add(new JLabel(MessageUtils.getLocalizedMessage("documents.docvalues.label.doc_values")));
+    fieldHeader.add(
+        new JLabel(MessageUtils.getLocalizedMessage("documents.docvalues.label.doc_values")));
     fieldHeader.add(new JLabel(field));
     header.add(fieldHeader);
 
@@ -151,7 +147,8 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
     JPanel decodeHeader = new JPanel(new FlowLayout(FlowLayout.TRAILING, 3, 3));
     decodeHeader.setOpaque(false);
     decodeHeader.add(new JLabel("decoded as"));
-    String[] decoders = Arrays.stream(Decoder.values()).map(Decoder::toString).toArray(String[]::new);
+    String[] decoders =
+        Arrays.stream(Decoder.values()).map(Decoder::toString).toArray(String[]::new);
     decodersCombo.setModel(new DefaultComboBoxModel<>(decoders));
     decodersCombo.setSelectedItem(Decoder.LONG.toString());
     decodersCombo.addActionListener(listeners::selectDecoder);
@@ -171,13 +168,9 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
 
     DefaultListModel<String> values = new DefaultListModel<>();
     if (docValues.getValues().size() > 0) {
-      docValues.getValues().stream()
-          .map(BytesRefUtils::decode)
-          .forEach(values::addElement);
+      docValues.getValues().stream().map(BytesRefUtils::decode).forEach(values::addElement);
     } else {
-      docValues.getNumericValues().stream()
-          .map(String::valueOf)
-          .forEach(values::addElement);
+      docValues.getNumericValues().stream().map(String::valueOf).forEach(values::addElement);
     }
     valueList.setModel(values);
 
@@ -188,7 +181,9 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
     JPanel footer = new JPanel(new FlowLayout(FlowLayout.TRAILING, 5, 5));
     footer.setOpaque(false);
 
-    JButton copyBtn = new JButton(FontUtils.elegantIconHtml("&#xe0e6;", MessageUtils.getLocalizedMessage("button.copy")));
+    JButton copyBtn =
+        new JButton(
+            FontUtils.elegantIconHtml("&#xe0e6;", MessageUtils.getLocalizedMessage("button.copy")));
     copyBtn.setMargin(new Insets(3, 0, 3, 0));
     copyBtn.addActionListener(listeners::copyValues);
     footer.add(copyBtn);
@@ -214,9 +209,7 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
     DefaultListModel<String> values = new DefaultListModel<>();
     switch (decoder) {
       case LONG:
-        docValues.getNumericValues().stream()
-            .map(String::valueOf)
-            .forEach(values::addElement);
+        docValues.getNumericValues().stream().map(String::valueOf).forEach(values::addElement);
         break;
       case FLOAT:
         docValues.getNumericValues().stream()
@@ -266,11 +259,11 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
     }
   }
 
-
   /** doc value decoders */
   public enum Decoder {
-
-    LONG("long"), FLOAT("float"), DOUBLE("double");
+    LONG("long"),
+    FLOAT("float"),
+    DOUBLE("double");
 
     private final String label;
 
@@ -292,5 +285,4 @@ public final class DocValuesDialogFactory implements DialogOpener.DialogFactory 
       throw new IllegalArgumentException("No such decoder: " + label);
     }
   }
-
 }

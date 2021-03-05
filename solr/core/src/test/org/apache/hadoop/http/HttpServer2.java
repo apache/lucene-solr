@@ -118,7 +118,8 @@ import org.slf4j.LoggerFactory;
 public final class HttpServer2 implements FilterContainer {
   public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
 
-  public static final Logger LOG = LoggerFactory.getLogger(HttpServer2.class);
+  // Apparently the Hadoop code expectes upper-case LOG, so...
+  public static final Logger LOG = LoggerFactory.getLogger(HttpServer2.class); //nowarn
 
   public static final String HTTP_SCHEME = "http";
   public static final String HTTPS_SCHEME = "https";
@@ -523,7 +524,7 @@ public final class HttpServer2 implements FilterContainer {
       if(null != excludeCiphers && !excludeCiphers.isEmpty()) {
         sslContextFactory.setExcludeCipherSuites(
             StringUtils.getTrimmedStrings(excludeCiphers));
-        LOG.info("Excluded Cipher List:" + excludeCiphers);
+        LOG.info("Excluded Cipher List:{}", excludeCiphers);
       }
 
       conn.addFirstConnectionFactory(new SslConnectionFactory(sslContextFactory,
@@ -610,7 +611,7 @@ public final class HttpServer2 implements FilterContainer {
 
     if (pathSpecs != null) {
       for (String path : pathSpecs) {
-        LOG.info("adding path spec: " + path);
+        LOG.info("adding path spec: {}", path);
         addFilterPathMapping(path, webAppContext);
       }
     }
@@ -782,8 +783,8 @@ public final class HttpServer2 implements FilterContainer {
    */
   public void addJerseyResourcePackage(final String packageName,
                                        final String pathSpec) {
-    LOG.info("addJerseyResourcePackage: packageName=" + packageName
-        + ", pathSpec=" + pathSpec);
+    LOG.info("addJerseyResourcePackage: packageName={}, pathcpec={}"
+        , packageName, pathSpec);
     final ServletHolder sh = new ServletHolder(ServletContainer.class);
     sh.setInitParameter("com.sun.jersey.config.property.resourceConfigClass",
         "com.sun.jersey.api.core.PackagesResourceConfig");
@@ -845,9 +846,10 @@ public final class HttpServer2 implements FilterContainer {
     for (int i = 0; i < servletMappings.length; i++) {
       if (servletMappings[i].containsPathSpec(pathSpec)) {
         if (LOG.isDebugEnabled()) {
-          LOG.debug("Found existing " + servletMappings[i].getServletName() +
-              " servlet at path " + pathSpec + "; will replace mapping" +
-              " with " + holder.getName() + " servlet");
+          LOG.debug("Found existing {} servlet at path {}; will replace mapping with {} servlet"
+              , servletMappings[i].getServletName()
+              , pathSpec
+              , holder.getName());
         }
         ServletMapping[] newServletMappings =
             ArrayUtil.removeFromArray(servletMappings, servletMappings[i]);
@@ -859,7 +861,7 @@ public final class HttpServer2 implements FilterContainer {
     webAppContext.addServlet(holder, pathSpec);
 
     if(requireAuth && UserGroupInformation.isSecurityEnabled()) {
-      LOG.info("Adding Kerberos (SPNEGO) filter to " + name);
+      LOG.info("Adding Kerberos (SPNEGO) filter to {}", name);
       ServletHandler handler = webAppContext.getServletHandler();
       FilterMapping fmap = new FilterMapping();
       fmap.setPathSpec(pathSpec);
@@ -894,9 +896,8 @@ public final class HttpServer2 implements FilterContainer {
     for (int i = 0; i < servletMappings.length; i++) {
       if (servletMappings[i].containsPathSpec(pathSpec)) {
         if (LOG.isDebugEnabled()) {
-          LOG.debug("Found existing " + servletMappings[i].getServletName() +
-              " servlet at path " + pathSpec + "; will replace mapping" +
-              " with " + sh.getName() + " servlet");
+          LOG.debug("Found existing {} servlet at path {}; will replace mapping with {} servlet"
+              , servletMappings[i].getServletName(), pathSpec, sh.getName());
         }
         ServletMapping[] newServletMappings =
             ArrayUtil.removeFromArray(servletMappings, servletMappings[i]);
@@ -936,9 +937,10 @@ public final class HttpServer2 implements FilterContainer {
     final String[] USER_FACING_URLS = { "*.html", "*.jsp" };
     FilterMapping fmap = getFilterMapping(name, USER_FACING_URLS);
     defineFilter(webAppContext, filterHolder, fmap);
-    LOG.info(
-        "Added filter " + name + " (class=" + classname + ") to context "
-            + webAppContext.getDisplayName());
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Added filter {} (class={}) to context {}", name, classname
+          , webAppContext.getDisplayName());
+    }
     final String[] ALL_URLS = { "/*" };
     fmap = getFilterMapping(name, ALL_URLS);
     for (Map.Entry<ServletContextHandler, Boolean> e
@@ -946,8 +948,10 @@ public final class HttpServer2 implements FilterContainer {
       if (e.getValue()) {
         ServletContextHandler ctx = e.getKey();
         defineFilter(ctx, filterHolder, fmap);
-        LOG.info("Added filter " + name + " (class=" + classname
-            + ") to context " + ctx.getDisplayName());
+        if (LOG.isInfoEnabled()) {
+          LOG.info("Added filter {}  (class={}) to context {}"
+              , name, classname, ctx.getDisplayName());
+        }
       }
     }
     filterNames.add(name);
@@ -963,7 +967,7 @@ public final class HttpServer2 implements FilterContainer {
     for (ServletContextHandler ctx : defaultContexts.keySet()) {
       defineFilter(ctx, filterHolder, fmap);
     }
-    LOG.info("Added global filter '" + name + "' (class=" + classname + ")");
+    LOG.info("Added global filter {}' (class={})'", name, classname);
   }
 
   /**
@@ -1179,7 +1183,9 @@ public final class HttpServer2 implements FilterContainer {
     // failed to open w/o issuing a close first, even if the port is changed
     listener.close();
     listener.open();
-    LOG.info("Jetty bound to port " + listener.getLocalPort());
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Jetty bound to port {}", listener.getLocalPort());
+    }
   }
 
   /**
@@ -1286,9 +1292,7 @@ public final class HttpServer2 implements FilterContainer {
       try {
         c.close();
       } catch (Exception e) {
-        LOG.error(
-            "Error while stopping listener for webapp"
-                + webAppContext.getDisplayName(), e);
+        LOG.error("Error while stopping listener for webapp{}", webAppContext.getDisplayName(), e);
         exception = addMultiException(exception, e);
       }
     }
@@ -1300,16 +1304,15 @@ public final class HttpServer2 implements FilterContainer {
       webAppContext.clearAttributes();
       webAppContext.stop();
     } catch (Exception e) {
-      LOG.error("Error while stopping web app context for webapp "
-          + webAppContext.getDisplayName(), e);
+      LOG.error("Error while stopping web app context for webapp {}", webAppContext.getDisplayName(), e);
       exception = addMultiException(exception, e);
     }
 
     try {
       webServer.stop();
     } catch (Exception e) {
-      LOG.error("Error while stopping web server for webapp "
-          + webAppContext.getDisplayName(), e);
+      LOG.error("Error while stopping web server for webapp {}"
+          , webAppContext.getDisplayName(), e);
       exception = addMultiException(exception, e);
     }
 
@@ -1415,8 +1418,7 @@ public final class HttpServer2 implements FilterContainer {
       response.sendError(HttpServletResponse.SC_FORBIDDEN,
           "Unauthenticated users are not " +
               "authorized to access this page.");
-      LOG.warn("User " + remoteUser + " is unauthorized to access the page "
-          + request.getRequestURI() + ".");
+      LOG.warn("User {} is unauthorized to access the page {}.", remoteUser, request.getRequestURI());
       return false;
     }
 

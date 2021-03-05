@@ -83,7 +83,9 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   private final int topNGroups;
   private final boolean includeGroupCount;
 
+  @SuppressWarnings({"rawtypes"})
   private FirstPassGroupingCollector firstPassGroupingCollector;
+  @SuppressWarnings({"rawtypes"})
   private AllGroupsCollector allGroupsCollector;
 
   private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
@@ -121,6 +123,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public SearchGroupsFieldCommandResult result() throws IOException {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (firstPassGroupingCollector != null) {

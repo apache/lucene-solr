@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -57,8 +59,8 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private static final int NUM_INDEXED_DOCUMENTS = 3;
   private static final int NUM_LIVE_NODES = 1;
-  
-  private Queue<String> expectedLines = new ArrayDeque();
+
+  private Queue<String> expectedLines = new ArrayDeque<>();
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
@@ -67,6 +69,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminResponse response = CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("techproducts", 1, 1);
   }
@@ -104,7 +107,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     expectLine("id: 1; name: Fitbit Alta");
     expectLine("id: 2; name: Sony Walkman");
     expectLine("id: 3; name: Garmin GPS");
-    
+
     // tag::solrj-query-with-raw-solrparams[]
     final SolrClient client = getSolrClient();
 
@@ -121,7 +124,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     for(SolrDocument document : documents) {
       final String id = (String) document.getFirstValue("id");
       final String name = (String) document.getFirstValue("name");
-      
+
       print("id: " + id + "; name: " + name);
     }
     // end::solrj-query-with-raw-solrparams[]
@@ -152,7 +155,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     for(SolrDocument document : documents) {
       final String id = (String) document.getFirstValue("id");
       final String name = (String) document.getFirstValue("name");
-      
+
       print("id: "+ id + "; name: " + name);
     }
   }
@@ -194,7 +197,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     expectLine("id: 1; name: Fitbit Alta");
     expectLine("id: 2; name: Sony Walkman");
     expectLine("id: 3; name: Garmin GPS");
-    
+
     // tag::solrj-query-bean-value-type[]
     final SolrClient client = getSolrClient();
 
@@ -219,10 +222,13 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     // tag::solrj-other-apis[]
     final SolrClient client = getSolrClient();
 
+    @SuppressWarnings({"rawtypes"})
     final SolrRequest request = new CollectionAdminRequest.ClusterStatus();
 
     final NamedList<Object> response = client.request(request);
+    @SuppressWarnings({"unchecked"})
     final NamedList<Object> cluster = (NamedList<Object>) response.get("cluster");
+    @SuppressWarnings({"unchecked"})
     final List<String> liveNodes = (List<String>) cluster.get("live_nodes");
 
     print("Found " + liveNodes.size() + " live nodes");
@@ -243,6 +249,38 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     // end::solrj-solrclient-timeouts[]
   }
 
+  private SolrClient getBaseURLCloudSolrClient() {
+    // tag::solrj-cloudsolrclient-baseurl[]
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add("http://solr1:8983/solr");
+    solrUrls.add("http://solr2:8983/solr");
+    return new CloudSolrClient.Builder(solrUrls)
+            .build();
+    // end::solrj-cloudsolrclient-baseurl[]
+  }
+
+  private SolrClient getZookeeperNoRootCloudSolrClient() {
+    // tag::solrj-cloudsolrclient-zookeepernoroot[]
+    final List<String> zkServers = new ArrayList<>();
+    zkServers.add("zookeeper1:2181");
+    zkServers.add("zookeeper2:2181");
+    zkServers.add("zookeeper3:2181");
+    return new CloudSolrClient.Builder(zkServers, Optional.empty())
+            .build();
+    // end::solrj-cloudsolrclient-zookeepernoroot[]
+  }
+
+  private SolrClient getZookeeperRootCloudSolrClient() {
+    // tag::solrj-cloudsolrclient-zookeeperroot[]
+    final List<String> zkServers = new ArrayList<>();
+    zkServers.add("zookeeper1:2181");
+    zkServers.add("zookeeper2:2181");
+    zkServers.add("zookeeper3:2181");
+    return new CloudSolrClient.Builder(zkServers, Optional.of("/solr"))
+            .build();
+    // end::solrj-cloudsolrclient-zookeeperroot[]
+  }
+
   private void assertNumDocuments(int expectedNumResults) throws Exception {
     final QueryResponse queryResponse = getSolrClient().query("techproducts", new SolrQuery("*:*"));
     assertEquals(expectedNumResults, queryResponse.getResults().getNumFound());
@@ -260,23 +298,23 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     public TechProduct() {}
   }
   // end::solrj-techproduct-value-type[]
-  
+
   private void expectLine(String expectedLine) {
     expectedLines.add(expectedLine);
   }
-  
+
   private void print(String actualOutput) {
     final String nextExpectedLine = expectedLines.poll();
     assertNotNull("No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
-    
+
     final String unexpectedOutputMessage = "Expected line containing " + nextExpectedLine + ", but printed line was: "
         + actualOutput;
     assertTrue(unexpectedOutputMessage, actualOutput.contains(nextExpectedLine));
   }
-  
+
   private void ensureNoLeftoverOutputExpectations() {
     if (expectedLines.isEmpty()) return;
-    
+
     final StringBuilder builder = new StringBuilder();
     builder.append("Leftover output was expected but not printed:");
     for (String expectedLine : expectedLines) {

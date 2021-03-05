@@ -44,8 +44,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.restlet.data.Status;
-import org.restlet.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,9 +131,7 @@ public abstract class ManagedResourceStorage {
           // that doesn't have write-access to the config dir
           // while this failover approach is not ideal, it's better
           // than causing the core to fail esp. if managed resources aren't being used
-          if (log.isWarnEnabled()) {
-            log.warn("Cannot write to config directory {} ; switching to use InMemory storage instead.", configDir.getAbsolutePath());
-          }
+          log.warn("Cannot write to config directory {} ; switching to use InMemory storage instead.", configDir.getAbsolutePath());
           storageIO = new ManagedResourceStorage.InMemoryStorageIO();
         }
       }       
@@ -304,7 +300,7 @@ public abstract class ManagedResourceStorage {
             if (e instanceof RuntimeException) {
               throw (RuntimeException)e;              
             } else {
-              throw new ResourceException(Status.SERVER_ERROR_INTERNAL, 
+              throw new SolrException(ErrorCode.SERVER_ERROR,
                   "Failed to save data to ZooKeeper znode: "+znodePath+" due to: "+e, e);
             }
           }

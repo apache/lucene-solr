@@ -30,7 +30,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
+import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -62,7 +66,8 @@ import org.apache.solr.common.params.SolrParams;
  * </p>
  *
  */
-public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter {
+@SuppressWarnings({"unchecked", "rawtypes"})
+public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter, SimpleMap<T> {
 
   private static final long serialVersionUID = 1957981902839867821L;
   protected final List<Object> nvPairs;
@@ -298,7 +303,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Gets the values for the the specified name
+   * Gets the values for the specified name
    *
    * @param name Name
    * @return List of values
@@ -467,9 +472,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public void putAll(Map m) {
         boolean isEmpty = isEmpty();
         for (Object o : m.entrySet()) {
+          @SuppressWarnings({"rawtypes"})
           Map.Entry e = (Entry) o;
           if (isEmpty) {// we know that there are no duplicates
             add((String) e.getKey(), (T) e.getValue());
@@ -485,12 +492,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public Set<String> keySet() {
         //TODO implement more efficiently
         return  NamedList.this.asMap(1).keySet();
       }
 
       @Override
+      @SuppressWarnings({"unchecked", "rawtypes"})
       public Collection values() {
         //TODO implement more efficiently
         return  NamedList.this.asMap(1).values();
@@ -504,7 +513,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public void forEach(BiConsumer action) {
-        NamedList.this.forEach(action);
+        NamedList.this.forEachEntry(action);
       }
     };
   }
@@ -795,7 +804,6 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    *           If values are found for the input key that are not strings or
    *           arrays of strings.
    */
-  @SuppressWarnings("rawtypes")
   public Collection<String> removeConfigArgs(final String name)
       throws SolrException {
     List<T> objects = getAll(name);
@@ -850,10 +858,44 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return this.nvPairs.equals(nl.nvPairs);
   }
 
-  public void forEach(BiConsumer<String, T> action) {
+
+  @Override
+  public void abortableForEach(BiFunction<String, ? super T, Boolean> fun) {
+    int sz = size();
+    for (int i = 0; i < sz; i++) {
+      if(!fun.apply(getName(i), getVal(i))) break;
+    }
+  }
+
+  @Override
+  public void abortableForEachKey(Function<String, Boolean> fun) {
+    int sz = size();
+    for (int i = 0; i < sz; i++) {
+      if(!fun.apply(getName(i))) break;
+    }
+  }
+
+  @Override
+  public void forEachKey(Consumer<String> fun) {
+    int sz = size();
+    for (int i = 0; i < sz; i++) {
+      fun.accept(getName(i));
+    }
+  }
+  public void forEach(BiConsumer<String, ? super T> action) {
     int sz = size();
     for (int i = 0; i < sz; i++) {
       action.accept(getName(i), getVal(i));
     }
+  }
+
+  @Override
+  public int _size() {
+    return size();
+  }
+
+  @Override
+  public void forEachEntry(BiConsumer<String, ? super T> fun) {
+    forEach(fun);
   }
 }

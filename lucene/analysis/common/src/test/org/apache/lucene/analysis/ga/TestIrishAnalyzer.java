@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.ga;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestIrishAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new IrishAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new IrishAnalyzer();
@@ -37,37 +34,33 @@ public class TestIrishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "siopadóireacht", "siopadóir");
     checkOneTerm(a, "síceapatacha", "síceapaite");
     // stopword
-    assertAnalyzesTo(a, "le", new String[] { });
+    assertAnalyzesTo(a, "le", new String[] {});
     a.close();
   }
-  
+
   /** test use of elisionfilter */
   public void testContractions() throws IOException {
     Analyzer a = new IrishAnalyzer();
-    assertAnalyzesTo(a, "b'fhearr m'athair",
-        new String[] { "fearr", "athair" });
+    assertAnalyzesTo(a, "b'fhearr m'athair", new String[] {"fearr", "athair"});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("feirmeoireacht"), false);
-    Analyzer a = new IrishAnalyzer( 
-        IrishAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("feirmeoireacht"), false);
+    Analyzer a = new IrishAnalyzer(IrishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "feirmeoireacht", "feirmeoireacht");
     checkOneTerm(a, "siopadóireacht", "siopadóir");
     a.close();
   }
-  
+
   /** test special hyphen handling */
   public void testHyphens() throws IOException {
     Analyzer a = new IrishAnalyzer();
-    assertAnalyzesTo(a, "n-athair",
-        new String[] { "athair" },
-        new int[] { 2 });
+    assertAnalyzesTo(a, "n-athair", new String[] {"athair"}, new int[] {2});
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer a = new IrishAnalyzer();

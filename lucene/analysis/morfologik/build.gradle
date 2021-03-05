@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Analyzer for dictionary stemming, built-in Polish dictionary'
+
 dependencies {
   api project(':lucene:core')
   api project(':lucene:analysis:common')

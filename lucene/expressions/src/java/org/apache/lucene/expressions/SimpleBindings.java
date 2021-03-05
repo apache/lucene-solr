@@ -16,104 +16,97 @@
  */
 package org.apache.lucene.expressions;
 
-
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
-
+import java.util.Set;
+import java.util.function.Function;
 import org.apache.lucene.search.DoubleValuesSource;
-import org.apache.lucene.search.SortField;
 
 /**
- * Simple class that binds expression variable names to {@link SortField}s
- * or other {@link Expression}s.
- * <p>
- * Example usage:
+ * Simple class that binds expression variable names to {@link DoubleValuesSource}s or other {@link
+ * Expression}s.
+ *
+ * <p>Example usage:
+ *
  * <pre class="prettyprint">
  *   SimpleBindings bindings = new SimpleBindings();
  *   // document's text relevance score
- *   bindings.add(new SortField("_score", SortField.Type.SCORE));
+ *   bindings.add("_score", DoubleValuesSource.SCORES);
  *   // integer NumericDocValues field
- *   bindings.add(new SortField("popularity", SortField.Type.INT));
+ *   bindings.add("popularity", DoubleValuesSource.fromIntField("popularity"));
  *   // another expression
  *   bindings.add("recency", myRecencyExpression);
- *   
+ *
  *   // create a sort field in reverse order
  *   Sort sort = new Sort(expr.getSortField(bindings, true));
  * </pre>
- * 
+ *
  * @lucene.experimental
  */
 public final class SimpleBindings extends Bindings {
-  final Map<String,Object> map = new HashMap<>();
-  
+
+  private final Map<String, Function<Bindings, DoubleValuesSource>> map = new HashMap<>();
+
   /** Creates a new empty Bindings */
   public SimpleBindings() {}
-  
-  /** 
-   * Adds a SortField to the bindings.
-   * <p>
-   * This can be used to reference a DocValuesField, a field from
-   * FieldCache, the document's score, etc. 
-   */
-  public void add(SortField sortField) {
-    map.put(sortField.getField(), sortField);
+
+  /** Bind a {@link DoubleValuesSource} directly to the given name. */
+  public void add(String name, DoubleValuesSource source) {
+    map.put(name, bindings -> source);
   }
 
   /**
-   * Bind a {@link DoubleValuesSource} directly to the given name.
-   */
-  public void add(String name, DoubleValuesSource source) { map.put(name, source); }
-  
-  /** 
    * Adds an Expression to the bindings.
-   * <p>
-   * This can be used to reference expressions from other expressions. 
+   *
+   * <p>This can be used to reference expressions from other expressions.
    */
   public void add(String name, Expression expression) {
-    map.put(name, expression);
+    map.put(name, expression::getDoubleValuesSource);
   }
-  
+
   @Override
   public DoubleValuesSource getDoubleValuesSource(String name) {
-    Object o = map.get(name);
-    if (o == null) {
+    if (map.containsKey(name) == false) {
       throw new IllegalArgumentException("Invalid reference '" + name + "'");
-    } else if (o instanceof Expression) {
-      return ((Expression)o).getDoubleValuesSource(this);
-    } else if (o instanceof DoubleValuesSource) {
-      return ((DoubleValuesSource) o);
     }
-    SortField field = (SortField) o;
-    switch(field.getType()) {
-      case INT:
-        return DoubleValuesSource.fromIntField(field.getField());
-      case LONG:
-        return DoubleValuesSource.fromLongField(field.getField());
-      case FLOAT:
-        return DoubleValuesSource.fromFloatField(field.getField());
-      case DOUBLE:
-        return DoubleValuesSource.fromDoubleField(field.getField());
-      case SCORE:
-        return DoubleValuesSource.SCORES;
-      default:
-        throw new UnsupportedOperationException(); 
-    }
+    return map.get(name).apply(this);
   }
-  
-  /** 
-   * Traverses the graph of bindings, checking there are no cycles or missing references 
-   * @throws IllegalArgumentException if the bindings is inconsistent 
+
+  /**
+   * Traverses the graph of bindings, checking there are no cycles or missing references
+   *
+   * @throws IllegalArgumentException if the bindings is inconsistent
    */
   public void validate() {
-    for (Object o : map.values()) {
-      if (o instanceof Expression) {
-        Expression expr = (Expression) o;
-        try {
-          expr.getDoubleValuesSource(this);
-        } catch (StackOverflowError e) {
-          throw new IllegalArgumentException("Recursion Error: Cycle detected originating in (" + expr.sourceText + ")");
-        }
+    for (Map.Entry<String, Function<Bindings, DoubleValuesSource>> origin : map.entrySet()) {
+      origin.getValue().apply(new CycleDetectionBindings(origin.getKey()));
+    }
+  }
+
+  private class CycleDetectionBindings extends Bindings {
+
+    private final Set<String> seenFields = new LinkedHashSet<>();
+
+    CycleDetectionBindings(String current) {
+      seenFields.add(current);
+    }
+
+    CycleDetectionBindings(Set<String> parents, String current) {
+      seenFields.addAll(parents);
+      seenFields.add(current);
+    }
+
+    @Override
+    public DoubleValuesSource getDoubleValuesSource(String name) {
+      if (seenFields.contains(name)) {
+        throw new IllegalArgumentException(
+            "Recursion error: Cycle detected " + seenFields + "->" + name);
       }
+      if (map.containsKey(name) == false) {
+        throw new IllegalArgumentException("Invalid reference '" + name + "'");
+      }
+      return map.get(name).apply(new CycleDetectionBindings(seenFields, name));
     }
   }
 }

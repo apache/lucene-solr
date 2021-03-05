@@ -1,5 +1,5 @@
 = CoreAdmin API
-:page-toclevels: 1
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,11 +17,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Core Admin API is primarily used under the covers by the <<collections-api.adoc#collections-api,Collections API>> when running a <<solrcloud.adoc#solrcloud,SolrCloud>> cluster.
+The Core Admin API is primarily used under the covers by the <<collections-api.adoc#,Collections API>> when running a <<solrcloud.adoc#,SolrCloud>> cluster.
 
-SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of single-node or master/slave Solr installations for core maintenance operations.
+SolrCloud users should not typically use the CoreAdmin API directly, but the API may be useful for users of single-node or leader/follower Solr installations for core maintenance operations.
 
-The CoreAdmin API is implemented by the CoreAdminHandler, which is a special purpose <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,request handler>> that is used to manage Solr cores. Unlike other request handlers, the CoreAdminHandler is not attached to a single core. Instead, there is a single instance of the CoreAdminHandler in each Solr node that manages all the cores running in that node and is accessible at the `/solr/admin/cores` path.
+The CoreAdmin API is implemented by the CoreAdminHandler, which is a special purpose <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,request handler>> that is used to manage Solr cores. Unlike other request handlers, the CoreAdminHandler is not attached to a single core. Instead, there is a single instance of the CoreAdminHandler in each Solr node that manages all the cores running in that node and is accessible at the `/solr/admin/cores` path.
 
 CoreAdmin actions can be executed by via HTTP requests that specify an `action` request parameter, with additional action specific arguments provided as additional parameters.
 
@@ -58,9 +58,9 @@ Note that this command is the only one of the Core Admin API commands that *does
 ====
 Your CREATE call must be able to find a configuration, or it will not succeed.
 
-When you are running SolrCloud and create a new core for a collection, the configuration will be inherited from the collection. Each collection is linked to a configName, which is stored in ZooKeeper. This satisfies the configuration requirement. There is something to note, though: if you're running SolrCloud, you should *NOT* use the CoreAdmin API at all. Use the <<collections-api.adoc#collections-api,Collections API>>.
+When you are running SolrCloud and create a new core for a collection, the configuration will be inherited from the collection. Each collection is linked to a configName, which is stored in ZooKeeper. This satisfies the configuration requirement. There is something to note, though: if you're running SolrCloud, you should *NOT* use the CoreAdmin API at all. Use the <<collections-api.adoc#,Collections API>>.
 
-When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Configsets>> defined, you can use the `configSet` parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
+When you are not running SolrCloud, if you have <<config-sets.adoc#,Configsets>> defined, you can use the `configSet` parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
 
 The config and schema filenames can be specified with the `config` and `schema` parameters, but these are expert options. One thing you could do to avoid creating the `conf` directory is use `config` and `schema` parameters that point at absolute paths, but this can lead to confusing configurations unless you fully understand what you are doing.
 ====
@@ -77,24 +77,24 @@ The `core.properties` file is built as part of the CREATE command. If you create
 The name of the new core. Same as `name` on the `<core>` element. This parameter is required.
 
 `instanceDir`::
-The directory where files for this core should be stored. Same as `instanceDir` on the `<core>` element. The default is the value specified for the `name` parameter if not supplied.
+The directory where files for this core should be stored. Same as `instanceDir` on the `<core>` element. The default is the value specified for the `name` parameter if not supplied. This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `config`::
 Name of the config file (i.e., `solrconfig.xml`) relative to `instanceDir`.
 
 `schema`::
-Name of the schema file to use for the core. Please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for details.
+Name of the schema file to use for the core. Please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>> for details.
 
 `dataDir`::
-Name of the data directory relative to `instanceDir`.
+Name of the data directory relative to `instanceDir`. If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
 
 `configSet`::
-Name of the configset to use for this core. For more information, see the section <<config-sets.adoc#config-sets,Configsets>>.
+Name of the configset to use for this core. For more information, see the section <<config-sets.adoc#,Configsets>>.
 
 `collection`::
 The name of the collection to which this core belongs. The default is the name of the core. `collection._param_=_value_` causes a property of `_param_=_value_` to be set if a new collection is being created. Use `collection.configName=_config-name_` to point to the configuration for a new collection.
 +
-WARNING: While it's possible to create a core for a non-existent collection, this approach is not supported and not recommended. Always create a collection using the <<collections-api.adoc#collections-api,Collections API>> before creating a core directly for it.
+WARNING: While it's possible to create a core for a non-existent collection, this approach is not supported and not recommended. Always create a collection using the <<collections-api.adoc#,Collections API>> before creating a core directly for it.
 
 `shard`::
 The shard id this core represents. Normally you want to be auto-assigned a shard id.

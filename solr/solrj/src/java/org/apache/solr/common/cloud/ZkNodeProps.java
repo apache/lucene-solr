@@ -18,8 +18,10 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.JavaBinCodec;
@@ -33,6 +35,13 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
+  /**
+   * Feature flag to enable storing the 'base_url' property; base_url will not be stored as of Solr 9.x.
+   * Installations that use an older (pre-8.8) SolrJ against a 8.8.0 or newer server will need to set this system
+   * property to 'true' to avoid NPEs when reading cluster state from Zookeeper, see SOLR-15145.
+   */
+  static final boolean STORE_BASE_URL = Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "false"));
+
   protected final Map<String,Object> propMap;
 
   /**
@@ -40,6 +49,13 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = propMap;
+
+    // don't store base_url if we have a node_name to recompute from when we read back from ZK
+    // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
+    if (!STORE_BASE_URL && this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+      this.propMap.remove(ZkStateReader.BASE_URL_PROP);
+    }
+
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
   }
@@ -91,8 +107,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Create Replica from json string that is typically stored in zookeeper.
    */
+  @SuppressWarnings({"unchecked"})
   public static ZkNodeProps load(byte[] bytes) {
-    Map<String, Object> props = null;
+    Map<String, Object> props;
     if (bytes[0] == 2) {
       try (JavaBinCodec jbc = new JavaBinCodec()) {
         props = (Map<String, Object>) jbc.unmarshal(bytes);
@@ -107,15 +124,26 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(propMap);
+    // don't write out the base_url if we have a node_name
+    if (!STORE_BASE_URL && propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
+      final Map<String, Object> filtered = new HashMap<>(propMap);
+      filtered.remove(ZkStateReader.BASE_URL_PROP);
+      jsonWriter.write(filtered);
+    } else if (STORE_BASE_URL && propMap.get(ZkStateReader.BASE_URL_PROP) == null && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
+      // this is for back-compat with older SolrJ
+      final Map<String, Object> addBaseUrl = new HashMap<>(propMap);
+      addBaseUrl.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName((String)propMap.get(ZkStateReader.NODE_NAME_PROP)));
+      jsonWriter.write(addBaseUrl);
+    } else {
+      jsonWriter.write(propMap);
+    }
   }
   
   /**
    * Get a string property value.
    */
   public String getStr(String key) {
-    Object o = propMap.get(key);
-    return o == null ? null : o.toString();
+    return getStr(key, null);
   }
 
   /**
@@ -129,8 +157,17 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Get a string property value.
    */
-  public String getStr(String key,String def) {
+  public String getStr(String key, String def) {
     Object o = propMap.get(key);
+
+    // TODO: This "hack" should not be needed but keeping it here b/c we removed the base_url from the map in the ctor
+    if (o == null && def == null && ZkStateReader.BASE_URL_PROP.equals(key)) {
+      final String nodeName = (String)propMap.get(ZkStateReader.NODE_NAME_PROP);
+      if (nodeName != null) {
+        o = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
+      }
+    }
+
     return o == null ? def : o.toString();
   }
 
@@ -141,14 +178,6 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public String toString() {
     return toJSONString(this);
-    /***
-    StringBuilder sb = new StringBuilder();
-    Set<Entry<String,Object>> entries = propMap.entrySet();
-    for(Entry<String,Object> entry : entries) {
-      sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
-    }
-    return sb.toString();
-    ***/
   }
 
   /**
@@ -157,7 +186,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public boolean containsKey(String key) {
     return propMap.containsKey(key);
   }
-
+  
   public boolean getBool(String key, boolean b) {
     Object o = propMap.get(key);
     if (o == null) return b;
@@ -168,5 +197,10 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public boolean equals(Object that) {
     return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(propMap);
   }
 }

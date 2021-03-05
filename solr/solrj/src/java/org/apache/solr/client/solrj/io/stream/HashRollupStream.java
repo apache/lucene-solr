@@ -190,27 +190,27 @@ public class HashRollupStream extends TupleStream implements Expressible {
     tupleIterator = null;
   }
 
+  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
     //On the first call to read build the tupleIterator.
     if(tupleIterator == null) {
-      Map<HashKey, Metric[]> metricMap = new HashMap();
+      Map<HashKey, Metric[]> metricMap = new HashMap<>();
       while (true) {
         Tuple tuple = tupleStream.read();
         if (tuple.EOF) {
+          @SuppressWarnings({"rawtypes"})
           List tuples = new ArrayList();
           for(Map.Entry<HashKey, Metric[]> entry : metricMap.entrySet()) {
-            Map<String, Object> map = new HashMap<String, Object>();
+            Tuple t = new Tuple();
             Metric[] finishedMetrics = entry.getValue();
             for (Metric metric : finishedMetrics) {
-              map.put(metric.getIdentifier(), metric.getValue());
+              t.put(metric.getIdentifier(), metric.getValue());
             }
 
             HashKey hashKey = entry.getKey();
             for (int i = 0; i < buckets.length; i++) {
-              map.put(buckets[i].toString(), hashKey.getParts()[i]);
+              t.put(buckets[i].toString(), hashKey.getParts()[i]);
             }
-
-            Tuple t = new Tuple(map);
             tuples.add(t);
           }
           tuples.add(tuple);

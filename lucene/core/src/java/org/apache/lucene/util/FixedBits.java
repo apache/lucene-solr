@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util;
 
-/**
- * Immutable twin of FixedBitSet.
- */
+/** Immutable twin of FixedBitSet. */
 final class FixedBits implements Bits {
 
   final long[] bits;
@@ -31,8 +29,8 @@ final class FixedBits implements Bits {
 
   @Override
   public boolean get(int index) {
-    assert index >= 0 && index < length: "index=" + index + ", numBits=" + length;
-    int i = index >> 6;               // div 64
+    assert index >= 0 && index < length : "index=" + index + ", numBits=" + length;
+    int i = index >> 6; // div 64
     // signed shift will keep a negative index and force an
     // array-index-out-of-bounds-exception, removing the need for an explicit check.
     long bitmask = 1L << index;
@@ -43,5 +41,4 @@ final class FixedBits implements Bits {
   public int length() {
     return length;
   }
-
 }

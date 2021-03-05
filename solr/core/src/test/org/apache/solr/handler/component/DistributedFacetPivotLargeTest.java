@@ -863,6 +863,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   /**
    * spot checks some pivot values and the ranges hanging on them
    */
+  @SuppressWarnings({"unchecked"})
   private void doTestPivotRanges() throws Exception {
 
     // note: 'p0' is only a top level range, not included in per-pivot ranges
@@ -972,7 +973,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
    * asserts that the actual RangeFacet matches the expected criteria
    */
   private void assertRange(String name, Object start, Object gap, Object end, int numCount,
-                           RangeFacet actual) {
+                           @SuppressWarnings({"rawtypes"})RangeFacet actual) {
     assertEquals("NAME: " + actual.toString(), name, actual.getName());
     assertEquals("START: " + actual.toString(), start, actual.getStart());
     assertEquals("GAP: " + actual.toString(), gap, actual.getGap());

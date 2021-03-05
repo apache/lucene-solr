@@ -1,6 +1,5 @@
 = Stream Evaluator Reference
-:page-tocclass: right
-:page-toclevels: 1
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -294,7 +293,7 @@ if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then retur
 
 == col
 
-The `col` function returns a numeric array from a list of Tuples. The `col`
+The `col` function returns a numeric array from a list of tuples. The `col`
 function is used to create numeric arrays from stream sources.
 
 === col Parameters
@@ -1021,11 +1020,11 @@ string array: The labels for each row in the matrix
 
 == getValue
 
-The `getValue` function returns the value of a single Tuple entry by key.
+The `getValue` function returns the value of a single tuple entry by key.
 
 === getValue Parameters
 
-* `tuple`: The Tuple to return the entry from.
+* `tuple`: The tuple to return the entry from.
 * `key`: The key of the entry to return the value for.
 
 === getValue Syntax
@@ -1034,7 +1033,7 @@ getValue(tuple, key)
 
 === getValue Returns
 
-object: Returns an object of the same type as the Tuple entry.
+object: Returns an object of the same type as the tuple entry.
 
 == grandSum
 
@@ -1590,7 +1589,7 @@ not(eq(fieldA,fieldB)) // true if fieldA != fieldB
 
 The `olsRegress` function performs https://en.wikipedia.org/wiki/Ordinary_least_squares[ordinary least squares], multivariate, linear regression.
 
-The `olsRegress` function returns a single Tuple containing the regression model with estimated regression parameters, RSquared and regression diagnostics.
+The `olsRegress` function returns a single tuple containing the regression model with estimated regression parameters, RSquared and regression diagnostics.
 
 The output of `olsRegress` can be used with the <<predict>> function to predict values based on the regression model.
 
@@ -2083,11 +2082,11 @@ matrix: The matrix with the labels set.
 
 == setValue
 
-The `setValue` function sets a new value for a Tuple entry.
+The `setValue` function sets a new value for a tuple entry.
 
 === setValue Parameters
 
-* `tuple`: The Tuple to return the entry from.
+* `tuple`: The tuple to return the entry from.
 * `key`: The key of the entry to set.
 * `value`: The value to set.
 

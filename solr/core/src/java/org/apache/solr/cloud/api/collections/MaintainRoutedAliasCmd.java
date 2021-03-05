@@ -46,8 +46,8 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   static final String INVOKED_BY_ROUTED_ALIAS = "invokedByRoutedAlias";
   static final String ROUTED_ALIAS_TARGET_COL = "routedAliasTargetCol";
 
-  MaintainRoutedAliasCmd(OverseerCollectionMessageHandler ocmh) {
-    super(ocmh);
+  MaintainRoutedAliasCmd(CollectionCommandContext ccc) {
+    super(ccc);
   }
 
   /**
@@ -99,13 +99,13 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     //---- PARSE PRIMARY MESSAGE PARAMS
     // important that we use NAME for the alias as that is what the Overseer will get a lock on before calling us
     final String aliasName = message.getStr(NAME);
     final String routeValue = message.getStr(ROUTED_ALIAS_TARGET_COL);
 
-    final ZkStateReader.AliasesManager aliasesManager = ocmh.zkStateReader.aliasesManager;
+    final ZkStateReader.AliasesManager aliasesManager = ccc.getZkStateReader().aliasesManager;
     final Aliases aliases = aliasesManager.getAliases();
     final Map<String, String> aliasMetadata = aliases.getCollectionAliasProperties(aliasName);
     if (aliasMetadata.isEmpty()) {
@@ -117,20 +117,20 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "MaintainRoutedAlias called on non-routed alias");
     }
 
-    ra.updateParsedCollectionAliases(ocmh.zkStateReader, true);
+    ra.updateParsedCollectionAliases(ccc.getZkStateReader(), true);
     List<RoutedAlias.Action> actions = ra.calculateActions(routeValue);
     for (RoutedAlias.Action action : actions) {
-      boolean exists = ocmh.zkStateReader.getClusterState().getCollectionOrNull(action.targetCollection) != null;
+      boolean exists = ccc.getZkStateReader().getClusterState().getCollectionOrNull(action.targetCollection) != null;
       switch (action.actionType) {
         case ENSURE_REMOVED:
           if (exists) {
-            ocmh.tpe.submit(() -> {
+            ccc.getExecutorService().submit(() -> {
               try {
                 deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);
               } catch (Exception e) {
-                log.warn("Deletion of {} by {} failed (this might be ok if two clients were " +
-                        "writing to a routed alias at the same time and both caused a deletion)",
-                    action.targetCollection, ra.getAliasName());
+                log.warn("Deletion of {} by {} {} failed (this might be ok if two clients were"
+                    , action.targetCollection, ra.getAliasName()
+                    , " writing to a routed alias at the same time and both caused a deletion)");
                 log.debug("Exception for last message:", e);
               }
             });
@@ -147,10 +147,10 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
             // take additional work (though presently they might work if the below book keeping is done by hand)
             if (!ra.getCollectionList(aliases).contains(action.targetCollection)) {
               addCollectionToAlias(aliasName, aliasesManager, action.targetCollection);
-              Map<String, String> collectionProperties = ocmh.zkStateReader
+              Map<String, String> collectionProperties = ccc.getZkStateReader()
                   .getCollectionProperties(action.targetCollection, 1000);
               if (!collectionProperties.containsKey(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP)) {
-                CollectionProperties props = new CollectionProperties(ocmh.zkStateReader.getZkClient());
+                CollectionProperties props = new CollectionProperties(ccc.getZkStateReader().getZkClient());
                 props.setCollectionProperty(action.targetCollection, RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, aliasName);
               }
             }
@@ -162,21 +162,23 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
     }
   }
 
-  public void addTargetCollection(ClusterState clusterState, NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, Map<String, String> aliasMetadata, RoutedAlias.Action action) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  public void addTargetCollection(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, Map<String, String> aliasMetadata, RoutedAlias.Action action) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     NamedList createResults = createCollectionAndWait(clusterState, aliasName, aliasMetadata,
-        action.targetCollection, ocmh);
+        action.targetCollection, ccc);
     if (createResults != null) {
       results.add("create", createResults);
     }
     addCollectionToAlias(aliasName, aliasesManager, action.targetCollection);
   }
 
-  public void deleteTargetCollection(ClusterState clusterState, NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, RoutedAlias.Action action) throws Exception {
+  public void deleteTargetCollection(ClusterState clusterState, @SuppressWarnings({"rawtypes"})NamedList results, String aliasName, ZkStateReader.AliasesManager aliasesManager, RoutedAlias.Action action) throws Exception {
     Map<String, Object> delProps = new HashMap<>();
     delProps.put(INVOKED_BY_ROUTED_ALIAS,
         (Runnable) () -> removeCollectionFromAlias(aliasName, aliasesManager, action.targetCollection));
     delProps.put(NAME, action.targetCollection);
     ZkNodeProps messageDelete = new ZkNodeProps(delProps);
-    new DeleteCollectionCmd(ocmh).call(clusterState, messageDelete, results);
+    new DeleteCollectionCmd(ccc).call(clusterState, messageDelete, results);
   }
 }

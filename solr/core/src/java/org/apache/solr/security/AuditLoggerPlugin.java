@@ -99,6 +99,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * This method removes parameters from config object after consuming, so subclasses can check for config errors.
    * @param pluginConfig the config for the plugin
    */
+  @SuppressWarnings({"unchecked"})
   public void init(Map<String, Object> pluginConfig) {
     formatter = new JSONAuditEventFormatter();
     if (pluginConfig.containsKey(PARAM_EVENT_TYPES)) {
@@ -346,6 +347,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   /**
    * Set of rules for when audit logging should be muted.
    */
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private class MuteRules {
     private List<List<MuteRule>> rules;
 

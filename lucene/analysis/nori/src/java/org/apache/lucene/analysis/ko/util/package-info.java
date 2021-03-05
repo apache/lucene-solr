@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Nori utility classes.
- */
+/** Nori utility classes. */
 package org.apache.lucene.analysis.ko.util;

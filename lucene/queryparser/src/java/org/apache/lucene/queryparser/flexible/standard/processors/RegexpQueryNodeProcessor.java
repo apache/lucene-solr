@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -40,7 +39,8 @@ public class RegexpQueryNodeProcessor extends QueryNodeProcessorImpl {
       Analyzer analyzer = getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);
       if (analyzer != null) {
         String text = regexpNode.getText().toString();
-        // because we call utf8ToString, this will only work with the default TermToBytesRefAttribute
+        // because we call utf8ToString, this will only work with the default
+        // TermToBytesRefAttribute
         text = analyzer.normalize(regexpNode.getFieldAsString(), text).utf8ToString();
         regexpNode.setText(text);
       }
@@ -52,5 +52,4 @@ public class RegexpQueryNodeProcessor extends QueryNodeProcessorImpl {
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
     return children;
   }
-
 }

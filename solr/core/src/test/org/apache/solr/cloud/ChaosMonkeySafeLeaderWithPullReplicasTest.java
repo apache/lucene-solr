@@ -203,10 +203,11 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     Thread.sleep(3000);
 
     waitForThingsToLevelOut(3, TimeUnit.MINUTES);
-    
-    log.info("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
-    
-    log.info("collection state: " + printClusterStateInfo(DEFAULT_COLLECTION));
+
+    if (log.isInfoEnabled()) {
+      log.info("control docs:{}\n\n", controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+      log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION)); // nowarn
+    }
     
     waitForReplicationFromReplicas(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
 //    waitForAllWarmingSearchers();
@@ -223,7 +224,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     }
 
     try (CloudSolrClient client = createCloudClient("collection1")) {
-        createCollection(null, "testcollection", 1, 1, 100, client, null, "conf1");
+        createCollection(null, "testcollection", 1, 1, client, null, "conf1");
 
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);

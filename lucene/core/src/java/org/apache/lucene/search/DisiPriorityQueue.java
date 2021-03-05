@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * A priority queue of DocIdSetIterators that orders by current doc ID.
- * This specialization is needed over {@link PriorityQueue} because the
- * pluggable comparison function makes the rebalancing quite slow.
+ * A priority queue of DocIdSetIterators that orders by current doc ID. This specialization is
+ * needed over {@link PriorityQueue} because the pluggable comparison function makes the rebalancing
+ * quite slow.
+ *
  * @lucene.internal
  */
 public final class DisiPriorityQueue implements Iterable<DisiWrapper> {
@@ -79,8 +78,7 @@ public final class DisiPriorityQueue implements Iterable<DisiWrapper> {
     return w1;
   }
 
-  private DisiWrapper topList(DisiWrapper list, DisiWrapper[] heap,
-                                    int size, int i) {
+  private DisiWrapper topList(DisiWrapper list, DisiWrapper[] heap, int size, int i) {
     final DisiWrapper w = heap[i];
     if (w.doc == list.doc) {
       list = prepend(w, list);
@@ -165,7 +163,4 @@ public final class DisiPriorityQueue implements Iterable<DisiWrapper> {
   public Iterator<DisiWrapper> iterator() {
     return Arrays.asList(heap).subList(0, size).iterator();
   }
-
 }
-
-

@@ -18,14 +18,12 @@
 package org.apache.solr.client.solrj.io.graph;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -51,6 +49,8 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -75,6 +75,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private Traversal traversal;
   private List<Metric> metrics;
   private int maxDocFreq;
+  private  SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH);
+  private Set<String> windowSet;
+  private int window = Integer.MIN_VALUE;
+  private int lag = 1;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public GatherNodesStream(String zkHost,
                            String collection,
@@ -82,7 +87,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                            String traverseFrom,
                            String traverseTo,
                            String gather,
-                           Map queryParams,
+                           @SuppressWarnings({"rawtypes"})Map queryParams,
                            List<Metric> metrics,
                            boolean trackTraversal,
                            Set<Traversal.Scatter> scatter,
@@ -98,7 +103,9 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         metrics,
         trackTraversal,
         scatter,
-        maxDocFreq);
+        maxDocFreq,
+        Integer.MIN_VALUE,
+    1);
   }
 
   public GatherNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -115,7 +122,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
 
 
-    Set<Traversal.Scatter> scatter = new HashSet();
+    Set<Traversal.Scatter> scatter = new HashSet<>();
 
     StreamExpressionNamedParameter scatterExpression = factory.getNamedOperand(expression, "scatter");
 
@@ -169,7 +176,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         }
 
         String[] rootNodes = fields[0].split(",");
-        List<String> l = new ArrayList();
+        List<String> l = new ArrayList<>();
         for(String n : rootNodes) {
           l.add(n.trim());
         }
@@ -181,7 +188,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     }
 
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
-    List<Metric> metrics = new ArrayList();
+    List<Metric> metrics = new ArrayList<>();
     for(int idx = 0; idx < metricExpressions.size(); ++idx){
       metrics.add(factory.constructMetric(metricExpressions.get(idx)));
     }
@@ -194,6 +201,20 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       trackTraversal = Boolean.parseBoolean(((StreamExpressionValue) trackExpression.getParameter()).getValue());
     } else {
       useDefaultTraversal = true;
+    }
+
+    StreamExpressionNamedParameter windowExpression = factory.getNamedOperand(expression, "window");
+    int timeWindow = Integer.MIN_VALUE;
+
+    if(windowExpression != null) {
+      timeWindow = Integer.parseInt(((StreamExpressionValue) windowExpression.getParameter()).getValue());
+    }
+
+    StreamExpressionNamedParameter lagExpression = factory.getNamedOperand(expression, "lag");
+    int timeLag = 1;
+
+    if(lagExpression != null) {
+      timeLag = Integer.parseInt(((StreamExpressionValue) lagExpression.getParameter()).getValue());
     }
 
     StreamExpressionNamedParameter docFreqExpression = factory.getNamedOperand(expression, "maxDocFreq");
@@ -210,7 +231,10 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           !namedParam.getName().equals("walk") &&
           !namedParam.getName().equals("scatter") &&
           !namedParam.getName().equals("maxDocFreq") &&
-          !namedParam.getName().equals("trackTraversal"))
+          !namedParam.getName().equals("trackTraversal") &&
+          !namedParam.getName().equals("window") &&
+          !namedParam.getName().equals("lag")
+      )
       {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
@@ -242,20 +266,25 @@ public class GatherNodesStream extends TupleStream implements Expressible {
          metrics,
          trackTraversal,
          scatter,
-         docFreq);
+         docFreq,
+         timeWindow,
+         timeLag);
   }
 
+  @SuppressWarnings({"unchecked"})
   private void init(String zkHost,
                     String collection,
                     TupleStream tupleStream,
                     String traverseFrom,
                     String traverseTo,
                     String gather,
-                    Map queryParams,
+                    @SuppressWarnings({"rawtypes"})Map queryParams,
                     List<Metric> metrics,
                     boolean trackTraversal,
                     Set<Traversal.Scatter> scatter,
-                    int maxDocFreq) {
+                    int maxDocFreq,
+                    int window,
+                    int lag) {
     this.zkHost = zkHost;
     this.collection = collection;
     this.tupleStream = tupleStream;
@@ -267,6 +296,13 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     this.trackTraversal = trackTraversal;
     this.scatter = scatter;
     this.maxDocFreq = maxDocFreq;
+    this.window = window;
+
+    if(window > Integer.MIN_VALUE) {
+      windowSet = new HashSet<>();
+    }
+
+    this.lag = lag;
   }
 
   @Override
@@ -295,7 +331,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     Set<Map.Entry<String,String>> entries =  queryParams.entrySet();
     // parameters
-    for(Map.Entry param : entries){
+    for(@SuppressWarnings({"rawtypes"})Map.Entry param : entries){
       String value = param.getValue().toString();
 
       // SOLR-8409: This is a special case where the params contain a " character
@@ -400,7 +436,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
@@ -409,10 +445,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     tupleStream.open();
   }
 
+  @SuppressWarnings({"unchecked"})
   private class JoinRunner implements Callable<List<Tuple>> {
 
     private List<String> nodes;
-    private List<Tuple> edges = new ArrayList();
+    private List<Tuple> edges = new ArrayList<>();
 
     public JoinRunner(List<String> nodes) {
       this.nodes = nodes;
@@ -421,7 +458,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     public List<Tuple> call() {
 
 
-      Set<String> flSet = new HashSet();
+      Set<String> flSet = new HashSet<>();
       flSet.add(gather);
       flSet.add(traverseTo);
 
@@ -504,28 +541,50 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
 
+  private String[] getTenSecondWindow(int size, int lag, String start) {
+    try {
+      String[] window = new String[size];
+      Date date = this.dateFormat.parse(start);
+      Instant instant = date.toInstant();
+
+      for (int i = 0; i < size; i++) {
+        Instant windowInstant = instant.minus(10 * (i + lag), ChronoUnit.SECONDS);
+        String windowString = windowInstant.toString();
+        windowString = windowString.substring(0, 18) + "0Z";
+        window[i] = windowString;
+      }
+
+      return window;
+    } catch(ParseException e) {
+      log.warn("Unparseable date:{}", String.valueOf(start));
+      return new String[0];
+    }
+  }
+
   public void close() throws IOException {
     tupleStream.close();
   }
 
+  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
 
     if (out == null) {
-      List<String> joinBatch = new ArrayList();
-      List<Future<List<Tuple>>> futures = new ArrayList();
-      Map<String, Node> level = new HashMap();
+      List<String> joinBatch = new ArrayList<>();
+      List<Future<List<Tuple>>> futures = new ArrayList<>();
+      Map<String, Node> level = new HashMap<>();
 
       ExecutorService threadPool = null;
       try {
         threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(4, new SolrNamedThreadFactory("GatherNodesStream"));
 
-        Map<String, Node> roots = new HashMap();
+        Map<String, Node> roots = new HashMap<>();
 
         while (true) {
           Tuple tuple = tupleStream.read();
           if (tuple.EOF) {
             if (joinBatch.size() > 0) {
               JoinRunner joinRunner = new JoinRunner(joinBatch);
+              @SuppressWarnings({"rawtypes"})
               Future future = threadPool.submit(joinRunner);
               futures.add(future);
             }
@@ -541,7 +600,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             if(!roots.containsKey(key)) {
               Node node = new Node(value, trackTraversal);
               if (metrics != null) {
-                List<Metric> _metrics = new ArrayList();
+                List<Metric> _metrics = new ArrayList<>();
                 for (Metric metric : metrics) {
                   _metrics.add(metric.newInstance());
                 }
@@ -554,12 +613,38 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             }
           }
 
-          joinBatch.add(value);
-          if (joinBatch.size() == 400) {
+          if(windowSet == null || (lag == 1 && !windowSet.contains(String.valueOf(value)))) {
+            joinBatch.add(value);
+          }
+
+          if(window > Integer.MIN_VALUE && value != null) {
+            windowSet.add(value);
+
+            /*
+            * A time window has been set.
+            * The join value is expected to be an ISO formatted time stamp.
+            * We derive the window and add it to the join values below.
+            */
+
+            String[] timeWindow = getTenSecondWindow(window, lag, value);
+            for(String windowString : timeWindow) {
+              if(!windowSet.contains(windowString)) {
+                /*
+                * Time windows can overlap, so make sure we don't query for the same timestamp more then once.
+                * This would cause duplicate results if overlapping windows are collected in different threads.
+                */
+                joinBatch.add(windowString);
+              }
+              windowSet.add(windowString);
+            }
+          }
+
+          if (joinBatch.size() >= 400) {
             JoinRunner joinRunner = new JoinRunner(joinBatch);
+            @SuppressWarnings({"rawtypes"})
             Future future = threadPool.submit(joinRunner);
             futures.add(future);
-            joinBatch = new ArrayList();
+            joinBatch = new ArrayList<>();
           }
         }
 
@@ -588,7 +673,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
               } else {
                 node = new Node(_gather, trackTraversal);
                 if (metrics != null) {
-                  List<Metric> _metrics = new ArrayList();
+                  List<Metric> _metrics = new ArrayList<>();
                   for (Metric metric : metrics) {
                     _metrics.add(metric.newInstance());
                   }
@@ -613,10 +698,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     if (out.hasNext()) {
       return out.next();
     } else {
-      Map map = new HashMap();
-      map.put("EOF", true);
-      Tuple tuple = new Tuple(map);
-      return tuple;
+      return Tuple.EOF();
     }
   }
 
@@ -641,18 +723,14 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     public void open() {this.it = ids.iterator();}
     public void close() {}
     public StreamComparator getStreamSort() {return null;}
-    public List<TupleStream> children() {return new ArrayList();}
+    public List<TupleStream> children() {return new ArrayList<>();}
     public void setStreamContext(StreamContext context) {}
 
     public Tuple read() {
-      HashMap map = new HashMap();
       if(it.hasNext()) {
-        map.put("node",it.next());
-        return new Tuple(map);
+        return new Tuple("node",it.next());
       } else {
-
-        map.put("EOF", true);
-        return new Tuple(map);
+        return Tuple.EOF();
       }
     }
 

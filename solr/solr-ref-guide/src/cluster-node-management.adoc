@@ -1,6 +1,5 @@
-= Cluster and Node Managment Commands
-:page-toclevels: 1
-:page-tocclass: right
+= Cluster and Node Management Commands
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -95,7 +94,6 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
                 "core":"collection1",
                 "node_name":"127.0.1.1:7500_solr",
                 "base_url":"http://127.0.1.1:7500/solr"}}}},
-        "maxShardsPerNode":"1",
         "router":{"name":"compositeId"},
         "replicationFactor":"1",
         "znodeVersion": 11,
@@ -132,8 +130,11 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-The name of the property. Supported properties names are `autoAddReplicas`, `legacyCloud`, `location`, `maxCoresPerNode` and `urlScheme`. Other properties can be set
-(for example, if you need them for custom plugins) but they must begin with the prefix `ext.`. Unknown properties that don't begin with `ext.` will be rejected.
+The name of the property. Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
+If the <<solr-tracing.adoc#,Jaeger tracing contrib>> has been enabled, the property `samplePercentage` is also available.
++
+Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
+Unknown properties that don't begin with `ext.` will be rejected.
 
 `val`::
 The value of the property. If the value is empty or null, the property is unset.
@@ -214,6 +215,23 @@ replaced with `defaults`. Using the `collectionDefaults` parameter in Solr 7.4 o
  but the format of the properties will automatically be converted to the new nested structure.
 Support for the "collectionDefaults" key will be removed in Solr 9.
 
+=== Default Shard Preferences
+
+Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness. First, make sure to "label" your nodes using a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`). Then, set the value of `defaultShardPreferences` to `node.sysprop:sysprop.YOUR_PROPERTY_NAME` like this:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '
+{
+  "set-property" : {
+    "name" : "defaultShardPreferences",
+    "val" : "node.sysprop:sysprop.rack"
+  }
+}' http://localhost:8983/api/cluster
+----
+
+At this point, if you run a query on a node having e.g., `rack=rack1`, Solr will try to hit only replicas from `rack1`.
+
 [[balanceshardunique]]
 == BALANCESHARDUNIQUE: Balance a Property Across Nodes
 
@@ -266,27 +284,14 @@ http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collectio
 
 Examining the clusterstate after issuing this call should show exactly one replica in each shard that has this property.
 
-[[utilizenode]]
-== UTILIZENODE: Utilize a New Node
-
-This command can be used to move some replicas from the existing nodes to either a new node or a less loaded node to reduce the load on the existing node.
-
-This uses your autoscaling policies and preferences to identify which replica needs to be moved. It tries to fix any policy violations first and then it tries to move some load off of the most loaded nodes according to the preferences.
-
-`/admin/collections?action=UTILIZENODE&node=nodeName`
-
-=== UTILIZENODE Parameters
-
-`node`:: The name of the node that needs to be utilized. This parameter is required.
-
 [[replacenode]]
 == REPLACENODE: Move All Replicas in a Node to Another
 
 This command recreates replicas in one node (the source) to another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
 
-For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
+For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
 `/admin/collections?action=REPLACENODE&sourceNode=_source-node_&targetNode=_target-node_`
 
@@ -483,20 +488,3 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
   "..."
  }
 ----
-
-[[migratestateformat]]
-== MIGRATESTATEFORMAT: Migrate Cluster State
-
-A expert level utility API to move a collection from shared `clusterstate.json` ZooKeeper node (created with `stateFormat=1`, the default in all Solr releases prior to 5.0) to the per-collection `state.json` stored in ZooKeeper (created with `stateFormat=2`, the current default) seamlessly without any application down-time.
-
-`/admin/collections?action=MIGRATESTATEFORMAT&collection=<collection_name>`
-
-=== MIGRATESTATEFORMAT Parameters
-
-`collection`::
-The name of the collection to be migrated from `clusterstate.json` to its own `state.json` ZooKeeper node. This parameter is required.
-
-`async`::
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
-
-This API is useful in migrating any collections created prior to Solr 5.0 to the more scalable cluster state format now used by default. If a collection was created in any Solr 5.x version or higher, then executing this command is not necessary.

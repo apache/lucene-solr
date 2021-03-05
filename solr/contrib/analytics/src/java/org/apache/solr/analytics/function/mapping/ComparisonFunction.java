@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.function.mapping;
 
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
-import org.apache.solr.analytics.function.mapping.ComparisonFunction.CompResultFunction;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.value.AnalyticsValue;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -141,178 +140,183 @@ public class ComparisonFunction {
   private static CompResultFunction reverse(CompResultFunction original) {
     return val -> original.apply(val*-1);
   }
-}
-/**
- * A comparison function for two {@link DoubleValue}s.
- */
-class CompareDoubleValueFunction extends AbstractBooleanValue {
-  private final DoubleValue exprA;
-  private final DoubleValue exprB;
-  private final CompResultFunction comp;
-  private final String name;
-  private final String funcStr;
-  private final ExpressionType funcType;
 
-  public CompareDoubleValueFunction(String name, DoubleValue exprA, DoubleValue exprB, CompResultFunction comp) {
-    this.name = name;
-    this.exprA = exprA;
-    this.exprB = exprB;
-    this.comp = comp;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
-  }
+  /**
+   * A comparison function for two {@link DoubleValue}s.
+   */
+  static class CompareDoubleValueFunction extends AbstractBooleanValue {
+    private final DoubleValue exprA;
+    private final DoubleValue exprB;
+    private final CompResultFunction comp;
+    private final String name;
+    private final String funcStr;
+    private final ExpressionType funcType;
 
-  private boolean exists = false;
-  @Override
-  public boolean getBoolean() {
-    double valueA = exprA.getDouble();
-    double valueB = exprB.getDouble();
-    exists = exprA.exists() && exprB.exists();
-    return exists ? comp.apply(Double.compare(valueA,valueB)) : false;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
+    public CompareDoubleValueFunction(String name, DoubleValue exprA, DoubleValue exprB, CompResultFunction comp) {
+      this.name = name;
+      this.exprA = exprA;
+      this.exprB = exprB;
+      this.comp = comp;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
+    }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A comparison function for a {@link DoubleValue} and a {@link DoubleValueStream}.
- */
-class CompareDoubleStreamFunction extends AbstractBooleanValueStream {
-  private final DoubleValue baseExpr;
-  private final DoubleValueStream compExpr;
-  private final CompResultFunction comp;
-  private final String name;
-  private final String funcStr;
-  private final ExpressionType funcType;
+    private boolean exists = false;
+    @Override
+    public boolean getBoolean() {
+      double valueA = exprA.getDouble();
+      double valueB = exprB.getDouble();
+      exists = exprA.exists() && exprB.exists();
+      return exists ? comp.apply(Double.compare(valueA,valueB)) : false;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
 
-  public CompareDoubleStreamFunction(String name, DoubleValue baseExpr, DoubleValueStream compExpr, CompResultFunction comp) throws SolrException {
-    this.name = name;
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.comp = comp;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
-  }
-
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    double baseValue = baseExpr.getDouble();
-    if (baseExpr.exists()) {
-      compExpr.streamDoubles(compValue -> cons.accept(comp.apply(Double.compare(baseValue,compValue))));
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A comparison function for two {@link DateValue}s.
- */
-class CompareDateValueFunction extends AbstractBooleanValue {
-  private final DateValue exprA;
-  private final DateValue exprB;
-  private final CompResultFunction comp;
-  private final String name;
-  private final String funcStr;
-  private final ExpressionType funcType;
+  /**
+   * A comparison function for a {@link DoubleValue} and a {@link DoubleValueStream}.
+   */
+  static class CompareDoubleStreamFunction extends AbstractBooleanValueStream {
+    private final DoubleValue baseExpr;
+    private final DoubleValueStream compExpr;
+    private final CompResultFunction comp;
+    private final String name;
+    private final String funcStr;
+    private final ExpressionType funcType;
 
-  public CompareDateValueFunction(String name, DateValue exprA, DateValue exprB, CompResultFunction comp) {
-    this.name = name;
-    this.exprA = exprA;
-    this.exprB = exprB;
-    this.comp = comp;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
-  }
+    public CompareDoubleStreamFunction(String name, DoubleValue baseExpr, DoubleValueStream compExpr, CompResultFunction comp) throws SolrException {
+      this.name = name;
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.comp = comp;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
+    }
 
-  private boolean exists = false;
-  @Override
-  public boolean getBoolean() {
-    long valueA = exprA.getLong();
-    long valueB = exprB.getLong();
-    exists = exprA.exists() && exprB.exists();
-    return exists ? comp.apply(Long.compare(valueA,valueB)) : false;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      double baseValue = baseExpr.getDouble();
+      if (baseExpr.exists()) {
+        compExpr.streamDoubles(compValue -> cons.accept(comp.apply(Double.compare(baseValue,compValue))));
+      }
+    }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A comparison function for a {@link DateValue} and a {@link DateValueStream}.
- */
-class CompareDateStreamFunction extends AbstractBooleanValueStream {
-  private final DateValue baseExpr;
-  private final DateValueStream compExpr;
-  private final CompResultFunction comp;
-  private final String name;
-  private final String funcStr;
-  private final ExpressionType funcType;
-
-  public CompareDateStreamFunction(String name, DateValue baseExpr, DateValueStream compExpr, CompResultFunction comp) throws SolrException {
-    this.name = name;
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.comp = comp;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
-  }
-
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    long baseValue = baseExpr.getLong();
-    if (baseExpr.exists()) {
-      compExpr.streamLongs(compValue -> cons.accept(comp.apply(Long.compare(baseValue,compValue))));
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
+  /**
+   * A comparison function for two {@link DateValue}s.
+   */
+  static class CompareDateValueFunction extends AbstractBooleanValue {
+    private final DateValue exprA;
+    private final DateValue exprB;
+    private final CompResultFunction comp;
+    private final String name;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public CompareDateValueFunction(String name, DateValue exprA, DateValue exprB, CompResultFunction comp) {
+      this.name = name;
+      this.exprA = exprA;
+      this.exprB = exprB;
+      this.comp = comp;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,exprA,exprB);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,exprA,exprB);
+    }
+
+    private boolean exists = false;
+    @Override
+    public boolean getBoolean() {
+      long valueA = exprA.getLong();
+      long valueB = exprB.getLong();
+      exists = exprA.exists() && exprB.exists();
+      return exists ? comp.apply(Long.compare(valueA,valueB)) : false;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
+
+  /**
+   * A comparison function for a {@link DateValue} and a {@link DateValueStream}.
+   */
+  static class CompareDateStreamFunction extends AbstractBooleanValueStream {
+    private final DateValue baseExpr;
+    private final DateValueStream compExpr;
+    private final CompResultFunction comp;
+    private final String name;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public CompareDateStreamFunction(String name, DateValue baseExpr, DateValueStream compExpr, CompResultFunction comp) throws SolrException {
+      this.name = name;
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.comp = comp;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,baseExpr,compExpr);
+    }
+
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      long baseValue = baseExpr.getLong();
+      if (baseExpr.exists()) {
+        compExpr.streamLongs(compValue -> cons.accept(comp.apply(Long.compare(baseValue,compValue))));
+      }
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 }
+

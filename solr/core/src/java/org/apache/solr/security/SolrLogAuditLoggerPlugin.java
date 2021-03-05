@@ -70,9 +70,7 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
         break;
 
       case WARN:
-        if (log.isWarnEnabled()) {
-          log.warn(formatter.formatEvent(event));
-        }
+        log.warn(formatter.formatEvent(event));
         break;
 
       case ERROR:

@@ -21,13 +21,32 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
-  id 'de.thetaphi.forbiddenapis' version '2.7' apply false
   id "org.owasp.dependencycheck" version "5.3.0"
+  id 'de.thetaphi.forbiddenapis' version '3.1' apply false
   id "de.undercouch.download" version "4.0.2" apply false
+  id "net.ltgt.errorprone" version "1.2.1" apply false
+  id 'com.diffplug.spotless' version "5.8.2" apply false
 }
 
-// Project version.
-version = "9.0.0-SNAPSHOT"
+apply from: file('gradle/defaults.gradle')
+
+// General metadata.
+
+// Calculate project version:
+version = {
+  // Release manager: update base version here after release:
+  String baseVersion = '9.0.0'
+
+  // On a release explicitly set release version in one go:
+  //  -Dversion.release=x.y.z
+  
+  // Jenkins can just set just a suffix, overriding SNAPSHOT, e.g. using build id:
+  //  -Dversion.suffix=jenkins123
+  
+  String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
+  return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+}()
+description = 'Grandparent project for Apache Lucene Core and Apache Solr'
 
 // Propagate version and derived properties across projects.
 allprojects {
@@ -43,6 +62,16 @@ ext {
     }
     return m[0][1]
   }()
+  // "majorVersion" is an integer with just the major version. Compute it.
+  majorVersion = {
+    def m = (version =~ /^(\d+)\.\d+\.\d+(-(.+))?/)
+    if (!m) {
+      throw GradleException("Can't strip version to just major version: " + rootProject.version)
+    }
+    return m[0][1] as int
+  }
+  // snapshot build marker used in scripts.
+  snapshotBuild = version.contains("SNAPSHOT")
 
   // Build timestamp.
   def tstamp = ZonedDateTime.now()
@@ -50,15 +79,26 @@ ext {
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
+  minJavaVersion = JavaVersion.VERSION_11
+
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
       "apache-rat": "0.11",
+      "commons-codec": "1.13",
       "ecj": "3.19.0",
-      "javacc": "5.0",
+      "javacc": "7.0.4",
       "jflex": "1.7.0",
-      "jgit": "5.3.0.201903130848-r",
+      "jgit": "5.9.0.202009080501-r",
+      "flexmark": "0.61.24",
   ]
+
+  // Allow definiting external tool locations using system props.
+  externalTool = { name ->
+    def resolved = propertyOrDefault("${name}.exe", name as String)
+    logger.info("External tool '${name}' resolved to: ${resolved}")
+    return resolved
+  }
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -75,22 +115,24 @@ apply from: file('gradle/ant-compat/folder-layout.gradle')
 
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
-apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
-apply from: file('gradle/render-javadoc.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
-apply from: file('gradle/testing/runtime-jvm-support.gradle')
+apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/jar-manifest.gradle')
 
-// Maven publishing.
+// Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
+apply from: file('gradle/releasing.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
+apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
+apply from: file('gradle/validation/measure-task-times.gradle')
+apply from: file('gradle/validation/error-prone.gradle')
 apply from: file('gradle/validation/precommit.gradle')
 apply from: file('gradle/validation/forbidden-apis.gradle')
 apply from: file('gradle/validation/jar-checks.gradle')
@@ -102,8 +144,9 @@ apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
-apply from: file('gradle/validation/missing-docs-check.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
+apply from: file('gradle/validation/check-broken-links.gradle')
+apply from: file('gradle/validation/spotless.gradle')
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')
@@ -111,6 +154,11 @@ apply from: file('gradle/generation/javacc.gradle')
 apply from: file('gradle/generation/util.gradle')
 apply from: file('gradle/generation/snowball.gradle')
 apply from: file('gradle/generation/kuromoji.gradle')
+apply from: file('gradle/generation/nori.gradle')
+apply from: file('gradle/generation/icu.gradle')
+
+// Shared configuration of subprojects containing native code.
+apply from: file('gradle/native/disable-native.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
@@ -118,6 +166,7 @@ apply from: file('gradle/testing/per-project-summary.gradle')
 apply from: file('gradle/testing/slowest-tests-at-end.gradle')
 apply from: file('gradle/testing/failed-tests-at-end.gradle')
 apply from: file('gradle/testing/profiling.gradle')
+apply from: file('gradle/testing/beasting.gradle')
 apply from: file('gradle/help.gradle')
 
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
@@ -125,9 +174,19 @@ apply from: file('gradle/help.gradle')
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
-apply from: file('gradle/ant-compat/resolve.gradle')
 apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
-apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
-apply from: file('gradle/ant-compat/forbidden-api-rules-in-sync.gradle')
+
+apply from: file('gradle/documentation/documentation.gradle')
+apply from: file('gradle/documentation/changes-to-html.gradle')
+apply from: file('gradle/documentation/markdown.gradle')
+apply from: file('gradle/documentation/render-javadoc.gradle')
+
+apply from: file('gradle/hacks/gradle-archives.gradle')
+apply from: file('gradle/hacks/findbugs.gradle')
+apply from: file('gradle/hacks/gradle.gradle')
+apply from: file('gradle/hacks/hashmapAssertions.gradle')
+
+apply from: file('gradle/solr/packaging.gradle')
+apply from: file('gradle/solr/solr-forbidden-apis.gradle')

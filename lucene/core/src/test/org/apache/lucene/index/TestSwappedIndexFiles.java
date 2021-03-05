@@ -16,26 +16,22 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Test that the same file name, but from a different index, is detected as foreign.
- */
+/** Test that the same file name, but from a different index, is detected as foreign. */
 @SuppressFileSystems("ExtrasFS")
 public class TestSwappedIndexFiles extends LuceneTestCase {
 
@@ -43,7 +39,8 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
 
-    // Disable CFS 80% of the time so we can truncate individual files, but the other 20% of the time we test truncation of .cfs/.cfe too:
+    // Disable CFS 80% of the time so we can truncate individual files, but the other 20% of the
+    // time we test truncation of .cfs/.cfe too:
     boolean useCFS = random().nextInt(5) == 1;
 
     // Use LineFileDocs so we (hopefully) get most Lucene features
@@ -60,7 +57,8 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
     dir2.close();
   }
 
-  private void indexOneDoc(long seed, Directory dir, Document doc, boolean useCFS) throws IOException {
+  private void indexOneDoc(long seed, Directory dir, Document doc, boolean useCFS)
+      throws IOException {
     Random random = new Random(seed);
     IndexWriterConfig conf = newIndexWriterConfig(random, new MockAnalyzer(random));
     conf.setCodec(TestUtil.getDefaultCodec());
@@ -77,13 +75,13 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
   }
-  
+
   private void swapFiles(Directory dir1, Directory dir2) throws IOException {
     if (VERBOSE) {
       System.out.println("TEST: dir1 files: " + Arrays.toString(dir1.listAll()));
       System.out.println("TEST: dir2 files: " + Arrays.toString(dir2.listAll()));
     }
-    for(String name : dir1.listAll()) {
+    for (String name : dir1.listAll()) {
       if (name.equals(IndexWriter.WRITE_LOCK_NAME)) {
         continue;
       }
@@ -99,7 +97,7 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
       dirCopy.setCheckIndexOnClose(false);
 
       // Copy all files from dir1 to dirCopy, except victim which we copy from dir2:
-      for(String name : dir1.listAll()) {
+      for (String name : dir1.listAll()) {
         if (name.equals(victim) == false) {
           dirCopy.copyFrom(dir1, name, name, IOContext.DEFAULT);
         } else {
@@ -108,15 +106,18 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
         dirCopy.sync(Collections.singleton(name));
       }
 
-      // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
-          () -> DirectoryReader.open(dirCopy).close()
-      );
+      // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all
+      // these confusing errors about open files:
+      expectThrowsAnyOf(
+          Arrays.asList(
+              CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
+          () -> DirectoryReader.open(dirCopy).close());
 
       // CheckIndex should also fail:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
-          () -> TestUtil.checkIndex(dirCopy, true, true, null)
-      );
+      expectThrowsAnyOf(
+          Arrays.asList(
+              CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
+          () -> TestUtil.checkIndex(dirCopy, true, true, null));
     }
   }
 }

@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2020 The Apache Software Foundation
+ Copyright 2006-2021 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -38,7 +38,7 @@ This product includes jquery.form Javascript library created by Mike Alsup
 Copyright 2006-2014 (c) M. Alsup, https://github.com/malsup/form/
 
 This product includes the jstree Javascript library created by Ivan Bozhanov
-Copyright (c) 2013-2014 Ivan Bozhanov, https://github.com/vakata/jstree
+Copyright (c) 2013-2020 Ivan Bozhanov, https://github.com/vakata/jstree
 
 This product includes jquery.timeago.js Javascript library by Ryan McGeary
 Copyright (c) 2008-2014, Ryan McGeary, https://github.com/rmm5t/jquery-timeago
@@ -49,7 +49,7 @@ Copyright (C) 2010-2014 James Burke, https://github.com/jrburke/requirejs
 This product includes angular-utf8-base64.js Javascript library created by Andrey Bezyazychniy
 Copyright (c) 2014 Andrey Bezyazychniy, https://github.com/stranger82/angular-utf8-base64
 
-This product includes code copied and modified from the www-authenticate Javascript library 
+This product includes code copied and modified from the www-authenticate Javascript library
 Copyright (c) 2013 Randy McLaughlin, MIT-license, https://github.com/randymized/www-authenticate
 
 This product includes fugue icons created by Yusuke Kamiyamane
@@ -76,10 +76,6 @@ the Apache Blur incubating project and are Apache License 2.0.
 ASM (Java bytecode manipulation and analysis framework): http://asm.ow2.org/
 Copyright (c) 2000-2005 INRIA, France Telecom
 
-This project includes portions of the Jekyll Documentation Theme
-Copyright (c) 2016 Tom Johnson
-License: MIT https://github.com/tomjohnson1492/documentation-theme-jekyll/blob/gh-pages/licenses/LICENSE
-
 This project includes templates from the Asciidoctor HTML5 backend converter
 Copyright (c) 2014-2018 Jakub Jirutka
 License: MIT https://github.com/jirutka/asciidoctor-html5s/blob/master/LICENSE
@@ -87,6 +83,10 @@ License: MIT https://github.com/jirutka/asciidoctor-html5s/blob/master/LICENSE
 This project includes the Navgoco JQuery plugin
 Copyright (c) 2013 Christopher Tsoulloftas, http://www.komposta.net
 License: BSD https://github.com/tefra/navgoco/blob/master/LICENSE-BSD
+
+This project includes the Malihu Custom Scrollbar Plugin
+Copyright (c) Manos Malihutsakis, http://manos.malihu.gr/
+License: MIT https://github.com/malihu/malihu-custom-scrollbar-plugin/blob/master/LICENSE.txt
 
 =========================================================================
 ==  Antlr2 Notice                                                       ==
@@ -129,7 +129,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2020 The Apache Software Foundation
+Copyright 2001-2021 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -221,7 +221,7 @@ and Edmond Nolan.
 The Polish analyzer (stempel) comes with a default
 stopword list that is BSD-licensed created by the Carrot2 project. The file resides
 in stempel/src/resources/org/apache/lucene/analysis/pl/stopwords.txt.
-See http://project.carrot2.org/license.html.
+See https://project.carrot2.org/license.html.
 
 The SmartChineseAnalyzer source code (smartcn) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
@@ -439,13 +439,12 @@ http://sourceforge.jp/projects/jsonic/
 =========================================================================
 ==     Carrot2 Notice                                                  ==
 =========================================================================
-Copyright (C) 2002-2010, Dawid Weiss, Stanislaw Osinski.
+Copyright (C) 2002-2020, Dawid Weiss, Stanislaw Osinski.
 Portions (C) Contributors listed in "carrot2.CONTRIBUTORS" file.
 All rights reserved.
 
 This product includes software developed by the Carrot2 Project.
-
-See http://project.carrot2.org/
+See https://project.carrot2.org/
 
 =========================================================================
 ==     Guava Notice                                                    ==
@@ -546,18 +545,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================
-==     Restlet Notice                                                  ==
-=========================================================================
-
-Copyright (C) 2005-2014 Restlet S.A.S.
-
-Restlet is a registered trademark of Restlet S.A.S.
-
-This product contains software developed by the Restlet project.
-
-See http://www.restlet.org/
-
-=========================================================================
 ==     Protocol Buffers Notice                                         ==
 =========================================================================
 
@@ -609,3 +596,10 @@ Noggit is a  fast streaming JSON parser for java. The code is included
 into Solr codebase.
 
 https://github.com/yonik/noggit
+
+=========================================================================
+==         ui-grid notice                                               ==
+=========================================================================
+
+This product includes the Angular UI UI Grid JavaScript library.
+Copyright (c) 2015 the AngularUI Team, http://angular-ui.github.com

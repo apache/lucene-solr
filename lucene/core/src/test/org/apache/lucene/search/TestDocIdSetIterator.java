@@ -17,9 +17,9 @@
 
 package org.apache.lucene.search;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDocIdSetIterator extends LuceneTestCase {
   public void testRangeBasic() throws Exception {
@@ -32,15 +32,27 @@ public class TestDocIdSetIterator extends LuceneTestCase {
   }
 
   public void testInvalidRange() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {DocIdSetIterator.range(5, 4);});
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          DocIdSetIterator.range(5, 4);
+        });
   }
 
   public void testInvalidMin() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {DocIdSetIterator.range(-1, 4);});
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          DocIdSetIterator.range(-1, 4);
+        });
   }
 
   public void testEmpty() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {DocIdSetIterator.range(7, 7);});
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          DocIdSetIterator.range(7, 7);
+        });
   }
 
   public void testAdvance() throws Exception {

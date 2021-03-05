@@ -45,14 +45,17 @@ public class EnclosingDiskEvaluator extends RecursiveObjectEvaluator implements 
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static EnclosingBall getEnclosingDisk(Matrix matrix) throws IOException {
     double[][] data = matrix.getData();
-    List<Vector2D> points = new ArrayList(data.length);
+    List<Vector2D> points = new ArrayList<>(data.length);
     if(data[0].length == 2) {
       for(double[] row : data) {
         points.add(new Vector2D(row[0], row[1]));
       }
 
+
+      @SuppressWarnings({"unchecked"})
       WelzlEncloser<Euclidean2D, Vector2D> welzlEncloser = new WelzlEncloser(.001, new DiskGenerator());
       EnclosingBall enclosingBall = welzlEncloser.enclose(points);
       return enclosingBall;

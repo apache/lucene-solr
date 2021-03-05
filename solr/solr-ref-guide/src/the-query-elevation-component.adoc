@@ -18,7 +18,7 @@
 
 The Query Elevation Component lets you configure the top results for a given query regardless of the normal Lucene scoring.
 
-This is sometimes called "sponsored search", "editorial boosting", or "best bets." This component matches the user query text to a configured map of top results. The text can be any string or non-string IDs, as long as it's indexed. Although this component will work with any QueryParser, it makes the most sense to use with <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,eDisMax>>.
+This is sometimes called "sponsored search", "editorial boosting", or "best bets." This component matches the user query text to a configured map of top results. The text can be any string or non-string IDs, as long as it's indexed. Although this component will work with any QueryParser, it makes the most sense to use with <<the-dismax-query-parser.adoc#,DisMax>> or <<the-extended-dismax-query-parser.adoc#,eDisMax>>.
 
 The Query Elevation Component also supports distributed searching.
 
@@ -61,13 +61,30 @@ Optionally, in the Query Elevation Component configuration you can also specify 
 The Query Elevation Search Component takes the following parameters:
 
 `queryFieldType`::
-Specifies which fieldType should be used to analyze the incoming text. For example, it may be appropriate to use a fieldType with a LowerCaseFilter.
+Specifies which field type should be used to analyze the incoming text. For example, it may be appropriate to use a field type with a `LowerCaseFilter`.
++
+Another example is if you need to unescape backslash-escaped queries, then you can define the field type to preprocess with a `PatternReplaceCharFilter`.
+Here is the corresponding example of field type (traditionally in `managed-schema` or `schema.xml`):
++
+[source,xml]
+----
+<fieldType name="unescapelowercase" class="solr.TextField">
+  <analyzer>
+    <charFilter class="solr.PatternReplaceCharFilterFactory" pattern="\\(.)" replacement="$1"/>
+    <tokenizer class="solr.StandardTokenizerFactory"/>
+    <filter class="solr.LowerCaseFilterFactory"/>
+  </analyzer>
+</fieldType>
+----
++
+// NOTE: {IsAlphabetic} and {Digit} below are escaped with '\' so Asciidoctor does not treat them as attributes during conversion to HTML.
+For example, to unescape only non-alphanumeric, the pattern could be `\\([^\p\{IsAlphabetic}\p\{Digit}])`.
 
 `config-file`::
 Path to the file that defines query elevation. This file must exist in `<instanceDir>/conf/<config-file>` or `<dataDir>/<config-file>`. If the file exists in the `conf/` directory it will be loaded once at startup. If it exists in the `data/` directory, it will be reloaded for each IndexReader.
 
 `forceElevation`::
-By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true` (the default), results will first return the boosted docs, then order by date.
+By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true`, results will first return the boosted docs, then order by date. This defaults to `false`.
 This is also a request parameter, which will override the config.
 
 `useConfiguredElevatedOrder`::
@@ -75,6 +92,10 @@ When multiple docs are elevated, should their relative order be the order in the
 they be subject to whatever the sort criteria is?  True by default.
 This is also a request parameter, which will override the config.
 The effect is most apparent when forceElevation is true and there is sorting on fields.
+
+`elevateOnlyDocsMatchingQuery`::
+By default, the component will also elevate docs that aren't part of the search result (matching the query).
+If you only want to elevate the docs that are part of the search result, set this to `true` (default is `false`).
 
 === The elevate.xml File
 
@@ -140,7 +161,7 @@ You can force set `useConfiguredElevatedOrder` during runtime by supplying it as
 
 === Document Transformers and the markExcludes Parameter
 
-The `[elevated]` <<transforming-result-documents.adoc#transforming-result-documents,Document Transformer>> can be used to annotate each document with information about whether or not it was elevated:
+The `[elevated]` <<transforming-result-documents.adoc#,Document Transformer>> can be used to annotate each document with information about whether or not it was elevated:
 
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&fl=id,[elevated]

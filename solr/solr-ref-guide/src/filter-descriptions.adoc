@@ -50,7 +50,7 @@ You configure each filter with a `<filter>` element in `schema.xml` as a child o
 ====
 --
 
-The name/class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.lucene.analysis.util.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
+The name/class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.lucene.analysis.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
 
 Arguments may be passed to tokenizer factories to modify their behavior by setting attributes on the `<filter>` element. For example:
 
@@ -292,7 +292,7 @@ Collation allows sorting of text in a language-sensitive way. It is usually used
 
 == Daitch-Mokotoff Soundex Filter
 
-Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
+Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.DaitchMokotoffSoundexFilterFactory`
 
@@ -330,7 +330,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 == Double Metaphone Filter
 
-This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
+This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#,Phonetic Matching>> section.
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
 
@@ -816,7 +816,7 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.ICUFoldingFilterFactory`
 
@@ -924,7 +924,7 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 
 For detailed information about these normalization forms, see http://unicode.org/reports/tr15/[Unicode Normalization Forms].
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == ICU Transform Filter
 
@@ -966,7 +966,7 @@ This filter applies http://userguide.icu-project.org/transforms/general[ICU Tran
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == Keep Word Filter
 
@@ -1343,7 +1343,7 @@ Converts any uppercase letters in a token to the equivalent lowercase token. All
 
 == Managed Stop Filter
 
-This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#,managed from a REST API.>>
 
 *Arguments:*
 
@@ -1383,7 +1383,7 @@ See <<Stop Filter>> for example input/output.
 
 == Managed Synonym Filter
 
-This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
 
 .Managed Synonym Filter has been Deprecated
 [WARNING]
@@ -1397,7 +1397,7 @@ For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
-This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
@@ -1687,7 +1687,7 @@ More complex pattern with capture group reference in the replacement. Tokens tha
 
 == Phonetic Filter
 
-This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
+This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.PhoneticFilterFactory`
 
@@ -2240,7 +2240,7 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
 
 *Arguments:*
 
-`words`:: (optional; default: {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
+`words`:: (optional; default: {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
 
 `format`:: (optional; default: `wordset`) Defines how the words file will be parsed. If `words` is not specified, then `format` must not be specified. The valid values for the format option are:
 
@@ -2314,7 +2314,7 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#resource-loading,Resource Loading>> for more information.
+`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#,Resource Loading>> for more information.
 +
 There are two ways to specify synonym mappings:
 +
@@ -2326,7 +2326,7 @@ There are two ways to specify synonym mappings:
 
 `expand`:: (optional; default: `true`) If `true`, a synonym will be expanded to all equivalent synonyms. If `false`, all equivalent synonyms will be reduced to the first in the list.
 
-`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed. The short names `solr` (for {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
+`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed. The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
 
 `tokenizerFactory`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the tokenizer factory to use when parsing the synonyms file. Arguments with the name prefix `tokenizerFactory.*` will be supplied as init params to the specified tokenizer factory.
 +

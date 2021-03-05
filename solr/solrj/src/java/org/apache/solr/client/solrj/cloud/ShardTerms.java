@@ -73,7 +73,6 @@ public class ShardTerms implements MapWriter {
    */
   public boolean haveHighestTermValue(String coreNodeName) {
     if (values.isEmpty()) return true;
-    long maxTerm = Collections.max(values.values());
     return values.getOrDefault(coreNodeName, 0L) == maxTerm;
   }
 
@@ -92,7 +91,7 @@ public class ShardTerms implements MapWriter {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can not find leader's term " + leader);
     }
 
-    boolean changed = false;
+    boolean saveChanges = false;
     boolean foundReplicasInLowerTerms = false;
 
     HashMap<String, Long> newValues = new HashMap<>(values);
@@ -102,16 +101,16 @@ public class ShardTerms implements MapWriter {
       if (replicasNeedingRecovery.contains(key)) foundReplicasInLowerTerms = true;
       if (Objects.equals(entry.getValue(), leaderTerm)) {
         if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
-          changed = true;
+          saveChanges = true; // if we don't skip anybody, then there's no reason to increment
         } else {
-          newValues.put(key, leaderTerm+1);
+          entry.setValue(leaderTerm + 1);
         }
       }
     }
 
     // We should skip the optimization if there are no replicasNeedingRecovery present in local terms,
     // this may indicate that the current value is stale
-    if (!changed && foundReplicasInLowerTerms) return null;
+    if (!saveChanges && foundReplicasInLowerTerms) return null;
     return new ShardTerms(newValues, version);
   }
 
@@ -167,6 +166,12 @@ public class ShardTerms implements MapWriter {
     return new ShardTerms(newValues, version);
   }
 
+  /**
+   * Return a new {@link ShardTerms} in which the associate term of {@code coreNodeName} is equal to zero,
+   * creating it if it does not previously exist.
+   * @param coreNodeName of the replica
+   * @return null if the term of {@code coreNodeName} already exists and is zero
+   */
   public ShardTerms setTermToZero(String coreNodeName) {
     if (values.getOrDefault(coreNodeName, -1L) == 0) {
       return null;
@@ -182,7 +187,6 @@ public class ShardTerms implements MapWriter {
    * @return null if term of {@code coreNodeName} is already maximum
    */
   public ShardTerms setTermEqualsToLeader(String coreNodeName) {
-    long maxTerm = getMaxTerm();
     if (values.get(coreNodeName) == maxTerm) return null;
 
     HashMap<String, Long> newValues = new HashMap<>(values);
@@ -201,7 +205,6 @@ public class ShardTerms implements MapWriter {
    * @return null if {@code coreNodeName} is already marked as doing recovering
    */
   public ShardTerms startRecovering(String coreNodeName) {
-    long maxTerm = getMaxTerm();
     if (values.get(coreNodeName) == maxTerm)
       return null;
 
@@ -246,7 +249,7 @@ public class ShardTerms implements MapWriter {
     return version;
   }
 
-  public Map<String , Long> getTerms() {
+  public Map<String, Long> getTerms() {
     return new HashMap<>(this.values);
   }
 

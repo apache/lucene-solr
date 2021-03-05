@@ -18,6 +18,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Collectors for grouping search results'
+
 dependencies {
   api project(':lucene:core')
 

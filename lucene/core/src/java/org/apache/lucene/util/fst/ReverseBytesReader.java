@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util.fst;
 
-
 /** Reads in reverse from a single byte[]. */
 final class ReverseBytesReader extends FST.BytesReader {
   private final byte[] bytes;
@@ -33,8 +32,8 @@ final class ReverseBytesReader extends FST.BytesReader {
 
   @Override
   public void readBytes(byte[] b, int offset, int len) {
-    for(int i=0;i<len;i++) {
-      b[offset+i] = bytes[pos--];
+    for (int i = 0; i < len; i++) {
+      b[offset + i] = bytes[pos--];
     }
   }
 
@@ -58,4 +57,3 @@ final class ReverseBytesReader extends FST.BytesReader {
     return true;
   }
 }
-

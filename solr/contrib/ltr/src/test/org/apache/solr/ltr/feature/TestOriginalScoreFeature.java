@@ -97,14 +97,20 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='"+doc3Id+"'");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
+    @SuppressWarnings({"unchecked"})
     final Map<String,Object> jsonParse = (Map<String,Object>) Utils
         .fromJSONString (res);
+    @SuppressWarnings({"unchecked"})
     final String doc0Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score")).toString();
+
+    @SuppressWarnings({"unchecked"})
     final String doc1Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(1)).get("score")).toString();
+    @SuppressWarnings({"unchecked"})
     final String doc2Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(2)).get("score")).toString();
+    @SuppressWarnings({"unchecked"})
     final String doc3Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(3)).get("score")).toString();
 

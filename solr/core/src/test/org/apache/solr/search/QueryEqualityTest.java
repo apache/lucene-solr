@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.AssertionFailedError;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -290,6 +289,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testQueryCollapse() throws Exception {
     SolrQueryRequest req = req("myField","foo_s1",
                                "g_sort","foo_s1 asc, foo_i desc");
@@ -314,7 +314,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "{!collapse field=$myField max=a nullPolicy=expand}");
 
       //Add boosted documents to the request context.
+      @SuppressWarnings({"rawtypes"})
       Map context = req.getContext();
+      @SuppressWarnings({"rawtypes"})
       Set boosted = new HashSet();
       boosted.add("doc1");
       boosted.add("doc2");
@@ -350,6 +352,18 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     try {
       assertQueryEquals("min_hash", req,
           "{!min_hash field=\"min_hash_analysed\"}apache lucene is a search library");
+    } finally {
+      req.close();
+    }
+  }
+  
+  public void testRankQuery() throws Exception {
+    SolrQueryRequest req = req("df", "foo_s");
+    try {
+      assertQueryEquals("rank", req,
+                        "{!rank f='rank_1'}",
+                        "{!rank f='rank_1' function='satu'}",
+                        "{!rank f='rank_1' function='satu' weight=1}");
     } finally {
       req.close();
     }
@@ -509,25 +523,56 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertQueryEquals(null, "{!parent which='+*:* -foo_s:parent'}",
         "{!child of=foo_s:parent}");
 
-    final SolrQueryRequest req = req(
-        "fq","bar_s:baz","fq","{!tag=fqban}bar_s:ban",
-        "ffq","bar_s:baz","ffq","{!tag=ffqban}bar_s:ban");
-    try {
-    assertQueryEquals("filters", req,
-        "{!parent which=foo_s:parent param=$fq}foo_s:bar",
-        "{!parent which=foo_s:parent param=$ffq}foo_s:bar" // differently named params
-        );
-    assertQueryEquals("filters", req,
-        "{!parent which=foo_s:parent param=$fq excludeTags=fqban}foo_s:bar",
-        "{!parent which=foo_s:parent param=$ffq excludeTags=ffqban}foo_s:bar" // differently named params
-        );
+    try (SolrQueryRequest req = req("fq","bar_s:baz","fq","{!tag=fqban}bar_s:ban",
+                                    "ffq","bar_s:baz","ffq","{!tag=ffqban}bar_s:ban")) {
+      assertQueryEquals("filters", req,
+                        "{!parent which=foo_s:parent param=$fq}foo_s:bar",
+                        "{!parent which=foo_s:parent param=$ffq}foo_s:bar" // differently named params
+                        );
+      assertQueryEquals("filters", req,
+                        "{!parent which=foo_s:parent param=$fq excludeTags=fqban}foo_s:bar",
+                        "{!parent which=foo_s:parent param=$ffq excludeTags=ffqban}foo_s:bar" // differently named params
+                        );
 
-    QueryUtils.checkUnequal(// parent filter is not an equal to child
-        QParser.getParser("{!child of=foo_s:parent}", req).getQuery(),
-        QParser.getParser("{!parent which=foo_s:parent}", req).getQuery());
+      QueryUtils.checkUnequal(// parent filter is not an equal to child
+                              QParser.getParser("{!child of=foo_s:parent}", req).getQuery(),
+                              QParser.getParser("{!parent which=foo_s:parent}", req).getQuery());
+    }
 
-    } finally {
-      req.close();
+    // sanity check multiple ways of specifing _nest_path_ prefixes
+    final String parent_path = "/aa/bb";
+    try (SolrQueryRequest req = req("parent_filt", "(*:* -{!prefix f='_nest_path_' v='"+parent_path+"/'})",
+                                    "child_q", "(+foo +{!prefix f='_nest_path_' v='"+parent_path+"/'})",
+                                    "parent_q", "(+bar +{!field f='_nest_path_' v='"+parent_path+"'})")) {
+      
+      assertQueryEquals("parent", req,
+                        
+                        // using local params to refer to other query params using 'prefix' parser...
+                        "{!parent which=$parent_filt v=$child_q}",
+                        
+                        // using 'inline' prefix query syntax...
+                        //
+                        // '/' has to be escaped other wise it will be treated as a regex query...
+                        // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
+                        // the "quoted" localparam evaluation layer...
+                        // (and of course '\' escaping is the java syntax as well, we have to double it)
+                        "{!parent which='*:* -_nest_path_:"+(parent_path + "/").replace("/","\\\\/") +"*'}"
+                        + "(+foo +_nest_path_:" + (parent_path + "/").replace("/", "\\/") + "*)");
+
+      assertQueryEquals("child", req,
+                        
+                        // using local params to refer to other query params using 'prefix' parser...
+                        "{!child of=$parent_filt v=$parent_q}",
+                        
+                        // using 'inline' prefix query syntax...
+                        //
+                        // '/' has to be escaped other wise it will be treated as a regex query...
+                        // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
+                        // the "quoted" localparam evaluation layer...
+                        // (and of course '\' escaping is the java syntax as well, we have to double it)
+                        "{!child of='*:* -_nest_path_:"+(parent_path + "/").replace("/","\\\\/") +"*'}"
+                        + "(+bar +_nest_path_:" + parent_path.replace("/", "\\/") + ")");
+
     }
   }
 
@@ -1241,7 +1286,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testPayloadScoreQuery() throws Exception {
     // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal with different includeSpanScore settings
 
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+    expectThrows(AssertionError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("payload_score"
                 , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=false}"
@@ -1251,7 +1296,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testPayloadCheckQuery() throws Exception {
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+    expectThrows(AssertionError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("payload_check"
                 , "{!payload_check f=foo_dpf payloads=2}one"
@@ -1282,19 +1327,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!bool must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' " +
             "must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' filter='{!lucene}foo_s:e'}");
 
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+    expectThrows(AssertionError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("bool"
                 , "{!bool must='{!lucene}foo_s:a'}"
                 , "{!bool should='{!lucene}foo_s:a'}"
             )
     );
-  }
-
-  public void testXCJFQuery() throws Exception {
-    assertQueryEquals("xcjf",
-        "{!xcjf collection=abc from=x_id to=x_id}*:*",
-        "{!xcjf collection=abc from=x_id to=x_id v='*:*'}");
   }
 
   public void testHashRangeQuery() throws Exception {

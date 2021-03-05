@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -65,7 +64,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     // When new collection is created, the old term nodes will be removed
     CollectionAdminRequest.createCollection(collection, 2, 2)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
-        .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       waitFor(2, () -> zkShardTerms.getTerms().size());
@@ -265,13 +263,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replicaTerms.close();
   }
 
-  public void testEnsureTermsIsHigher() {
-    Map<String, Long> map = new HashMap<>();
-    map.put("leader", 0L);
-    ShardTerms terms = new ShardTerms(map, 0);
-    terms = terms.increaseTerms("leader", Collections.singleton("replica"));
-    assertEquals(1L, terms.getTerm("leader").longValue());
-  }
 
   public void testSetTermToZero() {
     String collection = "setTermToZero";

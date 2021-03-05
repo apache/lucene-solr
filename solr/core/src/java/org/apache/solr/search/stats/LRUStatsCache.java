@@ -65,7 +65,7 @@ public class LRUStatsCache extends ExactStatsCache {
   // map of <shardName, <field, collStats>>
   private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
   
-  // global stats synchronized from the master
+  // global stats synchronized from the leader
 
   // cache of <term, termStats>
   private final CaffeineCache<String,TermStats> currentGlobalTermStats = new CaffeineCache<>();
@@ -160,9 +160,7 @@ public class LRUStatsCache extends ExactStatsCache {
         return super.doRetrieveStatsRequest(rb);
       }
     } catch (IOException e) {
-      if (log.isWarnEnabled()) {
-        log.warn("Exception checking missing stats for query {}, forcing retrieving stats", rb.getQuery(), e);
-      }
+      log.warn("Exception checking missing stats for query {}, forcing retrieving stats", rb.getQuery(), e);
       // retrieve anyway
       return super.doRetrieveStatsRequest(rb);
     }
@@ -187,7 +185,9 @@ public class LRUStatsCache extends ExactStatsCache {
   protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
     Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
+      @SuppressWarnings({"unchecked"})
       SolrCache<String,TermStats> cache = perShardTermStats.computeIfAbsent(shard, s -> {
+        @SuppressWarnings({"rawtypes"})
         CaffeineCache c = new CaffeineCache<>();
         Map<String, String> map = new HashMap<>(lruCacheInitArgs);
         map.put(CommonParams.NAME, s);

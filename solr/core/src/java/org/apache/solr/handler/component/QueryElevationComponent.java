@@ -76,11 +76,12 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
@@ -90,7 +91,6 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.VersionedFile;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -150,7 +150,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   private final Map<IndexReader, ElevationProvider> elevationProviderCache = new WeakHashMap<>();
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     this.initArgs = args.toSolrParams();
   }
 
@@ -247,7 +247,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             elevationProvider = handleConfigLoadingException(e, true);
           } else {
             configFileExists = true;
-            log.info("Loading QueryElevation from: " + fC.getAbsolutePath());
+            if (log.isInfoEnabled()) {
+              log.info("Loading QueryElevation from: {}", fC.getAbsolutePath());
+            }
             XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName);
             elevationProvider = loadElevationProvider(cfg);
           }
@@ -366,7 +368,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "QueryElevationComponent must specify argument: " + CONFIG_FILE);
     }
-    log.info("Loading QueryElevation from data dir: " + configFileName);
+    log.info("Loading QueryElevation from data dir: {}", configFileName);
 
     XmlConfigFile cfg;
     ZkController zkController = core.getCoreContainer().getZkController();
@@ -507,7 +509,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       rb.setQuery(new BoostQuery(elevation.includeQuery, 0f));
     } else {
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-      queryBuilder.add(rb.getQuery(), BooleanClause.Occur.SHOULD);
+      BooleanClause.Occur queryOccurrence =
+              params.getBool(QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, false) ?
+                      BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+      queryBuilder.add(rb.getQuery(), queryOccurrence);
       queryBuilder.add(new BoostQuery(elevation.includeQuery, 0f), BooleanClause.Occur.SHOULD);
       if (elevation.excludeQueries != null) {
         if (params.getBool(QueryElevationParams.MARK_EXCLUDES, false)) {
@@ -631,7 +636,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @param context the {@link SolrQueryRequest#getContext()} or null if none.  We'll cache our results here.
    */
   //TODO consider simplifying to remove "boosted" arg which can be looked up in context via BOOSTED key?
-  public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Set<BytesRef> boosted, Map context) throws IOException {
+  @SuppressWarnings({"unchecked"})
+  public static IntIntHashMap getBoostDocs(SolrIndexSearcher indexSearcher, Set<BytesRef> boosted,
+                                           @SuppressWarnings({"rawtypes"})Map context) throws IOException {
 
     IntIntHashMap boostDocs = null;
 
@@ -664,7 +671,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     if (context != null) {
-      //noinspection unchecked
       context.put(BOOSTED_DOCIDS, boostDocs);
     }
 

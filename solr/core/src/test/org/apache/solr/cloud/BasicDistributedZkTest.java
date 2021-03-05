@@ -63,7 +63,7 @@ import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.GroupResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -776,15 +776,14 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   @Override
   protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
-                                                     String collectionName, String configSetName, int numShards, int numReplicas, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
+                                                     String collectionName, String configSetName, int numShards, int numReplicas, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
     // TODO: Use CollectionAdminRequest for this test
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
-    params.set(OverseerCollectionMessageHandler.NUM_SLICES, numShards);
+    params.set(CollectionHandlingUtils.NUM_SLICES, numShards);
     params.set(ZkStateReader.REPLICATION_FACTOR, numReplicas);
-    params.set(ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-    if (createNodeSetStr != null) params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr);
+    if (createNodeSetStr != null) params.set(CollectionHandlingUtils.CREATE_NODE_SET, createNodeSetStr);
 
     int clientIndex = clients.size() > 1 ? random().nextInt(2) : 0;
     List<Integer> list = new ArrayList<>();
@@ -795,6 +794,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     params.set("name", collectionName);
     params.set("collection.configName", configSetName);
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -902,6 +902,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id","1000"));
     for (SolrClient client : clients) {
       val += 10;
+      @SuppressWarnings({"rawtypes"})
       NamedList rsp = client.request(qr);
       String match = JSONTestUtil.matchObj("/val_i", rsp.get("doc"), expected);
       if (match != null) throw new RuntimeException(match);
@@ -943,8 +944,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       // use generic request to avoid extra processing of queries
       QueryRequest req = new QueryRequest(params);
       NamedList<Object> resp = client.request(req);
+      @SuppressWarnings({"rawtypes"})
       NamedList metrics = (NamedList) resp.get("metrics");
+      @SuppressWarnings({"rawtypes"})
       NamedList uhandlerCat = (NamedList) metrics.getVal(0);
+      @SuppressWarnings({"unchecked"})
       Map<String,Object> commits = (Map<String,Object>) uhandlerCat.get("UPDATE.updateHandler.commits");
       return (Long) commits.get("count");
     }
@@ -954,7 +958,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     log.info("### STARTING testANewCollectionInOneInstanceWithManualShardAssignement");
     assertEquals(0, CollectionAdminRequest.createCollection(oneInstanceCollection2, "conf1", 2, 2)
         .setCreateNodeSet("")
-        .setMaxShardsPerNode(4)
         .process(cloudClient).getStatus());
 
     List<SolrClient> collectionClients = new ArrayList<>();
@@ -1102,7 +1105,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     log.info("### STARTING testANewCollectionInOneInstance");
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(oneInstanceCollection, "conf1", 2, 2)
         .setCreateNodeSet(jettys.get(0).getNodeName())
-        .setMaxShardsPerNode(4)
         .process(cloudClient);
     assertEquals(0, response.getStatus());
     List<SolrClient> collectionClients = new ArrayList<>();
@@ -1150,9 +1152,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     createSolrCore(collection, collectionClients, baseUrl, num, null);
   }
   
+  @SuppressWarnings({"unchecked"})
   private void createSolrCore(final String collection,
       List<SolrClient> collectionClients, final String baseUrl, final int num,
       final String shardId) {
+    @SuppressWarnings({"rawtypes"})
     Callable call = () -> {
       try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
         // client.setConnectionTimeout(15000);
@@ -1263,6 +1267,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     client.add(doc);
   }
   
+  @SuppressWarnings({"unchecked"})
   private void createNewCollection(final String collection) throws InterruptedException {
     try {
       assertEquals(0, CollectionAdminRequest
@@ -1279,6 +1284,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (final JettySolrRunner runner : jettys) {
       unique++;
       final int frozeUnique = unique;
+      @SuppressWarnings({"rawtypes"})
       Callable call = () -> {
 
         try {

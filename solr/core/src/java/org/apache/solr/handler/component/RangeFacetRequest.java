@@ -91,13 +91,14 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     if ((schemaField.getType() instanceof DateRangeField) && method.equals(FacetParams.FacetRangeMethod.DV)) {
       // the user has explicitly selected the FacetRangeMethod.DV method
-      log.warn("Range facet method '" + FacetParams.FacetRangeMethod.DV + "' is not supported together with field type '" +
-          DateRangeField.class + "'. Will use method '" + FacetParams.FacetRangeMethod.FILTER + "' instead");
+      log.warn("Range facet method '{}' is not supported together with field type '{}'. Will use method '{}' instead"
+          , FacetParams.FacetRangeMethod.DV, DateRangeField.class, FacetParams.FacetRangeMethod.FILTER);
       method = FacetParams.FacetRangeMethod.FILTER;
     }
     if (method.equals(FacetParams.FacetRangeMethod.DV) && !schemaField.hasDocValues() && (schemaField.getType().isPointField())) {
-      log.warn("Range facet method '" + FacetParams.FacetRangeMethod.DV + "' is not supported on PointFields without docValues." +
-          "Will use method '" + FacetParams.FacetRangeMethod.FILTER + "' instead");
+      log.warn("Range facet method '{}' is not supported on PointFields without docValues. Will use method '{}' instead"
+          , FacetParams.FacetRangeMethod.DV
+          , FacetParams.FacetRangeMethod.FILTER);
       method = FacetParams.FacetRangeMethod.FILTER;
     }
 
@@ -124,8 +125,8 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     this.groupFacet = params.getBool(GroupParams.GROUP_FACET, false);
     if (groupFacet && method.equals(FacetParams.FacetRangeMethod.DV)) {
       // the user has explicitly selected the FacetRangeMethod.DV method
-      log.warn("Range facet method '" + FacetParams.FacetRangeMethod.DV + "' is not supported together with '" +
-          GroupParams.GROUP_FACET + "'. Will use method '" + FacetParams.FacetRangeMethod.FILTER + "' instead");
+      log.warn("Range facet method '{}' is not supported together with '{}'. Will use method '{}' instead"
+          , FacetParams.FacetRangeMethod.DV, GroupParams.GROUP_FACET, FacetParams.FacetRangeMethod.FILTER);
       method = FacetParams.FacetRangeMethod.FILTER;
     }
 

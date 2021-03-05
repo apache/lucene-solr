@@ -18,7 +18,10 @@ package org.apache.solr.core;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,12 +31,23 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.util.DOMConfigNode;
+import org.apache.solr.util.DataConfigNode;
+import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import static org.apache.solr.schema.IndexSchema.SCHEMA;
+import static org.apache.solr.schema.IndexSchema.SLASH;
 
 /**
  * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
@@ -43,12 +57,28 @@ public abstract class ConfigSetService {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
-    if (zkController == null) {
+  public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
+
+    NodeConfig nodeConfig = coreContainer.getConfig();
+    SolrResourceLoader loader = coreContainer.getResourceLoader();
+    ZkController zkController = coreContainer.getZkController();
+
+    String configSetServiceClass = nodeConfig.getConfigSetServiceClass();
+
+    if(configSetServiceClass != null){
+      try {
+        Class<? extends ConfigSetService> clazz = loader.findClass(configSetServiceClass, ConfigSetService.class);
+        Constructor<? extends ConfigSetService> constructor = clazz.getConstructor(CoreContainer.class);
+        return constructor.newInstance(coreContainer);
+      } catch (Exception e) {
+        throw new RuntimeException("create configSetService instance faild,configSetServiceClass:" + configSetServiceClass, e);
+      }
+    }else if(zkController == null){
       return new Standalone(loader, nodeConfig.hasSchemaCache(), nodeConfig.getConfigSetBaseDirectory());
-    } else {
+    }else{
       return new CloudConfigSetService(loader, nodeConfig.hasSchemaCache(), zkController);
     }
+
   }
 
   protected final SolrResourceLoader parentLoader;
@@ -61,6 +91,7 @@ public abstract class ConfigSetService {
    * @param dcore the core's CoreDescriptor
    * @return a ConfigSet
    */
+  @SuppressWarnings({"rawtypes"})
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
@@ -80,8 +111,7 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
+      return new ConfigSet(configSetName(dcore), solrConfig, force -> createIndexSchema(dcore, solrConfig, force), properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -117,7 +147,7 @@ public abstract class ConfigSetService {
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
-  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig) {
+  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) {
     // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
     //   Important:  indexSchemaFactory.create wants this!
     String cdSchemaName = cd.getSchemaName();
@@ -135,14 +165,14 @@ public abstract class ConfigSetService {
         // note: luceneMatchVersion influences the schema
         String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
         return schemaCache.get(cacheKey,
-            (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig));
+            (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig, ConfigSetService.this));
       } else {
         log.warn("Unable to get schema modification version, configSet={} schema={}", configSet, guessSchemaName);
         // see explanation above; "guessSchema" is a guess
       }
     }
 
-    return indexSchemaFactory.create(cdSchemaName, solrConfig);
+    return indexSchemaFactory.create(cdSchemaName, solrConfig, this);
   }
 
   /**
@@ -158,6 +188,7 @@ public abstract class ConfigSetService {
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
@@ -166,6 +197,7 @@ public abstract class ConfigSetService {
    * Return the ConfigSet flags or null if none.
    */
   // TODO should fold into configSetProps -- SOLR-14059
+  @SuppressWarnings({"rawtypes"})
   protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
     return null;
   }
@@ -183,6 +215,20 @@ public abstract class ConfigSetService {
    * @return a name for the core's ConfigSet
    */
   public abstract String configSetName(CoreDescriptor cd);
+
+  public interface ConfigResource {
+
+    ConfigNode get() throws Exception;
+
+  }
+  public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name) throws IOException, SAXException, ParserConfigurationException {
+    XmlConfigFile schemaConf = null;
+    InputSource inputSource = new InputSource(is);
+    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, SLASH + SCHEMA + SLASH, null);
+    return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
+
+  }
 
   /**
    * The Solr standalone version of ConfigSetService.
@@ -204,7 +250,8 @@ public abstract class ConfigSetService {
     @Override
     public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
       Path instanceDir = locateInstanceDir(cd);
-      return new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+      SolrResourceLoader solrResourceLoader = new SolrResourceLoader(instanceDir, parentLoader.getClassLoader());
+      return solrResourceLoader;
     }
 
     @Override

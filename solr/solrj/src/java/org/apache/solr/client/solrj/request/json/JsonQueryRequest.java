@@ -165,6 +165,7 @@ public class JsonQueryRequest extends QueryRequest {
       jsonRequestMap.put("facet", new HashMap<String, Object>());
     }
 
+    @SuppressWarnings({"unchecked"})
     final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
     facetMap.put(facetName, facetJson);
     return this;
@@ -205,6 +206,7 @@ public class JsonQueryRequest extends QueryRequest {
       jsonRequestMap.put("facet", new HashMap<String, Object>());
     }
 
+    @SuppressWarnings({"unchecked"})
     final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
     facetMap.put(facetName, facetWriter);
     return this;
@@ -239,6 +241,7 @@ public class JsonQueryRequest extends QueryRequest {
       jsonRequestMap.put("facet", new HashMap<String, Object>());
     }
 
+    @SuppressWarnings({"unchecked"})
     final Map<String, Object> facetMap = (Map<String, Object>) jsonRequestMap.get("facet");
     facetMap.put(facetName, facetValue);
     return this;
@@ -299,6 +302,7 @@ public class JsonQueryRequest extends QueryRequest {
    *                    localparams query (e.g. "{!lucene df=text v='solr'}" )
    * @throws IllegalArgumentException if {@code filterQuery} is null
    */
+  @SuppressWarnings({"unchecked"})
   public JsonQueryRequest withFilter(String filterQuery) {
     if (filterQuery == null) {
       throw new IllegalArgumentException("'filterQuery' must be non-null");
@@ -326,6 +330,7 @@ public class JsonQueryRequest extends QueryRequest {
    * @param filterQuery a Map of values representing the filter request you wish to send.
    * @throws IllegalArgumentException if {@code filterQuery} is null
    */
+  @SuppressWarnings({"unchecked"})
   public JsonQueryRequest withFilter(Map<String, Object> filterQuery) {
     if (filterQuery == null) {
       throw new IllegalArgumentException("'filterQuery' parameter must be non-null");
@@ -343,6 +348,7 @@ public class JsonQueryRequest extends QueryRequest {
    */
   public JsonQueryRequest returnFields(String... fieldNames) {
     jsonRequestMap.putIfAbsent("fields", new ArrayList<String>());
+    @SuppressWarnings({"unchecked"})
     final List<String> fields = (List<String>) jsonRequestMap.get("fields");
     for (String fieldName : fieldNames) {
       fields.add(fieldName);
@@ -364,6 +370,7 @@ public class JsonQueryRequest extends QueryRequest {
     }
 
     jsonRequestMap.putIfAbsent("fields", new ArrayList<String>());
+    @SuppressWarnings({"unchecked"})
     final List<String> fields = (List<String>) jsonRequestMap.get("fields");
     for (String fieldName : fieldNames) {
       fields.add(fieldName);
@@ -387,6 +394,7 @@ public class JsonQueryRequest extends QueryRequest {
    *
    * @throws IllegalArgumentException if either {@code name} or {@code value} are null
    */
+  @SuppressWarnings({"unchecked"})
   public JsonQueryRequest withParam(String name, Object value) {
     if (name == null) {
       throw new IllegalArgumentException("'name' parameter must be non-null");

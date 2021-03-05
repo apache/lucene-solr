@@ -294,6 +294,7 @@
     </lst>
   </searchComponent>
 
+    <!-- This is now part of the implicit configuration together with terms=true and distrib=false defaults
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
 
   <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
@@ -301,6 +302,7 @@
       <str>termsComp</str>
     </arr>
   </requestHandler>
+  -->
   
   
   <!--
@@ -544,7 +546,7 @@
   </restManager>
 
   <!-- warning: not a best practice; requests generally ought to be explicit to thus not require this -->
-  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants,/terms">
+  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

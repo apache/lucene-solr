@@ -74,8 +74,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     configureCluster(1).configure();
     solrClient = getCloudSolrClient(cluster);
     //log this to help debug potential causes of problems
-    log.info("SolrClient: {}", solrClient);
-    log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider());
+    if (log.isInfoEnabled()) {
+      log.info("SolrClient: {}", solrClient);
+      log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // nowarn
+    }
   }
 
   @After
@@ -135,8 +137,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, 20,
-        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(12))
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1))
         .process(solrClient);
     addDocsAndCommit(true,
         newDoc(somethingInChinese),
@@ -190,8 +191,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, 20,
-        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1))
         .process(solrClient);
 
     // now we index a document
@@ -256,8 +256,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
-        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1))
         .setMustMatch(mustMatchRegex)
         .process(solrClient);
 
@@ -296,8 +295,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     SolrException e = expectThrows(SolrException.class, () -> CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
-        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1))
         .setMustMatch(mustMatchRegex)
         .process(solrClient)
     );
@@ -330,8 +328,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     assertTrue("ConfigNames should include :" + expectedConfigSetNames, retrievedConfigSetNames.containsAll(expectedConfigSetNames));
 
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, maxCardinality,
-        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1)
-            .setMaxShardsPerNode(2))
+        CollectionAdminRequest.createCollection("_unused_", configName, 1, 1))
         .process(solrClient);
 
     // now we index a document
@@ -369,8 +366,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     final int numShards = 1 + random().nextInt(4);
     final int numReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCategoryRoutedAlias(getAlias(), categoryField, 20,
-        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
-            .setMaxShardsPerNode(numReplicas*numShards))
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas))
         .process(solrClient);
 
     // cause some collections to be created

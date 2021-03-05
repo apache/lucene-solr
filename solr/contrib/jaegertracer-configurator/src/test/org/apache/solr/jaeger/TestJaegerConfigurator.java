@@ -69,8 +69,10 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testRequiredParameters() throws IOException {
     JaegerTracerConfigurator configurator = new JaegerTracerConfigurator();
+    @SuppressWarnings({"rawtypes"})
     NamedList initArgs = new NamedList();
     IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(AGENT_HOST) || exc.getMessage().contains(AGENT_PORT));
@@ -92,8 +94,10 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testIncorrectFormat() {
     JaegerTracerConfigurator configurator = new JaegerTracerConfigurator();
+    @SuppressWarnings({"rawtypes"})
     NamedList initArgs = new NamedList();
     initArgs.add(AGENT_HOST, 100);
     initArgs.add(AGENT_PORT, 5775);

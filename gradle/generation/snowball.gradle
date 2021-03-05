@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.taskdefs.condition.Os
+
 apply plugin: "de.undercouch.download"
 
 configure(rootProject) {
@@ -29,11 +31,11 @@ configure(rootProject) {
 configure(project(":lucene:analysis:common")) {
   ext {
     // git commit hash of source code https://github.com/snowballstem/snowball/
-    snowballStemmerCommit = "53739a805cfa6c77ff8496dc711dc1c106d987c1"
+    snowballStemmerCommit = "d8cf01ddf37a9c74a78ada44531c08f7952f2a39"
     // git commit hash of stopwords https://github.com/snowballstem/snowball-website
-    snowballWebsiteCommit = "ff891e74f08e7315523ee3c0cad55bb1b7831b9d"
+    snowballWebsiteCommit = "ee7cee9bc52f22802f21e94f42d887b0dfa7d2a8"
     // git commit hash of test data https://github.com/snowballstem/snowball-data
-    snowballDataCommit    = "9145f8732ec952c8a3d1066be251da198a8bc792"
+    snowballDataCommit    = "35461050d8f81e8aeac26e38f8a8dbf1afb82721"
 
     snowballWorkDir    = file("${buildDir}/snowball")
 
@@ -99,6 +101,10 @@ configure(project(":lucene:analysis:common")) {
     dependsOn downloadSnowballData
 
     doLast {
+      if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        throw GradleException("Snowball generation does not work on Windows, use a platform where bash is available.")
+      }
+
       project.exec {
         executable "bash"
         args = [snowballScript, snowballStemmerDir, snowballWebsiteDir, snowballDataDir, projectDir]

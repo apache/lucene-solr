@@ -37,6 +37,7 @@ public class GaussFitEvaluator extends RecursiveNumericEvaluator implements Many
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object doWork(Object... objects) throws IOException{
 
     if(objects.length >= 3) {

@@ -311,9 +311,7 @@ public class SolrSnapshotMetaDataManager {
         solrCore.getDirectoryFactory().release(d);
       }
     } else {
-      if (log.isWarnEnabled()) {
-        log.warn("Commit with name {} is not persisted for core {}", commitName, solrCore.getName());
-      }
+      log.warn("Commit with name {} is not persisted for core {}", commitName, solrCore.getName());
     }
 
     return result;

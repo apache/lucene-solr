@@ -62,6 +62,6 @@ public class TestLatLonShapeEncoding extends BaseShapeEncodingTestCase {
 
   @Override
   protected Component2D createPolygon2D(Object polygon) {
-    return LatLonGeometry.create((Polygon)polygon);
+    return LatLonGeometry.create((Polygon) polygon);
   }
 }

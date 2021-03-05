@@ -88,6 +88,8 @@ public class FileFloatSource extends ValueSource {
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
+
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
@@ -165,29 +167,34 @@ public class FileFloatSource extends ValueSource {
 
   /** Internal cache. (from lucene FieldCache) */
   abstract static class Cache {
+    @SuppressWarnings({"rawtypes"})
     private final Map readerCache = new WeakHashMap();
 
     protected abstract Object createValue(IndexReader reader, Object key);
 
+    @SuppressWarnings({"unchecked"})
     public void refresh(IndexReader reader, Object key) {
       Object refreshedValues = createValue(reader, key);
       synchronized (readerCache) {
+        @SuppressWarnings({"rawtypes"})
         Map innerCache = (Map) readerCache.get(reader);
         if (innerCache == null) {
-          innerCache = new HashMap();
+          innerCache = new HashMap<>();
           readerCache.put(reader, innerCache);
         }
         innerCache.put(key, refreshedValues);
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     public Object get(IndexReader reader, Object key) {
+      @SuppressWarnings({"rawtypes"})
       Map innerCache;
       Object value;
       synchronized (readerCache) {
         innerCache = (Map) readerCache.get(reader);
         if (innerCache == null) {
-          innerCache = new HashMap();
+          innerCache = new HashMap<>();
           readerCache.put(reader, innerCache);
           value = null;
         } else {
@@ -305,10 +312,8 @@ public class FileFloatSource extends ValueSource {
           fval=Float.parseFloat(val);
         } catch (Exception e) {
           if (++otherErrors<=10) {
-            if (log.isErrorEnabled()) {
-              log.error("Error loading external value source + fileName + " + e
-                  + (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
-            }
+            log.error("Error loading external value source + fileName + {}{}", e
+                , (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
           }
           continue;  // go to next line in file.. leave values as default.
         }
@@ -336,12 +341,10 @@ public class FileFloatSource extends ValueSource {
       // exceptions that happened in the loop
       try{r.close();}catch(Exception e){}
     }
-
     if (log.isInfoEnabled()) {
-      log.info("Loaded external value source " + fname
-          + (notFoundCount == 0 ? "" : " :" + notFoundCount + " missing keys " + notFound));
+      String tmp = (notFoundCount == 0 ? "" : " :" + notFoundCount + " missing keys " + notFound);
+      log.info("Loaded external value source {}{}", fname, tmp);
     }
-
     return vals;
   }
 

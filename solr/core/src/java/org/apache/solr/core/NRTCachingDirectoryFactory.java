@@ -36,6 +36,7 @@ public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   private double maxCachedMB = DEFAULT_MAX_CACHED_MB;
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void init(NamedList args) {
     super.init(args);
     SolrParams params = args.toSolrParams();

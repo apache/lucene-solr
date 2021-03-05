@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -29,6 +30,7 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 
 
 public class NodeConfig {
+  // all Path fields here are absolute and normalized.
 
   private final String nodeName;
 
@@ -40,11 +42,15 @@ public class NodeConfig {
   
   private final Path configSetBaseDirectory;
 
+  private final Set<Path> allowPaths;
+
   private final String sharedLibDirectory;
 
   private final PluginInfo shardHandlerFactoryConfig;
 
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
+
+  private final String configSetServiceClass;
 
   private final String coreAdminHandlerClass;
 
@@ -83,6 +89,8 @@ public class NodeConfig {
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper connection later
   // If it becomes necessary to track multiple potential sources in the future, replace this with an Enum
   private final boolean fromZookeeper;
+  private final String defaultZkHost;
+
 
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
                      Path configSetBaseDirectory, String sharedLibDirectory,
@@ -94,7 +102,8 @@ public class NodeConfig {
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
-                     boolean fromZookeeper) {
+                     boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths,String configSetServiceClass) {
+    // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.solrDataHome = solrDataHome;
@@ -123,21 +132,32 @@ public class NodeConfig {
     this.transientCacheConfig = transientCacheConfig;
     this.tracerConfig = tracerConfig;
     this.fromZookeeper = fromZookeeper;
+    this.defaultZkHost = defaultZkHost;
+    this.allowPaths = allowPaths;
+    this.configSetServiceClass = configSetServiceClass;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "SolrCloud requires a value of at least 2 for coreLoadThreads (configured value = " + this.coreLoadThreads + ")");
     }
+    if (null == this.solrHome) throw new NullPointerException("solrHome");
+    if (null == this.loader) throw new NullPointerException("loader");
+  }
+
+  public String getConfigSetServiceClass() {
+    return this.configSetServiceClass;
   }
 
   public String getNodeName() {
     return nodeName;
   }
 
+  /** Absolute. */
   public Path getCoreRootDirectory() {
     return coreRootDirectory;
   }
 
+  /** Absolute. */
   public Path getSolrDataHome() {
     return solrDataHome;
   }
@@ -208,6 +228,7 @@ public class NodeConfig {
     return managementPath;
   }
 
+  /** Absolute. */
   public Path getConfigSetBaseDirectory() {
     return configSetBaseDirectory;
   }
@@ -254,12 +275,42 @@ public class NodeConfig {
     return tracerConfig;
   }
 
+  /** 
+   * True if this node config was loaded from zookeeper
+   * @see #getDefaultZkHost
+   */
   public boolean isFromZookeeper() {
     return fromZookeeper;
   }
+  
+  /** 
+   * This method returns the default "zkHost" value for this node -- either read from the system properties, 
+   * or from the "extra" properties configured explicitly on the SolrDispatchFilter; or null if not specified.
+   *
+   * This is the value that would have been used when attempting locate the solr.xml in ZooKeeper (regardless of wether
+   * the file was actaully loaded from ZK or from local disk)
+   * 
+   * (This value should only be used for "accounting" purposes to track where the node config came from if 
+   * it <em>was</em> loaded from zk -- ie: to check if the chroot has already been applied.
+   * It may be different from the "zkHost" <em>configured</em> in the "cloud" section of the solr.xml,
+   * which should be used for all zk connections made by this node to participate in the cluster)
+   *
+   * @see #isFromZookeeper
+   * @see #getCloudConfig()
+   * @see CloudConfig#getZkHost()
+   */
+  public String getDefaultZkHost() {
+    return defaultZkHost;
+  }
+
+  /**
+   * Extra file paths that will be allowed for core creation, in addition to
+   * SOLR_HOME, SOLR_DATA_HOME and coreRootDir
+   */
+  public Set<Path> getAllowPaths() { return allowPaths; }
 
   public static class NodeConfigBuilder {
-
+    // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
     private Path solrDataHome;
@@ -268,6 +319,7 @@ public class NodeConfig {
     private String sharedLibDirectory;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
+    private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
     private String healthCheckHandlerClass = DEFAULT_HEALTHCHECKHANDLERCLASS;
@@ -288,6 +340,8 @@ public class NodeConfig {
     private PluginInfo transientCacheConfig;
     private PluginInfo tracerConfig;
     private boolean fromZookeeper = false;
+    private String defaultZkHost;
+    private Set<Path> allowPaths = Collections.emptySet();
 
     private final Path solrHome;
     private final String nodeName;
@@ -314,26 +368,23 @@ public class NodeConfig {
 
     public NodeConfigBuilder(String nodeName, Path solrHome) {
       this.nodeName = nodeName;
-      this.solrHome = solrHome;
+      this.solrHome = solrHome.toAbsolutePath();
       this.coreRootDirectory = solrHome;
       // always init from sysprop because <solrDataHome> config element may be missing
-      String dataHomeProperty = System.getProperty(SolrXmlConfig.SOLR_DATA_HOME);
-      if (dataHomeProperty != null && !dataHomeProperty.isEmpty()) {
-        solrDataHome = solrHome.resolve(dataHomeProperty);
-      }
-      this.configSetBaseDirectory = solrHome.resolve("configsets");
+      setSolrDataHome(System.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
+      setConfigSetBaseDirectory("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
-      this.coreRootDirectory = solrHome.resolve(coreRootDirectory);
+      this.coreRootDirectory = solrHome.resolve(coreRootDirectory).normalize();
       return this;
     }
 
     public NodeConfigBuilder setSolrDataHome(String solrDataHomeString) {
       // keep it null unless explicitly set to non-empty value
       if (solrDataHomeString != null && !solrDataHomeString.isEmpty()) {
-        this.solrDataHome = solrHome.resolve(solrDataHomeString);
+        this.solrDataHome = solrHome.resolve(solrDataHomeString).normalize();
       }
       return this;
     }
@@ -454,6 +505,21 @@ public class NodeConfig {
       this.fromZookeeper = fromZookeeper;
       return this;
     }
+    
+    public NodeConfigBuilder setDefaultZkHost(String defaultZkHost) {
+      this.defaultZkHost = defaultZkHost;
+      return this;
+    }
+
+    public NodeConfigBuilder setAllowPaths(Set<Path> paths) {
+      this.allowPaths = paths;
+      return this;
+    }
+
+    public NodeConfigBuilder setConfigSetServiceClass(String configSetServiceClass){
+      this.configSetServiceClass = configSetServiceClass;
+      return this;
+    }
 
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field declaration
@@ -465,7 +531,7 @@ public class NodeConfig {
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper, defaultZkHost, allowPaths, configSetServiceClass);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongRange;
 import org.apache.lucene.index.IndexReader;
@@ -25,10 +24,9 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Random testing for LongRange Queries.
- */
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+/** Random testing for LongRange Queries. */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "longRangeField";
 
@@ -60,7 +58,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     long[] max = new long[dimensions];
 
     long minV, maxV;
-    for (int d=0; d<dimensions; ++d) {
+    for (int d = 0; d < dimensions; ++d) {
       minV = nextLongInternal();
       maxV = nextLongInternal();
       min[d] = Math.min(minV, maxV);
@@ -71,27 +69,28 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
   @Override
   protected LongRange newRangeField(Range r) {
-    return new LongRange(FIELD_NAME, ((LongTestRange)r).min, ((LongTestRange)r).max);
+    return new LongRange(FIELD_NAME, ((LongTestRange) r).min, ((LongTestRange) r).max);
   }
 
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return LongRange.newIntersectsQuery(FIELD_NAME, ((LongTestRange)r).min, ((LongTestRange)r).max);
+    return LongRange.newIntersectsQuery(
+        FIELD_NAME, ((LongTestRange) r).min, ((LongTestRange) r).max);
   }
 
   @Override
   protected Query newContainsQuery(Range r) {
-    return LongRange.newContainsQuery(FIELD_NAME, ((LongTestRange)r).min, ((LongTestRange)r).max);
+    return LongRange.newContainsQuery(FIELD_NAME, ((LongTestRange) r).min, ((LongTestRange) r).max);
   }
 
   @Override
   protected Query newWithinQuery(Range r) {
-    return LongRange.newWithinQuery(FIELD_NAME, ((LongTestRange)r).min, ((LongTestRange)r).max);
+    return LongRange.newWithinQuery(FIELD_NAME, ((LongTestRange) r).min, ((LongTestRange) r).max);
   }
 
   @Override
   protected Query newCrossesQuery(Range r) {
-    return LongRange.newCrossesQuery(FIELD_NAME, ((LongTestRange)r).min, ((LongTestRange)r).max);
+    return LongRange.newCrossesQuery(FIELD_NAME, ((LongTestRange) r).min, ((LongTestRange) r).max);
   }
 
   /** Basic test */
@@ -142,14 +141,22 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     // search
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(7, searcher.count(LongRange.newIntersectsQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
-    assertEquals(3, searcher.count(LongRange.newWithinQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
-    assertEquals(2, searcher.count(LongRange.newContainsQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
-    assertEquals(4, searcher.count(LongRange.newCrossesQuery(FIELD_NAME,
-        new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(
+        7,
+        searcher.count(
+            LongRange.newIntersectsQuery(FIELD_NAME, new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(
+        3,
+        searcher.count(
+            LongRange.newWithinQuery(FIELD_NAME, new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(
+        2,
+        searcher.count(
+            LongRange.newContainsQuery(FIELD_NAME, new long[] {-11, -15}, new long[] {15, 20})));
+    assertEquals(
+        4,
+        searcher.count(
+            LongRange.newCrossesQuery(FIELD_NAME, new long[] {-11, -15}, new long[] {15, 20})));
 
     reader.close();
     writer.close();
@@ -181,7 +188,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMin(int dim, Object val) {
-      long v = (Long)val;
+      long v = (Long) val;
       if (min[dim] < v) {
         max[dim] = v;
       } else {
@@ -196,7 +203,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMax(int dim, Object val) {
-      long v = (Long)val;
+      long v = (Long) val;
       if (max[dim] > v) {
         min[dim] = v;
       } else {
@@ -206,14 +213,14 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isEqual(Range other) {
-      LongTestRange o = (LongTestRange)other;
+      LongTestRange o = (LongTestRange) other;
       return Arrays.equals(min, o.min) && Arrays.equals(max, o.max);
     }
 
     @Override
     protected boolean isDisjoint(Range o) {
-      LongTestRange other = (LongTestRange)o;
-      for (int d=0; d<this.min.length; ++d) {
+      LongTestRange other = (LongTestRange) o;
+      for (int d = 0; d < this.min.length; ++d) {
         if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
           // disjoint:
           return true;
@@ -224,8 +231,8 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isWithin(Range o) {
-      LongTestRange other = (LongTestRange)o;
-      for (int d=0; d<this.min.length; ++d) {
+      LongTestRange other = (LongTestRange) o;
+      for (int d = 0; d < this.min.length; ++d) {
         if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
           // not within:
           return false;
@@ -237,7 +244,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     @Override
     protected boolean contains(Range o) {
       LongTestRange other = (LongTestRange) o;
-      for (int d=0; d<this.min.length; ++d) {
+      for (int d = 0; d < this.min.length; ++d) {
         if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
           // not contains:
           return false;
@@ -253,7 +260,7 @@ public class TestLongRangeFieldQueries extends BaseRangeFieldQueryTestCase {
       b.append(min[0]);
       b.append(" TO ");
       b.append(max[0]);
-      for (int d=1; d<min.length; ++d) {
+      for (int d = 1; d < min.length; ++d) {
         b.append(", ");
         b.append(min[d]);
         b.append(" TO ");

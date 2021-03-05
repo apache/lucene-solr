@@ -26,12 +26,12 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.parser.CharStream;
 import org.apache.solr.parser.ParseException;
 import org.apache.solr.parser.SolrQueryParserBase;
 import org.apache.solr.request.SolrQueryRequest;

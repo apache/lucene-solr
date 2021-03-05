@@ -18,15 +18,14 @@ package org.apache.lucene.analysis.ko.dict;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
@@ -34,16 +33,13 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 
-/**
- * Base class for a binary-encoded in-memory dictionary.
- */
+/** Base class for a binary-encoded in-memory dictionary. */
 public abstract class BinaryDictionary implements Dictionary {
 
-  /**
-   * Used to specify where (dictionary) resources get loaded from.
-   */
+  /** Used to specify where (dictionary) resources get loaded from. */
   public enum ResourceScheme {
-    CLASSPATH, FILE
+    CLASSPATH,
+    FILE
   }
 
   public static final String TARGETMAP_FILENAME_SUFFIX = "$targetMap.dat";
@@ -67,14 +63,16 @@ public abstract class BinaryDictionary implements Dictionary {
 
   /**
    * @param resourceScheme - scheme for loading resources (FILE or CLASSPATH).
-   * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH scheme only, use
-   * this class's name as the path.
+   * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH
+   *     scheme only, use this class's name as the path.
    */
-  protected BinaryDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+  protected BinaryDictionary(ResourceScheme resourceScheme, String resourcePath)
+      throws IOException {
     this.resourceScheme = resourceScheme;
     if (resourcePath == null) {
       if (resourceScheme != ResourceScheme.CLASSPATH) {
-        throw new IllegalArgumentException("resourcePath must be supplied with FILE resource scheme");
+        throw new IllegalArgumentException(
+            "resourcePath must be supplied with FILE resource scheme");
       }
       this.resourcePath = getClass().getName().replace('.', '/');
     } else {
@@ -101,11 +99,16 @@ public abstract class BinaryDictionary implements Dictionary {
         targetMap[ofs] = accum;
       }
       if (sourceId + 1 != targetMapOffsets.length)
-        throw new IOException("targetMap file format broken; targetMap.length=" + targetMap.length
-            + ", targetMapOffsets.length=" + targetMapOffsets.length
-            + ", sourceId=" + sourceId);
+        throw new IOException(
+            "targetMap file format broken; targetMap.length="
+                + targetMap.length
+                + ", targetMapOffsets.length="
+                + targetMapOffsets.length
+                + ", sourceId="
+                + sourceId);
       targetMapOffsets[sourceId] = targetMap.length;
-      mapIS.close(); mapIS = null;
+      mapIS.close();
+      mapIS = null;
 
       posIS = getResource(POSDICT_FILENAME_SUFFIX);
       posIS = new BufferedInputStream(posIS);
@@ -116,7 +119,8 @@ public abstract class BinaryDictionary implements Dictionary {
       for (int j = 0; j < posSize; j++) {
         posDict[j] = POS.resolveTag(in.readByte());
       }
-      posIS.close(); posIS = null;
+      posIS.close();
+      posIS = null;
 
       dictIS = getResource(DICT_FILENAME_SUFFIX);
       // no buffering here, as we load in one large buffer
@@ -129,7 +133,8 @@ public abstract class BinaryDictionary implements Dictionary {
       if (read != size) {
         throw new EOFException("Cannot read whole dictionary");
       }
-      dictIS.close(); dictIS = null;
+      dictIS.close();
+      dictIS = null;
       buffer = tmpBuffer.asReadOnlyBuffer();
     } finally {
       IOUtils.closeWhileHandlingException(mapIS, posIS, dictIS);
@@ -139,9 +144,9 @@ public abstract class BinaryDictionary implements Dictionary {
     this.targetMapOffsets = targetMapOffsets;
     this.buffer = buffer;
   }
-  
+
   protected final InputStream getResource(String suffix) throws IOException {
-    switch(resourceScheme) {
+    switch (resourceScheme) {
       case CLASSPATH:
         return getClassResource(resourcePath + suffix);
       case FILE:
@@ -152,7 +157,7 @@ public abstract class BinaryDictionary implements Dictionary {
   }
 
   public static InputStream getResource(ResourceScheme scheme, String path) throws IOException {
-    switch(scheme) {
+    switch (scheme) {
       case CLASSPATH:
         return getClassResource(path);
       case FILE:
@@ -166,7 +171,8 @@ public abstract class BinaryDictionary implements Dictionary {
   public static InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
     final InputStream is = clazz.getResourceAsStream(clazz.getSimpleName() + suffix);
     if (is == null) {
-      throw new FileNotFoundException("Not in classpath: " + clazz.getName().replace('.', '/') + suffix);
+      throw new FileNotFoundException(
+          "Not in classpath: " + clazz.getName().replace('.', '/') + suffix);
     }
     return is;
   }
@@ -190,15 +196,15 @@ public abstract class BinaryDictionary implements Dictionary {
   public int getLeftId(int wordId) {
     return buffer.getShort(wordId) >>> 2;
   }
-  
+
   @Override
   public int getRightId(int wordId) {
-    return buffer.getShort(wordId+2) >>> 2; // Skip left id
+    return buffer.getShort(wordId + 2) >>> 2; // Skip left id
   }
-  
+
   @Override
   public int getWordCost(int wordId) {
-    return buffer.getShort(wordId + 4);  // Skip left and right id
+    return buffer.getShort(wordId + 4); // Skip left and right id
   }
 
   @Override
@@ -258,7 +264,7 @@ public abstract class BinaryDictionary implements Dictionary {
         offset += form.length() * 2 + 1;
       } else {
         int formLen = buffer.get(offset++);
-        form = new String(surfaceForm, off+surfaceOffset, formLen);
+        form = new String(surfaceForm, off + surfaceOffset, formLen);
         surfaceOffset += formLen;
       }
       morphemes[i] = new Morpheme(tag, form);
@@ -271,17 +277,17 @@ public abstract class BinaryDictionary implements Dictionary {
     int len = buffer.get(strOffset++);
     char[] text = new char[len];
     for (int i = 0; i < len; i++) {
-      text[i] = buffer.getChar(strOffset + (i<<1));
+      text[i] = buffer.getChar(strOffset + (i << 1));
     }
     return new String(text);
   }
 
   private boolean hasSinglePOS(int wordId) {
-    return (buffer.getShort(wordId+2) & HAS_SINGLE_POS) != 0;
+    return (buffer.getShort(wordId + 2) & HAS_SINGLE_POS) != 0;
   }
 
   private boolean hasReadingData(int wordId) {
-    return (buffer.getShort(wordId+2) & HAS_READING) != 0;
+    return (buffer.getShort(wordId + 2) & HAS_READING) != 0;
   }
 
   /** flag that the entry has a single part of speech (leftPOS) */

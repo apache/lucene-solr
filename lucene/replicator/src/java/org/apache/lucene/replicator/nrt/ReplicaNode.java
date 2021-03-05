@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
@@ -53,10 +52,12 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
-/** Replica node, that pulls index changes from the primary node by copying newly flushed or merged index files.
- * 
- *  @lucene.experimental */
-
+/**
+ * Replica node, that pulls index changes from the primary node by copying newly flushed or merged
+ * index files.
+ *
+ * @lucene.experimental
+ */
 public abstract class ReplicaNode extends Node {
 
   ReplicaFileDeleter deleter;
@@ -82,11 +83,14 @@ public abstract class ReplicaNode extends Node {
   /** Primary gen last time we successfully replicated: */
   protected long lastPrimaryGen;
 
-  public ReplicaNode(int id, Directory dir, SearcherFactory searcherFactory, PrintStream printStream) throws IOException {
+  public ReplicaNode(
+      int id, Directory dir, SearcherFactory searcherFactory, PrintStream printStream)
+      throws IOException {
     super(id, dir, searcherFactory, printStream);
 
     if (dir.getPendingDeletions().isEmpty() == false) {
-      throw new IllegalArgumentException("Directory " + dir + " still has pending deleted files; cannot initialize IndexWriter");
+      throw new IllegalArgumentException(
+          "Directory " + dir + " still has pending deleted files; cannot initialize IndexWriter");
     }
 
     boolean success = false;
@@ -94,9 +98,10 @@ public abstract class ReplicaNode extends Node {
     try {
       message("top: init replica dir=" + dir);
 
-      // Obtain a write lock on this index since we "act like" an IndexWriter, to prevent any other IndexWriter or ReplicaNode from using it:
+      // Obtain a write lock on this index since we "act like" an IndexWriter, to prevent any other
+      // IndexWriter or ReplicaNode from using it:
       writeFileLock = dir.obtainLock(IndexWriter.WRITE_LOCK_NAME);
-      
+
       state = "init";
       deleter = new ReplicaFileDeleter(this, dir);
       success = true;
@@ -111,7 +116,10 @@ public abstract class ReplicaNode extends Node {
     }
   }
 
-  /** Start up this replica, which possibly requires heavy copying of files from the primary node, if we were down for a long time */
+  /**
+   * Start up this replica, which possibly requires heavy copying of files from the primary node, if
+   * we were down for a long time
+   */
   protected synchronized void start(long curPrimaryGen) throws IOException {
 
     if (state.equals("init") == false) {
@@ -124,13 +132,18 @@ public abstract class ReplicaNode extends Node {
       // Figure out what state our local index is in now:
       String segmentsFileName = SegmentInfos.getLastCommitSegmentsFileName(dir);
 
-      // Also look for any pending_segments_N, in case we crashed mid-commit.  We must "inflate" our infos gen to at least this, since
-      // otherwise we may wind up re-using the pending_segments_N file name on commit, and then our deleter can get angry because it still
+      // Also look for any pending_segments_N, in case we crashed mid-commit.  We must "inflate" our
+      // infos gen to at least this, since
+      // otherwise we may wind up re-using the pending_segments_N file name on commit, and then our
+      // deleter can get angry because it still
       // wants to delete this file:
       long maxPendingGen = -1;
-      for(String fileName : dir.listAll()) {
+      for (String fileName : dir.listAll()) {
         if (fileName.startsWith(IndexFileNames.PENDING_SEGMENTS)) {
-          long gen = Long.parseLong(fileName.substring(IndexFileNames.PENDING_SEGMENTS.length()+1), Character.MAX_RADIX);
+          long gen =
+              Long.parseLong(
+                  fileName.substring(IndexFileNames.PENDING_SEGMENTS.length() + 1),
+                  Character.MAX_RADIX);
           if (gen > maxPendingGen) {
             maxPendingGen = gen;
           }
@@ -162,7 +175,8 @@ public abstract class ReplicaNode extends Node {
 
       message("top: delete unknown files on init: all files=" + Arrays.toString(dir.listAll()));
       deleter.deleteUnknownFiles(segmentsFileName);
-      message("top: done delete unknown files on init: all files=" + Arrays.toString(dir.listAll()));
+      message(
+          "top: done delete unknown files on init: all files=" + Arrays.toString(dir.listAll()));
 
       String s = infos.getUserData().get(PRIMARY_GEN_KEY);
       long myPrimaryGen;
@@ -180,21 +194,28 @@ public abstract class ReplicaNode extends Node {
 
         assert myPrimaryGen < curPrimaryGen;
 
-        // Primary changed while we were down.  In this case, we must sync from primary before opening a reader, because it's possible current
-        // files we have will need to be overwritten with different ones (if index rolled back and "forked"), and we can't overwrite open
+        // Primary changed while we were down.  In this case, we must sync from primary before
+        // opening a reader, because it's possible current
+        // files we have will need to be overwritten with different ones (if index rolled back and
+        // "forked"), and we can't overwrite open
         // files on Windows:
 
         final long initSyncStartNS = System.nanoTime();
 
-        message("top: init: primary changed while we were down myPrimaryGen=" + myPrimaryGen +
-                " vs curPrimaryGen=" + curPrimaryGen +
-                "; sync now before mgr init");
+        message(
+            "top: init: primary changed while we were down myPrimaryGen="
+                + myPrimaryGen
+                + " vs curPrimaryGen="
+                + curPrimaryGen
+                + "; sync now before mgr init");
 
         // Try until we succeed in copying over the latest NRT point:
         CopyJob job = null;
 
-        // We may need to overwrite files referenced by our latest commit, either right now on initial sync, or on a later sync.  To make
-        // sure the index is never even in an "apparently" corrupt state (where an old segments_N references invalid files) we forcefully
+        // We may need to overwrite files referenced by our latest commit, either right now on
+        // initial sync, or on a later sync.  To make
+        // sure the index is never even in an "apparently" corrupt state (where an old segments_N
+        // references invalid files) we forcefully
         // remove the commit now, and refuse to start the replica if this delete fails:
         message("top: now delete starting commit point " + segmentsFileName);
 
@@ -203,9 +224,13 @@ public abstract class ReplicaNode extends Node {
         deleter.decRef(Collections.singleton(segmentsFileName));
 
         if (dir.getPendingDeletions().isEmpty() == false) {
-          // If e.g. virus checker blocks us from deleting, we absolutely cannot start this node else there is a definite window during
+          // If e.g. virus checker blocks us from deleting, we absolutely cannot start this node
+          // else there is a definite window during
           // which if we carsh, we cause corruption:
-          throw new RuntimeException("replica cannot start: existing segments file=" + segmentsFileName + " must be removed in order to start, but the file delete failed");
+          throw new RuntimeException(
+              "replica cannot start: existing segments file="
+                  + segmentsFileName
+                  + " must be removed in order to start, but the file delete failed");
         }
 
         // So we don't later try to decRef it (illegally) again:
@@ -213,17 +238,21 @@ public abstract class ReplicaNode extends Node {
         assert didRemove;
 
         while (true) {
-          job = newCopyJob("sync on startup replica=" + name() + " myVersion=" + infos.getVersion(),
-                           null,
-                           null,
-                           true,
-                           null);
+          job =
+              newCopyJob(
+                  "sync on startup replica=" + name() + " myVersion=" + infos.getVersion(),
+                  null,
+                  null,
+                  true,
+                  null);
           job.start();
 
           message("top: init: sync sis.version=" + job.getCopyState().version);
 
-          // Force this copy job to finish while we wait, now.  Note that this can be very time consuming!
-          // NOTE: newNRTPoint detects we are still in init (mgr is null) and does not cancel our copy if a flush happens
+          // Force this copy job to finish while we wait, now.  Note that this can be very time
+          // consuming!
+          // NOTE: newNRTPoint detects we are still in init (mgr is null) and does not cancel our
+          // copy if a flush happens
           try {
             job.runBlocking();
             job.finish();
@@ -244,9 +273,9 @@ public abstract class ReplicaNode extends Node {
         lastPrimaryGen = job.getCopyState().primaryGen;
         byte[] infosBytes = job.getCopyState().infosBytes;
 
-        SegmentInfos syncInfos = SegmentInfos.readCommit(dir,
-                                                         toIndexInput(job.getCopyState().infosBytes),
-                                                         job.getCopyState().gen);
+        SegmentInfos syncInfos =
+            SegmentInfos.readCommit(
+                dir, toIndexInput(job.getCopyState().infosBytes), job.getCopyState().gen);
 
         // Must always commit to a larger generation than what's currently in the index:
         syncInfos.updateGeneration(infos);
@@ -264,11 +293,14 @@ public abstract class ReplicaNode extends Node {
 
         message("top: init: set lastNRTFiles=" + lastNRTFiles);
         lastFileMetaData = job.getCopyState().files;
-        message(String.format(Locale.ROOT, "top: %d: start: done sync: took %.3fs for %s, opened NRT reader version=%d",
-                              id,
-                              (System.nanoTime()-initSyncStartNS)/1000000000.0,
-                              bytesToString(job.getTotalBytesCopied()),
-                              job.getCopyState().version));
+        message(
+            String.format(
+                Locale.ROOT,
+                "top: %d: start: done sync: took %.3fs for %s, opened NRT reader version=%d",
+                id,
+                (System.nanoTime() - initSyncStartNS) / 1000000000.0,
+                bytesToString(job.getTotalBytesCopied()),
+                job.getCopyState().version));
 
         doCommit = true;
       } else {
@@ -278,11 +310,13 @@ public abstract class ReplicaNode extends Node {
       }
 
       if (infos.getGeneration() < maxPendingGen) {
-        message("top: move infos generation from " + infos.getGeneration() + " to " + maxPendingGen);
+        message(
+            "top: move infos generation from " + infos.getGeneration() + " to " + maxPendingGen);
         infos.setNextWriteGeneration(maxPendingGen);
       }
 
-      // Notify primary we started, to give it a chance to send any warming merges our way to reduce NRT latency of first sync:
+      // Notify primary we started, to give it a chance to send any warming merges our way to reduce
+      // NRT latency of first sync:
       sendNewReplica();
 
       // Finally, we are open for business, since our index now "agrees" with the primary:
@@ -290,7 +324,8 @@ public abstract class ReplicaNode extends Node {
 
       // Must commit after init mgr:
       if (doCommit) {
-        // Very important to commit what we just sync'd over, because we removed the pre-existing commit point above if we had to
+        // Very important to commit what we just sync'd over, because we removed the pre-existing
+        // commit point above if we had to
         // overwrite any files it referenced:
         commit();
       }
@@ -307,14 +342,13 @@ public abstract class ReplicaNode extends Node {
       throw IOUtils.rethrowAlways(t);
     }
   }
-  
+
   final Object commitLock = new Object();
 
   @Override
   public void commit() throws IOException {
 
-    synchronized(commitLock) {
-
+    synchronized (commitLock) {
       SegmentInfos infos;
       Collection<String> indexFiles;
 
@@ -324,12 +358,18 @@ public abstract class ReplicaNode extends Node {
         deleter.incRef(indexFiles);
       }
 
-      message("top: commit primaryGen=" + lastPrimaryGen + " infos=" + infos.toString() + " files=" + indexFiles);
+      message(
+          "top: commit primaryGen="
+              + lastPrimaryGen
+              + " infos="
+              + infos.toString()
+              + " files="
+              + indexFiles);
 
       // fsync all index files we are now referencing
       dir.sync(indexFiles);
 
-      Map<String,String> commitData = new HashMap<>();
+      Map<String, String> commitData = new HashMap<>();
       commitData.put(PRIMARY_GEN_KEY, Long.toString(lastPrimaryGen));
       commitData.put(VERSION_KEY, Long.toString(getCurrentSearchingVersion()));
       infos.setUserData(commitData, false);
@@ -337,13 +377,22 @@ public abstract class ReplicaNode extends Node {
       // write and fsync a new segments_N
       infos.commit(dir);
 
-      // Notify current infos (which may have changed while we were doing dir.sync above) what generation we are up to; this way future
+      // Notify current infos (which may have changed while we were doing dir.sync above) what
+      // generation we are up to; this way future
       // commits are guaranteed to go to the next (unwritten) generations:
       if (mgr != null) {
         ((SegmentInfosSearcherManager) mgr).getCurrentInfos().updateGeneration(infos);
       }
       String segmentsFileName = infos.getSegmentsFileName();
-      message("top: commit wrote segments file " + segmentsFileName + " version=" + infos.getVersion() + " sis=" + infos.toString() + " commitData=" + commitData);
+      message(
+          "top: commit wrote segments file "
+              + segmentsFileName
+              + " version="
+              + infos.getVersion()
+              + " sis="
+              + infos.toString()
+              + " commitData="
+              + commitData);
       deleter.incRef(Collections.singletonList(segmentsFileName));
       message("top: commit decRef lastCommitFiles=" + lastCommitFiles);
       deleter.decRef(lastCommitFiles);
@@ -356,13 +405,18 @@ public abstract class ReplicaNode extends Node {
 
   protected void finishNRTCopy(CopyJob job, long startNS) throws IOException {
     CopyState copyState = job.getCopyState();
-    message("top: finishNRTCopy: version=" + copyState.version + (job.getFailed() ? " FAILED" : "") + " job=" + job);
+    message(
+        "top: finishNRTCopy: version="
+            + copyState.version
+            + (job.getFailed() ? " FAILED" : "")
+            + " job="
+            + job);
 
-    // NOTE: if primary crashed while we were still copying then the job will hit an exc trying to read bytes for the files from the primary node,
+    // NOTE: if primary crashed while we were still copying then the job will hit an exc trying to
+    // read bytes for the files from the primary node,
     // and the job will be marked as failed here:
 
     synchronized (this) {
-
       if ("syncing".equals(state)) {
         state = "idle";
       }
@@ -384,9 +438,8 @@ public abstract class ReplicaNode extends Node {
 
       // Turn byte[] back to SegmentInfos:
       byte[] infosBytes = copyState.infosBytes;
-      SegmentInfos infos = SegmentInfos.readCommit(dir,
-                                                   toIndexInput(copyState.infosBytes),
-                                                   copyState.gen);
+      SegmentInfos infos =
+          SegmentInfos.readCommit(dir, toIndexInput(copyState.infosBytes), copyState.gen);
       assert infos.getVersion() == copyState.version;
 
       message("  version=" + infos.getVersion() + " segments=" + infos.toString());
@@ -396,12 +449,14 @@ public abstract class ReplicaNode extends Node {
         ((SegmentInfosSearcherManager) mgr).setCurrentInfos(infos);
       }
 
-      // Must first incRef new NRT files, then decRef old ones, to make sure we don't remove an NRT file that's in common to both:
+      // Must first incRef new NRT files, then decRef old ones, to make sure we don't remove an NRT
+      // file that's in common to both:
       Collection<String> newFiles = copyState.files.keySet();
       message("top: incRef newNRTFiles=" + newFiles);
       deleter.incRef(newFiles);
 
-      // If any of our new files were previously copied merges, we clear them now, so we don't try to later delete a non-existent file:
+      // If any of our new files were previously copied merges, we clear them now, so we don't try
+      // to later delete a non-existent file:
       pendingMergeFiles.removeAll(newFiles);
       message("top: after remove from pending merges pendingMergeFiles=" + pendingMergeFiles);
 
@@ -411,12 +466,14 @@ public abstract class ReplicaNode extends Node {
       lastNRTFiles.addAll(newFiles);
       message("top: set lastNRTFiles=" + lastNRTFiles);
 
-      // At this point we can remove any completed merge segment files that we still do not reference.  This can happen when a merge
-      // finishes, copies its files out to us, but is then merged away (or dropped due to 100% deletions) before we ever cutover to it
+      // At this point we can remove any completed merge segment files that we still do not
+      // reference.  This can happen when a merge
+      // finishes, copies its files out to us, but is then merged away (or dropped due to 100%
+      // deletions) before we ever cutover to it
       // in an NRT point:
       if (copyState.completedMergeFiles.isEmpty() == false) {
         message("now remove-if-not-ref'd completed merge files: " + copyState.completedMergeFiles);
-        for(String fileName : copyState.completedMergeFiles) {
+        for (String fileName : copyState.completedMergeFiles) {
           if (pendingMergeFiles.contains(fileName)) {
             pendingMergeFiles.remove(fileName);
             deleter.deleteIfNoRef(fileName);
@@ -435,45 +492,64 @@ public abstract class ReplicaNode extends Node {
       mgr.release(s);
     }
 
-    message(String.format(Locale.ROOT, "top: done sync: took %.3fs for %s, opened NRT reader version=%d markerCount=%d",
-                          (System.nanoTime()-startNS)/1000000000.0,
-                          bytesToString(job.getTotalBytesCopied()),
-                          copyState.version,
-                          markerCount));
+    message(
+        String.format(
+            Locale.ROOT,
+            "top: done sync: took %.3fs for %s, opened NRT reader version=%d markerCount=%d",
+            (System.nanoTime() - startNS) / 1000000000.0,
+            bytesToString(job.getTotalBytesCopied()),
+            copyState.version,
+            markerCount));
   }
 
   private ChecksumIndexInput toIndexInput(byte[] input) {
     return new BufferedChecksumIndexInput(
         new ByteBuffersIndexInput(
-            new ByteBuffersDataInput(
-                Arrays.asList(ByteBuffer.wrap(input))), "SegmentInfos"));
+            new ByteBuffersDataInput(Arrays.asList(ByteBuffer.wrap(input))), "SegmentInfos"));
   }
 
-  /** Start a background copying job, to copy the specified files from the current primary node.  If files is null then the latest copy
-   *  state should be copied.  If prevJob is not null, then the new copy job is replacing it and should 1) cancel the previous one, and
-   *  2) optionally salvage e.g. partially copied and, shared with the new copy job, files. */
-  protected abstract CopyJob newCopyJob(String reason, Map<String,FileMetaData> files, Map<String,FileMetaData> prevFiles,
-                                        boolean highPriority, CopyJob.OnceDone onceDone) throws IOException;
+  /**
+   * Start a background copying job, to copy the specified files from the current primary node. If
+   * files is null then the latest copy state should be copied. If prevJob is not null, then the new
+   * copy job is replacing it and should 1) cancel the previous one, and 2) optionally salvage e.g.
+   * partially copied and, shared with the new copy job, files.
+   */
+  protected abstract CopyJob newCopyJob(
+      String reason,
+      Map<String, FileMetaData> files,
+      Map<String, FileMetaData> prevFiles,
+      boolean highPriority,
+      CopyJob.OnceDone onceDone)
+      throws IOException;
 
   /** Runs this job async'd */
   protected abstract void launch(CopyJob job);
 
-  /** Tell primary we (replica) just started, so primary can tell us to warm any already warming merges.  This lets us keep low nrt refresh
-   *  time for the first nrt sync after we started. */
+  /**
+   * Tell primary we (replica) just started, so primary can tell us to warm any already warming
+   * merges. This lets us keep low nrt refresh time for the first nrt sync after we started.
+   */
   protected abstract void sendNewReplica() throws IOException;
 
-  /** Call this to notify this replica node that a new NRT infos is available on the primary.
-   *  We kick off a job (runs in the background) to copy files across, and open a new reader once that's done. */
+  /**
+   * Call this to notify this replica node that a new NRT infos is available on the primary. We kick
+   * off a job (runs in the background) to copy files across, and open a new reader once that's
+   * done.
+   */
   public synchronized CopyJob newNRTPoint(long newPrimaryGen, long version) throws IOException {
 
     if (isClosed()) {
       throw new AlreadyClosedException("this replica is closed: state=" + state);
     }
 
-    // Cutover (possibly) to new primary first, so we discard any pre-copied merged segments up front, before checking for which files need
-    // copying.  While it's possible the pre-copied merged segments could still be useful to us, in the case that the new primary is either
-    // the same primary (just e.g. rebooted), or a promoted replica that had a newer NRT point than we did that included the pre-copied
-    // merged segments, it's still a bit risky to rely solely on checksum/file length to catch the difference, so we defensively discard
+    // Cutover (possibly) to new primary first, so we discard any pre-copied merged segments up
+    // front, before checking for which files need
+    // copying.  While it's possible the pre-copied merged segments could still be useful to us, in
+    // the case that the new primary is either
+    // the same primary (just e.g. rebooted), or a promoted replica that had a newer NRT point than
+    // we did that included the pre-copied
+    // merged segments, it's still a bit risky to rely solely on checksum/file length to catch the
+    // difference, so we defensively discard
     // here and re-copy in that case:
     maybeNewPrimary(newPrimaryGen);
 
@@ -495,8 +571,14 @@ public abstract class ReplicaNode extends Node {
     }
 
     if (version < curVersion) {
-      // This can happen, if two syncs happen close together, and due to thread scheduling, the incoming older version runs after the newer version
-      message("top: new NRT point (version=" + version + ") is older than current (version=" + curVersion + "); skipping");
+      // This can happen, if two syncs happen close together, and due to thread scheduling, the
+      // incoming older version runs after the newer version
+      message(
+          "top: new NRT point (version="
+              + version
+              + ") is older than current (version="
+              + curVersion
+              + "); skipping");
       return null;
     }
 
@@ -505,24 +587,26 @@ public abstract class ReplicaNode extends Node {
     message("top: newNRTPoint");
     CopyJob job = null;
     try {
-      job = newCopyJob("NRT point sync version=" + version,
-                       null,
-                       lastFileMetaData,
-                       true,
-                       new CopyJob.OnceDone() {
-                         @Override
-                         public void run(CopyJob job) {
-                           try {
-                             finishNRTCopy(job, startNS);
-                           } catch (IOException ioe) {
-                             throw new RuntimeException(ioe);
-                           }
-                         }
-                       });
+      job =
+          newCopyJob(
+              "NRT point sync version=" + version,
+              null,
+              lastFileMetaData,
+              true,
+              new CopyJob.OnceDone() {
+                @Override
+                public void run(CopyJob job) {
+                  try {
+                    finishNRTCopy(job, startNS);
+                  } catch (IOException ioe) {
+                    throw new RuntimeException(ioe);
+                  }
+                }
+              });
     } catch (NodeCommunicationException nce) {
       // E.g. primary could crash/close when we are asking it for the copy state:
       message("top: ignoring communication exception creating CopyJob: " + nce);
-      //nce.printStackTrace(printStream);
+      // nce.printStackTrace(printStream);
       if (state.equals("syncing")) {
         state = "idle";
       }
@@ -542,13 +626,20 @@ public abstract class ReplicaNode extends Node {
 
     curNRTCopy = job;
 
-    for(String fileName : curNRTCopy.getFileNamesToCopy()) {
-      assert lastCommitFiles.contains(fileName) == false: "fileName=" + fileName + " is in lastCommitFiles and is being copied?";
+    for (String fileName : curNRTCopy.getFileNamesToCopy()) {
+      assert lastCommitFiles.contains(fileName) == false
+          : "fileName=" + fileName + " is in lastCommitFiles and is being copied?";
       synchronized (mergeCopyJobs) {
         for (CopyJob mergeJob : mergeCopyJobs) {
           if (mergeJob.getFileNames().contains(fileName)) {
-            // TODO: we could maybe transferAndCancel here?  except CopyJob can't transferAndCancel more than one currently
-            message("top: now cancel merge copy job=" + mergeJob + ": file " + fileName + " is now being copied via NRT point");
+            // TODO: we could maybe transferAndCancel here?  except CopyJob can't transferAndCancel
+            // more than one currently
+            message(
+                "top: now cancel merge copy job="
+                    + mergeJob
+                    + ": file "
+                    + fileName
+                    + " is now being copied via NRT point");
             mergeJob.cancel("newNRTPoint is copying over the same file", null);
           }
         }
@@ -567,7 +658,8 @@ public abstract class ReplicaNode extends Node {
       return null;
     }
 
-    // Runs in the background jobs thread, maybe slowly/throttled, and calls finishSync once it's done:
+    // Runs in the background jobs thread, maybe slowly/throttled, and calls finishSync once it's
+    // done:
     launch(curNRTCopy);
     return curNRTCopy;
   }
@@ -578,7 +670,10 @@ public abstract class ReplicaNode extends Node {
 
   @Override
   public boolean isClosed() {
-    return "closed".equals(state) || "closing".equals(state) || "crashing".equals(state) || "crashed".equals(state);
+    return "closed".equals(state)
+        || "closing".equals(state)
+        || "crashing".equals(state)
+        || "crashed".equals(state);
   }
 
   @Override
@@ -604,11 +699,11 @@ public abstract class ReplicaNode extends Node {
       lastCommitFiles.clear();
 
       message("top: delete if no ref pendingMergeFiles=" + pendingMergeFiles);
-      for(String fileName : pendingMergeFiles) {
+      for (String fileName : pendingMergeFiles) {
         deleter.deleteIfNoRef(fileName);
       }
       pendingMergeFiles.clear();
-    
+
       message("top: close dir");
       IOUtils.close(writeFileLock, dir);
     }
@@ -619,14 +714,21 @@ public abstract class ReplicaNode extends Node {
   /** Called when the primary changed */
   protected synchronized void maybeNewPrimary(long newPrimaryGen) throws IOException {
     if (newPrimaryGen != lastPrimaryGen) {
-      message("top: now change lastPrimaryGen from " + lastPrimaryGen + " to " + newPrimaryGen + " pendingMergeFiles=" + pendingMergeFiles);
+      message(
+          "top: now change lastPrimaryGen from "
+              + lastPrimaryGen
+              + " to "
+              + newPrimaryGen
+              + " pendingMergeFiles="
+              + pendingMergeFiles);
 
       message("top: delete if no ref pendingMergeFiles=" + pendingMergeFiles);
-      for(String fileName : pendingMergeFiles) {
+      for (String fileName : pendingMergeFiles) {
         deleter.deleteIfNoRef(fileName);
       }
 
-      assert newPrimaryGen > lastPrimaryGen: "newPrimaryGen=" + newPrimaryGen + " vs lastPrimaryGen=" + lastPrimaryGen;
+      assert newPrimaryGen > lastPrimaryGen
+          : "newPrimaryGen=" + newPrimaryGen + " vs lastPrimaryGen=" + lastPrimaryGen;
       lastPrimaryGen = newPrimaryGen;
       pendingMergeFiles.clear();
     } else {
@@ -634,7 +736,9 @@ public abstract class ReplicaNode extends Node {
     }
   }
 
-  protected synchronized CopyJob launchPreCopyMerge(AtomicBoolean finished, long newPrimaryGen, Map<String,FileMetaData> files) throws IOException {
+  protected synchronized CopyJob launchPreCopyMerge(
+      AtomicBoolean finished, long newPrimaryGen, Map<String, FileMetaData> files)
+      throws IOException {
 
     CopyJob job;
 
@@ -643,60 +747,78 @@ public abstract class ReplicaNode extends Node {
     Set<String> fileNames = files.keySet();
     message("now pre-copy warm merge files=" + fileNames + " primaryGen=" + newPrimaryGen);
 
-    for(String fileName : fileNames) {
-      assert pendingMergeFiles.contains(fileName) == false: "file \"" + fileName + "\" is already being warmed!";
-      assert lastNRTFiles.contains(fileName) == false: "file \"" + fileName + "\" is already NRT visible!";
+    for (String fileName : fileNames) {
+      assert pendingMergeFiles.contains(fileName) == false
+          : "file \"" + fileName + "\" is already being warmed!";
+      assert lastNRTFiles.contains(fileName) == false
+          : "file \"" + fileName + "\" is already NRT visible!";
     }
 
-    job = newCopyJob("warm merge on " + name() + " filesNames=" + fileNames,
-                     files, null, false,
-                     new CopyJob.OnceDone() {
+    job =
+        newCopyJob(
+            "warm merge on " + name() + " filesNames=" + fileNames,
+            files,
+            null,
+            false,
+            new CopyJob.OnceDone() {
 
-                       @Override
-                       public void run(CopyJob job) throws IOException {
-                         // Signals that this replica has finished
-                         mergeCopyJobs.remove(job);
-                         message("done warming merge " + fileNames + " failed?=" + job.getFailed());
-                         synchronized(this) {
-                           if (job.getFailed() == false) {
-                             if (lastPrimaryGen != primaryGenStart) {
-                               message("merge pre copy finished but primary has changed; cancelling job files=" + fileNames);
-                               job.cancel("primary changed during merge copy", null);
-                             } else {
-                               boolean abort = false;
-                               for (String fileName : fileNames) {
-                                 if (lastNRTFiles.contains(fileName)) {
-                                   message("abort merge finish: file " + fileName + " is referenced by last NRT point");
-                                   abort = true;
-                                 }
-                                 if (lastCommitFiles.contains(fileName)) {
-                                   message("abort merge finish: file " + fileName + " is referenced by last commit point");
-                                   abort = true;
-                                 }
-                               }
-                               if (abort) {
-                                 // Even though in newNRTPoint we have similar logic, which cancels any merge copy jobs if an NRT point
-                                 // shows up referencing the files we are warming (because primary got impatient and gave up on us), we also
-                                 // need it here in case replica is way far behind and fails to even receive the merge pre-copy request
-                                 // until after the newNRTPoint referenced those files:
-                                 job.cancel("merged segment was separately copied via NRT point", null);
-                               } else {
-                                 job.finish();
-                                 message("merge pre copy finished files=" + fileNames);
-                                 for(String fileName : fileNames) {
-                                   assert pendingMergeFiles.contains(fileName) == false : "file \"" + fileName + "\" is already in pendingMergeFiles";
-                                   message("add file " + fileName + " to pendingMergeFiles");
-                                   pendingMergeFiles.add(fileName);
-                                 }
-                               }
-                             }
-                           } else {
-                             message("merge copy finished with failure");
-                           }
-                         }
-                         finished.set(true);
-                       }
-                     });
+              @Override
+              public void run(CopyJob job) throws IOException {
+                // Signals that this replica has finished
+                mergeCopyJobs.remove(job);
+                message("done warming merge " + fileNames + " failed?=" + job.getFailed());
+                synchronized (this) {
+                  if (job.getFailed() == false) {
+                    if (lastPrimaryGen != primaryGenStart) {
+                      message(
+                          "merge pre copy finished but primary has changed; cancelling job files="
+                              + fileNames);
+                      job.cancel("primary changed during merge copy", null);
+                    } else {
+                      boolean abort = false;
+                      for (String fileName : fileNames) {
+                        if (lastNRTFiles.contains(fileName)) {
+                          message(
+                              "abort merge finish: file "
+                                  + fileName
+                                  + " is referenced by last NRT point");
+                          abort = true;
+                        }
+                        if (lastCommitFiles.contains(fileName)) {
+                          message(
+                              "abort merge finish: file "
+                                  + fileName
+                                  + " is referenced by last commit point");
+                          abort = true;
+                        }
+                      }
+                      if (abort) {
+                        // Even though in newNRTPoint we have similar logic, which cancels any merge
+                        // copy jobs if an NRT point
+                        // shows up referencing the files we are warming (because primary got
+                        // impatient and gave up on us), we also
+                        // need it here in case replica is way far behind and fails to even receive
+                        // the merge pre-copy request
+                        // until after the newNRTPoint referenced those files:
+                        job.cancel("merged segment was separately copied via NRT point", null);
+                      } else {
+                        job.finish();
+                        message("merge pre copy finished files=" + fileNames);
+                        for (String fileName : fileNames) {
+                          assert pendingMergeFiles.contains(fileName) == false
+                              : "file \"" + fileName + "\" is already in pendingMergeFiles";
+                          message("add file " + fileName + " to pendingMergeFiles");
+                          pendingMergeFiles.add(fileName);
+                        }
+                      }
+                    }
+                  } else {
+                    message("merge copy finished with failure");
+                  }
+                }
+                finished.set(true);
+              }
+            });
 
     job.start();
 
@@ -709,16 +831,20 @@ public abstract class ReplicaNode extends Node {
     return job;
   }
 
-  public IndexOutput createTempOutput(String prefix, String suffix, IOContext ioContext) throws IOException {
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext ioContext)
+      throws IOException {
     return dir.createTempOutput(prefix, suffix, IOContext.DEFAULT);
   }
 
-  /** Compares incoming per-file identity (id, checksum, header, footer) versus what we have locally and returns the subset of the incoming
-   *  files that need copying */
-  public List<Map.Entry<String,FileMetaData>> getFilesToCopy(Map<String,FileMetaData> files) throws IOException {
+  /**
+   * Compares incoming per-file identity (id, checksum, header, footer) versus what we have locally
+   * and returns the subset of the incoming files that need copying
+   */
+  public List<Map.Entry<String, FileMetaData>> getFilesToCopy(Map<String, FileMetaData> files)
+      throws IOException {
 
-    List<Map.Entry<String,FileMetaData>> toCopy = new ArrayList<>();
-    for (Map.Entry<String,FileMetaData> ent : files.entrySet()) {
+    List<Map.Entry<String, FileMetaData>> toCopy = new ArrayList<>();
+    for (Map.Entry<String, FileMetaData> ent : files.entrySet()) {
       String fileName = ent.getKey();
       FileMetaData fileMetaData = ent.getValue();
       if (fileIsIdentical(fileName, fileMetaData) == false) {
@@ -729,9 +855,12 @@ public abstract class ReplicaNode extends Node {
     return toCopy;
   }
 
-  /** Carefully determine if the file on the primary, identified by its {@code String fileName} along with the {@link FileMetaData}
-   * "summarizing" its contents, is precisely the same file that we have locally.  If the file does not exist locally, or if its header
-   * (includes the segment id), length, footer (including checksum) differ, then this returns false, else true. */
+  /**
+   * Carefully determine if the file on the primary, identified by its {@code String fileName} along
+   * with the {@link FileMetaData} "summarizing" its contents, is precisely the same file that we
+   * have locally. If the file does not exist locally, or if its header (includes the segment id),
+   * length, footer (including checksum) differ, then this returns false, else true.
+   */
   private boolean fileIsIdentical(String fileName, FileMetaData srcMetaData) throws IOException {
 
     FileMetaData destMetaData = readLocalFileMetaData(fileName);
@@ -740,8 +869,8 @@ public abstract class ReplicaNode extends Node {
       return false;
     }
 
-    if (Arrays.equals(destMetaData.header, srcMetaData.header) == false ||
-        Arrays.equals(destMetaData.footer, srcMetaData.footer) == false) {
+    if (Arrays.equals(destMetaData.header, srcMetaData.header) == false
+        || Arrays.equals(destMetaData.footer, srcMetaData.footer) == false) {
       // Segment name was reused!  This is rare but possible and otherwise devastating:
       if (Node.VERBOSE_FILES) {
         message("file " + fileName + ": will copy [header/footer is different]");
@@ -752,7 +881,7 @@ public abstract class ReplicaNode extends Node {
     }
   }
 
-  private ConcurrentMap<String,Boolean> copying = new ConcurrentHashMap<>();
+  private ConcurrentMap<String, Boolean> copying = new ConcurrentHashMap<>();
 
   // Used only to catch bugs, ensuring a given file name is only ever being copied bye one job:
   public void startCopyFile(String name) {

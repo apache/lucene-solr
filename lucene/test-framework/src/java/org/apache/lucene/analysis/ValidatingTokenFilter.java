@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -38,8 +37,9 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 // TODO: BTSTC should just append this to the chain
 // instead of checking itself:
 
-/** A TokenFilter that checks consistency of the tokens (eg
- *  offsets are consistent with one another). */
+/**
+ * A TokenFilter that checks consistency of the tokens (eg offsets are consistent with one another).
+ */
 public final class ValidatingTokenFilter extends TokenFilter {
 
   private static final int MAX_DEBUG_TOKENS = 20;
@@ -48,10 +48,11 @@ public final class ValidatingTokenFilter extends TokenFilter {
   private int lastStartOffset;
 
   // Maps position to the start/end offset:
-  private final Map<Integer,Integer> posToStartOffset = new HashMap<>();
-  private final Map<Integer,Integer> posToEndOffset = new HashMap<>();
+  private final Map<Integer, Integer> posToStartOffset = new HashMap<>();
+  private final Map<Integer, Integer> posToEndOffset = new HashMap<>();
 
-  private final PositionIncrementAttribute posIncAtt = getAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      getAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAtt = getAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = getAttribute(OffsetAttribute.class);
   private final CharTermAttribute termAtt = getAttribute(CharTermAttribute.class);
@@ -61,9 +62,10 @@ public final class ValidatingTokenFilter extends TokenFilter {
 
   private final String name;
 
-  /** The name arg is used to identify this stage when
-   *  throwing exceptions (useful if you have more than one
-   *  instance in your chain). */
+  /**
+   * The name arg is used to identify this stage when throwing exceptions (useful if you have more
+   * than one instance in your chain).
+   */
   public ValidatingTokenFilter(TokenStream in, String name) {
     super(in);
     this.name = name;
@@ -96,7 +98,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
     addToken(startOffset, endOffset, posInc);
 
     // System.out.println(name + ": " + this);
-    
+
     if (posIncAtt != null) {
       pos += posInc;
       if (pos == -1) {
@@ -104,15 +106,20 @@ public final class ValidatingTokenFilter extends TokenFilter {
         throw new IllegalStateException(name + ": first posInc must be > 0");
       }
     }
-    
+
     if (offsetAtt != null) {
       if (startOffset < lastStartOffset) {
         dumpValidatingTokenFilters(this, System.err);
-        throw new IllegalStateException(name + ": offsets must not go backwards startOffset=" + startOffset + " is < lastStartOffset=" + lastStartOffset);
+        throw new IllegalStateException(
+            name
+                + ": offsets must not go backwards startOffset="
+                + startOffset
+                + " is < lastStartOffset="
+                + lastStartOffset);
       }
       lastStartOffset = offsetAtt.startOffset();
     }
-    
+
     if (offsetAtt != null && posIncAtt != null) {
 
       if (!posToStartOffset.containsKey(pos)) {
@@ -126,7 +133,16 @@ public final class ValidatingTokenFilter extends TokenFilter {
         final int oldStartOffset = posToStartOffset.get(pos);
         if (oldStartOffset != startOffset) {
           dumpValidatingTokenFilters(this, System.err);
-          throw new IllegalStateException(name + ": inconsistent startOffset at pos=" + pos + ": " + oldStartOffset + " vs " + startOffset + "; token=" + termAtt);
+          throw new IllegalStateException(
+              name
+                  + ": inconsistent startOffset at pos="
+                  + pos
+                  + ": "
+                  + oldStartOffset
+                  + " vs "
+                  + startOffset
+                  + "; token="
+                  + termAtt);
         }
       }
 
@@ -135,15 +151,24 @@ public final class ValidatingTokenFilter extends TokenFilter {
       if (!posToEndOffset.containsKey(endPos)) {
         // First time we've seen a token arriving to this position:
         posToEndOffset.put(endPos, endOffset);
-        //System.out.println(name + "  + e " + endPos + " -> " + endOffset);
+        // System.out.println(name + "  + e " + endPos + " -> " + endOffset);
       } else {
         // We've seen a token arriving to this position
         // before; verify the endOffset is the same:
-        //System.out.println(name + "  + ve " + endPos + " -> " + endOffset);
+        // System.out.println(name + "  + ve " + endPos + " -> " + endOffset);
         final int oldEndOffset = posToEndOffset.get(endPos);
         if (oldEndOffset != endOffset) {
           dumpValidatingTokenFilters(this, System.err);
-          throw new IllegalStateException(name + ": inconsistent endOffset at pos=" + endPos + ": " + oldEndOffset + " vs " + endOffset + "; token=" + termAtt);
+          throw new IllegalStateException(
+              name
+                  + ": inconsistent endOffset at pos="
+                  + endPos
+                  + ": "
+                  + oldEndOffset
+                  + " vs "
+                  + endOffset
+                  + "; token="
+                  + termAtt);
         }
       }
     }
@@ -171,7 +196,6 @@ public final class ValidatingTokenFilter extends TokenFilter {
     tokens.clear();
   }
 
-
   private void addToken(int startOffset, int endOffset, int posInc) {
     if (tokens.size() == MAX_DEBUG_TOKENS) {
       tokens.remove(0);
@@ -181,6 +205,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
 
   /**
    * Prints details about consumed tokens stored in any ValidatingTokenFilters in the input chain
+   *
    * @param in the input token stream
    * @param out the output print stream
    */
@@ -197,10 +222,15 @@ public final class ValidatingTokenFilter extends TokenFilter {
     StringBuilder buf = new StringBuilder();
     buf.append(name).append(": ");
     for (Token token : tokens) {
-      buf.append(String.format(Locale.ROOT, "%s<[%d-%d] +%d> ",
-          token, token.startOffset(), token.endOffset(), token.getPositionIncrement()));
+      buf.append(
+          String.format(
+              Locale.ROOT,
+              "%s<[%d-%d] +%d> ",
+              token,
+              token.startOffset(),
+              token.endOffset(),
+              token.getPositionIncrement()));
     }
     return buf.toString();
   }
-
 }

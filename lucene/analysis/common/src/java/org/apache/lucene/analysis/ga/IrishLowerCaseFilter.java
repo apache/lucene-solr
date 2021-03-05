@@ -16,27 +16,23 @@
  */
 package org.apache.lucene.analysis.ga;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * Normalises token text to lower case, handling t-prothesis
- * and n-eclipsis (i.e., that 'nAthair' should become 'n-athair')
+ * Normalises token text to lower case, handling t-prothesis and n-eclipsis (i.e., that 'nAthair'
+ * should become 'n-athair')
  */
 public final class IrishLowerCaseFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  /**
-   * Create an IrishLowerCaseFilter that normalises Irish token text.
-   */
+  /** Create an IrishLowerCaseFilter that normalises Irish token text. */
   public IrishLowerCaseFilter(TokenStream in) {
     super(in);
   }
-  
+
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
@@ -55,23 +51,23 @@ public final class IrishLowerCaseFilter extends TokenFilter {
         chLen = chLen + 1;
       }
 
-      for (int i = idx; i < chLen;) {
+      for (int i = idx; i < chLen; ) {
         i += Character.toChars(Character.toLowerCase(chArray[i]), chArray, i);
-       }
+      }
       return true;
     } else {
       return false;
     }
   }
-  
-  private boolean isUpperVowel (int v) {
+
+  private boolean isUpperVowel(int v) {
     switch (v) {
       case 'A':
       case 'E':
       case 'I':
       case 'O':
       case 'U':
-      // vowels with acute accent (fada)
+        // vowels with acute accent (fada)
       case '\u00c1':
       case '\u00c9':
       case '\u00cd':

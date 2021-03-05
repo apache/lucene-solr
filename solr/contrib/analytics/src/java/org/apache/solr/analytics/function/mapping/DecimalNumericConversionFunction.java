@@ -20,8 +20,6 @@ import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
-import org.apache.solr.analytics.function.mapping.DecimalNumericConversionFunction.ConvertDoubleFunction;
-import org.apache.solr.analytics.function.mapping.DecimalNumericConversionFunction.ConvertFloatFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValueStream;
@@ -103,7 +101,7 @@ public class DecimalNumericConversionFunction {
   public static class RoundFunction {
     public static final String name = "round";
     public static final CreatorFunction creatorFunction = (params -> {
-      return DecimalNumericConversionFunction.createDecimalConversionFunction(name, val -> (int)Math.round(val), val -> (long)Math.round(val), params);
+      return DecimalNumericConversionFunction.createDecimalConversionFunction(name, val -> Math.round(val), val -> Math.round(val), params);
     });
   }
 
@@ -116,156 +114,161 @@ public class DecimalNumericConversionFunction {
   public static interface ConvertDoubleFunction {
     public long convert(double value);
   }
+
+  /**
+   * A function to convert a {@link FloatValue} to a {@link IntValue}.
+   */
+  static class ConvertFloatValueFunction extends AbstractIntValue {
+    private final String name;
+    private final FloatValue param;
+    private final ConvertFloatFunction conv;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public ConvertFloatValueFunction(String name, FloatValue param, ConvertFloatFunction conv) {
+      this.name = name;
+      this.param = param;
+      this.conv = conv;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
+    }
+
+    @Override
+    public int getInt() {
+      return conv.convert(param.getFloat());
+    }
+    @Override
+    public boolean exists() {
+      return param.exists();
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  /**
+   * A function to convert a {@link FloatValueStream} to a {@link IntValueStream}.
+   */
+  static class ConvertFloatStreamFunction extends AbstractIntValueStream {
+    private final String name;
+    private final FloatValueStream param;
+    private final ConvertFloatFunction conv;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public ConvertFloatStreamFunction(String name, FloatValueStream param, ConvertFloatFunction conv) {
+      this.name = name;
+      this.param = param;
+      this.conv = conv;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
+    }
+
+    @Override
+    public void streamInts(IntConsumer cons) {
+      param.streamFloats( value -> cons.accept(conv.convert(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  /**
+   * A function to convert a {@link DoubleValue} to a {@link LongValue}.
+   */
+  static class ConvertDoubleValueFunction extends AbstractLongValue {
+    private final String name;
+    private final DoubleValue param;
+    private final ConvertDoubleFunction conv;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public ConvertDoubleValueFunction(String name, DoubleValue param, ConvertDoubleFunction conv) {
+      this.name = name;
+      this.param = param;
+      this.conv = conv;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
+    }
+
+    @Override
+    public long getLong() {
+      return conv.convert(param.getDouble());
+    }
+    @Override
+    public boolean exists() {
+      return param.exists();
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
+
+  /**
+   * A function to convert a {@link DoubleValueStream} to a {@link LongValueStream}.
+   */
+  static class ConvertDoubleStreamFunction extends AbstractLongValueStream {
+    private final String name;
+    private final DoubleValueStream param;
+    private final ConvertDoubleFunction conv;
+    private final String funcStr;
+    private final ExpressionType funcType;
+
+    public ConvertDoubleStreamFunction(String name, DoubleValueStream param, ConvertDoubleFunction conv) {
+      this.name = name;
+      this.param = param;
+      this.conv = conv;
+      this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
+    }
+
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      param.streamDoubles( value -> cons.accept(conv.convert(value)));
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return funcStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
+  }
 }
-/**
- * A function to convert a {@link FloatValue} to a {@link IntValue}.
- */
-class ConvertFloatValueFunction extends AbstractIntValue {
-  private final String name;
-  private final FloatValue param;
-  private final ConvertFloatFunction conv;
-  private final String funcStr;
-  private final ExpressionType funcType;
 
-  public ConvertFloatValueFunction(String name, FloatValue param, ConvertFloatFunction conv) {
-    this.name = name;
-    this.param = param;
-    this.conv = conv;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
-  }
-
-  @Override
-  public int getInt() {
-    return conv.convert(param.getFloat());
-  }
-  @Override
-  public boolean exists() {
-    return param.exists();
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A function to convert a {@link FloatValueStream} to a {@link IntValueStream}.
- */
-class ConvertFloatStreamFunction extends AbstractIntValueStream {
-  private final String name;
-  private final FloatValueStream param;
-  private final ConvertFloatFunction conv;
-  private final String funcStr;
-  private final ExpressionType funcType;
-
-  public ConvertFloatStreamFunction(String name, FloatValueStream param, ConvertFloatFunction conv) {
-    this.name = name;
-    this.param = param;
-    this.conv = conv;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
-  }
-
-  @Override
-  public void streamInts(IntConsumer cons) {
-    param.streamFloats( value -> cons.accept(conv.convert(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A function to convert a {@link DoubleValue} to a {@link LongValue}.
- */
-class ConvertDoubleValueFunction extends AbstractLongValue {
-  private final String name;
-  private final DoubleValue param;
-  private final ConvertDoubleFunction conv;
-  private final String funcStr;
-  private final ExpressionType funcType;
-
-  public ConvertDoubleValueFunction(String name, DoubleValue param, ConvertDoubleFunction conv) {
-    this.name = name;
-    this.param = param;
-    this.conv = conv;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
-  }
-
-  @Override
-  public long getLong() {
-    return conv.convert(param.getDouble());
-  }
-  @Override
-  public boolean exists() {
-    return param.exists();
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-/**
- * A function to convert a {@link DoubleValueStream} to a {@link LongValueStream}.
- */
-class ConvertDoubleStreamFunction extends AbstractLongValueStream {
-  private final String name;
-  private final DoubleValueStream param;
-  private final ConvertDoubleFunction conv;
-  private final String funcStr;
-  private final ExpressionType funcType;
-
-  public ConvertDoubleStreamFunction(String name, DoubleValueStream param, ConvertDoubleFunction conv) {
-    this.name = name;
-    this.param = param;
-    this.conv = conv;
-    this.funcStr = AnalyticsValueStream.createExpressionString(name,param);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(funcStr,param);
-  }
-
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    param.streamDoubles( value -> cons.accept(conv.convert(value)));
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return funcStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}

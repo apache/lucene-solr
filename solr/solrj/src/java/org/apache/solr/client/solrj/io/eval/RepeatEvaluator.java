@@ -39,7 +39,7 @@ public class RepeatEvaluator extends RecursiveNumericEvaluator implements TwoVal
   public Object doWork(Object value1, Object value2){
     double d  = ((Number)value1).doubleValue();
     int size = ((Number)value2).intValue();
-    List<Number> repeated = new ArrayList();
+    List<Number> repeated = new ArrayList<>();
     for(int i=0; i<size; i++) {
       repeated.add(d);
     }

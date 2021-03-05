@@ -23,8 +23,8 @@ import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.Span;
 
 /**
- * Supply OpenNLP Sentence Tokenizer tool
- * Requires binary models from OpenNLP project on SourceForge.
+ * Supply OpenNLP Sentence Tokenizer tool Requires binary models from OpenNLP project on
+ * SourceForge.
  */
 public class NLPTokenizerOp {
   private final Tokenizer tokenizer;

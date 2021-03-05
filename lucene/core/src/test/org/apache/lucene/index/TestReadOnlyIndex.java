@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.FilePermission;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.PropertyPermission;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,15 +37,16 @@ import org.junit.BeforeClass;
 
 public class TestReadOnlyIndex extends LuceneTestCase {
 
-  private static final String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+  private static final String longTerm =
+      "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
   private static final String text = "This is the text to be indexed. " + longTerm;
 
-  private static Path indexPath;  
+  private static Path indexPath;
 
   @BeforeClass
   public static void buildIndex() throws Exception {
     indexPath = Files.createTempDirectory("readonlyindex").toAbsolutePath();
-    
+
     // borrows from TestDemo, but not important to keep in sync with demo
     Analyzer analyzer = new MockAnalyzer(random());
     Directory directory = newFSDirectory(indexPath);
@@ -59,28 +58,29 @@ public class TestReadOnlyIndex extends LuceneTestCase {
     directory.close();
     analyzer.close();
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     indexPath = null;
   }
-  
+
   public void testReadOnlyIndex() throws Exception {
-    runWithRestrictedPermissions(this::doTestReadOnlyIndex,
-        // add some basic permissions (because we are limited already - so we grant all important ones):
+    runWithRestrictedPermissions(
+        this::doTestReadOnlyIndex,
+        // add some basic permissions (because we are limited already - so we grant all important
+        // ones):
         new RuntimePermission("*"),
         new PropertyPermission("*", "read"),
         // only allow read to the given index dir, nothing else:
         new FilePermission(indexPath.toString(), "read"),
-        new FilePermission(indexPath.resolve("-").toString(), "read")
-    );
+        new FilePermission(indexPath.resolve("-").toString(), "read"));
   }
-  
+
   private Void doTestReadOnlyIndex() throws Exception {
-    Directory dir = FSDirectory.open(indexPath); 
-    IndexReader ireader = DirectoryReader.open(dir); 
+    Directory dir = FSDirectory.open(indexPath);
+    IndexReader ireader = DirectoryReader.open(dir);
     IndexSearcher isearcher = newSearcher(ireader);
-    
+
     // borrows from TestDemo, but not important to keep in sync with demo
 
     assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
@@ -100,5 +100,4 @@ public class TestReadOnlyIndex extends LuceneTestCase {
     ireader.close();
     return null; // void
   }
-  
 }

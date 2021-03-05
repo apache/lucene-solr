@@ -38,7 +38,7 @@ public class ShardAugmenterFactory extends TransformerFactory
         v = "[not a shard request]";
       }
     }
-    return new ValueAugmenter( field, v );
+    return new ValueAugmenterFactory.ValueAugmenter( field, v );
   }
 }
 

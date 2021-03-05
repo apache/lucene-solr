@@ -13,3 +13,5 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+org.apache.lucene.backward_codecs.lucene70.Lucene70DocValuesFormat
+org.apache.lucene.backward_codecs.lucene80.Lucene80DocValuesFormat

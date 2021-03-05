@@ -1,3 +1,6 @@
+import java.nio.charset.Charset
+import java.util.function.Function
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,17 +33,267 @@ configure(rootProject) {
     description "Regenerate sources for corresponding javacc grammar files."
     group "generation"
 
-    dependsOn ":lucene:queryparser:javaccParserClassic"
-    dependsOn ":lucene:queryparser:javaccParserSurround"
-    dependsOn ":lucene:queryparser:javaccParserFlexible"
-    dependsOn ":solr:core:javaccSolrParser"
+    dependsOn allprojects.collect { prj -> prj.tasks.withType(JavaCCTask) }
   }
 }
+
+/**
+ * Utility function to read a file, apply changes to its content and write it back.
+ */
+def modifyFile = { File path, Function<String, String> modify ->
+  Function<String, String> normalizeEols = { text -> text.replace("\r\n", "\n") }
+  modify = normalizeEols.andThen(modify).andThen(normalizeEols)
+
+  String original = path.getText("UTF-8")
+  String modified = modify.apply(original)
+  if (!original.equals(modified)) {
+    path.write(modified, "UTF-8")
+  }
+}
+
+def commonCleanups = { FileTree generatedFiles ->
+  // This is a minor typo in a comment that nonetheless people have hand-corrected in the past.
+  generatedFiles.matching({ include "CharStream.java" }).each {file ->
+    modifyFile(file, { text ->
+      return text.replace(
+          "implemetation",
+          "implementation");
+    })
+  }
+
+  generatedFiles.each {file ->
+    modifyFile(file, { text ->
+      // Normalize EOLs and tabs (EOLs are a side-effect of modifyFile).
+      text = text.replace("\t", "    ");
+      text = text.replaceAll("JavaCC - OriginalChecksum=[^*]+", "(filtered)")
+      text = text.replace("StringBuffer", "StringBuilder")
+      return text
+    })
+  }
+
+  generatedFiles.matching({ include "*TokenManager.java" }).each { file ->
+    modifyFile(file, { text ->
+      // Remove redundant imports.
+      text = text.replaceAll(
+          /(?m)^import .+/,
+          "")
+      // Add CharStream imports.
+      text = text.replaceAll(
+          /package (.+)/,
+          '''
+          package $1
+          import org.apache.lucene.queryparser.charstream.CharStream; 
+          '''.trim())
+      // Eliminates redundant cast message.
+      text = text.replace(
+          "int hiByte = (int)(curChar >> 8);",
+          "int hiByte = curChar >> 8;")
+      // Access to forbidden APIs.
+      text = text.replace(
+          "public  java.io.PrintStream debugStream = System.out;",
+          "// (debugStream omitted).")
+      text = text.replace(
+          "public  void setDebugStream(java.io.PrintStream ds) { debugStream = ds; }",
+          "// (setDebugStream omitted).")
+      return text
+    })
+  }
+}
+
+configure(project(":lucene:queryparser")) {
+  task javaccParserClassic(type: JavaCCTask) {
+    description "Regenerate classic query parser from lucene/queryparser/classic/QueryParser.jj"
+    group "generation"
+
+    javaccFile = file('src/java/org/apache/lucene/queryparser/classic/QueryParser.jj')
+
+    afterGenerate << commonCleanups
+    afterGenerate << { FileTree generatedFiles ->
+      generatedFiles.matching { include "QueryParser.java" }.each { file ->
+        modifyFile(file, { text ->
+          text = text.replace(
+              "public QueryParser(CharStream ",
+              "protected QueryParser(CharStream ")
+          text = text.replace(
+              "public QueryParser(QueryParserTokenManager ",
+              "protected QueryParser(QueryParserTokenManager ")
+          text = text.replace(
+              "new java.util.ArrayList<int[]>",
+              "new java.util.ArrayList<>")
+          text = text.replace(
+              "final private LookaheadSuccess jj_ls =",
+              "static final private LookaheadSuccess jj_ls =")
+          return text
+        })
+      }
+    }
+  }
+
+  task javaccParserSurround(type: JavaCCTask) {
+    description "Regenerate surround query parser from lucene/queryparser/surround/parser/QueryParser.jj"
+    group "generation"
+
+    javaccFile = file('src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj')
+
+    afterGenerate << commonCleanups
+    afterGenerate << { FileTree generatedFiles ->
+      generatedFiles.matching { include "QueryParser.java" }.each { file ->
+        modifyFile(file, { text ->
+          text = text.replace(
+              "import org.apache.lucene.analysis.TokenStream;",
+              "")
+          text = text.replace(
+              "new java.util.ArrayList<int[]>",
+              "new java.util.ArrayList<>")
+          return text
+        })
+      }
+    }
+  }
+
+  task javaccParserFlexible(type: JavaCCTask) {
+    description "Regenerate Flexible query parser from queryparser/flexible/standard/parser/StandardSyntaxParser.jj"
+    group "generation"
+
+    javaccFile = file('src/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParser.jj')
+
+    afterGenerate << commonCleanups
+    afterGenerate << { FileTree generatedFiles ->
+      generatedFiles.matching { include "ParseException.java" }.each { file ->
+        modifyFile(file, { text ->
+          // Modify constructor.
+          text = text.replace(
+              "class ParseException extends Exception",
+              "class ParseException extends QueryNodeParseException")
+
+          // Modify imports.
+          text = text.replace(
+              "package org.apache.lucene.queryparser.flexible.standard.parser;", '''\
+          package org.apache.lucene.queryparser.flexible.standard.parser;
+
+          import org.apache.lucene.queryparser.flexible.messages.*;
+          import org.apache.lucene.queryparser.flexible.core.*;
+          import org.apache.lucene.queryparser.flexible.core.messages.*;
+          ''')
+
+          // Modify constructors and code bits
+          text = text.replaceAll(
+              /(?s)[ ]*public ParseException\(Token currentTokenVal[^}]+[}]/, '''\
+          public ParseException(Token currentTokenVal,
+            int[][] expectedTokenSequencesVal, String[] tokenImageVal) 
+          {
+            super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(
+            currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));
+            this.currentToken = currentTokenVal;
+            this.expectedTokenSequences = expectedTokenSequencesVal;
+            this.tokenImage = tokenImageVal;
+          }
+          ''')
+
+          text = text.replaceAll(
+              /(?s)[ ]*public ParseException\(String message\)[^}]+[}]/, '''\
+          public ParseException(Message message) 
+          {
+            super(message);
+          }
+          ''')
+
+          text = text.replaceAll(
+              /(?s)[ ]*public ParseException\(\)[^}]+[}]/, '''\
+          public ParseException() 
+          {
+            super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, "Error"));
+          }
+          ''')
+          return text
+        })
+      }
+
+      generatedFiles.matching { include "StandardSyntaxParser.java" }.each { file ->
+        modifyFile(file, { text ->
+          // Remove redundant cast
+          text = text.replace(
+              "new java.util.ArrayList<int[]>",
+              "new java.util.ArrayList<>")
+          text = text.replace(
+              "new ArrayList<QueryNode>()",
+              "new ArrayList<>()")
+          text = text.replace(
+              "Collections.<QueryNode> singletonList",
+              "Collections.singletonList")
+          return text
+        })
+      }
+    }
+  }
+
+  task regenerate() {
+    description "Regenerate any generated sources"
+    group "generation"
+
+    // Run regeneration tasks.
+    dependsOn javaccParserClassic, javaccParserSurround, javaccParserFlexible
+
+    // Clean up and reformat the generated sources after generation.
+    dependsOn "tidy"
+  }
+
+  // Make sure tidy runs after generation, if they're defined.
+  tasks.matching { it.name == "tidy" }.configureEach {
+    mustRunAfter javaccParserClassic, javaccParserSurround, javaccParserFlexible
+  }
+
+  task javacc() {
+    description "Regenerate query parsers (javacc syntax definitions)."
+    group "generation"
+
+    dependsOn javaccParserClassic
+    dependsOn javaccParserSurround
+    dependsOn javaccParserFlexible
+  }
+}
+
+configure(project(":solr:core")) {
+  task javacc(type: JavaCCTask) {
+    description "Regenerate Solr query parser"
+    group "generation"
+
+    javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
+
+    afterGenerate << commonCleanups
+    afterGenerate << { FileTree generatedFiles ->
+      generatedFiles.matching { include "QueryParser.java" }.each { file ->
+        modifyFile(file, { text ->
+          text = text.replace(
+              "public QueryParser(CharStream ",
+              "protected QueryParser(CharStream ")
+          text = text.replace(
+              "public QueryParser(QueryParserTokenManager ",
+              "protected QueryParser(QueryParserTokenManager ")
+          text = text.replace(
+              "final private LookaheadSuccess jj_ls =",
+              "static final private LookaheadSuccess jj_ls =")
+          return text
+        })
+      }
+    }
+  }
+}
+
+
 
 // We always regenerate, no need to declare outputs.
 class JavaCCTask extends DefaultTask {
   @Input
   File javaccFile
+
+  /**
+   * Apply closures to all generated files before they're copied back
+   * to mainline code.
+   */
+  @Optional
+  @Input
+  List<Closure<FileTree>> afterGenerate = new ArrayList<>()
 
   JavaCCTask() {
     dependsOn(project.rootProject.configurations.javacc)
@@ -49,18 +302,17 @@ class JavaCCTask extends DefaultTask {
   @TaskAction
   def generate() {
     if (!javaccFile || !javaccFile.exists()) {
-      throw new RuntimeException("JavaCC input file does not exist: ${javaccFile}")
+      throw new GradleException("Input file does not exist: ${javaccFile}")
     }
 
-    // Remove previous files so we can regenerate them. javacc doesn't want to overwrite
-    // locally modified files.
-    def parentDir = javaccFile.parentFile
-    def toDelete = project.fileTree(parentDir, {
-      include "**/*.java"
-    }).findAll { file -> file.getText("UTF-8").contains("Generated By:JavaCC") }
-    project.delete(toDelete)
+    // Run javacc generation into temporary folder so that we know all the generated files
+    // and can post-process them easily.
+    def tempDir = this.getTemporaryDir()
+    tempDir.mkdirs()
+    project.delete project.fileTree(tempDir, { include: "**/*.java" })
 
-    logger.lifecycle("Regenerating JavaCC:\n  from: ${javaccFile}\n    to: ${parentDir}")
+    def targetDir = javaccFile.parentFile
+    logger.lifecycle("Regenerating JavaCC:\n  from: ${javaccFile}\n    to: ${targetDir}")
 
     def output = new ByteArrayOutputStream()
     def result = project.javaexec {
@@ -74,7 +326,7 @@ class JavaCCTask extends DefaultTask {
 
       main = "org.javacc.parser.Main"
       args += [
-          "-OUTPUT_DIRECTORY=${parentDir}",
+          "-OUTPUT_DIRECTORY=${tempDir}",
           javaccFile
       ]
     }
@@ -84,302 +336,25 @@ class JavaCCTask extends DefaultTask {
       throw new GradleException("JavaCC failed to compile ${javaccFile}, here is the compilation output:\n${output}")
     }
 
-    // Cleanup common to more than one javacc invocation.
-    //
-    // This is a minor typo in a comment that nontheless people have hand-corrected in the past.
-    ant.replace(file: "${parentDir}/CharStream.java",
-        token: "implemetation",
-        value: "implementation",
-        encoding: "UTF-8")
-
-    // StringBuffer -> StringBuilder
-    ant.replace(token: "StringBuffer",
-        value: "StringBuilder",
-        encoding: "UTF-8") {
-      ant.fileset(dir: parentDir, includes: '*.java') {
-        ant.containsregexp(expression: "Generated By:JavaCC:")
-      }
+    // Make sure we don't have warnings.
+    if (output.toString(Charset.defaultCharset()).contains("Warning:")) {
+      throw new GradleException("JavaCC emitted warnings for ${javaccFile}, here is the compilation output:\n${output}")
     }
 
-    // Eliminates redundant cast message
-    ant.replace(token: "int hiByte = (int)(curChar >> 8);",
-        value: "int hiByte = curChar >> 8;",
-        encoding: "UTF-8") {
-      ant.fileset(dir: parentDir, includes: "*TokenManager.java")
+    // Apply any custom modifications.
+    def generatedFiles = project.fileTree(tempDir)
+
+    afterGenerate.each {closure ->
+      closure.call(generatedFiles)
     }
 
-    // So precommit passes
-    ant.replaceregexp(match: "/\\*\\* Debug output.*?Set debug output.*?ds; }",
-        replace: '',
-        flags: 's',
-        encoding: 'UTF-8') {
-      ant.fileset(dir: parentDir, includes: "*TokenManager.java")
-    }
+    // Copy back to mainline sources.
+    project.copy {
+      from tempDir
+      into targetDir
 
-    // Correct line endings for Windows.
-    project.ant.fixcrlf(srcDir: parentDir,
-        includes: "*.java",
-        encoding: "UTF-8",
-        eol: "lf") {
-      ant.containsregexp(expression: "Generated By:JavaCC:")
-    }
-  }
-}
-
-
-configure(project(":lucene:queryparser")) {
-  task javaccParserClassic(type: JavaCCTask) {
-    description "Regenerate classic query parser from lucene/queryparser/classic/QueryParser.jj"
-    group "generation"
-
-    javaccFile = file('src/java/org/apache/lucene/queryparser/classic/QueryParser.jj')
-    def parentDir = javaccFile.parentFile // I'll need this later.
-
-    doLast {
-      // control visibility issues
-      ant.replace(file: file("${parentDir}/QueryParser.java"),
-          token: "public QueryParser(CharStream ",
-          value: "protected QueryParser(CharStream ",
-          encoding: 'UTF-8')
-      ant.replace(file: file("${parentDir}/QueryParser.java"),
-          token: "public QueryParser(QueryParserTokenManager ",
-          value: "protected QueryParser(QueryParserTokenManager ",
-          encoding: 'UTF-8')
-
-      // Some redundant casts etc. in queryparser.java
-      ant.replace(file: file("${parentDir}/QueryParser.java"),
-          token: "new java.util.ArrayList<int[]>",
-          value: "new java.util.ArrayList<>",
-          encoding: 'UTF-8')
-      ant.replace(file: file("${parentDir}/QueryParser.java"),
-          token: "new java.util.ArrayList<int[]>",
-          value: "new java.util.ArrayList<>",
-          encoding: 'UTF-8')
-      ant.replace(file: file("${parentDir}/QueryParser.java"),
-          token: "(int)(curChar >> 8);",
-          value: "curChar >> 8;",
-          encoding: 'UTF-8')
-      // Remove unnecessary imports
-      def separator = System.getProperty('line.separator')
-      [/import java\.io\.StringReader;/,
-       /import java\.util\.ArrayList;/,
-       /import java\.util\.Arrays;/,
-       /import java\.util\.HashSet;/,
-       /import java\.util\.List;/,
-       /import java\.util\.Locale;/,
-       /import java\.util\.Set;/,
-       /import org\.apache\.lucene\.analysis\.Analyzer;/,
-       /import org\.apache\.lucene\.document\.DateTools;/,
-       /import org\.apache\.lucene\.search\.BooleanClause;/,
-       /import org\.apache\.lucene\.search\.Query;/,
-       /import org\.apache\.lucene\.search\.TermRangeQuery/,
-       /import org\.apache\.lucene\.search\.TermRangeQuery;/
-      ].each {
-        ant.replaceregexp(file: file("${parentDir}/QueryParserTokenManager.java"),
-            match: "${it}\\s*${separator}",
-            replace: "",
-            encoding: "UTF-8")
-      }
-    }
-  }
-}
-
-configure(project(":lucene:queryparser")) {
-  task javaccParserSurround(type: JavaCCTask) {
-    description "Regenerate surround query parser from lucene/queryparser/surround/parser/QueryParser.jj"
-    group "generation"
-
-    javaccFile = file('src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj')
-    def parentDir = javaccFile.parentFile
-
-    doLast {
-      def separator = System.getProperty('line.separator')
-
-      // Remove unneeded import
-      ant.replaceregexp(match: /import org\.apache\.lucene\.analysis\.TokenStream;\s*${separator}${separator}/,
-          replace: "",
-          encoding: "UTF-8") {
-        ant.fileset(dir: parentDir, includes: "QueryParser.java")
-      }
-
-      // Eliminate compiler warning
-      ant.replace(file: file("${parentDir}/QueryParser.java"),
-          token: "new java.util.ArrayList<int[]>",
-          value: "new java.util.ArrayList<>",
-          encoding: 'UTF-8')
-
-      // There are a bunch of unused imports we need to remove to pass precommit
-      [
-          /import java\.util\.ArrayList;/,
-          /import java\.util\.List;/,
-          /import java\.io\.StringReader;/,
-          /import org\.apache\.lucene\.analysis\.TokenStream;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.SrndQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.FieldsQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.OrQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.AndQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.NotQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.DistanceQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.SrndTermQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.SrndPrefixQuery;/,
-          /import org\.apache\.lucene\.queryparser\.surround\.query\.SrndTruncQuery;/
-      ].each {
-        ant.replaceregexp(file: file("${parentDir}/QueryParserTokenManager.java"),
-            match: "${it}\\s*${separator}",
-            replace: "",
-            encoding: "UTF-8")
-      }
-    }
-  }
-}
-configure(project(":lucene:queryparser")) {
-  task javaccParserFlexible(type: JavaCCTask) {
-    description "Regenerate Flexible query parser from queryparser/flexible/standard/parser/StandardSyntaxParser.jj"
-    group "generation"
-
-    javaccFile = file('src/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParser.jj')
-    def parentDir = javaccFile.parentFile
-
-    doLast {
-      def lineSeparator = System.lineSeparator()
-
-      // extend the proper class
-      ant.replaceregexp(file: "${parentDir}/ParseException.java",
-          match: "public class ParseException extends Exception",
-          replace: "public class ParseException extends QueryNodeParseException",
-          flags: "g",
-          byline: "false",
-          encoding: 'UTF-8')
-
-      // Import correct classes.
-      ant.replaceregexp(file: "${parentDir}/ParseException.java",
-          match: "package org.apache.lucene.queryparser.flexible.standard.parser;",
-          replace: "package org.apache.lucene.queryparser.flexible.standard.parser;${lineSeparator} ${lineSeparator}" +
-              " import org.apache.lucene.queryparser.flexible.messages.Message;${lineSeparator}" +
-              " import org.apache.lucene.queryparser.flexible.messages.MessageImpl;${lineSeparator}" +
-              " import org.apache.lucene.queryparser.flexible.core.*;${lineSeparator}" +
-              " import org.apache.lucene.queryparser.flexible.core.messages.*;",
-          flags: "g",
-          byline: "false",
-          encoding: 'UTF-8')
-
-      // Fill in c'tor code
-      ant.replaceregexp(file: "${parentDir}/ParseException.java",
-          match: "^  public ParseException\\(Token currentTokenVal.*\$(\\s\\s[^}].*\\n)*  \\}",
-          replace: "  public ParseException(Token currentTokenVal,${lineSeparator}" +
-              "     int[][] expectedTokenSequencesVal, String[] tokenImageVal) {${lineSeparator}" +
-              "     super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(${lineSeparator}" +
-              "     currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));${lineSeparator}" +
-              "     this.currentToken = currentTokenVal;${lineSeparator}" +
-              "     this.expectedTokenSequences = expectedTokenSequencesVal;${lineSeparator}" +
-              "     this.tokenImage = tokenImageVal;${lineSeparator}" +
-              "   }",
-          flags: "gm",
-          byline: "false",
-          encoding: 'UTF-8')
-
-      // Invoke super, use proper c'tor
-      ant.replaceregexp(file: "${parentDir}/ParseException.java",
-          match: "^  public ParseException\\(String message.*\$(\\s\\s[^}].*\\n)*  \\}",
-          replace: "  public ParseException(Message message) {${lineSeparator}" +
-              "     super(message);${lineSeparator}" +
-              "   }",
-          flags: "gm",
-          byline: "false",
-          encoding: 'UTF-8')
-
-      // Invoke super properly
-      ant.replaceregexp(file: "${parentDir}/ParseException.java",
-          match: "^  public ParseException\\(\\).*\$(\\s\\s[^}].*\\n)*  \\}",
-          replace: "  public ParseException() {${lineSeparator}" +
-              "     super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, \"Error\"));${lineSeparator}" +
-              "   }",
-          flags: "gm",
-          byline: "false",
-          encoding: 'UTF-8')
-
-      // Redundant cast warning
-      ant.replace(file: file("${parentDir}/StandardSyntaxParser.java"),
-          token: "new java.util.ArrayList<int[]>",
-          value: "new java.util.ArrayList<>",
-          encoding: 'UTF-8')
-
-      // Remove unused imports.
-      def separator = System.getProperty('line.separator')
-      [
-          /import java.io.StringReader;/,
-          /import java.util.Vector;/,
-          /import java.util.Arrays;/,
-          /import org.apache.lucene.queryparser.flexible.messages.Message;/,
-          /import org.apache.lucene.queryparser.flexible.messages.MessageImpl;/,
-          /import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;/,
-          /import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.BoostQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;/,
-          /import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;/,
-          /import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;/
-      ].each {
-        ant.replaceregexp(file: file("${parentDir}/StandardSyntaxParserTokenManager.java"),
-            match: "${it}\\s*${separator}",
-            replace: "",
-            encoding: "UTF-8")
-      }
-    }
-  }
-}
-configure(project(":solr:core")) {
-  task javaccSolrParser(type: JavaCCTask) {
-    description "Regenerate Solr query parser from solr/parser/QueryParser.jj"
-    group "generation"
-
-    javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
-
-    doLast {
-      def separator = System.getProperty('line.separator')
-      def parentDir = javaccFile.parentFile
-
-      [/import java\.io\.StringReader;/,
-       /import java\.util\.ArrayList;/,
-       /import java\.util\.Arrays;/,
-       /import java\.util\.HashSet;/,
-       /import java\.util\.List;/,
-       /import java\.util\.Set;/,
-       /import org\.apache\.lucene\.analysis\.Analyzer;/,
-       /import org\.apache\.lucene\.search\.BooleanClause;/,
-       /import org\.apache\.lucene\.search\.Query;/,
-       /import org\.apache\.solr\.search\.SyntaxError;/,
-       /import org\.apache\.solr\.search\.QParser;/
-      ].each {
-        ant.replaceregexp(file: file("${parentDir}/QueryParserTokenManager.java"),
-            match: "${it}\\s*${separator}",
-            replace: "",
-            encoding: "UTF-8")
-      }
-
-      ant.replace(file: "${parentDir}/QueryParser.java",
-          token: "public QueryParser(CharStream ",
-          value: "protected QueryParser(CharStream ",
-          encoding: "UTF-8")
-
-      ant.replace(file: "${parentDir}/QueryParser.java",
-          token: "public QueryParser(QueryParserTokenManager ",
-          value: "protected QueryParser(QueryParserTokenManager ",
-          encoding: "UTF-8")
-
-      ant.replace(file: "${parentDir}/QueryParser.java",
-          token: "final private LookaheadSuccess jj_ls =",
-          value: "static final private LookaheadSuccess jj_ls =",
-          encoding: "UTF-8")
+      // We don't need CharStream interface as we redirect to our own.
+      exclude "CharStream.java"
     }
   }
 }

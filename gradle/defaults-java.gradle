@@ -19,21 +19,44 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
+    sourceCompatibility = rootProject.minJavaVersion
+    targetCompatibility = rootProject.minJavaVersion
 
+    // Use 'release' flag instead of 'source' and 'target'
+    tasks.withType(JavaCompile) {
+      options.compilerArgs += ["--release", rootProject.minJavaVersion.toString()]
+    }
+
+    // Configure warnings.
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
       options.compilerArgs += [
-        "-Xlint",
         "-Xlint:-deprecation",
         "-Xlint:-serial",
-
+        "-Xlint:cast",
+        "-Xlint:classfile",
+        "-Xlint:dep-ann",
+        "-Xlint:divzero",
+        "-Xlint:empty",
+        "-Xlint:fallthrough",
+        "-Xlint:finally",
+        "-Xlint:options",
+        "-Xlint:overrides",
+        "-Xlint:processing",
+        "-Xlint:rawtypes",
+        "-Xlint:static",
+        "-Xlint:try",
+        "-Xlint:unchecked",
+        "-Xlint:varargs",
         "-Xdoclint:all/protected",
         "-Xdoclint:-missing",
         "-Xdoclint:-accessibility",
         "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
       ]
+
+      if (propertyOrDefault("javac.failOnWarnings", true).toBoolean()) {
+        options.compilerArgs += "-Werror"
+      }
     }
   }
 }

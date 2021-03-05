@@ -88,7 +88,7 @@ Snippets can be included directly from any file in the Lucene/Solr GIT repo by r
 ----
 --
 
-When building the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `build/solr-ref-guide/content` directory used by Ant.
+When building the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `solr-ref-guide/build/content` directory used by Gradle.
 
 In order for editors (such as ATOM) to be able to offer "live preview" of the `*.adoc` files using these includes, the `solr-root-path` attribute must also be set as a document level attribute in each file, with the correct relative path.
 
@@ -380,3 +380,48 @@ Text of note
 In this example, the type of admonition is included in square brackets (`[NOTE]`), and the title is prefixed with a period. Four equal signs give the start and end points of the note text (which can include new lines, lists, code examples, etc.).
 
 More info: http://asciidoctor.org/docs/user-manual/#admonition
+
+== STEM Notation Support
+
+We have set up the Ref Guide to be able to support STEM notation whenever it's needed.
+
+The http://asciimath.org/[AsciiMath] syntax is supported by default, but LaTeX syntax is also available.
+
+To insert a mathematical formula inline with your text, you can simply write:
+
+[source]
+----
+stem:[a//b]
+----
+
+MathJax.js will render the formula as proper mathematical notation when a user loads the page.
+When the above example is converted to HTML, it will look like this to a user: stem:[a//b]
+
+To insert LaTeX, preface the formula with `latexmath` instead of `stem`:
+
+[source]
+----
+latexmath:[tp \leq 1 - (1 - sim^{rows})^{bands}]
+----
+
+Long formulas, or formulas which should to be set off from the main text, can use the block syntax prefaced by `stem` or `latexmath`:
+
+[source]
+----
+[stem]
+++++
+sqrt(3x-1)+(1+x)^2 < y
+++++
+----
+
+or for LaTeX:
+
+[source]
+----
+[latexmath]
+++++
+[tp \leq 1 - (1 - sim^{rows})^{bands}]
+++++
+----
+
+More info: https://asciidoctor.org/docs/user-manual/#stem-in

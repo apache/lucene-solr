@@ -43,6 +43,7 @@ import org.apache.lucene.util.mutable.MutableValueLong;
  * 
  * @see Long
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see LongPointField
  */
 @Deprecated
 public class TrieLongField extends TrieField implements LongValueFieldType {
@@ -68,7 +69,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
     
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
         
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);

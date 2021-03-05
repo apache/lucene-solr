@@ -19,16 +19,14 @@ package org.apache.lucene.queries.function.valuesource;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
- * A base class for ValueSource implementations that retrieve values for
- * a single field from DocValues.
- *
- *
+ * A base class for ValueSource implementations that retrieve values for a single field from
+ * DocValues.
  */
 public abstract class FieldCacheSource extends ValueSource {
   protected final String field;
 
   public FieldCacheSource(String field) {
-    this.field=field;
+    this.field = field;
   }
 
   public String getField() {
@@ -43,7 +41,7 @@ public abstract class FieldCacheSource extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof FieldCacheSource)) return false;
-    FieldCacheSource other = (FieldCacheSource)o;
+    FieldCacheSource other = (FieldCacheSource) o;
     return this.field.equals(other.field);
   }
 
@@ -51,5 +49,4 @@ public abstract class FieldCacheSource extends ValueSource {
   public int hashCode() {
     return field.hashCode();
   }
-
 }

@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -156,7 +155,7 @@ public class HttpClientUtil {
     // Configure the SocketFactoryRegistryProvider if user has specified the provider type.
     String socketFactoryRegistryProviderClassName = System.getProperty(SYS_PROP_SOCKET_FACTORY_REGISTRY_PROVIDER);
     if (socketFactoryRegistryProviderClassName != null) {
-      log.debug("Using " + socketFactoryRegistryProviderClassName);
+      log.debug("Using {}", socketFactoryRegistryProviderClassName);
       try {
         socketFactoryRegistryProvider = (SocketFactoryRegistryProvider)Class.forName(socketFactoryRegistryProviderClassName).getConstructor().newInstance();
       } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
@@ -167,10 +166,10 @@ public class HttpClientUtil {
     // Configure the HttpClientBuilder if user has specified the factory type.
     String factoryClassName = System.getProperty(SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
     if (factoryClassName != null) {
-      log.debug ("Using " + factoryClassName);
+      log.debug ("Using {}", factoryClassName);
       try {
         HttpClientBuilderFactory factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).getConstructor().newInstance();
-        httpClientBuilder = factory.getHttpClientBuilder(Optional.of(SolrHttpClientBuilder.create()));
+        httpClientBuilder = factory.getHttpClientBuilder(SolrHttpClientBuilder.create());
       } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
         throw new RuntimeException("Unable to instantiate Solr HttpClientBuilderFactory", e);
       }
@@ -254,7 +253,7 @@ public class HttpClientUtil {
       } else {
         sslConnectionSocketFactory = new SSLConnectionSocketFactory(SSLContexts.createSystemDefault(),
                                                                     NoopHostnameVerifier.INSTANCE);
-        log.debug(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME + "is false, hostname checks disabled.");
+        log.debug("{} is false, hostname checks disabled.", HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
       }
       builder.register("https", sslConnectionSocketFactory);
 
@@ -289,7 +288,7 @@ public class HttpClientUtil {
   public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager, HttpRequestExecutor httpRequestExecutor)  {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
     if (log.isDebugEnabled()) {
-      log.debug("Creating new http client, config:" + config);
+      log.debug("Creating new http client, config: {}", config);
     }
 
     cm.setMaxTotal(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000));

@@ -16,21 +16,15 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.TotalHits.Relation;
 
-/**
- * A {@link Rescorer} that re-sorts according to a provided
- * Sort.
- */
-
+/** A {@link Rescorer} that re-sorts according to a provided Sort. */
 public class SortRescorer extends Rescorer {
 
   private final Sort sort;
@@ -41,7 +35,8 @@ public class SortRescorer extends Rescorer {
   }
 
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN) throws IOException {
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+      throws IOException {
 
     // Copy ScoreDoc[] and sort by ascending docID:
     ScoreDoc[] hits = firstPassTopDocs.scoreDocs.clone();
@@ -98,23 +93,31 @@ public class SortRescorer extends Rescorer {
   }
 
   @Override
-  public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException {
-    TopDocs oneHit = new TopDocs(new TotalHits(1, Relation.EQUAL_TO), new ScoreDoc[] {new ScoreDoc(docID, firstPassExplanation.getValue().floatValue())});
+  public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID)
+      throws IOException {
+    TopDocs oneHit =
+        new TopDocs(
+            new TotalHits(1, Relation.EQUAL_TO),
+            new ScoreDoc[] {new ScoreDoc(docID, firstPassExplanation.getValue().floatValue())});
     TopDocs hits = rescore(searcher, oneHit, 1);
     assert hits.totalHits.value == 1;
 
     List<Explanation> subs = new ArrayList<>();
 
     // Add first pass:
-    Explanation first = Explanation.match(firstPassExplanation.getValue(), "first pass score", firstPassExplanation);
+    Explanation first =
+        Explanation.match(
+            firstPassExplanation.getValue(), "first pass score", firstPassExplanation);
     subs.add(first);
 
     FieldDoc fieldDoc = (FieldDoc) hits.scoreDocs[0];
 
     // Add sort values:
     SortField[] sortFields = sort.getSort();
-    for(int i=0;i<sortFields.length;i++) {
-      subs.add(Explanation.match(0.0f, "sort field " + sortFields[i].toString() + " value=" + fieldDoc.fields[i]));
+    for (int i = 0; i < sortFields.length; i++) {
+      subs.add(
+          Explanation.match(
+              0.0f, "sort field " + sortFields[i].toString() + " value=" + fieldDoc.fields[i]));
     }
 
     // TODO: if we could ask the Sort to explain itself then

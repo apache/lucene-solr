@@ -22,5 +22,6 @@ import java.util.Map;
 public interface Attributes {
   Object getAttribute(String key);
   void setAttribute(String key, Object value);
+  @SuppressWarnings({"rawtypes"})
   Map getAttributes();
 }

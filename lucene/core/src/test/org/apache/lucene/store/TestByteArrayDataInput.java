@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestByteArrayDataInput extends LuceneTestCase {

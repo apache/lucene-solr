@@ -82,7 +82,7 @@ public class BinaryField extends FieldType  {
   public IndexableField createField(SchemaField field, Object val) {
     if (val == null) return null;
     if (!field.stored()) {
-      log.trace("Ignoring unstored binary field: " + field);
+      log.trace("Ignoring unstored binary field: {}", field);
       return null;
     }
     byte[] buf = null;

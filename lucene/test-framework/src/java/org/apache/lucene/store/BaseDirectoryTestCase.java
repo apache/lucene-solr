@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.store;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.generators.RandomBytes;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,7 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.CRC32;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexNotFoundException;
@@ -49,28 +51,23 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Assert;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.generators.RandomBytes;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-
-/**
- * Base class for {@link Directory} implementations.
- */
+/** Base class for {@link Directory} implementations. */
 public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
-  /** A subclass returns the Directory to be tested; if it's
-   *  an FS-based directory it should point to the specified
-   *  path, else it can ignore it. */
+  /**
+   * A subclass returns the Directory to be tested; if it's an FS-based directory it should point to
+   * the specified path, else it can ignore it.
+   */
   protected abstract Directory getDirectory(Path path) throws IOException;
 
   public void testCopyFrom() throws Exception {
     try (Directory source = getDirectory(createTempDir("testCopy"));
-         Directory dest = newDirectory()) {
+        Directory dest = newDirectory()) {
       runCopyFrom(source, dest);
     }
 
     try (Directory source = newDirectory();
-         Directory dest = getDirectory(createTempDir("testCopyDestination"))) {
+        Directory dest = getDirectory(createTempDir("testCopyDestination"))) {
       runCopyFrom(source, dest);
     }
   }
@@ -125,9 +122,11 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       dir.deleteFile("foo.txt");
       Assert.assertFalse(Arrays.asList(dir.listAll()).contains(file));
 
-      expectThrowsAnyOf(Arrays.asList(NoSuchFileException.class, FileNotFoundException.class), () -> {
-        dir.deleteFile("foo.txt");
-      });
+      expectThrowsAnyOf(
+          Arrays.asList(NoSuchFileException.class, FileNotFoundException.class),
+          () -> {
+            dir.deleteFile("foo.txt");
+          });
     }
   }
 
@@ -224,14 +223,72 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       final int offset = random().nextInt(8);
       final int length = TestUtil.nextInt(random(), 1, 16);
       try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
-        byte[] b = new byte[offset + length * Long.BYTES - TestUtil.nextInt(random(), 1, Long.BYTES)];
+        byte[] b =
+            new byte[offset + length * Long.BYTES - TestUtil.nextInt(random(), 1, Long.BYTES)];
         random().nextBytes(b);
         out.writeBytes(b, b.length);
       }
       try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
         input.seek(offset);
-        expectThrows(EOFException.class,
-            () -> input.readLELongs(new long[length], 0, length));
+        expectThrows(EOFException.class, () -> input.readLELongs(new long[length], 0, length));
+      }
+    }
+  }
+
+  public void testAlignedFloats() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testAlignedFloats"))) {
+      try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(3f)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(Float.MAX_VALUE)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(-3f)));
+      }
+      try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
+        assertEquals(12, input.length());
+        float[] ff = new float[4];
+        input.readLEFloats(ff, 1, 3);
+        assertArrayEquals(new float[] {0, 3f, Float.MAX_VALUE, -3f}, ff, 0);
+        assertEquals(12, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testUnalignedFloats() throws Exception {
+    int padding = random().nextInt(3) + 1;
+    try (Directory dir = getDirectory(createTempDir("testUnalignedFloats"))) {
+      try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
+        for (int i = 0; i < padding; i++) {
+          out.writeByte((byte) 2);
+        }
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(3f)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(Float.MAX_VALUE)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(-3f)));
+      }
+      try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
+        assertEquals(12 + padding, input.length());
+        for (int i = 0; i < padding; i++) {
+          assertEquals(2, input.readByte());
+        }
+        float[] ff = new float[4];
+        input.readLEFloats(ff, 1, 3);
+        assertArrayEquals(new float[] {0, 3f, Float.MAX_VALUE, -3f}, ff, 0);
+        assertEquals(12 + padding, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testFloatsUnderflow() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testFloatsUnderflow"))) {
+      final int offset = random().nextInt(4);
+      final int length = TestUtil.nextInt(random(), 1, 16);
+      try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
+        byte[] b =
+            new byte[offset + length * Float.BYTES - TestUtil.nextInt(random(), 1, Float.BYTES)];
+        random().nextBytes(b);
+        out.writeBytes(b, b.length);
+      }
+      try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
+        input.seek(offset);
+        expectThrows(EOFException.class, () -> input.readLEFloats(new float[length], 0, length));
       }
     }
   }
@@ -356,23 +413,29 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       Set<String> set1 = input.readSetOfStrings();
       assertEquals(asSet("test1", "test2"), set1);
       // set should be immutable
-      expectThrows(UnsupportedOperationException.class, () -> {
-        set1.add("bogus");
-      });
+      expectThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            set1.add("bogus");
+          });
 
       Set<String> set2 = input.readSetOfStrings();
       assertEquals(Collections.emptySet(), set2);
       // set should be immutable
-      expectThrows(UnsupportedOperationException.class, () -> {
-        set2.add("bogus");
-      });
+      expectThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            set2.add("bogus");
+          });
 
       Set<String> set3 = input.readSetOfStrings();
       assertEquals(Collections.singleton("test3"), set3);
       // set should be immutable
-      expectThrows(UnsupportedOperationException.class, () -> {
-        set3.add("bogus");
-      });
+      expectThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            set3.add("bogus");
+          });
 
       assertEquals(input.length(), input.getFilePointer());
       input.close();
@@ -380,7 +443,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   }
 
   public void testMapOfStrings() throws Exception {
-    Map<String,String> m = new HashMap<>();
+    Map<String, String> m = new HashMap<>();
     m.put("test1", "value1");
     m.put("test2", "value2");
 
@@ -395,23 +458,29 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       Map<String, String> map1 = input.readMapOfStrings();
       assertEquals(m, map1);
       // map should be immutable
-      expectThrows(UnsupportedOperationException.class, () -> {
-        map1.put("bogus1", "bogus2");
-      });
+      expectThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            map1.put("bogus1", "bogus2");
+          });
 
       Map<String, String> map2 = input.readMapOfStrings();
       assertEquals(Collections.emptyMap(), map2);
       // map should be immutable
-      expectThrows(UnsupportedOperationException.class, () -> {
-        map2.put("bogus1", "bogus2");
-      });
+      expectThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            map2.put("bogus1", "bogus2");
+          });
 
       Map<String, String> map3 = input.readMapOfStrings();
       assertEquals(Collections.singletonMap("key", "value"), map3);
       // map should be immutable
-      expectThrows(UnsupportedOperationException.class, () -> {
-        map3.put("bogus1", "bogus2");
-      });
+      expectThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            map3.put("bogus1", "bogus2");
+          });
 
       assertEquals(input.length(), input.getFilePointer());
       input.close();
@@ -439,15 +508,16 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
   }
 
-  /** Make sure directory throws AlreadyClosedException if
-   *  you try to createOutput after closing. */
+  /** Make sure directory throws AlreadyClosedException if you try to createOutput after closing. */
   public void testDetectClose() throws Throwable {
     Directory dir = getDirectory(createTempDir("testDetectClose"));
     dir.close();
 
-    expectThrows(AlreadyClosedException.class, () -> {
-      dir.createOutput("test", newIOContext(random()));
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          dir.createOutput("test", newIOContext(random()));
+        });
   }
 
   public void testThreadSafetyInListAll() throws Exception {
@@ -462,51 +532,61 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       }
 
       AtomicBoolean stop = new AtomicBoolean();
-      Thread writer = new Thread(() -> {
-        try {
-          for (int i = 0, max = RandomizedTest.randomIntBetween(500, 1000); i < max; i++) {
-            String fileName = "file-" + i;
-            try (IndexOutput output = dir.createOutput(fileName, newIOContext(random()))) {
-              assert output != null;
-              // Add some lags so that the other thread can read the content of the directory.
-              Thread.yield();
-            }
-            assertTrue(slowFileExists(dir, fileName));
-          }
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        } finally {
-          stop.set(true);
-        }
-      });
-
-      Thread reader = new Thread(() -> {
-        try {
-          Random rnd = new Random(RandomizedTest.randomLong());
-          while (!stop.get()) {
-            String [] files = Arrays.stream(dir.listAll())
-                .filter(name -> !ExtrasFS.isExtra(name)) // Ignore anything from ExtraFS.
-                .toArray(String[]::new);
-
-            if (files.length > 0) {
-              do {
-                String file = RandomPicks.randomFrom(rnd, files);
-                try (IndexInput input = dir.openInput(file, newIOContext(random()))) {
-                  // Just open, nothing else.
-                  assert input != null;
-                } catch (AccessDeniedException e) {
-                  // Access denied is allowed for files for which the output is still open (MockDirectoryWriter enforces
-                  // this, for example). Since we don't synchronize with the writer thread, just ignore it.
+      Thread writer =
+          new Thread(
+              () -> {
+                try {
+                  for (int i = 0, max = RandomizedTest.randomIntBetween(500, 1000); i < max; i++) {
+                    String fileName = "file-" + i;
+                    try (IndexOutput output = dir.createOutput(fileName, newIOContext(random()))) {
+                      assert output != null;
+                      // Add some lags so that the other thread can read the content of the
+                      // directory.
+                      Thread.yield();
+                    }
+                    assertTrue(slowFileExists(dir, fileName));
+                  }
                 } catch (IOException e) {
-                  throw new UncheckedIOException("Something went wrong when opening: " + file, e);
+                  throw new UncheckedIOException(e);
+                } finally {
+                  stop.set(true);
                 }
-              } while (rnd.nextInt(3) != 0); // Sometimes break and list files again.
-            }
-          }
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
-      });
+              });
+
+      Thread reader =
+          new Thread(
+              () -> {
+                try {
+                  Random rnd = new Random(RandomizedTest.randomLong());
+                  while (!stop.get()) {
+                    String[] files =
+                        Arrays.stream(dir.listAll())
+                            .filter(
+                                name -> !ExtrasFS.isExtra(name)) // Ignore anything from ExtraFS.
+                            .toArray(String[]::new);
+
+                    if (files.length > 0) {
+                      do {
+                        String file = RandomPicks.randomFrom(rnd, files);
+                        try (IndexInput input = dir.openInput(file, newIOContext(random()))) {
+                          // Just open, nothing else.
+                          assert input != null;
+                        } catch (AccessDeniedException e) {
+                          // Access denied is allowed for files for which the output is still open
+                          // (MockDirectoryWriter enforces
+                          // this, for example). Since we don't synchronize with the writer thread,
+                          // just ignore it.
+                        } catch (IOException e) {
+                          throw new UncheckedIOException(
+                              "Something went wrong when opening: " + file, e);
+                        }
+                      } while (rnd.nextInt(3) != 0); // Sometimes break and list files again.
+                    }
+                  }
+                } catch (IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              });
 
       reader.start();
       writer.start();
@@ -516,10 +596,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
   }
 
-  /**
-   * LUCENE-1468: once we create an output, we should see
-   * it in the dir listing.
-   */
+  /** LUCENE-1468: once we create an output, we should see it in the dir listing. */
   public void testFileExistsInListAfterCreated() throws IOException {
     try (Directory dir = getDirectory(createTempDir("testFileExistsInListAfterCreated"))) {
       String name = "file";
@@ -570,16 +647,19 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       IndexInput i = dir.openInput("out", newIOContext(random()));
 
       // Seeking past EOF should always throw EOFException
-      expectThrows(EOFException.class, () -> i.seek(len + RandomizedTest.randomIntBetween(1, 2048)));
+      expectThrows(
+          EOFException.class, () -> i.seek(len + RandomizedTest.randomIntBetween(1, 2048)));
 
       // Seeking exactly to EOF should never throw any exception.
       i.seek(len);
 
       // But any read following the seek(len) should throw an EOFException.
       expectThrows(EOFException.class, i::readByte);
-      expectThrows(EOFException.class, () -> {
-        i.readBytes(new byte [1], 0, 1);
-      });
+      expectThrows(
+          EOFException.class,
+          () -> {
+            i.readBytes(new byte[1], 0, 1);
+          });
 
       i.close();
     }
@@ -593,18 +673,24 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       o.writeBytes(b, 0, len);
       o.close();
       IndexInput i = dir.openInput("out", newIOContext(random()));
-      expectThrows(IllegalArgumentException.class, () -> {
-        i.slice("slice1", 0, len + 1);
-      });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            i.slice("slice1", 0, len + 1);
+          });
 
-      expectThrows(IllegalArgumentException.class, () -> {
-        i.slice("slice2", -1, len);
-      });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            i.slice("slice2", -1, len);
+          });
 
       IndexInput slice = i.slice("slice3", 4, len / 2);
-      expectThrows(IllegalArgumentException.class, () -> {
-        slice.slice("slice3sub", 1, len / 2);
-      });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            slice.slice("slice3sub", 1, len / 2);
+          });
 
       i.close();
     }
@@ -615,9 +701,11 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     Path tempDir = createTempDir("doesnotexist");
     IOUtils.rm(tempDir);
     try (Directory dir = getDirectory(tempDir)) {
-      expectThrowsAnyOf(Arrays.asList(NoSuchFileException.class, IndexNotFoundException.class), () -> {
-        DirectoryReader.open(dir);
-      });
+      expectThrowsAnyOf(
+          Arrays.asList(NoSuchFileException.class, IndexNotFoundException.class),
+          () -> {
+            DirectoryReader.open(dir);
+          });
     }
   }
 
@@ -653,8 +741,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           out.writeByte(in.readByte());
           upto++;
         } else {
-          final int chunk = Math.min(
-              TestUtil.nextInt(random(), 1, bytes.length), size - upto);
+          final int chunk = Math.min(TestUtil.nextInt(random(), 1, bytes.length), size - upto);
           out.copyBytes(in, chunk);
           upto += chunk;
         }
@@ -672,8 +759,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           assertEquals(value(upto), v);
           upto++;
         } else {
-          final int limit = Math.min(
-              TestUtil.nextInt(random(), 1, bytes.length), size - upto);
+          final int limit = Math.min(TestUtil.nextInt(random(), 1, bytes.length), size - upto);
           in2.readBytes(bytes, 0, limit);
           for (int byteIdx = 0; byteIdx < limit; byteIdx++) {
             assertEquals(value(upto), bytes[byteIdx]);
@@ -711,23 +797,27 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       // now make N copies of the remaining bytes
       int threads = 10;
       CyclicBarrier start = new CyclicBarrier(threads);
-      Thread copies [] = IntStream.range(0, threads)
-          .mapToObj((i) -> {
-            IndexInput src = input.clone();
-            Thread t = new Thread(() -> {
-              try {
-                start.await();
-                IndexOutput dst = d.createOutput("copy" + i, IOContext.DEFAULT);
-                dst.copyBytes(src, src.length() - headerLen);
-                dst.close();
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            });
-            t.start();
-            return t;
-          })
-          .toArray(Thread[]::new);
+      Thread copies[] =
+          IntStream.range(0, threads)
+              .mapToObj(
+                  (i) -> {
+                    IndexInput src = input.clone();
+                    Thread t =
+                        new Thread(
+                            () -> {
+                              try {
+                                start.await();
+                                IndexOutput dst = d.createOutput("copy" + i, IOContext.DEFAULT);
+                                dst.copyBytes(src, src.length() - headerLen);
+                                dst.close();
+                              } catch (Exception e) {
+                                throw new RuntimeException(e);
+                              }
+                            });
+                    t.start();
+                    return t;
+                  })
+              .toArray(Thread[]::new);
 
       for (Thread t : copies) {
         t.join();
@@ -751,7 +841,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     Path path = createTempDir("nocreate");
     try (Directory fsdir = getDirectory(path)) {
       // this test backdoors the directory via the filesystem. so it must be an FSDir (for now)
-      // TODO: figure a way to test this better/clean it up. E.g. we should be testing for FileSwitchDir,
+      // TODO: figure a way to test this better/clean it up. E.g. we should be testing for
+      // FileSwitchDir,
       // if it's using two FSdirs and so on
       if (fsdir instanceof FSDirectory == false) {
         assumeTrue("test only works for FSDirectory subclasses", false);
@@ -769,15 +860,17 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       int fileCount = fsdir.listAll().length;
 
       // fsync it
-      expectThrowsAnyOf(Arrays.asList(FileNotFoundException.class, NoSuchFileException.class), () -> {
-        fsdir.sync(Collections.singleton("afile"));
-      });
+      expectThrowsAnyOf(
+          Arrays.asList(FileNotFoundException.class, NoSuchFileException.class),
+          () -> {
+            fsdir.sync(Collections.singleton("afile"));
+          });
 
       // no new files created
       assertEquals(fileCount, fsdir.listAll().length);
     }
   }
-  
+
   // random access APIs
   public void testRandomLong() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testLongs"))) {
@@ -827,7 +920,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       input.close();
     }
   }
-  
+
   public void testRandomInt() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testInts"))) {
       IndexOutput output = dir.createOutput("ints", newIOContext(random()));
@@ -875,7 +968,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       input.close();
     }
   }
-  
+
   public void testRandomShort() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testShorts"))) {
       IndexOutput output = dir.createOutput("shorts", newIOContext(random()));
@@ -923,7 +1016,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       input.close();
     }
   }
-  
+
   public void testRandomByte() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testBytes"))) {
       IndexOutput output = dir.createOutput("bytes", newIOContext(random()));
@@ -971,7 +1064,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       input.close();
     }
   }
-  
+
   /** try to stress slices of slices */
   public void testSliceOfSlice() throws Exception {
     try (Directory dir = getDirectory(createTempDir("sliceOfSlice"))) {
@@ -1023,10 +1116,10 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       input.close();
     }
   }
-  
-  /** 
-   * This test that writes larger than the size of the buffer output
-   * will correctly increment the file pointer.
+
+  /**
+   * This test that writes larger than the size of the buffer output will correctly increment the
+   * file pointer.
    */
   public void testLargeWrites() throws IOException {
     try (Directory dir = getDirectory(createTempDir("largeWrites"))) {
@@ -1054,7 +1147,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       out.close();
     }
   }
-  
+
   public void testDoubleCloseOutput() throws Throwable {
     try (Directory dir = getDirectory(createTempDir())) {
       IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
@@ -1063,7 +1156,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       out.close(); // close again
     }
   }
-  
+
   public void testDoubleCloseInput() throws Throwable {
     try (Directory dir = getDirectory(createTempDir())) {
       IndexOutput out = dir.createOutput("foobar", newIOContext(random()));
@@ -1092,9 +1185,10 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
         in.close();
       }
 
-      Set<String> files = Arrays.stream(dir.listAll())
-          .filter(file -> !ExtrasFS.isExtra(file)) // remove any ExtrasFS stuff.
-          .collect(Collectors.toSet());
+      Set<String> files =
+          Arrays.stream(dir.listAll())
+              .filter(file -> !ExtrasFS.isExtra(file)) // remove any ExtrasFS stuff.
+              .collect(Collectors.toSet());
 
       assertEquals(new HashSet<String>(names), files);
     }
@@ -1108,11 +1202,13 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       }
 
       // Try to create an existing file should fail.
-      expectThrows(FileAlreadyExistsException.class, () -> {
-        try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
-          assert out != null;
-        }
-      });
+      expectThrows(
+          FileAlreadyExistsException.class,
+          () -> {
+            try (IndexOutput out = dir.createOutput(name, IOContext.DEFAULT)) {
+              assert out != null;
+            }
+          });
 
       // Delete file and try to recreate it.
       dir.deleteFile(name);
@@ -1146,24 +1242,33 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       try (IndexInput in = dir.openInput("a", IOContext.DEFAULT)) {
         in.seek(100);
         assertEquals(100, in.getFilePointer());
-        expectThrows(EOFException.class, () -> {      
-          in.seek(1025);
-        });
+        expectThrows(
+            EOFException.class,
+            () -> {
+              in.seek(1025);
+            });
       }
     }
   }
 
-  // Make sure the FSDirectory impl properly "emulates" deletions on filesystems (Windows) with buggy deleteFile:
+  // Make sure the FSDirectory impl properly "emulates" deletions on filesystems (Windows) with
+  // buggy deleteFile:
   public void testPendingDeletions() throws IOException {
     try (Directory dir = getDirectory(addVirusChecker(createTempDir()))) {
-      assumeTrue("we can only install VirusCheckingFS on an FSDirectory", dir instanceof FSDirectory);
+      assumeTrue(
+          "we can only install VirusCheckingFS on an FSDirectory", dir instanceof FSDirectory);
       FSDirectory fsDir = (FSDirectory) dir;
 
       // Keep trying until virus checker refuses to delete:
       final String fileName;
       while (true) {
-        // create a random filename (segment file name style), so it cannot hit windows problem with special filenames ("con", "com1",...):
-        String candidate = IndexFileNames.segmentFileName(TestUtil.randomSimpleString(random(), 1, 6), TestUtil.randomSimpleString(random()), "test");
+        // create a random filename (segment file name style), so it cannot hit windows problem with
+        // special filenames ("con", "com1",...):
+        String candidate =
+            IndexFileNames.segmentFileName(
+                TestUtil.randomSimpleString(random(), 1, 6),
+                TestUtil.randomSimpleString(random()),
+                "test");
         try (IndexOutput out = dir.createOutput(candidate, IOContext.DEFAULT)) {
           out.getFilePointer(); // just fake access to prevent compiler warning
         }
@@ -1179,24 +1284,32 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       assertFalse(Arrays.asList(fsDir.listAll()).contains(fileName));
 
       // Make sure fileLength claims it's deleted:
-      expectThrows(NoSuchFileException.class, () -> {      
-        fsDir.fileLength(fileName);
-      });
+      expectThrows(
+          NoSuchFileException.class,
+          () -> {
+            fsDir.fileLength(fileName);
+          });
 
       // Make sure rename fails:
-      expectThrows(NoSuchFileException.class, () -> {      
-        fsDir.rename(fileName, "file2");
-      });
+      expectThrows(
+          NoSuchFileException.class,
+          () -> {
+            fsDir.rename(fileName, "file2");
+          });
 
       // Make sure delete fails:
-      expectThrows(NoSuchFileException.class, () -> {      
-        fsDir.deleteFile(fileName);
-      });
+      expectThrows(
+          NoSuchFileException.class,
+          () -> {
+            fsDir.deleteFile(fileName);
+          });
 
       // Make sure we cannot open it for reading:
-      expectThrows(NoSuchFileException.class, () -> {      
-        fsDir.openInput(fileName, IOContext.DEFAULT);
-      });
+      expectThrowsAnyOf(
+          Arrays.asList(NoSuchFileException.class, FileNotFoundException.class),
+          () -> {
+            fsDir.openInput(fileName, IOContext.DEFAULT);
+          });
     }
   }
 
@@ -1205,8 +1318,13 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       int count = atLeast(20);
       Set<String> names = new HashSet<>();
       while (names.size() < count) {
-        // create a random filename (segment file name style), so it cannot hit windows problem with special filenames ("con", "com1",...):
-        String name = IndexFileNames.segmentFileName(TestUtil.randomSimpleString(random(), 1, 6), TestUtil.randomSimpleString(random()), "test");
+        // create a random filename (segment file name style), so it cannot hit windows problem with
+        // special filenames ("con", "com1",...):
+        String name =
+            IndexFileNames.segmentFileName(
+                TestUtil.randomSimpleString(random(), 1, 6),
+                TestUtil.randomSimpleString(random()),
+                "test");
         if (random().nextInt(5) == 1) {
           IndexOutput out = dir.createTempOutput(name, "foo", IOContext.DEFAULT);
           names.add(out.getName());

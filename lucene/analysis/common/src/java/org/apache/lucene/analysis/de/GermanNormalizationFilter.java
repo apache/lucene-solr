@@ -16,27 +16,26 @@
  */
 package org.apache.lucene.analysis.de;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.StemmerUtil;
 
 /**
- * Normalizes German characters according to the heuristics
- * of the <a href="http://snowball.tartarus.org/algorithms/german2/stemmer.html">
- * German2 snowball algorithm</a>.
- * It allows for the fact that ä, ö and ü are sometimes written as ae, oe and ue.
+ * Normalizes German characters according to the heuristics of the <a
+ * href="http://snowball.tartarus.org/algorithms/german2/stemmer.html">German2 snowball
+ * algorithm</a>. It allows for the fact that ä, ö and ü are sometimes written as ae, oe and ue.
+ *
  * <ul>
- *   <li> 'ß' is replaced by 'ss'
- *   <li> 'ä', 'ö', 'ü' are replaced by 'a', 'o', 'u', respectively.
- *   <li> 'ae' and 'oe' are replaced by 'a', and 'o', respectively.
- *   <li> 'ue' is replaced by 'u', when not following a vowel or q.
+ *   <li>'ß' is replaced by 'ss'
+ *   <li>'ä', 'ö', 'ü' are replaced by 'a', 'o', 'u', respectively.
+ *   <li>'ae' and 'oe' are replaced by 'a', and 'o', respectively.
+ *   <li>'ue' is replaced by 'u', when not following a vowel or q.
  * </ul>
- * This is useful if you want this normalization without using
- * the German2 stemmer, or perhaps no stemming at all.
+ *
+ * This is useful if you want this normalization without using the German2 stemmer, or perhaps no
+ * stemming at all.
  */
 public final class GermanNormalizationFilter extends TokenFilter {
   // FSM with 3 states:
@@ -45,7 +44,7 @@ public final class GermanNormalizationFilter extends TokenFilter {
   private static final int U = 2; /* umlaut state, allows e-deletion */
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  
+
   public GermanNormalizationFilter(TokenStream input) {
     super(input);
   }
@@ -58,7 +57,7 @@ public final class GermanNormalizationFilter extends TokenFilter {
       int length = termAtt.length();
       for (int i = 0; i < length; i++) {
         final char c = buffer[i];
-        switch(c) {
+        switch (c) {
           case 'a':
           case 'o':
             state = U;
@@ -67,8 +66,7 @@ public final class GermanNormalizationFilter extends TokenFilter {
             state = (state == N) ? U : V;
             break;
           case 'e':
-            if (state == U)
-              length = StemmerUtil.delete(buffer, i--, length);
+            if (state == U) length = StemmerUtil.delete(buffer, i--, length);
             state = V;
             break;
           case 'i':
@@ -84,15 +82,14 @@ public final class GermanNormalizationFilter extends TokenFilter {
             buffer[i] = 'o';
             state = V;
             break;
-          case 'ü': 
+          case 'ü':
             buffer[i] = 'u';
             state = V;
             break;
           case 'ß':
             buffer[i++] = 's';
-            buffer = termAtt.resizeBuffer(1+length);
-            if (i < length)
-              System.arraycopy(buffer, i, buffer, i+1, (length-i));
+            buffer = termAtt.resizeBuffer(1 + length);
+            if (i < length) System.arraycopy(buffer, i, buffer, i + 1, (length - i));
             buffer[i] = 's';
             length++;
             state = N;

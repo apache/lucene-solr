@@ -39,6 +39,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
   private static SpellingQueryConverter queryConverter;
 
   @BeforeClass
+  @SuppressWarnings({"rawtypes"})
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     //Index something with a title
@@ -57,8 +58,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
 
@@ -94,8 +97,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testFieldType() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "external");
@@ -138,8 +143,10 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
    * No indexDir location set
    */
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testRAMDirectory() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", FileBasedSpellChecker.class.getName());
 

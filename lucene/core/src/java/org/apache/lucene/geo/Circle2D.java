@@ -20,9 +20,7 @@ package org.apache.lucene.geo;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.SloppyMath;
 
-/**
- * 2D circle implementation containing spatial logic.
- */
+/** 2D circle implementation containing spatial logic. */
 class Circle2D implements Component2D {
 
   private final DistanceCalculator calculator;
@@ -68,130 +66,163 @@ class Circle2D implements Component2D {
   }
 
   @Override
-  public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                 double ax, double ay, double bx, double by, double cx, double cy) {
+  public boolean intersectsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
-      return Relation.CELL_OUTSIDE_QUERY;
+      return false;
     }
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      // indexed "triangle" is a point: shortcut by checking contains
-      return contains(ax, ay) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
-    } else if (ax == cx && ay == cy) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(ax, ay, bx, by);
-    } else if (ax == bx && ay == by) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(bx, by, cx, cy);
-    } else if (bx == cx && by == cy) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(cx, cy, ax, ay);
-    }
-    // indexed "triangle" is a triangle:
-    return relateIndexedTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
+    return contains(aX, aY) || contains(bX, bY) || calculator.intersectsLine(aX, aY, bX, bY);
   }
 
   @Override
-  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
-                                       double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    // short cut, lines and points cannot contain this type of shape
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+  public boolean intersectsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
+      return false;
+    }
+    return contains(aX, aY)
+        || contains(bX, bY)
+        || contains(cX, cY)
+        || Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), aX, aY, bX, bY, cX, cY)
+        || calculator.intersectsLine(aX, aY, bX, bY)
+        || calculator.intersectsLine(bX, bY, cX, cY)
+        || calculator.intersectsLine(cX, cY, aX, aY);
+  }
+
+  @Override
+  public boolean containsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
+      return false;
+    }
+    return contains(aX, aY) && contains(bX, bY);
+  }
+
+  @Override
+  public boolean containsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
+      return false;
+    }
+    return contains(aX, aY) && contains(bX, bY) && contains(cX, cY);
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return contains(x, y) ? WithinRelation.NOTWITHIN : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
     }
+    if (ab == true && calculator.intersectsLine(aX, aY, bX, bY)) {
+      return WithinRelation.NOTWITHIN;
+    }
+    return WithinRelation.DISJOINT;
+  }
 
+  @Override
+  public WithinRelation withinTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY,
+      boolean bc,
+      double cX,
+      double cY,
+      boolean ca) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
     }
 
     // if any of the points is inside the circle then we cannot be within this
     // indexed shape
-    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+    if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
       return WithinRelation.NOTWITHIN;
     }
 
     // we only check edges that belong to the original polygon. If we intersect any of them, then
     // we are not within.
-    if (ab == true && calculator.intersectsLine(ax, ay, bx, by)) {
+    if (ab == true && calculator.intersectsLine(aX, aY, bX, bY)) {
       return WithinRelation.NOTWITHIN;
     }
-    if (bc == true && calculator.intersectsLine(bx, by, cx, cy)) {
+    if (bc == true && calculator.intersectsLine(bX, bY, cX, cY)) {
       return WithinRelation.NOTWITHIN;
     }
-    if (ca == true && calculator.intersectsLine(cx, cy, ax, ay)) {
+    if (ca == true && calculator.intersectsLine(cX, cY, aX, aY)) {
       return WithinRelation.NOTWITHIN;
     }
 
-    // check if center is within the triangle. This is the only check that returns this circle as a candidate but that is ol
+    // check if center is within the triangle. This is the only check that returns this circle as a
+    // candidate but that is ol
     // is fine as the center must be inside to be one of the triangles.
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), ax, ay, bx, by, cx, cy) == true) {
+    if (Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), aX, aY, bX, bY, cX, cY)
+        == true) {
       return WithinRelation.CANDIDATE;
     }
     return WithinRelation.DISJOINT;
   }
 
-  /** relates an indexed line segment (a "flat triangle") with the polygon */
-  private Relation relateIndexedLineSegment(double a2x, double a2y, double b2x, double b2y) {
-    // check endpoints of the line segment
-    int numCorners = 0;
-    if (contains(a2x, a2y)) {
-      ++numCorners;
-    }
-    if (contains(b2x, b2y)) {
-      ++numCorners;
-    }
-
-    if (numCorners == 2) {
-      return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners == 0) {
-      if (calculator.intersectsLine(a2x, a2y, b2x, b2y)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-    return Relation.CELL_CROSSES_QUERY;
-  }
-
-  /** relates an indexed triangle with the polygon */
-  private Relation relateIndexedTriangle(double minX, double maxX, double minY, double maxY,
-                                         double ax, double ay, double bx, double by, double cx, double cy) {
-    // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
-    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
-    if (numCorners == 3) {
-      return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners == 0) {
-      if (Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), ax, ay, bx, by, cx, cy) == true) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (calculator.intersectsLine(ax, ay, bx, by) ||
-          calculator.intersectsLine(bx, by, cx, cy) ||
-          calculator.intersectsLine(cx, cy, ax, ay)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-    return Relation.CELL_CROSSES_QUERY;
-  }
-
-  private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
-    int containsCount = 0;
-    if (contains(ax, ay)) {
-      containsCount++;
-    }
-    if (contains(bx, by)) {
-      containsCount++;
-    }
-    if (containsCount == 1) {
-      // if one point is inside and the other outside, we know
-      // already that the triangle intersect.
-      return containsCount;
-    }
-    if (contains(cx, cy)) {
-      containsCount++;
-    }
-    return containsCount;
-  }
-
-  private static boolean intersectsLine(double centerX, double centerY, double aX, double aY, double bX, double bY, DistanceCalculator calculator) {
-    //Algorithm based on this thread : https://stackoverflow.com/questions/3120357/get-closest-point-to-a-line
+  private static boolean intersectsLine(
+      double centerX,
+      double centerY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      DistanceCalculator calculator) {
+    // Algorithm based on this thread :
+    // https://stackoverflow.com/questions/3120357/get-closest-point-to-a-line
     final double vectorAPX = centerX - aX;
     final double vectorAPY = centerY - aY;
 
@@ -259,13 +290,16 @@ class Circle2D implements Component2D {
       this.centerY = centerY;
       this.rectangle = XYRectangle.fromPointDistance(centerX, centerY, radius);
       // product performed with doubles
-      this.radiusSquared = (double) radius *  radius;
+      this.radiusSquared = (double) radius * radius;
     }
 
     @Override
     public Relation relate(double minX, double maxX, double minY, double maxY) {
       if (Component2D.containsPoint(centerX, centerY, minX, maxX, minY, maxY)) {
-        if (contains(minX, minY) && contains(maxX, minY) && contains(maxX, maxY) && contains(minX, maxY)) {
+        if (contains(minX, minY)
+            && contains(maxX, minY)
+            && contains(maxX, maxY)
+            && contains(minX, maxY)) {
           // we are fully enclosed, collect everything within this subtree
           return Relation.CELL_INSIDE_QUERY;
         }
@@ -296,9 +330,13 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean contains(double x, double y) {
-      final double diffX = x - this.centerX;
-      final double diffY = y - this.centerY;
-      return diffX * diffX + diffY * diffY <= radiusSquared;
+      if (Component2D.containsPoint(
+          x, y, rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY)) {
+        final double diffX = x - this.centerX;
+        final double diffY = y - this.centerY;
+        return diffX * diffX + diffY * diffY <= radiusSquared;
+      }
+      return false;
     }
 
     @Override
@@ -308,12 +346,14 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean disjoint(double minX, double maxX, double minY, double maxY) {
-      return Component2D.disjoint(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY, minX, maxX, minY, maxY);
+      return Component2D.disjoint(
+          rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY, minX, maxX, minY, maxY);
     }
 
     @Override
     public boolean within(double minX, double maxX, double minY, double maxY) {
-      return Component2D.within(rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY, minX, maxX, minY, maxY);
+      return Component2D.within(
+          rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY, minX, maxX, minY, maxY);
     }
 
     @Override
@@ -372,9 +412,26 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean contains(double x, double y) {
-      return SloppyMath.haversinSortKey(y, x, this.centerLat, this.centerLon) <= sortKey;
+      if (crossesDateline) {
+        if (Component2D.containsPoint(
+                x, y, rectangle.minLon, GeoUtils.MAX_LON_INCL, rectangle.minLat, rectangle.maxLat)
+            || Component2D.containsPoint(
+                x,
+                y,
+                GeoUtils.MIN_LON_INCL,
+                rectangle.maxLon,
+                rectangle.minLat,
+                rectangle.maxLat)) {
+          return SloppyMath.haversinSortKey(y, x, this.centerLat, this.centerLon) <= sortKey;
+        }
+      } else {
+        if (Component2D.containsPoint(
+            x, y, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat)) {
+          return SloppyMath.haversinSortKey(y, x, this.centerLat, this.centerLon) <= sortKey;
+        }
+      }
+      return false;
     }
-
 
     @Override
     public boolean intersectsLine(double aX, double aY, double bX, double bY) {
@@ -391,20 +448,68 @@ class Circle2D implements Component2D {
     @Override
     public boolean disjoint(double minX, double maxX, double minY, double maxY) {
       if (crossesDateline) {
-        return Component2D.disjoint(rectangle.minLon, GeoUtils.MAX_LON_INCL, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY)
-            && Component2D.disjoint(GeoUtils.MIN_LON_INCL, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY);
+        return Component2D.disjoint(
+                rectangle.minLon,
+                GeoUtils.MAX_LON_INCL,
+                rectangle.minLat,
+                rectangle.maxLat,
+                minX,
+                maxX,
+                minY,
+                maxY)
+            && Component2D.disjoint(
+                GeoUtils.MIN_LON_INCL,
+                rectangle.maxLon,
+                rectangle.minLat,
+                rectangle.maxLat,
+                minX,
+                maxX,
+                minY,
+                maxY);
       } else {
-        return Component2D.disjoint(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY);
+        return Component2D.disjoint(
+            rectangle.minLon,
+            rectangle.maxLon,
+            rectangle.minLat,
+            rectangle.maxLat,
+            minX,
+            maxX,
+            minY,
+            maxY);
       }
     }
 
     @Override
     public boolean within(double minX, double maxX, double minY, double maxY) {
       if (crossesDateline) {
-        return Component2D.within(rectangle.minLon, GeoUtils.MAX_LON_INCL, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY)
-            || Component2D.within(GeoUtils.MIN_LON_INCL, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY);
+        return Component2D.within(
+                rectangle.minLon,
+                GeoUtils.MAX_LON_INCL,
+                rectangle.minLat,
+                rectangle.maxLat,
+                minX,
+                maxX,
+                minY,
+                maxY)
+            || Component2D.within(
+                GeoUtils.MIN_LON_INCL,
+                rectangle.maxLon,
+                rectangle.minLat,
+                rectangle.maxLat,
+                minX,
+                maxX,
+                minY,
+                maxY);
       } else {
-        return Component2D.within(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY);
+        return Component2D.within(
+            rectangle.minLon,
+            rectangle.maxLon,
+            rectangle.minLat,
+            rectangle.maxLat,
+            minX,
+            maxX,
+            minY,
+            maxY);
       }
     }
 
@@ -447,15 +552,20 @@ class Circle2D implements Component2D {
     }
   }
 
-  /** Builds a XYCircle2D from XYCircle. Distance calculations are performed using cartesian distance.*/
+  /**
+   * Builds a XYCircle2D from XYCircle. Distance calculations are performed using cartesian
+   * distance.
+   */
   static Component2D create(XYCircle circle) {
-    DistanceCalculator calculator = new CartesianDistance(circle.getX(), circle.getY(), circle.getRadius());
+    DistanceCalculator calculator =
+        new CartesianDistance(circle.getX(), circle.getY(), circle.getRadius());
     return new Circle2D(calculator);
   }
 
   /** Builds a Circle2D from Circle. Distance calculations are performed using haversin distance. */
   static Component2D create(Circle circle) {
-    DistanceCalculator calculator = new HaversinDistance(circle.getLon(), circle.getLat(), circle.getRadius());
+    DistanceCalculator calculator =
+        new HaversinDistance(circle.getLon(), circle.getLat(), circle.getRadius());
     return new Circle2D(calculator);
   }
 }

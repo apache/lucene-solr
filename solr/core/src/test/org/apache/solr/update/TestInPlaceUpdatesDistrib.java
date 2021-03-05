@@ -47,6 +47,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -56,17 +57,20 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Tests the in-place updates (docValues updates) for a one shard, three replica cluster.
@@ -84,8 +88,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // we need consistent segments that aren't re-ordered on merge because we're
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-
-    randomizeUpdateLogImpl();
 
     initCore(configString, schemaString);
     
@@ -290,7 +292,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      log.info("Issuing well ordered update: " + update.getDocuments());
+      if (log.isInfoEnabled()) {
+        log.info("Issuing well ordered update: {}", update.getDocuments());
+      }
       NONLEADERS.get(1).request(update);
     }
 
@@ -383,7 +387,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // number of docs we're testing (0 <= id), index may contain additional random docs (id < 0)
     int numDocs = atLeast(100);
     if (onlyLeaderIndexes) numDocs = TestUtil.nextInt(random(), 10, 50);
-    log.info("Trying num docs = " + numDocs);
+    log.info("Trying num docs = {}", numDocs);
     final List<Integer> ids = new ArrayList<Integer>(numDocs);
     for (int id = 0; id < numDocs; id++) {
       ids.add(id);
@@ -400,7 +404,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       luceneDocids.add((Integer) doc.get("[docid]"));
       valuesList.add((Float) doc.get("inplace_updatable_float"));
     }
-    log.info("Initial results: "+results);
+    log.info("Initial results: {}", results);
     
     // before we do any atomic operations, sanity check our results against all clients
     assertDocIdsAndValuesAgainstAllClients("sanitycheck", params, luceneDocids, "inplace_updatable_float", valuesList);
@@ -415,7 +419,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       assert -5.0F <= value && value <= 5.0F;
       valuesList.set(id, value);
     }
-    log.info("inplace_updatable_float: " + valuesList);
+    log.info("inplace_updatable_float: {}", valuesList);
     
     // update doc w/ set
     Collections.shuffle(ids, r); // so updates aren't applied in index order
@@ -646,7 +650,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue("Earlier: "+docids+", now: "+getInternalDocIds("100"), docids.equals(getInternalDocIds("100")));
     
     SolrDocument sdoc = LEADER.getById("100");  // RTG straight from the index
-    assertEquals(sdoc.toString(), (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+    assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
     assertEquals(sdoc.toString(), title, sdoc.get("title_s"));
     assertEquals(sdoc.toString(), version, sdoc.get("_version_"));
 
@@ -657,7 +661,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       version = currentVersion;
 
       sdoc = LEADER.getById("100");  // RTG from the tlog
-      assertEquals(sdoc.toString(), (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+      assertEquals(sdoc.toString(), inplace_updatable_float, sdoc.get("inplace_updatable_float"));
       assertEquals(sdoc.toString(), title, sdoc.get("title_s"));
       assertEquals(sdoc.toString(), version, sdoc.get("_version_"));
 
@@ -682,13 +686,25 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue(currentVersion > version);
     version = currentVersion;
 
+    // set operation with invalid value for field
+    SolrException e = expectThrows(SolrException.class,
+        () -> addDocAndGetVersion( "id", 100, "inplace_updatable_float", map("set", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
+    // inc operation with invalid inc value
+    e = expectThrows(SolrException.class,
+        () -> addDocAndGetVersion( "id", 100, "inplace_updatable_int", map("inc", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
     // RTG from tlog(s)
     for (SolrClient client : clients) {
       final String clientDebug = client.toString() + (LEADER.equals(client) ? " (leader)" : " (not leader)");
       sdoc = client.getById("100", params("distrib", "false"));
 
-      assertEquals(clientDebug + " => "+ sdoc, (int) 100, sdoc.get("inplace_updatable_int"));
-      assertEquals(clientDebug + " => "+ sdoc, (float) inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+      assertEquals(clientDebug + " => "+ sdoc, 100, sdoc.get("inplace_updatable_int"));
+      assertEquals(clientDebug + " => "+ sdoc, inplace_updatable_float, sdoc.get("inplace_updatable_float"));
       assertEquals(clientDebug + " => "+ sdoc, title, sdoc.get("title_s"));
       assertEquals(clientDebug + " => "+ sdoc, version, sdoc.get("_version_"));
     }
@@ -743,7 +759,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      log.info("Issuing well ordered update: " + update.getDocuments());
+      if (log.isInfoEnabled()) {
+        log.info("Issuing well ordered update: {}", update.getDocuments());
+      }
       NONLEADERS.get(1).request(update);
     }
 
@@ -774,7 +792,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // assert both replicas have same effect
     for (SolrClient client : NONLEADERS) { // 0th is re-ordered replica, 1st is well-ordered replica
-      log.info("Testing client: " + ((HttpSolrClient)client).getBaseURL());
+      if (log.isInfoEnabled()) {
+        log.info("Testing client: {}", ((HttpSolrClient) client).getBaseURL());
+      }
       assertReplicaValue(client, 0, "inplace_updatable_float", (newinplace_updatable_float + (float)(updates.size() - 1)), 
           "inplace_updatable_float didn't match for replica at client: " + ((HttpSolrClient)client).getBaseURL());
       assertReplicaValue(client, 0, "title_s", "title0_new", 
@@ -812,7 +832,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      log.info("Issuing well ordered update: " + update.getDocuments());
+      if (log.isInfoEnabled()) {
+        log.info("Issuing well ordered update: {}", update.getDocuments());
+      }
       NONLEADERS.get(1).request(update);
     }
 
@@ -884,7 +906,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // order the updates correctly for NONLEADER 1
     for (UpdateRequest update : updates) {
-      log.info("Issuing well ordered update: " + update.getDocuments());
+      if (log.isInfoEnabled()) {
+        log.info("Issuing well ordered update: {}", update.getDocuments());
+      }
       NONLEADERS.get(1).request(update);
     }
 
@@ -932,15 +956,17 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
     // All should succeed, i.e. no LIR
     assertEquals(updateResponses.size(), successful);
-    
-    log.info("Non leader 0: "+((HttpSolrClient)NONLEADERS.get(0)).getBaseURL());
-    log.info("Non leader 1: "+((HttpSolrClient)NONLEADERS.get(1)).getBaseURL());
+
+    if (log.isInfoEnabled()) {
+      log.info("Non leader 0: {}", ((HttpSolrClient) NONLEADERS.get(0)).getBaseURL());
+      log.info("Non leader 1: {}", ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()); // nowarn
+    }
     
     SolrDocument doc0 = NONLEADERS.get(0).getById(String.valueOf(0), params("distrib", "false"));
     SolrDocument doc1 = NONLEADERS.get(1).getById(String.valueOf(0), params("distrib", "false"));
 
-    log.info("Doc in both replica 0: "+doc0);
-    log.info("Doc in both replica 1: "+doc1);
+    log.info("Doc in both replica 0: {}", doc0);
+    log.info("Doc in both replica 1: {}", doc1);
     // assert both replicas have same effect
     for (int i=0; i<NONLEADERS.size(); i++) { // 0th is re-ordered replica, 1st is well-ordered replica
       SolrClient client = NONLEADERS.get(i);
@@ -1021,10 +1047,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
     
     for (SolrClient client : clients) {
-      log.info("Testing client (Fetch missing test): " + ((HttpSolrClient) client).getBaseURL());
-      log.info(
-          "Version at " + ((HttpSolrClient) client).getBaseURL() + " is: " + getReplicaValue(client, 1, "_version_"));
-
+      if (log.isInfoEnabled()) {
+        log.info("Testing client (Fetch missing test): {}", ((HttpSolrClient) client).getBaseURL());
+        log.info("Version at {} is: {}"
+            , ((HttpSolrClient) client).getBaseURL(), getReplicaValue(client, 1, "_version_")); // nowarn
+      }
       assertReplicaValue(client, 1, "inplace_updatable_float", (newinplace_updatable_float + 2.0f),
           "inplace_updatable_float didn't match for replica at client: " + ((HttpSolrClient) client).getBaseURL());
       assertReplicaValue(client, 1, "title_s", "title1_new",
@@ -1330,9 +1357,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     for (SolrClient client : clients) {
-      log.info("Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): " + ((HttpSolrClient)client).getBaseURL());
-      log.info("Version at " + ((HttpSolrClient)client).getBaseURL() + " is: " + getReplicaValue(client, 1, "_version_"));
-
+      if (log.isInfoEnabled()) {
+        log.info("Testing client (testDBQUsingUpdatedFieldFromDroppedUpdate): {}", ((HttpSolrClient) client).getBaseURL());
+        log.info("Version at {} is: {}", ((HttpSolrClient) client).getBaseURL(),
+            getReplicaValue(client, 1, "_version_")); // nowarn
+      }
       assertNull(client.getById("1", params("distrib", "false")));
     }
 

@@ -24,40 +24,41 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.util.IOUtils;
 
 /** Basic tests for HandleLimitFS */
 public class TestHandleLimitFS extends MockFileSystemTestCase {
-  
+
   @Override
   protected Path wrap(Path path) {
     return wrap(path, 4096);
   }
-  
+
   Path wrap(Path path, int limit) {
-    FileSystem fs = new HandleLimitFS(path.getFileSystem(), limit).getFileSystem(URI.create("file:///"));
+    FileSystem fs =
+        new HandleLimitFS(path.getFileSystem(), limit).getFileSystem(URI.create("file:///"));
     return new FilterPath(path, fs);
   }
-  
+
   /** set a limit at n files, then open more than that and ensure we hit exception */
   public void testTooManyOpenFiles() throws IOException {
     int n = 60;
 
     Path dir = wrap(createTempDir(), n);
-    
+
     // create open files to exact limit
     List<Closeable> toClose = new ArrayList<>();
     for (int i = 0; i < n; i++) {
       Path p = Files.createTempFile(dir, null, null);
       toClose.add(Files.newOutputStream(p));
     }
-    
+
     // now exceed
-    IOException e = expectThrows(IOException.class, () ->
-        Files.newOutputStream(Files.createTempFile(dir, null, null)));
+    IOException e =
+        expectThrows(
+            IOException.class, () -> Files.newOutputStream(Files.createTempFile(dir, null, null)));
     assertTrue(e.getMessage().contains("Too many open files"));
-    
+
     IOUtils.close(toClose);
   }
 }

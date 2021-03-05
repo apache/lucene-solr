@@ -21,34 +21,31 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * {@link SuggestField} which additionally takes in a set of
- * contexts. Example usage of adding a suggestion with contexts is as follows:
+ * {@link SuggestField} which additionally takes in a set of contexts. Example usage of adding a
+ * suggestion with contexts is as follows:
  *
  * <pre class="prettyprint">
  *  document.add(
  *   new ContextSuggestField(name, "suggestion", Arrays.asList("context1", "context2"),  4));
  * </pre>
  *
- * Use {@link ContextQuery} to boost and/or filter suggestions
- * at query-time. Use {@link PrefixCompletionQuery}, {@link RegexCompletionQuery}
- * or {@link FuzzyCompletionQuery} if context boost/filtering
- * are not needed.
+ * Use {@link ContextQuery} to boost and/or filter suggestions at query-time. Use {@link
+ * PrefixCompletionQuery}, {@link RegexCompletionQuery} or {@link FuzzyCompletionQuery} if context
+ * boost/filtering are not needed.
  *
  * @lucene.experimental
  */
 public class ContextSuggestField extends SuggestField {
 
-  /**
-   * Separator used between context value and the suggest field value
-   */
+  /** Separator used between context value and the suggest field value */
   public static final int CONTEXT_SEPARATOR = '\u001D';
+
   static final byte TYPE = 1;
 
   private final Set<CharSequence> contexts;
@@ -60,10 +57,8 @@ public class ContextSuggestField extends SuggestField {
    * @param value field value to get suggestion on
    * @param weight field weight
    * @param contexts associated contexts
-   *
-   * @throws IllegalArgumentException if either the name or value is null,
-   * if value is an empty string, if the weight is negative, if value or
-   * contexts contains any reserved characters
+   * @throws IllegalArgumentException if either the name or value is null, if value is an empty
+   *     string, if the weight is negative, if value or contexts contains any reserved characters
    */
   public ContextSuggestField(String name, String value, int weight, CharSequence... contexts) {
     super(name, value, weight);
@@ -74,10 +69,7 @@ public class ContextSuggestField extends SuggestField {
     }
   }
 
-  /**
-   * Expert: Sub-classes can inject contexts at
-   * index-time
-   */
+  /** Expert: Sub-classes can inject contexts at index-time */
   protected Iterable<CharSequence> contexts() {
     return contexts;
   }
@@ -90,15 +82,21 @@ public class ContextSuggestField extends SuggestField {
     }
     CompletionTokenStream completionTokenStream;
     if (stream instanceof CompletionTokenStream) {
-      //TODO this is awkward; is there a better way avoiding re-creating the chain?
+      // TODO this is awkward; is there a better way avoiding re-creating the chain?
       completionTokenStream = (CompletionTokenStream) stream;
-      PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(completionTokenStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
-      completionTokenStream = new CompletionTokenStream(prefixTokenFilter,
-          completionTokenStream.preserveSep,
-          completionTokenStream.preservePositionIncrements,
-          completionTokenStream.maxGraphExpansions);
+      PrefixTokenFilter prefixTokenFilter =
+          new PrefixTokenFilter(
+              completionTokenStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
+      completionTokenStream =
+          new CompletionTokenStream(
+              prefixTokenFilter,
+              completionTokenStream.preserveSep,
+              completionTokenStream.preservePositionIncrements,
+              completionTokenStream.maxGraphExpansions);
     } else {
-      completionTokenStream = new CompletionTokenStream(new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
+      completionTokenStream =
+          new CompletionTokenStream(
+              new PrefixTokenFilter(stream, (char) CONTEXT_SEPARATOR, contexts));
     }
     return completionTokenStream;
   }
@@ -109,14 +107,15 @@ public class ContextSuggestField extends SuggestField {
   }
 
   /**
-   * The {@link PrefixTokenFilter} wraps a {@link TokenStream} and adds a set
-   * prefixes ahead. The position attribute will not be incremented for the prefixes.
+   * The {@link PrefixTokenFilter} wraps a {@link TokenStream} and adds a set prefixes ahead. The
+   * position attribute will not be incremented for the prefixes.
    */
   private static final class PrefixTokenFilter extends TokenFilter {
 
     private final char separator;
     private final CharTermAttribute termAttr = addAttribute(CharTermAttribute.class);
-    private final PositionIncrementAttribute posAttr = addAttribute(PositionIncrementAttribute.class);
+    private final PositionIncrementAttribute posAttr =
+        addAttribute(PositionIncrementAttribute.class);
     private final Iterable<CharSequence> prefixes;
 
     private Iterator<CharSequence> currentPrefix;
@@ -166,8 +165,14 @@ public class ContextSuggestField extends SuggestField {
   private void validate(final CharSequence value) {
     for (int i = 0; i < value.length(); i++) {
       if (CONTEXT_SEPARATOR == value.charAt(i)) {
-        throw new IllegalArgumentException("Illegal value [" + value + "] UTF-16 codepoint [0x"
-            + Integer.toHexString((int) value.charAt(i))+ "] at position " + i + " is a reserved character");
+        throw new IllegalArgumentException(
+            "Illegal value ["
+                + value
+                + "] UTF-16 codepoint [0x"
+                + Integer.toHexString((int) value.charAt(i))
+                + "] at position "
+                + i
+                + " is a reserved character");
       }
     }
   }

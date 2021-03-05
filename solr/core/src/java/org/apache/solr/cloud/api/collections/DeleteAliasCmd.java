@@ -25,18 +25,18 @@ import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class DeleteAliasCmd implements OverseerCollectionMessageHandler.Cmd {
-  private final OverseerCollectionMessageHandler ocmh;
+public class DeleteAliasCmd implements CollApiCmds.CollectionApiCommand {
+  private final CollectionCommandContext ccc;
 
-  public DeleteAliasCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public DeleteAliasCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String aliasName = message.getStr(NAME);
 
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
     zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(aliasName, null));
   }
 
