@@ -45,4 +45,4 @@ jobs:
     - name: Build Docker image with Gradle
       run: ./gradlew solr:docker:docker
     - name: Run tests on Docker image
-      run: ./gradlew solr:docker:testDocker -Psolr.docker.tests.include=empty-varsolr-dir-ramdomuser-rootgroup
+      run: ./gradlew solr:docker:testDocker
