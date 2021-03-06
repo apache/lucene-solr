@@ -33,10 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -854,7 +852,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.liveDocs = makeBitDocSet(docs);
   }
 
-  private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
+  private static Comparator<ExtendedQuery> sortByCost =
+      Comparator.comparingInt(ExtendedQuery::getCost);
 
   /**
    * Returns the set of document ids matching all queries. This method is cache-aware and attempts to retrieve the
@@ -927,8 +926,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean[] neg = new boolean[queries.size() + 1];
     DocSet[] sets = new DocSet[queries.size() + 1];
-    List<Query> notCached = null;
-    List<Query> postFilters = null;
+    List<ExtendedQuery> notCached = null;
+    List<PostFilter> postFilters = null;
 
     int end = 0;
     int smallestIndex = -1;
@@ -945,10 +944,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         if (!eq.getCache()) {
           if (eq.getCost() >= 100 && eq instanceof PostFilter) {
             if (postFilters == null) postFilters = new ArrayList<>(sets.length - end);
-            postFilters.add(q);
+            postFilters.add((PostFilter) q);
           } else {
             if (notCached == null) notCached = new ArrayList<>(sets.length - end);
-            notCached.add(q);
+            notCached.add((ExtendedQuery) q);
           }
           continue;
         }
@@ -1027,8 +1026,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (answer != null) {
         builder.add(answer.getTopFilter(), Occur.FILTER);
       }
-      for (Query q : notCached) {
-        Query qq = QueryUtils.makeQueryable(q);
+      for (ExtendedQuery eq : notCached) {
+        Query qq = QueryUtils.makeQueryable((Query)eq);
         builder.add(qq, Occur.FILTER);
       }
       pf.filter = builder.build();
@@ -1039,7 +1038,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       Collections.sort(postFilters, sortByCost);
       for (int i = postFilters.size() - 1; i >= 0; i--) {
         DelegatingCollector prev = pf.postFilter;
-        pf.postFilter = ((PostFilter) postFilters.get(i)).getFilterCollector(this);
+        pf.postFilter = postFilters.get(i).getFilterCollector(this);
         if (prev != null) pf.postFilter.setDelegate(prev);
       }
     }
