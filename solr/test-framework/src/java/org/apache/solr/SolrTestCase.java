@@ -43,6 +43,7 @@ import org.apache.lucene.util.RunListenerPrintReproduceInfo;
 import org.apache.lucene.util.TestRuleMarkFailure;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecutor;
@@ -590,6 +591,7 @@ public class SolrTestCase extends Assert {
       Http2SolrClient.resetSslContextFactory();
       TestInjection.reset();
       JSONTestUtil.failRepeatedKeys = false;
+      ZkSolrResourceLoader.CONFIG_CACHE.clear();
       random = null;
       reusedKeys = null;
       sslConfig = null;

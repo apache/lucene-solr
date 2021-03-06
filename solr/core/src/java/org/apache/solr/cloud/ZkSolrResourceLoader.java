@@ -48,7 +48,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
 
-  private static Map CONFIG_CACHE = new ReferenceMap(ReferenceMap.HARD, ReferenceMap.WEAK) {
+  public static Map CONFIG_CACHE = new ReferenceMap(ReferenceMap.HARD, ReferenceMap.WEAK) {
     {
       purgeBeforeRead();
       purgeBeforeWrite();
@@ -94,7 +94,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
         } catch (KeeperException | InterruptedException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-        if (checkStat != null && checkStat.getVersion() <= cached.getStat().getVersion()) {
+        if (checkStat != null && checkStat.getVersion() == cached.getStat().getVersion()) {
           return new ZkSolrResourceLoader.ZkByteArrayInputStream(cached.getBytes(), cached.getStat());
         }
 
