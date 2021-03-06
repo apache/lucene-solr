@@ -866,7 +866,7 @@ public class CoreContainer implements Closeable {
       for (final CoreDescriptor cd : cds) {
         String collection = cd.getCollectionName();
         try {
-          getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
+          getZkController().getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (n, c) -> {
             if (c == null) {
               if (log.isDebugEnabled()) log.debug("Found  incorrect state c={}", c);
               return false;
