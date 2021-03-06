@@ -123,7 +123,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -265,7 +264,9 @@ public class HttpSolrCall {
         core = cores.getCore(origCorename);
       }
 
-      if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
+      if (core == null && log.isDebugEnabled()) {
+        log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
+      }
 
       if (core != null) {
         if (idx2 > 0) {

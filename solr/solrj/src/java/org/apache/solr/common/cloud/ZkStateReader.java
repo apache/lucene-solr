@@ -1624,7 +1624,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     @Override
     public void close() throws IOException {
       this.closed = true;
-      IOUtils.closeQuietly(stateUpdateWatcher);
+  //    IOUtils.closeQuietly(stateUpdateWatcher);
 //      SolrZooKeeper zk = zkClient.getSolrZooKeeper();
 //      if (zk != null) {
 //        try {
