@@ -187,7 +187,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     private int level;
     // used to read the packed tree off-heap
     private final IndexInput innerNodes;
-    // used to read the packed tree off-heap
+    // used to read the packed leaves off-heap
     private final IndexInput leafNodes;
     // holds the minimum (left most) leaf block file pointer for each level we've recursed to:
     private final long[] leafBlockFPStack;
@@ -328,35 +328,37 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
           : "config.bytesPerDim="
               + config.bytesPerDim
               + " splitDim="
-              + splitDims[level - 1]
+              + splitDims[level]
               + " config.numIndexDims="
               + config.numIndexDims
               + " config.numDims="
               + config.numDims;
+      final int splitDim = splitDims[level];
       nodeID *= 2;
       level++;
       if (minPackedValueStack[level] == null) {
-        minPackedValueStack[level] = new byte[config.packedIndexBytesLength];
-        maxPackedValueStack[level] = new byte[config.packedIndexBytesLength];
+        minPackedValueStack[level] = minPackedValueStack[level - 1].clone();
+        maxPackedValueStack[level] = maxPackedValueStack[level - 1].clone();
+      } else {
+        System.arraycopy(
+                maxPackedValueStack[level - 1],
+                0,
+                maxPackedValueStack[level],
+                0,
+                config.packedIndexBytesLength);
+        System.arraycopy(
+                minPackedValueStack[level - 1],
+                0,
+                minPackedValueStack[level],
+                0,
+                config.packedIndexBytesLength);
       }
-      System.arraycopy(
-          maxPackedValueStack[level - 1],
-          0,
-          maxPackedValueStack[level],
-          0,
-          config.packedIndexBytesLength);
-      System.arraycopy(
-          minPackedValueStack[level - 1],
-          0,
-          minPackedValueStack[level],
-          0,
-          config.packedIndexBytesLength);
       // add the split dim value:
       System.arraycopy(
           splitValuesStack[level - 1],
-          splitDims[level - 1] * config.bytesPerDim,
+          splitDim * config.bytesPerDim,
           maxPackedValueStack[level],
-          splitDims[level - 1] * config.bytesPerDim,
+          splitDim * config.bytesPerDim,
           config.bytesPerDim);
       readNodeData(true);
     }
@@ -373,12 +375,13 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
           : "config.bytesPerDim="
               + config.bytesPerDim
               + " splitDim="
-              + splitDims[level - 1]
+              + splitDims[level]
               + " config.numIndexDims="
               + config.numIndexDims
               + " config.numDims="
               + config.numDims;
       final int nodePosition = rightNodePositions[level];
+      final int splitDim = splitDims[level];
       assert nodePosition >= innerNodes.getFilePointer()
           : "nodePosition = " + nodePosition + " < currentPosition=" + innerNodes.getFilePointer();
       nodeID = nodeID * 2 + 1;
@@ -394,16 +397,16 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       // restore the split dim value:
       System.arraycopy(
           maxPackedValueStack[level - 1],
-          splitDims[level - 1] * config.bytesPerDim,
+          splitDim * config.bytesPerDim,
           maxPackedValueStack[level],
-          splitDims[level - 1] * config.bytesPerDim,
+          splitDim * config.bytesPerDim,
           config.bytesPerDim);
       // add the split dim value:
       System.arraycopy(
           splitValuesStack[level - 1],
-          splitDims[level - 1] * config.bytesPerDim,
+          splitDim * config.bytesPerDim,
           minPackedValueStack[level],
-          splitDims[level - 1] * config.bytesPerDim,
+          splitDim * config.bytesPerDim,
           config.bytesPerDim);
       readNodeData(false);
     }
