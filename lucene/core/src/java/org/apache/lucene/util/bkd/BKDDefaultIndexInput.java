@@ -341,17 +341,17 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
         maxPackedValueStack[level] = maxPackedValueStack[level - 1].clone();
       } else {
         System.arraycopy(
-                maxPackedValueStack[level - 1],
-                0,
-                maxPackedValueStack[level],
-                0,
-                config.packedIndexBytesLength);
+            maxPackedValueStack[level - 1],
+            0,
+            maxPackedValueStack[level],
+            0,
+            config.packedIndexBytesLength);
         System.arraycopy(
-                minPackedValueStack[level - 1],
-                0,
-                minPackedValueStack[level],
-                0,
-                config.packedIndexBytesLength);
+            minPackedValueStack[level - 1],
+            0,
+            minPackedValueStack[level],
+            0,
+            config.packedIndexBytesLength);
       }
       // add the split dim value:
       System.arraycopy(
