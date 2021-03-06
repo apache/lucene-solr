@@ -59,9 +59,9 @@ public class ZkCmdExecutor {
   @SuppressWarnings("unchecked")
   public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation, boolean retryOnSessionExp)
       throws KeeperException, InterruptedException {
-    if (zkCmdExecutor.solrZkClient.isClosed()) {
-      throw new AlreadyClosedException("SolrZkClient is already closed");
-    }
+//    if (zkCmdExecutor.solrZkClient.isClosed()) {
+//      throw new AlreadyClosedException("SolrZkClient is already closed");
+//    }
     KeeperException exception = null;
     int tryCnt = 0;
     while (tryCnt < zkCmdExecutor.retryCount) {

@@ -143,6 +143,17 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     assertTrue( countReplayLog.get() >=2);
 
     // check metrics
+    int replicationCount = getReplicationCount();
+
+    if (replicationCount < 2) {
+      Thread.sleep(100);
+      replicationCount = getReplicationCount();
+    }
+
+    assertTrue("cnt:" + replicationCount , replicationCount >= 2);
+  }
+
+  private int getReplicationCount() {
     int replicationCount = 0;
     int errorsCount = 0;
     int skippedCount = 0;
@@ -164,8 +175,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         }
       }
     }
-
-    assertTrue(replicationCount >= 2);
+    return replicationCount;
   }
 
   @Test

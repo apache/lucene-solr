@@ -1176,14 +1176,15 @@ public class SolrZkClient implements Closeable {
   }
 
   public boolean isClosed() {
-    return isClosed;
+    ZooKeeper zk = connManager.getKeeper();
+    return zk == null || !zk.getState().isAlive();
   }
 
   public SolrZooKeeper getSolrZooKeeper() {
 
-    if (connManager.getKeeper() == null) {
-      throw new AlreadyClosedException("No ZooKeeper object");
-    }
+//    if (connManager.getKeeper() == null) {
+//      throw new AlreadyClosedException("No ZooKeeper object");
+//    }
     return (SolrZooKeeper) connManager.getKeeper();
   }
 
