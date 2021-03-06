@@ -342,7 +342,8 @@ public class ClusterState implements JSONWriter.Writable {
   public String getCollection(long id) {
     Set<Entry<String,CollectionRef>> entries = collectionStates.entrySet();
     for (Entry<String,CollectionRef> entry : entries) {
-      if (entry.getValue().get().getId() == id) {
+      DocCollection coll = entry.getValue().get();
+      if (coll != null && coll.getId() == id) {
         return entry.getKey();
       }
     }
