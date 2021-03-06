@@ -33,7 +33,4 @@ public interface ExtendedQuery {
 
   public void setCost(int cost);
 
-  /** If true, the clauses of this boolean query should be cached separately. This is not yet implemented. */
-  public boolean getCacheSep();
-  public void setCacheSep(boolean cacheSep);
 }

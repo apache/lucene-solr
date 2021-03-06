@@ -21,7 +21,6 @@ import org.apache.lucene.search.Query;
 public abstract class ExtendedQueryBase extends Query implements ExtendedQuery {
   private int cost;
   private boolean cache = true;
-  private boolean cacheSep;
 
   @Override
   public void setCache(boolean cache) {
@@ -31,16 +30,6 @@ public abstract class ExtendedQueryBase extends Query implements ExtendedQuery {
   @Override
   public boolean getCache() {
     return cache;
-  }
-
-  @Override
-  public void setCacheSep(boolean cacheSep) {
-    this.cacheSep = cacheSep;
-  }
-
-  @Override
-  public boolean getCacheSep() {
-    return cacheSep;
   }
 
   @Override
@@ -66,9 +55,6 @@ public abstract class ExtendedQueryBase extends Query implements ExtendedQuery {
         sb.append(" cost=");
         sb.append(q.getCost());
       }
-      sb.append("}");
-    } else if (q.getCacheSep()) {
-      sb.append("{!cache=sep");
       sb.append("}");
     }
     return sb.toString();

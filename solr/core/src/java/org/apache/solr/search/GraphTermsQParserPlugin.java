@@ -181,14 +181,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return false;
     }
 
-    public boolean getCacheSep() {
-      return false;
-    }
-
-    public void setCacheSep(boolean sep) {
-
-    }
-
     public void setCache(boolean cache) {
 
     }

@@ -310,14 +310,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     }
 
-    public void setCacheSep(boolean cacheSep) {
-
-    }
-
-    public boolean getCacheSep() {
-      return false;
-    }
-
     public boolean getCache() {
       return false;
     }

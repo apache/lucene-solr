@@ -65,15 +65,6 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
   }
 
   @Override
-  public void setCacheSep(boolean cacheSep) {
-  }
-
-  @Override
-  public boolean getCacheSep() {
-    return false;
-  }
-
-  @Override
   public void setCost(int cost) {
     this.cost = cost;
   }

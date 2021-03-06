@@ -180,8 +180,6 @@ public abstract class QParser {
             extendedQuery().setCache(false);
           } else if (CommonParams.TRUE.equals(cacheStr)) {
             extendedQuery().setCache(true);
-          } else if ("sep".equals(cacheStr)) {
-            extendedQuery().setCacheSep(true);
           }
         }
 
