@@ -994,7 +994,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
           if (!mustBeLive) {
             if (zkLeader == null) {
-              zkLeader = getLeaderProps(collection, coll.getId(), shard);
+              zkLeader = getLeaderProps(collection, c.getId(), shard);
             }
             if (zkLeader != null && zkLeader.getName().equals(leader.getName())) {
               returnLeader.set(leader);
@@ -1011,7 +1011,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             }
             if (!mustBeLive) {
               if (zkLeader == null) {
-                zkLeader = getLeaderProps(collection, coll.getId(), shard);
+                zkLeader = getLeaderProps(collection, c.getId(), shard);
               }
               if (zkLeader != null && zkLeader.getName().equals(replica.getName())) {
                 returnLeader.set(replica);
@@ -1024,14 +1024,16 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         return false;
       });
     } catch (TimeoutException e) {
+      coll = clusterState.getCollectionOrNull(collection);
       throw new TimeoutException("No registered leader was found after waiting for "
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
-          + " with live_nodes=" + liveNodes + " zkLeaderNode=" + getLeaderProps(collection, coll.getId(), shard));
+          + " with live_nodes=" + liveNodes + " zkLeaderNode=" + (coll == null ? "null collection" : getLeaderProps(collection, coll.getId(), shard)));
     }
 
     Replica leader = returnLeader.get();
 
     if (leader == null) {
+      coll = clusterState.getCollectionOrNull(collection);
       throw new SolrException(ErrorCode.SERVER_ERROR, "No registered leader was found "
           + "collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
           + " with live_nodes=" + liveNodes + " zkLeaderNode=" + getLeaderProps(collection, coll.getId(), shard));
