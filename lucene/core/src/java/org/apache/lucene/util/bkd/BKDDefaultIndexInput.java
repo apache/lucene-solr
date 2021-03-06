@@ -416,7 +416,8 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       if (nodeID % 2 == 0) {
         pop();
         pushRight();
-        return nodeExists();
+        assert nodeExists();
+        return true;
       }
       return false;
     }
