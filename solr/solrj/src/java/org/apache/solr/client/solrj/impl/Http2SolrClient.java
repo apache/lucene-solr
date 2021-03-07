@@ -275,14 +275,22 @@ public class Http2SolrClient extends SolrClient {
     private final OutputStreamContentProvider outProvider;
     private final InputStreamResponseListener responseListener;
     private final boolean isXml;
+    private final boolean isV2Api;
+    private final String destUri;
+    private boolean closed;
+    private long closedTime;
 
     public OutStream(String origCollection, ModifiableSolrParams origParams,
-                     OutputStreamContentProvider outProvider, InputStreamResponseListener responseListener, boolean isXml) {
+                     OutputStreamContentProvider outProvider, InputStreamResponseListener responseListener,
+                     String destUri,
+                     boolean isXml, boolean isV2Api) {
       this.origCollection = origCollection;
       this.origParams = origParams;
       this.outProvider = outProvider;
       this.responseListener = responseListener;
       this.isXml = isXml;
+      this.isV2Api = isV2Api;
+      this.destUri = destUri;
     }
 
     boolean belongToThisStream(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection) {
@@ -303,10 +311,23 @@ public class Http2SolrClient extends SolrClient {
 
     @Override
     public void close() throws IOException {
+      if (closed) {
+        return;
+      }
       if (isXml) {
         write("</stream>".getBytes(FALLBACK_CHARSET));
       }
       this.outProvider.getOutputStream().close();
+      closed = true;
+      closedTime = System.nanoTime();
+    }
+
+    private long getIdleTimeout(long idleTimeout) {
+      long timePassed = (System.nanoTime() - closedTime) / 1000;
+      if (timePassed >= idleTimeout) {
+        return 0;
+      }
+      return idleTimeout - timePassed;
     }
 
     //TODO this class should be hidden
@@ -346,7 +367,8 @@ public class Http2SolrClient extends SolrClient {
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
     OutStream outStream = new OutStream(collection, origParams, provider, responseListener,
-        isXml);
+            postRequest.getURI().toString(),
+            isXml, isV2ApiRequest(updateRequest));
     if (isXml) {
       outStream.write("<stream>".getBytes(FALLBACK_CHARSET));
     }
@@ -389,6 +411,7 @@ public class Http2SolrClient extends SolrClient {
       asyncListener.onFailure(e);
       return FAILED_MAKING_REQUEST_CANCELLABLE;
     }
+    final boolean isV2Api = isV2ApiRequest(solrRequest);
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
     req.onRequestQueued(asyncTracker.queuedListener)
@@ -402,7 +425,7 @@ public class Http2SolrClient extends SolrClient {
               InputStream is = listener.getInputStream();
               assert ObjectReleaseTracker.track(is);
               try {
-                NamedList<Object> body = processErrorsAndResponse(solrRequest, parser, response, is);
+                NamedList<Object> body = processErrorsAndResponse(parser, response, is, isV2Api);
                 asyncListener.onSuccess(body);
               } catch (RemoteSolrException e) {
                 if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
@@ -425,43 +448,60 @@ public class Http2SolrClient extends SolrClient {
     return () -> req.abort(CANCELLED_EXCEPTION);
   }
 
+  public void closeStream(OutStream outStream) throws IOException {
+    outStream.close();
+  }
+
+  public NamedList<Object> closeAndGetResponse(OutStream outStream) throws IOException, SolrServerException {
+    outStream.close();
+    return getResponseFrom(outStream.responseListener, outStream.destUri, outStream.isV2Api, null, outStream.getIdleTimeout(idleTimeout));
+  }
+
+  private NamedList<Object> getResponseFrom(InputStreamResponseListener listener,
+                                            String destUri, boolean isV2Api,
+                                            ResponseParser parser, long idleTimeout) throws SolrServerException, IOException {
+    try {
+      Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
+      InputStream is = listener.getInputStream();
+      assert ObjectReleaseTracker.track(is);
+      if (parser == null) {
+        parser = this.parser;
+      }
+      return processErrorsAndResponse(parser, response, is, isV2Api);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    } catch (TimeoutException e) {
+      throw new SolrServerException(
+              "Timeout occured while waiting response from server at: " + destUri, e);
+    } catch (ExecutionException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof ConnectException) {
+        throw new SolrServerException("Server refused connection at: " + destUri, cause);
+      }
+      if (cause instanceof SolrServerException) {
+        throw (SolrServerException) cause;
+      } else if (cause instanceof IOException) {
+        throw new SolrServerException(
+                "IOException occured when talking to server at: " + destUri, cause);
+      }
+      throw new SolrServerException(cause.getMessage(), cause);
+    }
+  }
+
   @Override
   public NamedList<Object> request(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection) throws SolrServerException, IOException {
     Request req = makeRequest(solrRequest, collection);
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
 
-    try {
-      InputStreamResponseListener listener = new InputStreamResponseListener();
-      req.send(listener);
-      Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
-      InputStream is = listener.getInputStream();
-      assert ObjectReleaseTracker.track(is);
-
-      return processErrorsAndResponse(solrRequest, parser, response, is);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
-    } catch (TimeoutException e) {
-      throw new SolrServerException(
-          "Timeout occured while waiting response from server at: " + req.getURI(), e);
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      if (cause instanceof ConnectException) {
-        throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
-      }
-      if (cause instanceof SolrServerException) {
-        throw (SolrServerException) cause;
-      } else if (cause instanceof IOException) {
-        throw new SolrServerException(
-            "IOException occured when talking to server at: " + getBaseURL(), cause);
-      }
-      throw new SolrServerException(cause.getMessage(), cause);
-    }
+    InputStreamResponseListener listener = new InputStreamResponseListener();
+    req.send(listener);
+    return getResponseFrom(listener, req.getURI().toString(), isV2ApiRequest(solrRequest), parser, idleTimeout);
   }
 
-  private NamedList<Object> processErrorsAndResponse(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest,
-                                                     ResponseParser parser, Response response, InputStream is) throws SolrServerException {
+  private NamedList<Object> processErrorsAndResponse(ResponseParser parser, Response response,
+                                                     InputStream is, boolean isV2Api) throws SolrServerException {
     ContentType contentType = getContentType(response);
     String mimeType = null;
     String encoding = null;
@@ -469,7 +509,7 @@ public class Http2SolrClient extends SolrClient {
       mimeType = contentType.getMimeType();
       encoding = contentType.getCharset() != null? contentType.getCharset().name() : null;
     }
-    return processErrorsAndResponse(response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest));
+    return processErrorsAndResponse(response, parser, is, mimeType, encoding, isV2Api);
   }
 
   private ContentType getContentType(Response response) {

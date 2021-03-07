@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
@@ -35,13 +36,13 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
   public MockStreamingSolrClients(UpdateShardHandler updateShardHandler) {
     super(updateShardHandler);
   }
-  
+
   @Override
-  public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
-    SolrClient client = super.getSolrClient(req);
-    return new MockSolrClient(client);
+  public synchronized SingleStreamClient getClient(SolrCmdDistributor.Req req) {
+    SingleStreamClient client = super.getClient(req);
+    return new MockClient(client);
   }
-  
+
   public void setExp(Exp exp) {
     this.exp = exp;
   }
@@ -60,37 +61,41 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
     return null;
   }
 
-  class MockSolrClient extends SolrClient {
+  class MockClient extends SingleStreamClient {
+    SingleStreamClient client;
 
-    private SolrClient solrClient;
-
-    public MockSolrClient(SolrClient solrClient) {
-      this.solrClient = solrClient;
+    public MockClient(SingleStreamClient client) {
+      super(null, null);
+      this.client = client;
     }
-    
+
     @Override
-    public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection)
-        throws SolrServerException, IOException {
+    public void request(SolrCmdDistributor.Req req) {
       if (exp != null) {
         Exception e = exception();
         if (e instanceof IOException) {
           if (LuceneTestCase.random().nextBoolean()) {
-            throw (IOException)e;
+            this.client.handleError(e, req);
+            return;
           } else {
-            throw new SolrServerException(e);
+            this.client.handleError(e, req);
+            return;
           }
         } else if (e instanceof SolrServerException) {
-          throw (SolrServerException)e;
+          this.client.handleError(e, req);
+          return;
         } else {
-          throw new SolrServerException(e);
+          this.client.handleError(e, req);
+          return;
         }
       }
-      
-      return solrClient.request(request);
+      this.client.request(req);
     }
 
     @Override
-    public void close() {}
-    
+    public void finish() {
+      this.client.finish();
+    }
   }
+
 }

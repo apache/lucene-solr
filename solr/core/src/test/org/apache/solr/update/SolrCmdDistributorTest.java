@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -61,11 +62,14 @@ import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
-  
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static enum NodeType {FORWARD, STANDARD};
   
   private AtomicInteger id = new AtomicInteger();
@@ -359,7 +363,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     testDeletes(false, false);
     testDeletes(true, true);
     testDeletes(true, false);
-    getRfFromResponseShouldNotCloseTheInputStream();
     testStuckUpdates();
   }
   
@@ -534,22 +537,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     assertFalse(req.shouldRetry(err));
   }
 
-  public void getRfFromResponseShouldNotCloseTheInputStream() {
-    UpdateRequest dbqReq = new UpdateRequest();
-    dbqReq.deleteByQuery("*:*");
-    SolrCmdDistributor.Req req = new SolrCmdDistributor.Req(null, new StdNode(null, "collection1", "shard1", 1), dbqReq, true);
-    AtomicBoolean isClosed = new AtomicBoolean(false);
-    ByteArrayInputStream is = new ByteArrayInputStream(new byte[100]) {
-      @Override
-      public void close() throws IOException {
-        isClosed.set(true);
-        super.close();
-      }
-    };
-    req.trackRequestResult(null, is, true);
-    assertFalse("Underlying stream should not be closed!", isClosed.get());
-  }
-  
   private void testReqShouldRetryMaxRetries() {
     Error err = getError(new SocketException()); 
     SolrCmdDistributor.Req req = new SolrCmdDistributor.Req(null, new StdNode(null, "collection1", "shard1", 1), new UpdateRequest(), true);
@@ -772,6 +759,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testRetryNodeAgainstBadAddress() throws SolrServerException, IOException {
+    log.info("Datcm start test");
     // Test RetryNode
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler)) {
       final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);

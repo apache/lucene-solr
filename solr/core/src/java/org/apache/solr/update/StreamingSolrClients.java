@@ -26,10 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.eclipse.jetty.client.api.Response;
 import org.slf4j.Logger;
@@ -38,14 +39,10 @@ import org.slf4j.LoggerFactory;
 public class StreamingSolrClients {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final int runnerCount = Integer.getInteger("solr.cloud.replication.runners", 1);
-  // should be less than solr.jetty.http.idleTimeout
-  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
-
   private Http2SolrClient httpClient;
 
-  private Map<String, ConcurrentUpdateHttp2SolrClient> solrClients = new HashMap<>();
-  private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
+  private Map<String, SingleStreamClient> clients = new HashMap<>();
+  private List<Error> errors = Collections.synchronizedList(new ArrayList<>());
 
   private ExecutorService updateExecutor;
 
@@ -62,35 +59,124 @@ public class StreamingSolrClients {
     errors.clear();
   }
 
-  public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
+  public synchronized SingleStreamClient getClient(final SolrCmdDistributor.Req req) {
     String url = getFullUrl(req.node.getUrl());
-    ConcurrentUpdateHttp2SolrClient client = solrClients.get(url);
+    SingleStreamClient client = clients.get(url);
     if (client == null) {
-      // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
-      // on a greater scale since the current behavior is to only increase the number of connections/Runners when
-      // the queue is more than half full.
-      client = new ErrorReportingConcurrentUpdateSolrClient.Builder(url, httpClient, req, errors)
-          .withQueueSize(100)
-          .withThreadCount(runnerCount)
-          .withExecutorService(updateExecutor)
-          .alwaysStreamDeletes()
-          .build();
-      client.setPollQueueTime(pollQueueTime); // minimize connections created
-      solrClients.put(url, client);
+      client = new SingleStreamClient(httpClient, url);
+      clients.put(url, client);
     }
 
     return client;
   }
 
-  public synchronized void blockUntilFinished() throws IOException {
-    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
-      client.blockUntilFinished();
+  class SingleStreamClient {
+
+    private final Http2SolrClient client;
+    private final String basePath;
+    private Http2SolrClient.OutStream outStream;
+    private SolrCmdDistributor.Req lastReq;
+    private int numRequests = 0;
+
+    public SingleStreamClient(Http2SolrClient client, String basePath) {
+      this.client = client;
+      this.basePath = basePath;
+    }
+
+    public void request(SolrCmdDistributor.Req req) {
+      this.lastReq = req;
+      if (req.synchronous) {
+        closeStream();
+        sendSyncReq(req);
+        return;
+      }
+
+      UpdateRequest request = req.uReq;
+      numRequests++;
+      //TODO datcm serialize the request up-front and reuse it
+      try {
+        if (outStream == null) {
+          outStream = client.initOutStream(basePath, request, request.getCollection());
+        }
+        client.send(outStream, request, request.getCollection());
+      } catch (IOException e) {
+        if (outStream != null) {
+          closeStream();
+        } else {
+          handleError(e, req);
+        }
+      }
+    }
+
+    protected void handleError(Exception ex, SolrCmdDistributor.Req req) {
+      log.error("Error when calling {} to {}", req, req.node.getUrl(), ex);
+      Error error = new Error();
+      error.e = ex;
+      if (ex instanceof SolrException) {
+        error.statusCode = ((SolrException) ex).code();
+      }
+      error.req = req;
+      errors.add(error);
+    }
+
+    public void preFinish() {
+      if (outStream != null) {
+        try {
+          client.closeStream(outStream);
+        } catch (IOException e) {
+          if (numRequests > 1) {
+            handleError(new RuntimeException(), lastReq);
+          } else {
+            handleError(e, lastReq);
+          }
+        }
+      }
+    }
+
+    public void finish() {
+      closeStream();
+    }
+
+    private void sendSyncReq(SolrCmdDistributor.Req req) {
+      try {
+        NamedList<Object> rs = client.request(req.uReq);
+        trackResult(rs);
+      } catch (Exception e) {
+        handleError(e, req);
+      }
+    }
+
+    private void trackResult(NamedList<Object> rs) {
+      lastReq.trackRequestResult(rs, true);
+    }
+
+    /**
+     * Close previous stream and call error handling code
+     */
+    private void closeStream() {
+      if (outStream != null) {
+        try {
+          NamedList<Object> rs = client.closeAndGetResponse(outStream);
+          trackResult(rs);
+        } catch (Exception e) {
+          if (numRequests > 1) {
+            handleError(new RuntimeException(), lastReq);
+          } else {
+            handleError(e, lastReq);
+          }
+        }
+      }
+      outStream = null;
     }
   }
 
-  public synchronized void shutdown() {
-    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
-      client.close();
+  public synchronized void finishStreams() {
+    //TODO nococmmit SOLR-13975
+    for (SingleStreamClient client : clients.values()) {
+      client.preFinish();
+    }
+    for (SingleStreamClient client : clients.values()) {
+      client.closeStream();
     }
   }
 
@@ -108,54 +194,4 @@ public class StreamingSolrClients {
     return httpClient;
   }
 
-  public ExecutorService getUpdateExecutor() {
-    return updateExecutor;
-  }
-}
-
-class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final SolrCmdDistributor.Req req;
-  private final List<Error> errors;
-
-  public ErrorReportingConcurrentUpdateSolrClient(Builder builder) {
-    super(builder);
-    this.req = builder.req;
-    this.errors = builder.errors;
-  }
-
-  @Override
-  public void handleError(Throwable ex) {
-    log.error("Error when calling {} to {}", req, req.node.getUrl(), ex);
-    Error error = new Error();
-    error.e = (Exception) ex;
-    if (ex instanceof SolrException) {
-      error.statusCode = ((SolrException) ex).code();
-    }
-    error.req = req;
-    errors.add(error);
-    if (!req.shouldRetry(error)) {
-      // only track the error if we are not retrying the request
-      req.trackRequestResult(null, null, false);
-    }
-  }
-  @Override
-  public void onSuccess(Response resp, InputStream respBody) {
-    req.trackRequestResult(resp, respBody, true);
-  }
-
-  static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
-    protected SolrCmdDistributor.Req req;
-    protected List<Error> errors;
-
-    public Builder(String baseSolrUrl, Http2SolrClient client, SolrCmdDistributor.Req req, List<Error> errors) {
-      super(baseSolrUrl, client);
-      this.req = req;
-      this.errors = errors;
-    }
-
-    public ErrorReportingConcurrentUpdateSolrClient build() {
-      return new ErrorReportingConcurrentUpdateSolrClient(this);
-    }
-  }
 }
