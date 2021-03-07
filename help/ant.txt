@@ -38,6 +38,11 @@ ant idea            => gradlew idea         [better: import as a Gradle project 
 Solr-specific targets
 ---------------------
 
+Create a runnable Solr instance
+
+ant server          => gradlew -p solr assemble   [Note that this deletes any previous ./solr/packaging/build/solr-#.#.#-SNAPSHOT directory.]
+                    => gradlew -p solr dev        [Like 'assemble' but will output to ./solr/packaging/build/dev and will not delete the directory first.]
+
 Assemble Solr distribution at solr/packaging/build/...
 
 ant create-package  => gradlew -p solr/packaging assemble
