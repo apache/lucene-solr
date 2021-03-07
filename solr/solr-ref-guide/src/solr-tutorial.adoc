@@ -660,7 +660,7 @@ C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dauto example\exampledocs\po
 ----
 bin/post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 
-C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dparams=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=| -Dauto example\exampledocs\post.jar example\films\*.csv
+C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dparams=f.genre.split=true^&f.directed_by.split=true^&f.genre.separator=^|^&f.directed_by.separator=^| -Dauto example\exampledocs\post.jar example\films\*.csv
 ----
 
 Each command includes these main parameters:
