@@ -62,11 +62,6 @@ jar {
 }
 
 assemblePackaging {
-  // Add two folders to default packaging.
-  from(projectDir, {
-    include "bin/**"
-    include "conf/**"
-  })
   // Add all libs except those provided by SolrJ & Logging
   from ({
     def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
