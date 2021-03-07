@@ -91,6 +91,7 @@ asciidoctor:
     <<: *solr-attributes-ref
     attribute-missing: "warn"
     icons: "font"
-    source-highlighter: "rouge"
-    rouge-theme: "thankful-eyes"
     stem:
+    # Options from https://github.com/jirutka/asciidoctor-rouge
+    source-highlighter: "rouge"
+    rouge-css: "style"

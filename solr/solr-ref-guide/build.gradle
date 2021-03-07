@@ -22,7 +22,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "org.asciidoctor:asciidoctorj:1.6.2"
+        classpath "org.asciidoctor:asciidoctorj:2.4.1"
     }
 }
 
@@ -68,14 +68,14 @@ dependencies {
     depVer('org.apache.zookeeper:zookeeper')
 
     // jekyll dependencies
-    gems 'rubygems:jekyll:3.5.2'
+    gems 'rubygems:jekyll:4.1.1'
     gems 'rubygems:jekyll-asciidoc:3.0.0'
 
     // don't know why we have to explicitly add these deps but it doesn't resolve them
     // automatically.
     gems 'rubygems:tilt:2.0.10'
-    gems 'rubygems:slim:4.0.1'
-    gems 'rubygems:concurrent-ruby:1.0.5'
+    gems 'rubygems:slim:4.1.0'
+    gems 'rubygems:concurrent-ruby:1.1.7'
 }
 
 sourceSets {
