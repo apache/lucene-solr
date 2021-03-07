@@ -31,6 +31,8 @@
 #   chown root:root /etc/init.d/solr
 #   update-rc.d solr defaults
 #   update-rc.d solr enable
+#
+# This script can be executed using user "root" or "solr". The last one can be useful in case of restricted SELinux/AppArmor rules.
 
 # Where you extracted the Solr distribution bundle
 SOLR_INSTALL_DIR="/opt/solr"
@@ -71,7 +73,8 @@ case "$1" in
     exit
 esac
 
-if [ -n "$RUNAS" ]; then
+# run "su" if the current user is not "run as" user
+if [ -n "$RUNAS" -a "$RUNAS" != "$USER" ]; then
   su -c "SOLR_INCLUDE=\"$SOLR_ENV\" \"$SOLR_INSTALL_DIR/bin/solr\" $SOLR_CMD" - "$RUNAS"
 else
   SOLR_INCLUDE="$SOLR_ENV" "$SOLR_INSTALL_DIR/bin/solr" "$SOLR_CMD"
