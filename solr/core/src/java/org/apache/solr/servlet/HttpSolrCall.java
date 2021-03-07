@@ -279,30 +279,37 @@ public class HttpSolrCall {
       collectionsList = resolveCollectionListOrAlias(queryParams.get(COLLECTION_PROP, def)); // &collection= takes precedence
 
       if (core == null) {
-        // lookup core from collection, or route away if need to
-        String collectionName = collectionsList.isEmpty() ? null : collectionsList.get(0); // route to 1st
-        //TODO try the other collections if can't find a local replica of the first?   (and do to V2HttpSolrCall)
-
         boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
 
-        core = getCoreByCollection(collectionName, isPreferLeader); // find a local replica/core for the collection
-        if (core != null) {
-          if (idx > 0) {
-            path = path.substring(idx);
-          }
-        } else {
-          // if we couldn't find it locally, look on other nodes
-          if (idx > 0) {
-            extractRemotePath(collectionName, origCorename);
-            if (action == REMOTEQUERY) {
+        // Let's try finding a local core
+        for (String collectionName: collectionsList) {
+          core = getCoreByCollection(collectionName, isPreferLeader); // find a local replica/core for the collection
+          if (core != null) {
+            if (idx > 0) {
               path = path.substring(idx);
-              return;
             }
+            break;
           }
-          //core is not available locally or remotely
-          autoCreateSystemColl(collectionName);
-          if (action != null) return;
         }
+      }
+
+      // There is no local core so using remoteQuery
+      //TODO try the other collections if can't find a local replica of the first?   (and do to V2HttpSolrCall)
+      if (core == null) {
+        // lookup core from collection, or route away if need to
+        String collectionName = collectionsList.isEmpty() ? null : collectionsList.get(0); // route to 1st
+
+        // if we couldn't find it locally, look on other nodes
+        if (idx > 0) {
+          extractRemotePath(collectionName, origCorename);
+          if (action == REMOTEQUERY) {
+            path = path.substring(idx);
+            return;
+          }
+        }
+        //core is not available locally or remotely
+        autoCreateSystemColl(collectionName);
+        if (action != null) return;
       }
     }
 
