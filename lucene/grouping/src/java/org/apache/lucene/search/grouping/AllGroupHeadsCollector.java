@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PooledDocValuesReader;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorable;
@@ -51,6 +52,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
   protected Map<T, GroupHead<T>> heads = new HashMap<>();
 
   protected LeafReaderContext context;
+  protected PooledDocValuesReader pooledReader;
   protected Scorable scorer;
 
   /**
@@ -126,6 +128,7 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
   @Override
   public void collect(int doc) throws IOException {
     groupSelector.advanceTo(doc);
+    pooledReader.advanceAll(doc);
     T groupValue = groupSelector.currentValue();
     if (heads.containsKey(groupValue) == false) {
       groupValue = groupSelector.copyValue();
@@ -161,9 +164,10 @@ public abstract class AllGroupHeadsCollector<T> extends SimpleCollector {
   @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
     groupSelector.setNextReader(context);
+    pooledReader = new PooledDocValuesReader(context);
     this.context = context;
     for (GroupHead<T> head : heads.values()) {
-      head.setNextReader(context);
+      head.setNextReader(pooledReader.getPooledContext());
     }
   }
 

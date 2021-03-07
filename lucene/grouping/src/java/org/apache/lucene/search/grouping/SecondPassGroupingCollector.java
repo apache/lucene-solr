@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PooledDocValuesReader;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
@@ -40,6 +41,7 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
 
   protected int totalHitCount;
   protected int totalGroupedHitCount;
+  protected PooledDocValuesReader pooledReader;
 
   /**
    * Create a new SecondPassGroupingCollector
@@ -90,12 +92,14 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
     }
     totalGroupedHitCount++;
     T value = groupSelector.currentValue();
+    pooledReader.advanceAll(doc);
     groupReducer.collect(value, doc);
   }
 
   @Override
   protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
-    groupReducer.setNextReader(readerContext);
+    pooledReader = new PooledDocValuesReader(readerContext);
+    groupReducer.setNextReader(pooledReader.getPooledContext());
     groupSelector.setNextReader(readerContext);
   }
 }
