@@ -569,6 +569,8 @@ Optimizations
 * SOLR-14776: Precompute fingerprint during PeerSync in parallel with fetching fingerprint from replicas.
   (Cao Manh Dat, Mike Drob via shalin)
 
+* SOLR-14765: Optimize DocList creation for sort-irrelevant cases (Michael Gibney)
+
 Bug Fixes
 ---------------------
 
