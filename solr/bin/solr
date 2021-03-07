@@ -173,9 +173,10 @@ fi
 
 
 # Select HTTP OR HTTPS related configurations
-SOLR_URL_SCHEME=http
+SOLR_URL_SCHEME=${SOLR_URL_SCHEME:-http}
 SOLR_JETTY_CONFIG=()
-SOLR_SSL_OPTS=""
+SOLR_SSL_OPTS=${SOLR_SSL_OPTS:-""}
+JETTY_MODULES=${JETTY_MODULES:-""}
 
 if [ -n "$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH" ]; then
   SOLR_SSL_OPTS+=" -Dhadoop.security.credential.provider.path=$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH"
@@ -189,12 +190,14 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
   fi
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
-  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
-    echo >&2 "HTTP/2 + SSL is not support in Java 8. "
-    echo >&2 "Configure Solr with HTTP/1.1 + SSL"
-    SOLR_JETTY_CONFIG+=("--module=https8")
-  else
-    SOLR_JETTY_CONFIG+=("--module=https")
+  if [ -z "$JETTY_MODULES" ]; then
+    if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
+      echo >&2 "HTTP/2 + SSL is not support in Java 8. "
+      echo >&2 "Configure Solr with HTTP/1.1 + SSL"
+      JETTY_MODULES+="--module=https8"
+    else
+      JETTY_MODULES+="--module=https"
+    fi
   fi
 
   SOLR_JETTY_CONFIG+=("--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
@@ -271,8 +274,12 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     fi
   fi
 else
-  SOLR_JETTY_CONFIG+=("--module=http")
+  if [ -z "$JETTY_MODULES" ]; then
+    JETTY_MODULES+="--module=http"
+  fi
 fi
+
+SOLR_JETTY_CONFIG+=("$JETTY_MODULES")
 
 # Requestlog options
 if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
