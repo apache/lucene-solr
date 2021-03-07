@@ -74,6 +74,23 @@ if (beastingMode) {
   }
 }
 
+// The hackish approach - fork gradle's test task and
+// implement suite duplication within. This provides the benefit of
+// potential parallel execution of the same suite (or individual tests). The downside
+// is that multiple test suites with an identical name are largely unsupported by
+// Java tooling (including Gradle).
+allprojects {
+  plugins.withType(JavaPlugin) {
+    // Define a 'testy' test off the custom test task.
+    // The CustomTestTask is inherited from Gradle's "Test" so
+    // any withType(Test) closures still apply and configure it identically to
+    // the test task.
+    task testy(type: org.apache.lucene.gradle.CustomTestTask) {
+      dups = Integer.parseInt(propertyOrDefault("tests.dups", "1"))
+    }
+  }
+}
+
 /**
  * We have to declare a dummy task here to be able to reuse the same syntax for 'test' task
  * filter option.

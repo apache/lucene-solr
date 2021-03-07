@@ -31,6 +31,8 @@ public class TestToStringUtil extends LuceneTestCase {
     assertEquals("chahan", ToStringUtil.getRomanization("チャーハン"));
     assertEquals("chashu", ToStringUtil.getRomanization("チャーシュー"));
     assertEquals("shumai", ToStringUtil.getRomanization("シューマイ"));
+
+    try { Thread.sleep(1000); } catch (Throwable e) {}
   }
 
   // see http://en.wikipedia.org/wiki/Hepburn_romanization,
