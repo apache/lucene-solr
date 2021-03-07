@@ -258,6 +258,9 @@ public class RangeFacetProcessor extends SimpleFacets {
    * @see org.apache.lucene.search.TermRangeQuery
    */
   protected int rangeCount(DocSet subset, RangeFacetRequest rfr, RangeFacetRequest.FacetRange fr) throws IOException, SyntaxError {
+    if (subset.size() == 0) {
+      return 0;
+    }
     SchemaField schemaField = rfr.getSchemaField();
     Query rangeQ = schemaField.getType().getRangeQuery(null, schemaField, fr.lower, fr.upper, fr.includeLower, fr.includeUpper);
     if (rfr.isGroupFacet()) {
