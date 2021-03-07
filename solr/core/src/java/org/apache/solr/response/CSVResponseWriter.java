@@ -170,73 +170,81 @@ class CSVWriter extends TabularResponseWriter {
   public void writeResponse() throws IOException {
     SolrParams params = req.getParams();
 
-    strategy = new CSVStrategy
-        (',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
-    CSVStrategy strat = strategy;
-
+    char delimiter = ',';
     String sep = params.get(CSV_SEPARATOR);
     if (sep!=null) {
       if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
-      strat.setDelimiter(sep.charAt(0));
+      delimiter = sep.charAt(0);
     }
 
+    String printerNewline = "\n";
     String nl = params.get(CSV_NEWLINE);
     if (nl!=null) {
       if (nl.length()==0) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid newline:'"+nl+"'");
-      strat.setPrinterNewline(nl);
+      printerNewline = nl;
     }
 
     String encapsulator = params.get(CSV_ENCAPSULATOR);
     String escape = params.get(CSV_ESCAPE);
+
+    char encapsulatorChar = '"';
     if (encapsulator!=null) {
       if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+encapsulator+"'");
-      strat.setEncapsulator(encapsulator.charAt(0));
+      encapsulatorChar = encapsulator.charAt(0);
     }
 
+    char escapeChar = CSVStrategy.ESCAPE_DISABLED;
     if (escape!=null) {
       if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
-      strat.setEscape(escape.charAt(0));
+      escapeChar = escape.charAt(0);
       if (encapsulator == null) {
-        strat.setEncapsulator( CSVStrategy.ENCAPSULATOR_DISABLED);
+        encapsulatorChar = CSVStrategy.ENCAPSULATOR_DISABLED;
       }
     }
 
-    if (strat.getEscape() == '\\') {
+    boolean interpretUnicodeEscapes = false;
+    if (escapeChar == '\\') {
       // If the escape is the standard backslash, then also enable
       // unicode escapes (it's harmless since 'u' would not otherwise
       // be escaped.
-      strat.setUnicodeEscapeInterpretation(true);
+      interpretUnicodeEscapes = true;
     }
+
+    strategy = new CSVStrategy
+        (delimiter, encapsulatorChar, CSVStrategy.COMMENTS_DISABLED, escapeChar, false, false, interpretUnicodeEscapes, true, printerNewline);
+
     printer = new CSVPrinter(writer, strategy);
-    
 
-    CSVStrategy mvStrategy = new CSVStrategy(strategy.getDelimiter(), CSVStrategy.ENCAPSULATOR_DISABLED, 
-        CSVStrategy.COMMENTS_DISABLED, '\\', false, false, false, false, "\n");
-    strat = mvStrategy;
-
+    char mvStrategyDelimiter = strategy.getDelimiter();
     sep = params.get(MV_SEPARATOR);
     if (sep!=null) {
       if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv separator:'"+sep+"'");
-      strat.setDelimiter(sep.charAt(0));
+      mvStrategyDelimiter = sep.charAt(0);
     }
 
     encapsulator = params.get(MV_ENCAPSULATOR);
     escape = params.get(MV_ESCAPE);
 
+    char mvStrategyEncapsulatorChar = CSVStrategy.ENCAPSULATOR_DISABLED;
+    char mvStrategyEscape = '\\';
+
     if (encapsulator!=null) {
       if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv encapsulator:'"+encapsulator+"'");
-      strat.setEncapsulator(encapsulator.charAt(0));
+      mvStrategyEncapsulatorChar = encapsulator.charAt(0);
       if (escape == null) {
-        strat.setEscape(CSVStrategy.ESCAPE_DISABLED);
+        mvStrategyEscape = CSVStrategy.ESCAPE_DISABLED;
       }
     }
 
     escape = params.get(MV_ESCAPE);
     if (escape!=null) {
       if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv escape:'"+escape+"'");
-      strat.setEscape(escape.charAt(0));
+      mvStrategyEscape = escape.charAt(0);
       // encapsulator will already be disabled if it wasn't specified
     }
+
+    CSVStrategy mvStrategy = new CSVStrategy(mvStrategyDelimiter, mvStrategyEncapsulatorChar,
+        CSVStrategy.COMMENTS_DISABLED, mvStrategyEscape, false, false, false, false, "\n");
 
     Collection<String> fields = getFields();
     CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
@@ -275,25 +283,31 @@ class CSVWriter extends TabularResponseWriter {
       CSVSharedBufPrinter csvPrinter = csvPrinterMV;
       if (sep != null || encapsulator != null || escape != null) {
         // create a new strategy + printer if there were any per-field overrides
-        strat = (CSVStrategy)mvStrategy.clone();
+        char fDelimiter = mvStrategy.getDelimiter();
+        char fEncapsulator = mvStrategy.getEncapsulator();
+        char fEscape = mvStrategy.getEscape();
         if (sep!=null) {
           if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv separator:'"+sep+"'");
-          strat.setDelimiter(sep.charAt(0));
+          fDelimiter = sep.charAt(0);
         }
         if (encapsulator!=null) {
           if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv encapsulator:'"+encapsulator+"'");
-          strat.setEncapsulator(encapsulator.charAt(0));
+          fEncapsulator = encapsulator.charAt(0);
           if (escape == null) {
-            strat.setEscape(CSVStrategy.ESCAPE_DISABLED);
+            fEscape = CSVStrategy.ESCAPE_DISABLED;
           }
         }
         if (escape!=null) {
           if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv escape:'"+escape+"'");
-          strat.setEscape(escape.charAt(0));
+          fEscape = escape.charAt(0);
           if (encapsulator == null) {
-            strat.setEncapsulator(CSVStrategy.ENCAPSULATOR_DISABLED);
+            fEncapsulator = CSVStrategy.ENCAPSULATOR_DISABLED;
           }
         }        
+        final CSVStrategy strat = new CSVStrategy(fDelimiter, fEncapsulator, mvStrategy.getCommentStart(), fEscape,
+            mvStrategy.getIgnoreLeadingWhitespaces(), mvStrategy.getIgnoreTrailingWhitespaces(),
+            mvStrategy.getUnicodeEscapeInterpretation(), mvStrategy.getIgnoreEmptyLines(),
+            mvStrategy.getPrinterNewline());
         csvPrinter = new CSVSharedBufPrinter(mvWriter, strat);
       }
 

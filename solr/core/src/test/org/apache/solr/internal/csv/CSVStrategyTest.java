@@ -30,32 +30,21 @@ import junit.framework.TestCase;
 public class CSVStrategyTest extends TestCase {
 
   // ======================================================
-  //   getters / setters
+  //   getters
   // ======================================================
-  public void testGetSetCommentStart() {
-    CSVStrategy strategy = (CSVStrategy)CSVStrategy.DEFAULT_STRATEGY.clone();
-    strategy.setCommentStart('#');
-    assertEquals(strategy.getCommentStart(), '#');
-    strategy.setCommentStart('!');
-    assertEquals(strategy.getCommentStart(), '!');
+  public void testGetCommentStart() {
+    CSVStrategy strategy = CSVStrategy.DEFAULT_STRATEGY;
+    assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
   }
 
-  public void testGetSetEncapsulator() {
-    CSVStrategy strategy = (CSVStrategy)CSVStrategy.DEFAULT_STRATEGY.clone();
-    strategy.setEncapsulator('"');
+  public void testGetEncapsulator() {
+    CSVStrategy strategy = CSVStrategy.DEFAULT_STRATEGY;
     assertEquals(strategy.getEncapsulator(), '"');
-    strategy.setEncapsulator('\'');
-    assertEquals(strategy.getEncapsulator(), '\'');
   }
 
-  public void testGetSetDelimiter() {
-    CSVStrategy strategy = (CSVStrategy)CSVStrategy.DEFAULT_STRATEGY.clone();
-    strategy.setDelimiter(';');
-    assertEquals(strategy.getDelimiter(), ';');
-    strategy.setDelimiter(',');
+  public void testGetDelimiter() {
+    CSVStrategy strategy = CSVStrategy.DEFAULT_STRATEGY;
     assertEquals(strategy.getDelimiter(), ',');
-    strategy.setDelimiter('\t');
-    assertEquals(strategy.getDelimiter(), '\t');
   }
 
   public void testSetCSVStrategy() {

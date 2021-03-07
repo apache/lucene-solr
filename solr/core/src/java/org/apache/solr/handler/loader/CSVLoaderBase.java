@@ -166,44 +166,50 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     templateAdd.overwrite=params.getBool(OVERWRITE,true);
     templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     
-    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
+    char delimiter = ',';
     String sep = params.get(SEPARATOR);
     if (sep!=null) {
       if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
-      strategy.setDelimiter(sep.charAt(0));
+      delimiter = sep.charAt(0);
     }
 
+    char encapsulatorChar = '"';
     String encapsulator = params.get(ENCAPSULATOR);
     if (encapsulator!=null) {
       if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+encapsulator+"'");
     }
 
+    char escapeChar = CSVStrategy.ESCAPE_DISABLED;
     String escape = params.get(ESCAPE);
     if (escape!=null) {
       if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
     }
-    rowId = params.get(ROW_ID);
-    rowIdOffset = params.getInt(ROW_ID_OFFSET, 0);
 
+    boolean interpretUnicodeEscapes = false;
     // if only encapsulator or escape is set, disable the other escaping mechanism
     if (encapsulator == null && escape != null) {
-      strategy.setEncapsulator( CSVStrategy.ENCAPSULATOR_DISABLED);     
-      strategy.setEscape(escape.charAt(0));
+      encapsulatorChar = CSVStrategy.ENCAPSULATOR_DISABLED;
+      escapeChar = escape.charAt(0);
     } else {
       if (encapsulator != null) {
-        strategy.setEncapsulator(encapsulator.charAt(0));
+        encapsulatorChar = encapsulator.charAt(0);
       }
       if (escape != null) {
         char ch = escape.charAt(0);
-        strategy.setEscape(ch);
+        escapeChar = ch;
         if (ch == '\\') {
           // If the escape is the standard backslash, then also enable
           // unicode escapes (it's harmless since 'u' would not otherwise
           // be escaped.                    
-          strategy.setUnicodeEscapeInterpretation(true);
+          interpretUnicodeEscapes = true;
         }
       }
     }
+
+    strategy = new CSVStrategy(delimiter, encapsulatorChar, CSVStrategy.COMMENTS_DISABLED, escapeChar, false, false, interpretUnicodeEscapes, true, "\n");
+
+    rowId = params.get(ROW_ID);
+    rowIdOffset = params.getInt(ROW_ID_OFFSET, 0);
 
     String fn = params.get(FIELDNAMES);
     fieldnames = fn != null ? commaSplit.split(fn,-1) : null;
