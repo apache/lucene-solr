@@ -163,6 +163,7 @@ public class SolrDocumentFetcher {
   private boolean canSubstituteDvForStored(FieldInfo fieldInfo, SchemaField schemaField) {
     if (!schemaField.hasDocValues() || !schemaField.stored()) return false;
     if (schemaField.multiValued()) return false;
+    if (!schemaField.useDocValuesAsStored()) return false; //Shouldn't this check be required?
     DocValuesType docValuesType = fieldInfo.getDocValuesType();
     NumberType numberType = schemaField.getType().getNumberType();
     // can not decode a numeric without knowing its numberType

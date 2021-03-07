@@ -629,6 +629,16 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="dense_vector_string" class="solr.DenseVectorField" encoding="string" />
+  <fieldType name="dense_vector_base64" class="solr.DenseVectorField" encoding="base64" />
+  <fieldType name="dense_vector_bfloat16" class="solr.DenseVectorField" encoding="bfloat16" />
+
+  <dynamicField name="*_v" type="dense_vector_string"
+                indexed="false" stored="true" docValues="true" multiValued="false" useDocValuesAsStored="false" />
+  <dynamicField name="*_v_base64" type="dense_vector_base64"
+                indexed="false" stored="true" docValues="true" multiValued="false" useDocValuesAsStored="false" />
+  <dynamicField name="*_v_bfloat16" type="dense_vector_bfloat16"
+                indexed="false" stored="true" docValues="true" multiValued="false" useDocValuesAsStored="false" />
 
   <uniqueKey>id</uniqueKey>
 

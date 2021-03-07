@@ -761,6 +761,26 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("vector(foo_i,4)", "vector(foo_i, 4)");
     assertFuncEquals("vector(foo_i,sum(4,bar_i))", "vector(foo_i, sum(4,bar_i))");
   }
+
+  public void testVectorCosine() throws Exception {
+    assertFuncEquals("vector_cosine(\"1.2,2.3456,7 , 8.9\", field(vectors_v))", "vector_cosine(\"1.2,2.3456,7,8.9\", vectors_v, max)");
+    assertFuncEquals("vector_cosine(\"1.2,2.3456,7 , 8.9\", field(vectors_v), max)", "vector_cosine(\"1.2,2.3456,7,8.9\", vectors_v, max)");
+    assertFuncEquals("vector_cosine(\"1.2,2.3456,7 , 8.9\", field(vectors_v), min)", "vector_cosine(\"1.2,2.3456,7,8.9\", vectors_v, min)");
+    assertFuncEquals("vector_cosine(\"1.2,2.3456,7 , 8.9\", field(vectors_v), avg)", "vector_cosine(\"1.2,2.3456,7,8.9\", vectors_v, avg)");
+    assertFuncEquals("vector_cosine(\"1.2,2.3456,7 , 8.9\", field(vectors_v), first)", "vector_cosine(\"1.2,2.3456,7,8.9\", vectors_v, first)");
+    assertFuncEquals("vector_cosine(\"1.2,2.3456,7 , 8.9\", field(vectors_v), last)", "vector_cosine(\"1.2,2.3456,7,8.9\", vectors_v, last)");
+  }
+
+  public void testVectorDotProduct() throws Exception {
+    assertFuncEquals("vector_dotproduct(\"1.2,2.3456,7 , 8.9\", field(vectors_v))", "vector_dotproduct(\"1.2,2.3456,7,8.9\", vectors_v, max)");
+    assertFuncEquals("vector_dotproduct(\"1.2,2.3456,7 , 8.9\", field(vectors_v), max)", "vector_dotproduct(\"1.2,2.3456,7,8.9\", vectors_v, max)");
+    assertFuncEquals("vector_dotproduct(\"1.2,2.3456,7 , 8.9\", field(vectors_v), min)", "vector_dotproduct(\"1.2,2.3456,7,8.9\", vectors_v, min)");
+    assertFuncEquals("vector_dotproduct(\"1.2,2.3456,7 , 8.9\", field(vectors_v), avg)", "vector_dotproduct(\"1.2,2.3456,7,8.9\", vectors_v, avg)");
+    assertFuncEquals("vector_dotproduct(\"1.2,2.3456,7 , 8.9\", field(vectors_v), first)", "vector_dotproduct(\"1.2,2.3456,7,8.9\", vectors_v, first)");
+    assertFuncEquals("vector_dotproduct(\"1.2,2.3456,7 , 8.9\", field(vectors_v), last)", "vector_dotproduct(\"1.2,2.3456,7,8.9\", vectors_v, last)");
+
+  }
+
   public void testFuncQuery() throws Exception {
     SolrQueryRequest req = req("myQ","asdf");
     try {

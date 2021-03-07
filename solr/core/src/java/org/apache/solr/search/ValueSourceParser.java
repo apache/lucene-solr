@@ -17,12 +17,14 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -34,6 +36,9 @@ import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.*;
+import org.apache.lucene.queries.function.valuesource.vectors.FloatVectorCosineFunction;
+import org.apache.lucene.queries.function.valuesource.vectors.FloatVectorDotProductFunction;
+import org.apache.lucene.queries.function.valuesource.vectors.FloatVectorFunction;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.IndexSearcher;
@@ -315,6 +320,51 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new VectorValueSource(fp.parseValueSourceList());
       }
     });
+
+    addParser("vector_cosine", new ValueSourceParser(){
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        String queryVector = fp.parseArg();
+        ValueSource vectorsField = fp.parseValueSource(); //field
+        FloatVectorFunction.Selector scoreSelector = FloatVectorFunction.Selector.MAX;
+        if (fp.hasMoreArguments()){
+          String selectorArg = fp.parseArg();
+          try {
+            scoreSelector = FloatVectorFunction.Selector.valueOf(selectorArg.toUpperCase(Locale.ROOT)); //TODO: handle invalid input
+          }
+          catch (NullPointerException npe){
+            throw new InvalidParameterException("Selector " + selectorArg + " is invalid." );
+          }
+        }
+
+        return new FloatVectorCosineFunction(
+            queryVector, vectorsField, scoreSelector
+        );
+      }
+    });
+
+    addParser("vector_dotproduct", new ValueSourceParser(){
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        String queryVector = fp.parseArg();
+        ValueSource vectorsField = fp.parseValueSource(); //field
+        FloatVectorFunction.Selector scoreSelector = FloatVectorFunction.Selector.MAX;
+        if (fp.hasMoreArguments()){
+          String selectorArg = fp.parseArg();
+          try {
+            scoreSelector = FloatVectorFunction.Selector.valueOf(selectorArg.toUpperCase(Locale.ROOT)); //TODO: handle invalid input
+          }
+          catch (NullPointerException npe){
+            throw new InvalidParameterException("Selector " + selectorArg + " is invalid." );
+          }
+        }
+
+        return new FloatVectorDotProductFunction(
+            queryVector, vectorsField, scoreSelector
+        );
+      }
+    });
+
     addParser("query", new ValueSourceParser() {
       // boost(query($q),rating)
       @Override
