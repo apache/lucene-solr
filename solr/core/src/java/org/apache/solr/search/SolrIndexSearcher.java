@@ -1027,8 +1027,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         builder.add(answer.getTopFilter(), Occur.FILTER);
       }
       for (ExtendedQuery eq : notCached) {
-        Query qq = QueryUtils.makeQueryable((Query)eq);
-        builder.add(qq, Occur.FILTER);
+        Query q = eq.getCostAppliedQuery();
+        builder.add(q, Occur.FILTER);
       }
       pf.filter = builder.build();
     }
