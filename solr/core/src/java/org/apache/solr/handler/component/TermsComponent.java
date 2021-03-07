@@ -32,7 +32,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -579,8 +578,7 @@ public class TermsComponent extends SearchComponent {
 
       if (fieldType.isPointField()) {
         for (String term : splitTerms) {
-          Query q = fieldType.getFieldQuery(null, sf, term);
-          int count = indexSearcher.getDocSet(q).size();
+          int count = indexSearcher.count(fieldType.getFieldQuery(null, sf, term));
           termsMap.add(term, count);
         }
       } else {

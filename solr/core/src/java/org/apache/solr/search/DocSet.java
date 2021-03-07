@@ -109,9 +109,7 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
   }
 
   /**
-   * Returns a Filter for use in Lucene search methods, assuming this DocSet
-   * was generated from the top-level MultiReader that the Lucene search
-   * methods will be invoked with.
+   * Returns a Query that matches the documents in this set.  It implements {@link DocSetProducer}.
    */
   public abstract Filter getTopFilter();
 
@@ -137,4 +135,11 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
   // internal only
   protected abstract FixedBitSet getFixedBitSetClone();
 
+  // internal only
+  abstract class DocSetTopFilter extends Filter implements DocSetProducer {
+    @Override
+    public final DocSet createDocSet(SolrIndexSearcher searcher) {
+      return DocSet.this;
+    }
+  }
 }

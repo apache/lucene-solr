@@ -673,7 +673,7 @@ public class SortedIntDocSet extends DocSet {
 
   @Override
   public Filter getTopFilter() {
-    return new Filter() {
+    return new DocSetTopFilter() {
       int lastEndIdx = 0;
 
       @Override
