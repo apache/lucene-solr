@@ -39,7 +39,8 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.MoreLikeThisHandler;
+import org.apache.solr.handler.InterestingTerm;
+import org.apache.solr.handler.MoreLikeThisHelper;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -99,7 +100,7 @@ public class MoreLikeThisComponent extends SearchComponent {
             return;
           }
           
-          MoreLikeThisHandler.MoreLikeThisHelper mlt = new MoreLikeThisHandler.MoreLikeThisHelper(
+          MoreLikeThisHelper mlt = new MoreLikeThisHelper(
               params, searcher);
 
           NamedList<BooleanQuery> bQuery = mlt.getMoreLikeTheseQuery(rb
@@ -371,7 +372,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       SolrIndexSearcher searcher, DocList docs, int flags) throws IOException {
     SolrParams p = rb.req.getParams();
     IndexSchema schema = searcher.getSchema();
-    MoreLikeThisHandler.MoreLikeThisHelper mltHelper = new MoreLikeThisHandler.MoreLikeThisHelper(
+    MoreLikeThisHelper mltHelper = new MoreLikeThisHelper(
         p, searcher);
     NamedList<DocList> mltResponse = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
@@ -383,7 +384,7 @@ public class MoreLikeThisComponent extends SearchComponent {
 
     SimpleOrderedMap<Object> interestingTermsResponse = null;
     MoreLikeThisParams.TermStyle interestingTermsConfig = MoreLikeThisParams.TermStyle.get(p.get(MoreLikeThisParams.INTERESTING_TERMS));
-    List<MoreLikeThisHandler.InterestingTerm> interestingTerms = (interestingTermsConfig == MoreLikeThisParams.TermStyle.NONE)
+    List<InterestingTerm> interestingTerms = (interestingTermsConfig == MoreLikeThisParams.TermStyle.NONE)
         ? null : new ArrayList<>(mltHelper.getMoreLikeThis().getMaxQueryTerms());
 
     if (interestingTerms != null) {
@@ -420,13 +421,13 @@ public class MoreLikeThisComponent extends SearchComponent {
       if (interestingTermsResponse != null) {
         if (interestingTermsConfig == MoreLikeThisParams.TermStyle.DETAILS) {
           SimpleOrderedMap<Float> interestingTermsWithScore = new SimpleOrderedMap<>();
-          for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {
+          for (InterestingTerm interestingTerm : interestingTerms) {
             interestingTermsWithScore.add(interestingTerm.term.toString(), interestingTerm.boost);
           }
           interestingTermsResponse.add(name, interestingTermsWithScore);
         } else {
           List<String> interestingTermsString = new ArrayList<>(interestingTerms.size());
-          for (MoreLikeThisHandler.InterestingTerm interestingTerm : interestingTerms) {
+          for (InterestingTerm interestingTerm : interestingTerms) {
             interestingTermsString.add(interestingTerm.term.toString());
           }
           interestingTermsResponse.add(name, interestingTermsString);
