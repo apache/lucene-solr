@@ -325,16 +325,36 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     maxTopVals = Math.min(maxTopVals, slotCardinality);
     final SlotAcc sortAcc = this.sortAcc, indexOrderAcc = this.indexOrderAcc;
     final BiPredicate<Slot,Slot> orderPredicate;
+    final int startSlot;
+    final int limitSlot;
+    final int increment;
+    final boolean canShortcircuit;
     if (indexOrderAcc != null && indexOrderAcc != sortAcc) {
       orderPredicate = (a, b) -> {
         int cmp = sortAcc.compare(a.slot, b.slot) * sortMul;
         return cmp == 0 ? (indexOrderAcc.compare(a.slot, b.slot) > 0) : cmp < 0;
       };
+      startSlot = 0;
+      limitSlot = numSlots;
+      increment = 1;
+      canShortcircuit = false;
     } else {
       orderPredicate = (a, b) -> {
         int cmp = sortAcc.compare(a.slot, b.slot) * sortMul;
         return cmp == 0 ? b.slot < a.slot : cmp < 0;
       };
+      canShortcircuit = indexOrderAcc == sortAcc && this instanceof FacetFieldProcessorByArray;
+      if (canShortcircuit && sortMul == 1) {
+        // desc (and shortcircuitable, so order matters)
+        startSlot = numSlots - 1;
+        limitSlot = -1;
+        increment = -1;
+      } else {
+        // asc (or not shortcircuitable, so order doesn't matter)
+        startSlot = 0;
+        limitSlot = numSlots;
+        increment = 1;
+      }
     }
     final PriorityQueue<Slot> queue = new PriorityQueue<>(maxTopVals) {
       @Override
@@ -345,7 +365,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     Slot bottom = null;
     Slot scratchSlot = new Slot();
     boolean shardHasMoreBuckets = false;  // This shard has more buckets than were returned
-    for (int slotNum = 0; slotNum < numSlots; slotNum++) {
+    for (int slotNum = startSlot; slotNum != limitSlot; slotNum += increment) {
 
       // screen out buckets not matching mincount
       if (effectiveMincount > 0) {
@@ -372,6 +392,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         s.slot = slotNum;
         queue.add(s);
         if (queue.size() >= maxTopVals) {
+          if (canShortcircuit) {
+            break;
+          }
           bottom = queue.top();
         }
       }
