@@ -61,19 +61,19 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals("foo\\?",pe("foo?"));
     assertEquals("foo \"bar\"",pe("foo \"bar\""));
     assertEquals("foo\\! \"bar\"",pe("foo! \"bar\""));
-        
+
   }
 
   @Test
   public void testStripUnbalancedQuotes() {
-        
+
     assertEquals("",strip(""));
     assertEquals("foo",strip("foo"));
     assertEquals("foo \"bar\"",strip("foo \"bar\""));
     assertEquals("42",strip("42\""));
     assertEquals("\"how now brown cow?\"",strip("\"how now brown cow?\""));
     assertEquals("\"you go\" \"now!\"",strip("\"you go\" \"now!\""));
-        
+
   }
 
   @Test
@@ -121,9 +121,9 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
                  ("   \t   "));
   }
 
-  @Test  
+  @Test
   public void testDisjunctionMaxQueryParser() throws Exception {
-        
+
     Query out;
     String t;
 
@@ -138,7 +138,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     qp.addAlias("test", 0.01f, SolrPluginUtils.parseFieldBoosts("text^2.0"));
     qp.addAlias("unused", 1.0f, SolrPluginUtils.parseFieldBoosts
                 ("subject^0.5 sind^1.5"));
-                     
+
 
     /* first some sanity tests that don't use aliasing at all */
 
@@ -176,7 +176,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(t+" sanity test is wrong field", "subject",
                  ((PhraseQuery)out).getTerms()[0].field());
 
-        
+
     /* now some tests that use aliasing */
 
     /* basic usage of single "term" */
@@ -187,7 +187,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
                out instanceof DisjunctionMaxQuery);
     assertEquals(t+" wrong number of clauses", 4,
                  countItems(((DisjunctionMaxQuery)out).iterator()));
-        
+
 
     /* odd case, but should still work, DMQ of one clause */
     t = "test:YYYYY";
@@ -197,7 +197,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
                out instanceof DisjunctionMaxQuery);
     assertEquals(t+" wrong number of clauses", 1,
                  countItems(((DisjunctionMaxQuery)out).iterator()));
-        
+
     /* basic usage of multiple "terms" */
     t = "hoss:XXXXXXXX test:YYYYY";
     out = qp.parse(t);
@@ -220,7 +220,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
       assertEquals(t+" second had wrong number of clauses", 1,
                    countItems(((DisjunctionMaxQuery)sub).iterator()));
     }
-            
+
     /* a phrase, and a term that is a stop word for some fields */
     t = "hoss:\"XXXXXX YYYYY\" hoss:the";
     out = qp.parse(t);
@@ -243,9 +243,9 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
       assertEquals(t+" second had wrong number of clauses (stop words)", 2,
                    countItems(((DisjunctionMaxQuery)sub).iterator()));
     }
-        
 
-        
+
+
   }
 
   private static int countItems(@SuppressWarnings({"rawtypes"})Iterator i) {
@@ -257,7 +257,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     return count;
   }
 
-  @Test                                    
+  @Test
   public void testMinShouldMatchCalculator() {
 
     /* zero is zero is zero */
@@ -279,7 +279,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(1, calcMSM(4, "25%"));
     assertEquals(1, calcMSM(5, " 25% "));
     assertEquals(2, calcMSM(10, "25%"));
-        
+
     /* negative percentages with rounding */
     assertEquals(3, calcMSM(3, " \n-25%\n "));
     assertEquals(3, calcMSM(4, "-25%"));
@@ -321,10 +321,10 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
     SolrPluginUtils.setMinShouldMatch(q, "0");
     assertEquals(0, q.build().getMinimumNumberShouldMatch());
-        
+
     SolrPluginUtils.setMinShouldMatch(q, "1");
     assertEquals(1, q.build().getMinimumNumberShouldMatch());
-        
+
     SolrPluginUtils.setMinShouldMatch(q, "50%");
     assertEquals(2, q.build().getMinimumNumberShouldMatch());
 
@@ -336,8 +336,93 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
     SolrPluginUtils.setMinShouldMatch(q, "50%");
     assertEquals(2, q.build().getMinimumNumberShouldMatch());
-        
+
   }
+
+  @Test
+  public void testMinShouldMatchCalculatorWithRoundoff() {
+
+    /* zero is zero is zero */
+    assertEquals(0, calcMSMWithRoundOff(5, "0", true));
+    assertEquals(0, calcMSMWithRoundOff(5, "0%", true));
+    assertEquals(0, calcMSMWithRoundOff(5, " -5 ", true));
+    assertEquals(0, calcMSMWithRoundOff(5, "\n -100% \n", true));
+
+    /* basic integers */
+    assertEquals(3, calcMSMWithRoundOff(5, " \n3\n ", true));
+    assertEquals(2, calcMSMWithRoundOff(5, "-3", true));
+    assertEquals(3, calcMSMWithRoundOff(3, "3", true));
+    assertEquals(0, calcMSMWithRoundOff(3, "-3", true));
+    assertEquals(3, calcMSMWithRoundOff(3, "5", true));
+    assertEquals(0, calcMSMWithRoundOff(3, "-5", true));
+
+    /* positive percentages with rounding */
+    assertEquals(1, calcMSMWithRoundOff(3, " \n25% \n", true));
+    assertEquals(1, calcMSMWithRoundOff(4, "25%", true));
+    assertEquals(1, calcMSMWithRoundOff(5, " 25% ", true));
+    assertEquals(3, calcMSMWithRoundOff(5, "50%", true));
+    assertEquals(3, calcMSMWithRoundOff(10, "25%", true));
+
+
+    /* negative percentages with rounding */
+    assertEquals(2, calcMSMWithRoundOff(3, " \n-25%\n ", true));
+    assertEquals(3, calcMSMWithRoundOff(4, "-25%", true));
+    assertEquals(4, calcMSMWithRoundOff(5, "-25%", true));
+    assertEquals(8, calcMSMWithRoundOff(10, "-25%", true));
+
+    /* conditional */
+    assertEquals(1, calcMSMWithRoundOff(1, "3<0", true));
+    assertEquals(2, calcMSMWithRoundOff(2, "3<0", true));
+    assertEquals(3, calcMSMWithRoundOff(3, "3<0", true));
+    assertEquals(0, calcMSMWithRoundOff(4, "3<0", true));
+    assertEquals(0, calcMSMWithRoundOff(5, "3<0", true));
+    assertEquals(1, calcMSMWithRoundOff(1, "3<25%", true));
+    assertEquals(2, calcMSMWithRoundOff(2, " 3\n<\n25% ", true));
+    assertEquals(3, calcMSMWithRoundOff(3, "3<25%", true));
+    assertEquals(1, calcMSMWithRoundOff(4, "\n 3 < \n25%\n ", true));
+    assertEquals(1, calcMSMWithRoundOff(5, "3<25%", true));
+
+    /* multiple conditionals */
+    assertEquals(1, calcMSMWithRoundOff(1, "\n3 < -25% 10 < -3 \n", true));
+    assertEquals(2, calcMSMWithRoundOff(2, " 3 < -25% 10 < -3\n", true));
+    assertEquals(3, calcMSMWithRoundOff(3, " 3 < -25% \n 10 < -3 \n", true));
+    assertEquals(3, calcMSMWithRoundOff(4, " 3 < -25% 10 < -3 ", true));
+    assertEquals(4, calcMSMWithRoundOff(5, " 3 < -25% 10 < -3", true));
+    assertEquals(5, calcMSMWithRoundOff(6, "3<-25% 10<-3", true));
+    assertEquals(5, calcMSMWithRoundOff(7, " 3 < -25% 10 < -3 ", true));
+    assertEquals(6, calcMSMWithRoundOff(8, " 3 < -25% 10 \n < -3\n", true));
+    assertEquals(7, calcMSMWithRoundOff(9, " 3 < -25% 10 < -3 \n", true));
+    assertEquals(8, calcMSMWithRoundOff(10, " 3 < -25% 10 < -3", true));
+    assertEquals(8, calcMSMWithRoundOff(11, "3<-25% 10<-3", true));
+    assertEquals(9, calcMSMWithRoundOff(12, "3<-25% 10<-3", true));
+    assertEquals(97, calcMSMWithRoundOff(100, "3<-25% 10<-3", true));
+
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.add(new TermQuery(new Term("a","b")), Occur.SHOULD);
+    q.add(new TermQuery(new Term("a","c")), Occur.SHOULD);
+    q.add(new TermQuery(new Term("a","d")), Occur.SHOULD);
+    q.add(new TermQuery(new Term("a","d")), Occur.SHOULD);
+
+    SolrPluginUtils.setMinShouldMatch(q, "0");
+    assertEquals(0, q.build().getMinimumNumberShouldMatch());
+
+    SolrPluginUtils.setMinShouldMatch(q, "1");
+    assertEquals(1, q.build().getMinimumNumberShouldMatch());
+
+    SolrPluginUtils.setMinShouldMatch(q, "50%");
+    assertEquals(2, q.build().getMinimumNumberShouldMatch());
+
+    SolrPluginUtils.setMinShouldMatch(q, "99");
+    assertEquals(4, q.build().getMinimumNumberShouldMatch());
+
+    q.add(new TermQuery(new Term("a","e")), Occur.MUST);
+    q.add(new TermQuery(new Term("a","f")), Occur.MUST);
+
+    SolrPluginUtils.setMinShouldMatch(q, "50%");
+    assertEquals(2, q.build().getMinimumNumberShouldMatch());
+
+  }
+
 
   @Test
   public void testMinShouldMatchBadQueries() {
@@ -351,7 +436,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
     e = expectThrows(SolrException.class, () -> calcMSM(1, "x"));
     assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
-    
+
     e = expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<X"));
     assertEquals("Invalid 'mm' spec. Expecting an integer." , e.getMessage());
     e = expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<"));
@@ -452,20 +537,26 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   public String pe(CharSequence s) {
     return SolrPluginUtils.partialEscape(s).toString();
   }
-    
+
   /** macro */
   public String strip(CharSequence s) {
     return SolrPluginUtils.stripUnbalancedQuotes(s).toString();
   }
-   
+
   /** macro */
   public String stripOp(CharSequence s) {
     return SolrPluginUtils.stripIllegalOperators(s).toString();
   }
-   
+
   /** macro */
   public int calcMSM(int clauses, String spec) {
-    return SolrPluginUtils.calculateMinShouldMatch(clauses, spec);
+    return SolrPluginUtils.calculateMinShouldMatch(clauses, spec, false);
+  }
+
+
+  /** macro */
+  public int calcMSMWithRoundOff(int clauses, String spec, boolean mmRoundOff) {
+    return SolrPluginUtils.calculateMinShouldMatch(clauses, spec, mmRoundOff);
   }
 }
 

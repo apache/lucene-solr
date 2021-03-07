@@ -48,6 +48,11 @@ public interface DisMaxParams {
   public static String MM_AUTORELAX = "mm.autoRelax";
 
   /**
+   * If set to true, will make mm RoundOff in case of Percentage match
+   */
+  public static String MM_ROUNDOFF = "mm.roundOff";
+
+  /**
    * query and init param for Phrase Slop value in phrase
    * boost query (in pf fields)
    */

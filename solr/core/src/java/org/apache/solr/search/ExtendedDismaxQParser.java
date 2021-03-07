@@ -367,7 +367,7 @@ public class ExtendedDismaxQParser extends QParser {
     if (query instanceof BooleanQuery) {
       BooleanQuery.Builder t = new BooleanQuery.Builder();
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery)query);
-      SolrPluginUtils.setMinShouldMatch(t, config.minShouldMatch, config.mmAutoRelax);
+      SolrPluginUtils.setMinShouldMatch(t, config.minShouldMatch, config.mmAutoRelax, config.mmRoundOff);
       query = QueryUtils.build(t, this);
     }
     return query;
@@ -415,7 +415,7 @@ public class ExtendedDismaxQParser extends QParser {
       if (foundOperators(clauses, config.lowercaseOperators)) {
         mmSpec = config.solrParams.get(DisMaxParams.MM, "0%"); // Use provided mm spec if present, otherwise turn off mm processing
       }
-      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, mmSpec, config.mmAutoRelax);
+      query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, mmSpec, config.mmAutoRelax, config.mmRoundOff);
     }
     return query;
   }
@@ -983,6 +983,7 @@ public class ExtendedDismaxQParser extends QParser {
     private Map<String, Analyzer> nonStopFilterAnalyzerPerField;
     private boolean removeStopFilter;
     String minShouldMatch; // for inner boolean queries produced from a single fieldQuery
+    private boolean mmRoundoff;
     
     /**
      * Where we store a map from field name we expect to see in our query
@@ -1422,7 +1423,7 @@ public class ExtendedDismaxQParser extends QParser {
             if (query instanceof BooleanQuery) {
               if (type == QType.FIELD) { // Don't set mm for boolean query containing phrase queries
                 BooleanQuery bq = (BooleanQuery) query;
-                query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
+                query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false, false);
               }
             } else if (query instanceof PhraseQuery) {
               PhraseQuery pq = (PhraseQuery)query;
@@ -1683,6 +1684,8 @@ public class ExtendedDismaxQParser extends QParser {
     protected boolean stopwords;
 
     protected boolean mmAutoRelax;
+
+    protected boolean mmRoundOff;
     
     protected String altQ;
     
@@ -1727,6 +1730,8 @@ public class ExtendedDismaxQParser extends QParser {
       stopwords = solrParams.getBool(DMP.STOPWORDS, true);
 
       mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
+
+      mmRoundOff = solrParams.getBool(DMP.MM_ROUNDOFF, false);
       
       altQ = solrParams.get( DisMaxParams.ALTQ );
 

@@ -1653,6 +1653,168 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testMMRoundOff() throws Exception {
+    for (String sow : Arrays.asList("true", "false")) {
+      assertQ("Explicit OR in query with no explicit mm and q.op=AND => mm = 0%",
+          req("q", "oil OR stocks",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("Explicit 'or' in query with lowercaseOperators=true, no explicit mm and q.op=AND => mm = 0%",
+          req("q", "oil or stocks",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "lowercaseOperators", "true",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("Explicit OR in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "oil OR stocks",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("No operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "oil stocks",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+      assertQ("No operator in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "oil stocks",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("No operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "oil stocks",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=4]");
+
+      assertQ("Explicit '-' operator in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair ties -barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+      assertQ("Explicit NOT in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair ties NOT barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+
+      assertQ("Explicit '-' operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair ties -barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+      assertQ("Explicit NOT in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair ties NOT barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+
+      assertQ("Explicit '-' operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair AND ties -barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("Explicit NOT in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair AND ties -barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+
+      assertQ("No explicit non-AND operator in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair AND ties barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=2]");
+      assertQ("No explicit non-AND operator in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "hair AND ties barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("No explicit non-AND operator in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair AND ties barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=2]");
+      assertQ("No explicit non-AND operator in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair and ties barbie",
+              "qf", "text_sw",
+              "lowercaseOperators", "true",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=2]");
+
+      assertQ("Explicit '-' operator in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "hair ties -barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+      assertQ("Explicit NOT in query with no explicit mm and q.op=AND => mm = 100%",
+          req("q", "hair ties NOT barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+
+      assertQ("Explicit OR in query with no explicit mm and q.op=AND => mm = 0%",
+          req("q", "hair OR ties barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=3]");
+      assertQ("Explicit OR in query with no explicit mm and q.op=OR => mm = 0%",
+          req("q", "hair OR ties barbie",
+              "qf", "text_sw",
+              "q.op", "OR",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=6]");
+      assertQ("Explicit OR in query with no explicit mm and no explicit q.op => mm = 0%",
+          req("q", "hair OR ties barbie",
+              "qf", "text_sw",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=6]");
+
+      assertQ("Explicit '+' operator in query with no explicit mm and q.op=AND => mm = 0%",
+          req("q", "hair ties +barbie",
+              "qf", "text_sw",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=1]");
+    }
+  }
+
   public void testEdismaxSimpleExtension() throws SyntaxError {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "foo bar");
