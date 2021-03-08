@@ -176,7 +176,7 @@ The ancestor links will only be tracked when the trackTraversal flag is turned o
 Link analysis is often performed to determine *node centrality*. When analyzing for centrality the
 goal is to assign a weight to each node based on how connected it is in the subgraph.
 There are different types of node centrality. Graph expressions very efficiently calculates
-*inbound degree centrality* (indegree).
+*inbound degree centrality* (in-degree).
 
 Inbound degree centrality is calculated by counting the number of inbound
 links to each node. For simplicity this document will sometimes refer
@@ -274,17 +274,24 @@ image::images/math-expressions/graph2.png[]
 If we compute the dot product between the butter column and the other product columns you will find that the dot product equals the inbound degree in each case.
 This tells us that a nearest neighbor search, using a maximum inner product similarity, would select the column with the highest inbound degree.
 
-=== Limiting Basket Size
+=== Limiting Basket Out-Degree
 
-The recommendation can be improved if we chose baskets that contain fewer items.
-This is because baskets with a smaller number of products carry more information about the
-relationship between the products in the basket.
+The recommendation can be made stronger by limiting the *out-degree* of the baskets. The out-degree is the
+number of outbound links of a node in a graph. In the shopping basket example the outbound links
+from the baskets link to products. So limiting the out-degree will limit the size of the baskets.
 
-The `maxDocFreq` parameter can be used to limit the "walk" to only include baskets that appear in the index a certain
-number of times. Since each occurrence of a basket ID in the index is a product, limiting the document frequency of the
-basket ID will limit the size of the basket. The `maxDocFreq` param is applied per shard. If there is a single
-shard or documents are co-located by basket ID then the `maxDocFreq` will be an exact count.
-Otherwise it will return baskets with a max size of numShards*maxDocFreq.
+Why does limiting the size of the shopping baskets make a stronger recommendation? To answer this question it helps
+to think about each shopping basket as *voting* for products that go with *butter*. In an election with two candidates
+if you were to vote for both candidates the votes would cancel each other out and have no effect.
+But if you vote for only one candidate your vote will affect the outcome. The same principal holds true
+for recommendations. As a basket votes for more products it dilutes the strength of its recommendation for any
+one product. A basket with just butter and one other item more strongly recommends that item.
+
+The `maxDocFreq` parameter can be used to limit the graph "walk" to only include baskets that appear in
+the index a certain number of times. Since each occurrence of a basket ID in the index is a link to a product,
+limiting the document frequency of the basket ID will limit the out-degree of the basket. The `maxDocFreq` param is
+applied per shard. If there is a single shard or documents are co-located by basket ID then the `maxDocFreq` will
+be an exact count. Otherwise, it will return baskets with a max size of numShards * maxDocFreq.
 
 The example below shows the `maxDocFreq` parameter applied to the `nodes` expression.
 
