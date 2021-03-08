@@ -333,13 +333,14 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     }
 
     private void pushLeft() {
+      final int splitDimPos = splitDims[level] * config.bytesPerDim;
       assert Arrays.compareUnsigned(
                   maxPackedValueStack[level],
-                  splitDims[level] * config.bytesPerDim,
-                  splitDims[level] * config.bytesPerDim + config.bytesPerDim,
+                  splitDimPos,
+                  splitDimPos + config.bytesPerDim,
                   splitValuesStack[level],
-                  splitDims[level] * config.bytesPerDim,
-                  splitDims[level] * config.bytesPerDim + config.bytesPerDim)
+                  splitDimPos,
+                  splitDimPos + config.bytesPerDim)
               >= 0
           : "config.bytesPerDim="
               + config.bytesPerDim
@@ -349,7 +350,6 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
               + config.numIndexDims
               + " config.numDims="
               + config.numDims;
-      final int splitDim = splitDims[level];
       nodeID *= 2;
       level++;
       if (minPackedValueStack[level] == null) {
@@ -372,21 +372,22 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       // add the split dim value:
       System.arraycopy(
           splitValuesStack[level - 1],
-          splitDim * config.bytesPerDim,
+          splitDimPos,
           maxPackedValueStack[level],
-          splitDim * config.bytesPerDim,
+          splitDimPos,
           config.bytesPerDim);
       readNodeData(true);
     }
 
     private void pushRight() {
+      final int splitDimPos = splitDims[level] * config.bytesPerDim;
       assert Arrays.compareUnsigned(
                   minPackedValueStack[level],
-                  splitDims[level] * config.bytesPerDim,
-                  splitDims[level] * config.bytesPerDim + config.bytesPerDim,
+                  splitDimPos,
+                  splitDimPos + config.bytesPerDim,
                   splitValuesStack[level],
-                  splitDims[level] * config.bytesPerDim,
-                  splitDims[level] * config.bytesPerDim + config.bytesPerDim)
+                  splitDimPos,
+                  splitDimPos + config.bytesPerDim)
               <= 0
           : "config.bytesPerDim="
               + config.bytesPerDim
@@ -397,7 +398,6 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
               + " config.numDims="
               + config.numDims;
       final int nodePosition = rightNodePositions[level];
-      final int splitDim = splitDims[level];
       assert nodePosition >= innerNodes.getFilePointer()
           : "nodePosition = " + nodePosition + " < currentPosition=" + innerNodes.getFilePointer();
       nodeID = nodeID * 2 + 1;
@@ -413,16 +413,16 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       // restore the split dim value:
       System.arraycopy(
           maxPackedValueStack[level - 1],
-          splitDim * config.bytesPerDim,
+          splitDimPos,
           maxPackedValueStack[level],
-          splitDim * config.bytesPerDim,
+          splitDimPos,
           config.bytesPerDim);
       // add the split dim value:
       System.arraycopy(
           splitValuesStack[level - 1],
-          splitDim * config.bytesPerDim,
+          splitDimPos,
           minPackedValueStack[level],
-          splitDim * config.bytesPerDim,
+          splitDimPos,
           config.bytesPerDim);
       readNodeData(false);
     }
