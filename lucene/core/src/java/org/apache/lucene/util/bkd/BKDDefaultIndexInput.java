@@ -156,15 +156,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     final IndexInput input = in.clone();
     final IndexTree indexTree =
         new IndexTree(
-            packedIndex.clone(),
-            input,
-            config,
-            numLeaves,
-            version,
-            1,
-            1,
-            minPackedValue,
-            maxPackedValue);
+            packedIndex.clone(), input, config, numLeaves, version, minPackedValue, maxPackedValue);
     input.seek(minLeafBlockFP);
     return new LeafIterator() {
       int leaf = 0;
@@ -226,7 +218,21 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
         int version,
         byte[] minPackedValue,
         byte[] maxPackedValue) {
-      this(innerNodes, leafNodes, config, numLeaves, version, 1, 1, minPackedValue, maxPackedValue);
+      this(
+          innerNodes,
+          leafNodes,
+          config,
+          numLeaves,
+          version,
+          1,
+          1,
+          minPackedValue,
+          maxPackedValue,
+          new BKDReaderDocIDSetIterator(config.maxPointsInLeafNode),
+          new byte[config.packedBytesLength],
+          new byte[config.packedIndexBytesLength],
+          new byte[config.packedIndexBytesLength],
+          new int[config.numDims]);
       // read root node
       readNodeData(false);
     }
@@ -240,7 +246,12 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
         int nodeID,
         int level,
         byte[] minPackedValue,
-        byte[] maxPackedValue) {
+        byte[] maxPackedValue,
+        BKDReaderDocIDSetIterator scratchIterator,
+        byte[] scratchDataPackedValue,
+        byte[] scratchMinIndexPackedValue,
+        byte[] scratchMaxIndexPackedValue,
+        int[] commonPrefixLengths) {
       this.config = config;
       this.version = version;
       this.nodeID = nodeID;
@@ -261,11 +272,11 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       splitDims = new int[treeDepth + 1];
       negativeDeltas = new boolean[config.numIndexDims * (treeDepth + 1)];
       // scratch objects
-      scratchIterator = new BKDReaderDocIDSetIterator(config.maxPointsInLeafNode);
-      commonPrefixLengths = new int[config.numDims];
-      scratchDataPackedValue = new byte[config.packedBytesLength];
-      scratchMinIndexPackedValue = new byte[config.packedIndexBytesLength];
-      scratchMaxIndexPackedValue = new byte[config.packedIndexBytesLength];
+      this.scratchIterator = scratchIterator;
+      this.commonPrefixLengths = commonPrefixLengths;
+      this.scratchDataPackedValue = scratchDataPackedValue;
+      this.scratchMinIndexPackedValue = scratchMinIndexPackedValue;
+      this.scratchMaxIndexPackedValue = scratchMaxIndexPackedValue;
     }
 
     @Override
@@ -280,7 +291,12 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
               nodeID,
               level,
               minPackedValueStack[level],
-              maxPackedValueStack[level]);
+              maxPackedValueStack[level],
+              scratchIterator,
+              scratchDataPackedValue,
+              scratchMinIndexPackedValue,
+              scratchMaxIndexPackedValue,
+              commonPrefixLengths);
       // copy node data
       index.leafBlockFPStack[index.level] = leafBlockFPStack[level];
       index.rightNodePositions[index.level] = rightNodePositions[level];
