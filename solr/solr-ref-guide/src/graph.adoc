@@ -283,7 +283,7 @@ from the baskets link to products. So limiting the out-degree will limit the siz
 Why does limiting the size of the shopping baskets make a stronger recommendation? To answer this question it helps
 to think about each shopping basket as *voting* for products that go with *butter*. In an election with two candidates
 if you were to vote for both candidates the votes would cancel each other out and have no effect.
-But if you vote for only one candidate your vote will affect the outcome. The same principal holds true
+But if you vote for only one candidate your vote will affect the outcome. The same principle holds true
 for recommendations. As a basket votes for more products it dilutes the strength of its recommendation for any
 one product. A basket with just butter and one other item more strongly recommends that item.
 
