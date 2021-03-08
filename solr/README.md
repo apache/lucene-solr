@@ -214,3 +214,5 @@ software:
 Apache Solr uses the Apache Tika which uses the Bouncy Castle generic encryption libraries for
 extracting text content and metadata from encrypted PDF files.
 See http://www.bouncycastle.org/ for more details on Bouncy Castle.
+
+Testing a PR for David :)
