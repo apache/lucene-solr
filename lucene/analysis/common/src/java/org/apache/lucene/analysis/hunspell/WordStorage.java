@@ -206,29 +206,45 @@ class WordStorage {
   static class Builder {
     private final boolean hasCustomMorphData;
     private final int[] hashTable;
-    private final int[] chainLengths;
-    private final FlagEnumerator flagEnumerator;
-    private final ByteArrayDataOutput dataWriter;
-
     private byte[] wordData;
+    private final int[] chainLengths;
 
-    private int commonPrefixLength, commonPrefixPos;
-    private String currentEntry = null;
+    private final IntsRefBuilder currentOrds = new IntsRefBuilder();
     private final List<char[]> group = new ArrayList<>();
     private final List<Integer> morphDataIDs = new ArrayList<>();
+    private String currentEntry = null;
+    private final int wordCount;
+    private final FlagEnumerator flagEnumerator;
+
+    private final ByteArrayDataOutput dataWriter;
+    private int commonPrefixLength, commonPrefixPos;
+    private int actualWords;
 
     /**
      * @param wordCount an approximate number of the words in the resulting dictionary, used to
-     *     pre-size the hash table
+     *     pre-size the hash table. This argument can be a bit larger than the actual word count,
+     *     but not smaller.
      */
     Builder(int wordCount, boolean hasCustomMorphData, FlagEnumerator flagEnumerator) {
+      this.wordCount = wordCount;
       this.flagEnumerator = flagEnumerator;
       this.hasCustomMorphData = hasCustomMorphData;
 
       hashTable = new int[wordCount];
       wordData = new byte[wordCount * 6];
 
-      dataWriter = new ByteArrayDataOutput(wordData);
+      dataWriter =
+          new ByteArrayDataOutput(wordData) {
+            @Override
+            public void writeByte(byte b) {
+              int pos = getPosition();
+              if (pos == wordData.length) {
+                wordData = ArrayUtil.grow(wordData);
+                reset(wordData, pos, wordData.length - pos);
+              }
+              super.writeByte(b);
+            }
+          };
       dataWriter.writeByte((byte) 0); // zero index is root, contains nothing
       chainLengths = new int[hashTable.length];
     }
@@ -266,8 +282,11 @@ class WordStorage {
     }
 
     private int flushGroup() throws IOException {
-      IntsRefBuilder currentOrds = new IntsRefBuilder();
+      if (++actualWords > wordCount) {
+        throw new RuntimeException("Don't add more words than wordCount!");
+      }
 
+      currentOrds.clear();
       boolean hasNonHidden = false;
       for (char[] flags : group) {
         if (!hasHiddenFlag(flags)) {
@@ -292,7 +311,6 @@ class WordStorage {
       int lastPos = commonPrefixPos;
       for (int i = commonPrefixLength; i < currentEntry.length() - 1; i++) {
         int pos = dataWriter.getPosition();
-        ensureArraySize(0, false);
         dataWriter.writeVInt(currentEntry.charAt(i));
         dataWriter.writeVInt(pos - lastPos);
         lastPos = pos;
@@ -309,7 +327,6 @@ class WordStorage {
       }
 
       // write the leaf entry for the last character
-      ensureArraySize(currentOrds.length(), collision != 0);
       dataWriter.writeVInt(currentEntry.charAt(currentEntry.length() - 1));
       dataWriter.writeVInt(pos - lastPos);
       IntSequenceOutputs.getSingleton().write(currentOrds.get(), dataWriter);
@@ -323,15 +340,6 @@ class WordStorage {
       return pos;
     }
 
-    private void ensureArraySize(int valueLength, boolean hasCollision) {
-      int pos = dataWriter.getPosition();
-      int maxEntrySize = 8 + 4 * (valueLength + 1) + (hasCollision ? 5 : 0);
-      while (wordData.length < pos + maxEntrySize) {
-        wordData = ArrayUtil.grow(wordData);
-        dataWriter.reset(wordData, pos, wordData.length - pos);
-      }
-    }
-
     private static boolean hasHiddenFlag(char[] flags) {
       for (char flag : flags) {
         if (flag == Dictionary.HIDDEN_FLAG) {
@@ -342,6 +350,7 @@ class WordStorage {
     }
 
     WordStorage build() throws IOException {
+      assert !group.isEmpty() : "build() should be only called once";
       flushGroup();
       return new WordStorage(
           hashTable, ArrayUtil.copyOfSubArray(wordData, 0, dataWriter.getPosition()));
