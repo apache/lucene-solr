@@ -297,19 +297,19 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
               scratchMinIndexPackedValue,
               scratchMaxIndexPackedValue,
               commonPrefixLengths);
-      // copy node data
       index.leafBlockFPStack[index.level] = leafBlockFPStack[level];
-      index.rightNodePositions[index.level] = rightNodePositions[level];
       if (isLeafNode() == false) {
+        // copy node data
+        index.rightNodePositions[index.level] = rightNodePositions[level];
         index.splitValuesStack[index.level] = splitValuesStack[level].clone();
+        System.arraycopy(
+            negativeDeltas,
+            level * config.numIndexDims,
+            index.negativeDeltas,
+            level * config.numIndexDims,
+            config.numIndexDims);
+        index.splitDims[level] = splitDims[level];
       }
-      System.arraycopy(
-          negativeDeltas,
-          level * config.numIndexDims,
-          index.negativeDeltas,
-          level * config.numIndexDims,
-          config.numIndexDims);
-      index.splitDims[level] = splitDims[level];
       return index;
     }
 
@@ -429,7 +429,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
 
     @Override
     public boolean moveToSibling() {
-      if (nodeID % 2 == 0) {
+      if ((nodeID & 1) == 0) {
         pop();
         pushRight();
         assert nodeExists();
