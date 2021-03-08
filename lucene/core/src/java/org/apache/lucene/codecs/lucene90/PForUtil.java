@@ -37,6 +37,7 @@ final class PForUtil {
   private final ForUtil forUtil;
 
   PForUtil(ForUtil forUtil) {
+    assert ForUtil.BLOCK_SIZE <= 256 : "blocksize must fit in one byte. got " + ForUtil.BLOCK_SIZE;
     this.forUtil = forUtil;
   }
 

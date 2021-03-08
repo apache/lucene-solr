@@ -1011,6 +1011,11 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       c.setCheckPendingFlushUpdate(false);
     }
+
+    if (rarely(r)) {
+      c.setIndexWriterEventListener(new MockIndexWriterEventListener());
+    }
+
     c.setMaxFullFlushMergeWaitMillis(rarely() ? atLeast(r, 1000) : atLeast(r, 200));
     return c;
   }

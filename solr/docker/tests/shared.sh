@@ -55,6 +55,7 @@ function wait_for_server_started {
   while true; do
     docker logs "$container_name" > "${log}" 2>&1
     if grep -E -q '(o\.e\.j\.s\.Server Started|Started SocketConnector)' "${log}" ; then
+      docker logs "$container_name"
       break
     fi
 

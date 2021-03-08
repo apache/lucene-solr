@@ -24,7 +24,7 @@ This section of the user guide covers the syntax and theory behind *graph expres
 
 Log records and other data indexed in Solr have connections between them that can be seen as a distributed graph.
 Graph expressions provide a mechanism for identifying root nodes in the graph and walking their connections.
-The general goal of the graph walk is to materialize a specific subgraph and perform link analysis to understand
+The general goal of the graph walk is to materialize a specific *subgraph* and perform *link analysis* to understand
 the connections between nodes.
 
 In the next few sections below we'll review the graph theory behind Solr's graph expressions.
@@ -32,7 +32,8 @@ In the next few sections below we'll review the graph theory behind Solr's graph
 === Subgraphs
 
 A subgraph is a smaller subset of the nodes and connections of the
-larger graph. Graph expressions allow you to flexibly define and materialize a subgraph from the larger graph stored in the distributed index.
+larger graph. Graph expressions allow you to flexibly define and materialize a subgraph from the larger graph
+stored in the distributed index.
 
 Subgraphs play two important roles:
 
@@ -48,7 +49,7 @@ distinct categories. The links between those two categories can then
 be analyzed to study how they relate. Bipartite graphs are often discussed
 in the context of collaborative filter recommender systems.
 
-A bipartite graph between shopping baskets and products is a useful example.
+A bipartite graph between *shopping baskets* and *products* is a useful example.
 Through link analysis between the shopping baskets and products
 we can determine which products are most often purchased within the same shopping baskets.
 
@@ -66,7 +67,7 @@ All products in the same basket share the same basket ID.
 
 Let's consider a simple example where we want to find a product
 that is often sold with *butter*. In order to do this we could create a
-bipartite subgraph of shopping baskets that contain butter.
+*bipartite subgraph* of shopping baskets that contain *butter*.
 We won't include butter itself in the graph as it doesn't help with
 finding a complementary product for butter.
 
@@ -82,7 +83,7 @@ Each cell has a 1 or 0 signifying if the product is in the basket.
 
 Let's look at how Solr graph expressions materializes this bipartite subgraph:
 
-The nodes function is used to materialize a subgraph from the larger graph. Below is an example nodes function which materializes the bipartite graph shown in the matrix above.
+The `nodes` function is used to materialize a subgraph from the larger graph. Below is an example nodes function which materializes the bipartite graph shown in the matrix above.
 
 [source,text]
 ----
@@ -94,8 +95,7 @@ nodes(baskets,
       trackTraversal="true")
 ----
 
-Let's break down this example starting with the random function:
-
+Let's break down this example starting with the `random` function:
 
 [source,text]
 ----
@@ -104,7 +104,7 @@ random(baskets, q="product_s:butter", fl="basket_s", rows="3")
 
 The `random` function is searching the baskets collection with the query `product_s:butter`, and
 returning 3 random samples. Each sample contains the `basket_s` field which is the basket id.
-The three basket id's that are returned by the random sample are the root nodes of the graph query.
+The three basket id's that are returned by the random sample are the *root nodes* of the graph query.
 
 The `nodes` function is the graph query. The nodes function is operating over the three root nodes returned
 by the random function.
@@ -165,12 +165,10 @@ The output of the shopping basket graph expression is as follows:
     ]
   }
 }
-
-
 ----
 
-The `ancestors` property in the result contains a unique, alphabetically sorted set of all the incoming links
-to the node in the subgraph. In this case it shows the basket IDs that are linked to each product.
+The `ancestors` property in the result contains a unique, alphabetically sorted set of all the *inbound links*
+to the node in the subgraph. In this case it shows the baskets that are linked to each product.
 The ancestor links will only be tracked when the trackTraversal flag is turned on in the nodes expression.
 
 === Link Analysis and Degree Centrality
@@ -178,7 +176,7 @@ The ancestor links will only be tracked when the trackTraversal flag is turned o
 Link analysis is often performed to determine *node centrality*. When analyzing for centrality the
 goal is to assign a weight to each node based on how connected it is in the subgraph.
 There are different types of node centrality. Graph expressions very efficiently calculates
-*inbound degree centrality* (indegree).
+*inbound degree centrality* (in-degree).
 
 Inbound degree centrality is calculated by counting the number of inbound
 links to each node. For simplicity this document will sometimes refer
@@ -263,23 +261,58 @@ The output of this graph expression is as follows:
 The `count(+++*+++)` aggregation counts the "gathered" nodes, in this case the values in the `product_s` field.
 Notice that the `count(+++*+++)` result is the same as the number of ancestors.
 This will always be the case because the nodes function first deduplicates the edges before
-counting the gathered nodes. Because of this the `count(+++*+++)` aggregation always calculates the degree centrality for the gathered nodes.
+counting the gathered nodes. Because of this the `count(+++*+++)` aggregation always calculates the
+inbound degree centrality for the gathered nodes.
 
 === Dot Product
 
 There is a direct relationship between the *inbound degree* with bipartite graph recommenders and the *dot product*.
-This relationship can be clearly seen in our working example once you include a column for butter:
+This relationship can be clearly seen in our working example once we include a column for butter:
 
 image::images/math-expressions/graph2.png[]
 
-If we compute the dot product between the butter column and the other product columns you will find that the dot product equals the inbound degree in each case. This tells us that a nearest neighbor search, using a maximum inner product similarity, would select the column with the highest inbound degree.
+If we compute the dot product between the butter column and the other product columns you will find that the dot product equals the inbound degree in each case.
+This tells us that a nearest neighbor search, using a maximum inner product similarity, would select the column with the highest inbound degree.
+
+=== Limiting Basket Out-Degree
+
+The recommendation can be made stronger by limiting the *out-degree* of the baskets. The out-degree is the
+number of outbound links of a node in a graph. In the shopping basket example the outbound links
+from the baskets link to products. So limiting the out-degree will limit the size of the baskets.
+
+Why does limiting the size of the shopping baskets make a stronger recommendation? To answer this question it helps
+to think about each shopping basket as *voting* for products that go with *butter*. In an election with two candidates
+if you were to vote for both candidates the votes would cancel each other out and have no effect.
+But if you vote for only one candidate your vote will affect the outcome. The same principle holds true
+for recommendations. As a basket votes for more products it dilutes the strength of its recommendation for any
+one product. A basket with just butter and one other item more strongly recommends that item.
+
+The `maxDocFreq` parameter can be used to limit the graph "walk" to only include baskets that appear in
+the index a certain number of times. Since each occurrence of a basket ID in the index is a link to a product,
+limiting the document frequency of the basket ID will limit the out-degree of the basket. The `maxDocFreq` param is
+applied per shard. If there is a single shard or documents are co-located by basket ID then the `maxDocFreq` will
+be an exact count. Otherwise, it will return baskets with a max size of numShards * maxDocFreq.
+
+The example below shows the `maxDocFreq` parameter applied to the `nodes` expression.
+
+[source,text]
+----
+nodes(baskets,
+      random(baskets, q="product_s:butter", fl="basket_s", rows="3"),
+      walk="basket_s->basket_s",
+      maxDocFreq="5",
+      fq="-product_s:butter",
+      gather="product_s",
+      trackTraversal="true",
+      count(*))
+----
 
 === Node Scoring
 
 The degree of the node describes how many nodes in the subgraph link to it.
 But this does not tell us if the node is particularly central to this subgraph or if it is just a
 very frequent node in the entire graph. Nodes that appear frequently in the subgraph but
-infrequently in the entire graph can be considered more relevant to the subgraph.
+infrequently in the entire graph can be considered more *relevant* to the subgraph.
 
 The search index contains information about how frequently each node appears in the entire index.
 Using a technique similar to *tf-idf* document scoring, graph expressions can combine the
@@ -299,10 +332,10 @@ scoreNodes(nodes(baskets,
                  count(*)))
 ----
 
-The output now includes a `nodeScore` property. In the output below notice how eggs has a higher
-nodeScore than milk even though they have the same `count(+++*+++)`. This is because milk appears more
+The output now includes a `nodeScore` property. In the output below notice how *eggs* has a higher
+nodeScore than *milk* even though they have the same `count(+++*+++)`. This is because milk appears more
 frequently in the entire index than eggs does. The `docFreq` property added by the `nodeScore` function
-shows the term frequency in the index. Because of the lower `docFreq` eggs is considered more relevant
+shows the document frequency in the index. Because of the lower `docFreq` eggs is considered more relevant
 to this subgraph, and a better recommendation to be paired with butter.
 
 [source,json]
@@ -377,9 +410,12 @@ So those using Solr to analyze Solr logs get temporal graph expressions for free
 
 === Root Events
 
-Once the ten second windows have been indexed with the log records we can devise a query that creates a set of root events. We can demonstrate this with an example using Solr log records.
+Once the ten second windows have been indexed with the log records we can devise a query that
+creates a set of *root events*. We can demonstrate this with an example using Solr log records.
 
-In this example we'll perform a Streaming Expression facet aggregation that finds the top 25, ten second windows with the highest average query time. These time windows can be used to represent slow query events in a temporal graph query.
+In this example we'll perform a Streaming Expression `facet` aggregation that finds the top 10, ten second windows
+with the highest average query time. These time windows can be used to represent *slow query events* in a temporal
+graph query.
 
 Here is the facet function:
 
@@ -435,11 +471,12 @@ Below is a snippet of the results with the 25 windows with the highest average q
 ----
 === Temporal Bipartite Subgraphs
 
-Once we've identified a set of root event windows it's easy to perform a graph query that creates a
-bipartite graph of the log events that occurred within the same ten second windows.
+Once we've identified a set of root events it's easy to perform a graph query that creates a
+bipartite graph of the log events types that occurred within the same ten second windows.
 With Solr logs there is a field called `type_s` which is the type of log event.
 
-In order to see what log events happened in the same ten second window of our root events we can "walk" the ten second windows and gather the type_s field.
+In order to see what log events happened in the same ten second window of our root events we can "walk" the
+ten second windows and gather the `type_s` field.
 
 [source,text]
 ----
@@ -505,18 +542,18 @@ Below is the resulting node set:
 }
 ----
 
-In this result set the node field holds the type of log events that occurred within the
+In this result set the `node` field holds the type of log events that occurred within the
 same ten second windows as the root events. Notice that the event types include:
 query, admin, update and error. The `count(+++*+++)` shows the degree centrality of the different
 log event types.
 
-Notice that there is one error event within the same ten second windows of the slow query events.
+Notice that there is only one *error* event within the same ten second windows of the slow query events.
 
 === Window Parameter
 
 For event correlation and root cause analysis it's not enough to find events that occur
-within the same ten second root event windows. What's needed is to find events that occur
-within a window of time *prior to each root event window*. The window parameter allows you to
+within the *same* ten second root event windows. What's needed is to find events that occur
+within a window of time *prior to each root event*. The `window` parameter allows you to
 specify this prior window of time as part of the query. The window parameter is an integer
 which specifies the number of ten second time windows, prior to each root event window,
 to include in the graph walk.
@@ -535,7 +572,7 @@ nodes(solr_logs,
 ----
 
 Below is the node set returned when the window parameter is added.
-Notice that there are 29 error events within the 3 ten second windows prior to the slow query events.
+Notice that there are *now 29 error* events within the 3 ten second windows prior to the slow query events.
 
 [source,json]
 ----
@@ -605,7 +642,7 @@ The window parameter doesn't capture the delay as we only know that an event
 occurred somewhere within a prior window.
 
 The `lag` parameter can be used to start calculating the window parameter a
-number of ten second windows in the past. For example we could walk the graph in 20 seconds
+number of ten second windows in the past. For example we could walk the graph in 20 second
 windows starting from 30 seconds prior to a set of root events.
 By adjusting the lag and re-running the query we can determine which lagged
 window has the highest degree. From this we can determine the delay.
@@ -613,7 +650,7 @@ window has the highest degree. From this we can determine the delay.
 === Node Scoring and Temporal Anomaly Detection
 
 The concept of node scoring can be applied to temporal graph queries to find events that are
-both correlated with a set of root events and *anomalous* to the root events.
+both *correlated* with a set of root events and *anomalous* to the root events.
 The degree calculation establishes the correlation between events
 but it does not establish if the event is a very common occurrence in
 the entire graph or specific to the subgraph.
@@ -635,7 +672,9 @@ scoreNodes(nodes(solr_logs,
                  count(*)))
 ----
 
-Below is the node set once the `scoreNodes` function is applied. Now we see that the highest scoring node is the `error` event. This score give us a good indication of where to begin our *root cause analysis*.
+Below is the node set once the `scoreNodes` function is applied.
+Now we see that the *highest scoring node* is the *error* event.
+This score give us a good indication of where to begin our *root cause analysis*.
 
 [source,json]
 ----

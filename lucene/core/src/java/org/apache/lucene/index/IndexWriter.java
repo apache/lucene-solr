@@ -379,6 +379,8 @@ public class IndexWriter
   private final ReaderPool readerPool;
   private final BufferedUpdatesStream bufferedUpdatesStream;
 
+  private final IndexWriterEventListener eventListener;
+
   /**
    * Counts how many merges have completed; this is used by {@link
    * #forceApply(FrozenBufferedUpdates)} to handle concurrently apply deletes/updates with merges
@@ -938,6 +940,7 @@ public class IndexWriter
     config = conf;
     infoStream = config.getInfoStream();
     softDeletesEnabled = config.getSoftDeletesField() != null;
+    eventListener = config.getIndexWriterEventListener();
     // obtain the write.lock. If the user configured a timeout,
     // we wrap with a sleeper and this might take some time.
     writeLock = d.obtainLock(WRITE_LOCK_NAME);
@@ -3522,11 +3525,16 @@ public class IndexWriter
           infoStream.message(
               "IW", "now run merges during commit: " + pointInTimeMerges.segString(directory));
         }
+        eventListener.beginMergeOnFullFlush(pointInTimeMerges);
+
         mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
         pointInTimeMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
+
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "done waiting for merges during commit");
         }
+        eventListener.endMergeOnFullFlush(pointInTimeMerges);
+
         synchronized (this) {
           // we need to call this under lock since mergeFinished above is also called under the IW
           // lock

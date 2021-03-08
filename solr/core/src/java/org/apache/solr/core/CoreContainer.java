@@ -325,9 +325,8 @@ public class CoreContainer {
   }
 
   /**
-   * Create a new CoreContainer using the given SolrResourceLoader,
-   * configuration and CoresLocator.  The container's cores are
-   * not loaded.
+   * Create a new CoreContainer using the given configuration.
+   * The container's cores are not loaded.
    *
    * @param config a ConfigSolr representation of this container's configuration
    * @see #load()
@@ -340,6 +339,14 @@ public class CoreContainer {
     this(config, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
   }
 
+  /**
+   * Create a new CoreContainer using the given configuration and locator.
+   * The container's cores are not loaded.
+   *
+   * @param config a ConfigSolr representation of this container's configuration
+   * @param locator a CoresLocator
+   * @see #load()
+   */
   public CoreContainer(NodeConfig config, CoresLocator locator) {
     this(config, locator, false);
   }
@@ -785,7 +792,7 @@ public class CoreContainer {
     metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
     metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
 
-    coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
+    coreConfigService = ConfigSetService.createConfigSetService(this);
 
     containerProperties.putAll(cfg.getSolrProperties());
 
@@ -2028,6 +2035,10 @@ public class CoreContainer {
 
   public ConfigSetsHandler getConfigSetsHandler() {
     return configSetsHandler;
+  }
+
+  public ConfigSetService getConfigSetService() {
+    return this.coreConfigService;
   }
 
   public String getHostName() {
