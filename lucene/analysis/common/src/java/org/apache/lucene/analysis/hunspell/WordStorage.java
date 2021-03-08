@@ -41,7 +41,7 @@ import org.apache.lucene.util.fst.IntSequenceOutputs;
  * </ol>
  *
  * There's only one entry for each prefix, so it's like a trie/{@link
- * org.apache.lucene.util.fst.FST}, but a reversed one: each nodes points to a single previous nodes
+ * org.apache.lucene.util.fst.FST}, but a reversed one: each node points to a single previous node
  * instead of several following ones. For example, "abc" and "abd" point to the same prefix entry
  * "ab" which points to "a" which points to 0.<br>
  * <br>
@@ -60,9 +60,9 @@ class WordStorage {
    *
    * <ul>
    *   <li>VINT: the word's last character
-   *   <li>VINT: pointer to the entry for the same word without the last character. It's relative:
-   *       the difference of this entry's start and the prefix's entry start. 0 for single-character
-   *       entries
+   *   <li>VINT: a delta pointer to the entry for the same word without the last character.
+   *       Precisely, it's the difference of this entry's start and the prefix's entry start. 0 for
+   *       single-character entries
    *   <li>Optional, for non-leaf entries only:
    *       <ul>
    *         <li>VINT: the length of the word form data, returned from {@link #lookupWord}
@@ -71,7 +71,7 @@ class WordStorage {
    *             <ul>
    *               <li>BYTE: 1 if the next collision entry has further collisions, 0 if it's the
    *                   last of the entries with the same hash
-   *               <li>VINT: (relative) pointer to the previous entry with the same hash
+   *               <li>VINT: (delta) pointer to the previous entry with the same hash
    *             </ul>
    *       </ul>
    * </ul>
@@ -129,6 +129,8 @@ class WordStorage {
   }
 
   /**
+   * @param maxLength the limit on the length of words to be processed, the callback won't be
+   *     invoked for the longer ones
    * @param processor is invoked for each word. Note that the passed arguments (word and form) are
    *     reused, so they can be modified in any way, but may not be saved for later by the processor
    */
@@ -215,6 +217,10 @@ class WordStorage {
     private final List<char[]> group = new ArrayList<>();
     private final List<Integer> morphDataIDs = new ArrayList<>();
 
+    /**
+     * @param wordCount an approximate number of the words in the resulting dictionary, used to
+     *     pre-size the hash table
+     */
     Builder(int wordCount, boolean hasCustomMorphData, FlagEnumerator flagEnumerator) {
       this.flagEnumerator = flagEnumerator;
       this.hasCustomMorphData = hasCustomMorphData;
@@ -227,6 +233,10 @@ class WordStorage {
       chainLengths = new int[hashTable.length];
     }
 
+    /**
+     * Add a dictionary entry. This method should be called for entries sorted non-descending by
+     * {@link String#compareTo} rules.
+     */
     void add(String entry, char[] flags, int morphDataID) throws IOException {
       if (!entry.equals(currentEntry)) {
         if (currentEntry != null) {
@@ -278,6 +288,7 @@ class WordStorage {
         }
       }
 
+      // write the non-leaf entries for chars after the shared prefix, except the last one
       int lastPos = commonPrefixPos;
       for (int i = commonPrefixLength; i < currentEntry.length() - 1; i++) {
         int pos = dataWriter.getPosition();
@@ -297,6 +308,7 @@ class WordStorage {
             "Too many collisions, please report this to dev@lucene.apache.org");
       }
 
+      // write the leaf entry for the last character
       ensureArraySize(currentOrds.length(), collision != 0);
       dataWriter.writeVInt(currentEntry.charAt(currentEntry.length() - 1));
       dataWriter.writeVInt(pos - lastPos);
