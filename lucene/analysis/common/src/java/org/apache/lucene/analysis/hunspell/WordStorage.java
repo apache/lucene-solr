@@ -163,7 +163,7 @@ class WordStorage {
           prevPos -= in.readVInt();
         }
 
-        if (wordStart > 0) {
+        if (prevPos == 0) {
           chars.offset = wordStart;
           chars.length = maxLength - wordStart;
           processor.accept(chars, forms);

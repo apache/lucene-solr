@@ -16,14 +16,19 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -63,6 +68,31 @@ public class TestDictionary extends LuceneTestCase {
     return flags[0];
   }
 
+  public void testProcessAllWords() throws Exception {
+    Dictionary dictionary = loadDictionary("simple.aff", "simple.dic");
+
+    try (InputStream stream = getClass().getResourceAsStream("simple.dic")) {
+      BufferedReader reader = new BufferedReader(new InputStreamReader(stream, UTF_8));
+      Set<String> allWords =
+          reader.lines().skip(1).map(s -> s.split("/")[0]).collect(Collectors.toSet());
+      int maxLength = allWords.stream().mapToInt(String::length).max().orElseThrow();
+
+      for (int i = 1; i <= maxLength + 1; i++) {
+        checkProcessWords(dictionary, allWords, i);
+      }
+    }
+  }
+
+  private void checkProcessWords(Dictionary dictionary, Set<String> allWords, int maxLength) {
+    Set<String> processed = new HashSet<>();
+    dictionary.words.processAllWords(maxLength, (word, __) -> processed.add(word.toString()));
+
+    Set<String> filtered =
+        allWords.stream().filter(s -> s.length() <= maxLength).collect(Collectors.toSet());
+
+    assertEquals("For length " + maxLength, filtered, processed);
+  }
+
   public void testCompressedDictionary() throws Exception {
     Dictionary dictionary = loadDictionary("compressed.aff", "compressed.dic");
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
@@ -96,8 +126,8 @@ public class TestDictionary extends LuceneTestCase {
   }
 
   public void testUsingFlagsBeforeFlagDirective() throws IOException, ParseException {
-    byte[] aff = "KEEPCASE 42\nFLAG num".getBytes(StandardCharsets.UTF_8);
-    byte[] dic = "1\nfoo/42".getBytes(StandardCharsets.UTF_8);
+    byte[] aff = "KEEPCASE 42\nFLAG num".getBytes(UTF_8);
+    byte[] dic = "1\nfoo/42".getBytes(UTF_8);
 
     Dictionary dictionary =
         new Dictionary(
@@ -210,14 +240,14 @@ public class TestDictionary extends LuceneTestCase {
         new Dictionary(
             new ByteBuffersDirectory(),
             "",
-            new ByteArrayInputStream(affFile.getBytes(StandardCharsets.UTF_8)),
-            new ByteArrayInputStream("1\nmock".getBytes(StandardCharsets.UTF_8)));
+            new ByteArrayInputStream(affFile.getBytes(UTF_8)),
+            new ByteArrayInputStream("1\nmock".getBytes(UTF_8)));
     return dictionary.decoder.charset().name();
   }
 
   public void testFlagWithCrazyWhitespace() {
-    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8", StandardCharsets.UTF_8));
-    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8", StandardCharsets.UTF_8));
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8", UTF_8));
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8", UTF_8));
   }
 
   @Test
@@ -226,7 +256,7 @@ public class TestDictionary extends LuceneTestCase {
         Dictionary.getFlagParsingStrategy("FLAG\tUTF-8", Dictionary.DEFAULT_CHARSET);
 
     String src = "привет";
-    String asAscii = new String(src.getBytes(StandardCharsets.UTF_8), Dictionary.DEFAULT_CHARSET);
+    String asAscii = new String(src.getBytes(UTF_8), Dictionary.DEFAULT_CHARSET);
     assertNotEquals(src, asAscii);
     assertEquals(src, new String(strategy.parseFlags(asAscii)));
   }
