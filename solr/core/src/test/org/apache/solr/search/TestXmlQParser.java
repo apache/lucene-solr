@@ -23,17 +23,16 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.queryparser.xml.CoreParser;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore("Was relying on Lucene test sources. Should copy?")
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15224: Was relying on Lucene test sources. Should copy?")
 public class TestXmlQParser extends SolrTestCase /* extends TestCoreParser */ {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

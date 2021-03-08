@@ -17,18 +17,6 @@
 
 // Source test classes from Lucene won't be accessible anymore after the split.
 
-configure(project(":solr:contrib:analysis-extras")) {
-  afterEvaluate {
-    sourceSets {
-      test {
-        java {
-          exclude '**/TestICUCollationField.java'
-        }
-      }
-    }
-  }
-}
-
 configure(project(":solr:core")) {
   afterEvaluate {
     sourceSets {
