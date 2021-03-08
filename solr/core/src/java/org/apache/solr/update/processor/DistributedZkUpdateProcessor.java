@@ -194,6 +194,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // zk
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
 
+      boolean issuedDistribCommit = false;
       List<SolrCmdDistributor.Node> useNodes = null;
       if (req.getParams().get(COMMIT_END_POINT) == null) {
         useNodes = nodes;
@@ -203,11 +204,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
               zkController.getBaseUrl(), req.getCore().getName()));
           cmdDistrib.distribCommit(cmd, useNodes, params);
-          cmdDistrib.blockAndDoRetries();
+          issuedDistribCommit = true;
         }
       }
 
       if (isLeader) {
+        if (issuedDistribCommit) {
+          // defensive copy of params, which was passed into distribCommit(...) above; will unconditionally replace
+          // DISTRIB_UPDATE_PARAM, COMMIT_END_POINT, and DISTRIB_FROM if the new `params` val will actually be used
+          params = new ModifiableSolrParams(params);
+        }
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
         params.set(COMMIT_END_POINT, "replicas");
@@ -218,14 +224,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
               zkController.getBaseUrl(), req.getCore().getName()));
 
+          // NOTE: distribCommit(...) internally calls `blockAndDoRetries()`, flushing any TOLEADER distrib commits
           cmdDistrib.distribCommit(cmd, useNodes, params);
+          issuedDistribCommit = true;
         }
 
         doLocalCommit(cmd);
-
-        if (useNodes != null) {
-          cmdDistrib.blockAndDoRetries();
-        }
+      }
+      if (issuedDistribCommit) {
+        cmdDistrib.blockAndDoRetries();
       }
     }
   }
