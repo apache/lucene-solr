@@ -71,7 +71,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     SolrInputDocument finalDoc = doc;
     expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", finalDoc));
 
-    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", new SolrInputDocument(null , null)));
+    expectThrows(NullPointerException.class, () -> processAdd("add-fields-no-run-processor", new SolrInputDocument(null , null)));
   }
 
   public void testSingleField() throws Exception {
