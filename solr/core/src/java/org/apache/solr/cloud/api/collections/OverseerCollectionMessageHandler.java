@@ -293,17 +293,17 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         collection = message.getStr("name");
       }
 
-      if (operation.equals("cleanup")) {
-        log.info("Found item that needs cleanup {}", message);
-        String op = message.getStr(Overseer.QUEUE_OPERATION);
-        CollectionAction action = getCollectionAction(op);
-        Cmd command = commandMap.get(action);
-        boolean drop = command.cleanup(message);
-        if (drop) {
-          return null;
-        }
-        return new OverseerSolrResponse(null);
-      }
+//      if (operation.equals("cleanup")) {
+//        log.info("Found item that needs cleanup {}", message);
+//        String op = message.getStr(Overseer.QUEUE_OPERATION);
+//        CollectionAction action = getCollectionAction(op);
+//        Cmd command = commandMap.get(action);
+//        boolean drop = command.cleanup(message);
+//        if (drop) {
+//          return null;
+//        }
+//        return new OverseerSolrResponse(null);
+//      }
 
       CollectionAction action = getCollectionAction(operation);
       Cmd command = commandMap.get(action);
@@ -324,9 +324,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
             collectionStates.put(docColl.getName(), docColl);
           } else {
             log.info("collection not found in returned state {} {}", collection, responce.clusterState);
-            if (collection != null) {
-              zkWriter.removeCollection(collection);
-            }
+
           }
           if (collectionStates != null) {
             ClusterState cs = ClusterState.getRefCS(collectionStates, -2);
@@ -440,6 +438,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COLLECTION_PROP, message.getStr(COLLECTION_PROP));
     params.set(NODE_NAME_PROP, message.getStr(NODE_NAME_PROP));
+    params.set("node", message.getStr("node"));
     params.set(SHARD_ID_PROP, message.getStr(SHARD_ID_PROP));
     params.set(REJOIN_AT_HEAD_PROP, message.getStr(REJOIN_AT_HEAD_PROP));
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REJOINLEADERELECTION.toString());

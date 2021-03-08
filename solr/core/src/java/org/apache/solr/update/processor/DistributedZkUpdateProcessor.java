@@ -749,7 +749,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     try {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
-      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
+      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 5000);
       isLeader = leaderReplica.getName().equals(desc.getName());
 
       if (!isLeader) {

@@ -22,11 +22,9 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -158,22 +156,26 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     List<CreateReplica> createReplicas = new ArrayList<>();
+    DocCollection collection;
 
-    DocCollection collection = clusterState.getCollection(collectionName);
+    collection = clusterState.getCollection(collectionName);
     List<ReplicaPosition> positions = buildReplicaPositions(ocmh.cloudManager, clusterState, collection, message, replicaTypesVsCount);
     for (ReplicaPosition replicaPosition : positions) {
       clusterState = new CollectionMutator(ocmh.cloudManager).modifyCollection(clusterState, message);
       collection = clusterState.getCollection(collectionName);
-      CreateReplica cr = assignReplicaDetails(collection, message, replicaPosition);
+      CreateReplica cr = assignReplicaDetails(collection, message, replicaPosition, ocmh.overseer);
 
       message = message.plus(NODE_NAME_PROP, replicaPosition.node);
       message = message.plus(ZkStateReader.REPLICA_TYPE, cr.replicaType.name());
+      message = message.plus(ZkStateReader.CORE_NAME_PROP, cr.coreName);
+      message = message.plus("id", cr.id);
 
-      clusterState = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, message);
+      clusterState = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, message, ocmh.overseer);
       createReplicas.add(cr);
 
-     // message.getProperties().put("node_name", cr.node)
+      // message.getProperties().put("node_name", cr.node)
     }
+
 
 //    createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collection, message, replicaTypesVsCount)
 //        .stream()
@@ -216,7 +218,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
             String asyncId = finalMessage.getStr(ASYNC);
             for (CreateReplica createReplica : createReplicas) {
-              waitForActiveReplica(createReplica.sliceName, collectionName, asyncId, ocmh.zkStateReader, createReplicas);
+              waitForActiveReplica(createReplica.sliceName, collectionName, asyncId, ocmh.zkStateReader, createReplica);
             }
             AddReplicaCmd.Response response = new AddReplicaCmd.Response();
             return response;
@@ -230,40 +232,28 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     return response;
   }
 
-  private void waitForActiveReplica(String shard, String collectionName, String asyncId, ZkStateReader zkStateReader, List<CreateReplica> createReplicas) {
-    Set<String> coreNames = new HashSet<>(createReplicas.size());
-    for (CreateReplica replica : createReplicas) {
-      coreNames.add(replica.coreName);
-    }
+  private void waitForActiveReplica(String shard, String collectionName, String asyncId, ZkStateReader zkStateReader, CreateReplica createReplica) {
     try {
-      log.info("waiting for created replicas shard={} {}", shard, coreNames);
+      log.info("waiting for created replica shard={} {}", shard, createReplica.coreName);
       zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // MRM TODO: timeout
         if (collectionState == null) {
           return false;
         }
 
         Slice slice = collectionState.getSlice(shard);
-        if (slice == null || slice.getLeader() == null) {
+        if (slice == null) {
           return false;
         }
 
-        int found = 0;
-        for (String name : coreNames) {
-          Replica replica = collectionState.getReplica(name);
-          if (replica != null) {
-            if (replica.getState().equals(Replica.State.ACTIVE)) {
-              found++;
-            }
-          }
-        }
-        if (found == coreNames.size()) {
+        Replica replica = collectionState.getReplica(createReplica.coreName);
+        if (replica != null && replica.getState().equals(Replica.State.ACTIVE)) {
           return true;
         }
 
         return false;
       });
     } catch (TimeoutException | InterruptedException e) {
-      log.error("addReplica", e);
+      log.error("addReplica name={}", createReplica.coreName, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -301,7 +291,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String collectionName = collection.getName();
     ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP, createReplica.sliceName,
-        ZkStateReader.CORE_NAME_PROP, createReplica.coreName, ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString(), ZkStateReader.NODE_NAME_PROP, createReplica.node, ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
+        ZkStateReader.CORE_NAME_PROP, createReplica.coreName, ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString(), "node", createReplica.node, ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
 
     String configName = zkStateReader.readConfigName(collectionName);
     String routeKey = message.getStr(ShardParams._ROUTE_);
@@ -322,7 +312,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.PROPERTY_PREFIX + "id", Long.toString(createReplica.id));
     params.set(CoreAdminParams.PROPERTY_PREFIX + "collId", Long.toString(collection.getId()));
 
-    log.info("Creating SolrCore with name={}", createReplica.coreName);
+    log.info("Creating SolrCore with name={} id={}", createReplica.coreName, createReplica.id);
     if (createReplica.sliceName != null) {
       params.set(CoreAdminParams.SHARD, createReplica.sliceName);
     } else if (routeKey != null) {
@@ -351,7 +341,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   public static CreateReplica assignReplicaDetails(DocCollection coll,
-                                                 ZkNodeProps message, ReplicaPosition replicaPosition) {
+                                                 ZkNodeProps message, ReplicaPosition replicaPosition, Overseer overseer) {
 
     log.info("assignReplicaDetails {} {}", message, replicaPosition);
 
@@ -361,17 +351,27 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     String node = replicaPosition.node;
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.CORE);
+    String id = message.getStr("id");
     Replica.Type replicaType = replicaPosition.type;
 
     if (log.isDebugEnabled()) log.debug("Node Identified {} for creating new replica (core={}) of shard {} for collection {} currentReplicaCount {}", node, coreName, shard, collection, coll.getReplicas().size());
 
-    long id = coll.getHighestReplicaId();
+    Integer intId = null;
     if (coreName == null) {
-      coreName = Assign.buildSolrCoreName(coll, shard, replicaType);
+      Assign.ReplicaName replicaName = Assign.buildSolrCoreName(coll, shard, replicaType, overseer);
+      coreName = replicaName.coreName;
+      if (id == null) {
+        intId = replicaName.id;
+      }
+    } else if (id == null) {
+      intId = overseer.getZkStateWriter().getReplicaAssignCnt(collection, shard);
     }
     if (log.isDebugEnabled()) log.debug("Returning CreateReplica command coreName={}", coreName);
 
-    return new CreateReplica(id, collection, shard, node, replicaType, coreName);
+    if (intId == null) {
+      intId = Integer.parseInt(id);
+    }
+    return new CreateReplica(intId, collection, shard, node, replicaType, coreName);
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState, DocCollection collection,
@@ -388,7 +388,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String node = message.getStr(CoreAdminParams.NODE);
     Object createNodeSetStr = message.get(ZkStateReader.CREATE_NODE_SET);
-    if (createNodeSetStr == null) {
+    if (createNodeSetStr == null || createNodeSetStr.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
       if (node != null) {
         message.getProperties().put(ZkStateReader.CREATE_NODE_SET, node);
         createNodeSetStr = node;

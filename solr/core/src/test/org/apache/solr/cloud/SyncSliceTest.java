@@ -150,17 +150,22 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     JettySolrRunner deadJetty = leaderJetty;
     
     // let's get the latest leader
+    int cnt = 0;
     while (deadJetty == leaderJetty) {
    //   updateMappingsFromZk(this.jettys, this.clients);
-      leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 5000)));
+      leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 5)));
       if (deadJetty == leaderJetty) {
-        Thread.sleep(250);
+        Thread.sleep(100);
+      }
+      if (cnt++ >= 3) {
+        fail("don't expect leader to be on the jetty we stopped deadJetty=" + deadJetty.getNodeName() + " leaderJetty=" + leaderJetty.getNodeName());
       }
     }
     
     // bring back dead node
     deadJetty.start(); // he is not the leader anymore
-    
+
+    log.info("numJettys=" + numJettys);
     cluster.waitForActiveCollection(COLLECTION, 1, numJettys);
     
     skipServers = getRandomOtherJetty(leaderJetty, deadJetty);

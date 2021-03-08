@@ -55,7 +55,7 @@ public class SliceMutator {
     this.stateManager = cloudManager.getDistribStateManager();
   }
 
-  public ClusterState addReplica(ClusterState clusterState, ZkNodeProps message) {
+  public ClusterState addReplica(ClusterState clusterState, ZkNodeProps message, Overseer overseer) {
     if (log.isDebugEnabled()) log.debug("createReplica() {} ", message);
     String coll = message.getStr(ZkStateReader.COLLECTION_PROP);
     // if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
@@ -64,13 +64,21 @@ public class SliceMutator {
     DocCollection collection = clusterState.getCollection(coll);
 
     String coreName;
+    Integer id = message.getInt("id", null);
     if (message.getStr(ZkStateReader.CORE_NAME_PROP) != null) {
       coreName = message.getStr(ZkStateReader.CORE_NAME_PROP);
+      if (id == null) {
+        id = overseer.getZkStateWriter().getReplicaAssignCnt(collection.getName(), slice);
+      }
     } else {
-      coreName = Assign.buildSolrCoreName(collection, slice, Replica.Type.get(message.getStr(ZkStateReader.REPLICA_TYPE)));
+      Assign.ReplicaName assignInfo = Assign.buildSolrCoreName(collection, slice, Replica.Type.get(message.getStr(ZkStateReader.REPLICA_TYPE)), overseer);
+      coreName = assignInfo.coreName;
+      if (id == null) {
+        id = assignInfo.id;
+      }
     }
     Replica replica = new Replica(coreName,
-        Utils.makeNonNullMap("id", String.valueOf(collection.getHighestReplicaId()),
+        Utils.makeNonNullMap("id", String.valueOf(id),
                     ZkStateReader.STATE_PROP, Replica.State.DOWN,
                     ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP),
                     ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP),
@@ -105,6 +113,10 @@ public class SliceMutator {
       if (replica != null) {
         Map<String, Replica> newReplicas = slice.getReplicasCopy();
         newReplicas.remove(coreName);
+        Map<String,Object> props = replica.getProperties();
+        props.put("remove", true);
+        Replica removeReplica = new Replica(coreName, props, collection, coll.getId(), slice.getName(), replica.getBaseUrl());
+        newReplicas.put(coreName, removeReplica);
         slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collection, coll.getId(), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
       }
       newSlices.put(slice.getName(), slice);

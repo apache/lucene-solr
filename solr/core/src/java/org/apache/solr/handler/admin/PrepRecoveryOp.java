@@ -66,7 +66,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     AtomicReference<String> errorMessage = new AtomicReference<>();
 
     try {
-      coreContainer.getZkController().getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
+      coreContainer.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
         if (c == null) {
           return false;
         }
@@ -75,21 +75,27 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         // to accept updates
         final Replica replica = c.getReplica(cname);
         boolean isLive = false;
-        if (replica != null) {
-          isLive = coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName());
-          if (isLive) {
-            if (replica.getState() == waitForState) {
-              if (log.isDebugEnabled()) {
-                log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState,
-                    coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
-              }
-              return true;
-            } else if (replica.getState() == Replica.State.ACTIVE) {
-              return true;
+        if (replica == null) {
+          return false;
+        }
+
+        isLive = coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName());
+        if (isLive) {
+          if (replica.getState() == waitForState) {
+            if (log.isDebugEnabled()) {
+              log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState,
+                  coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
             }
+            return true;
+          } else if (replica.getState() == Replica.State.ACTIVE) {
+            return true;
           }
         }
-        errorMessage.set("Timeout waiting to see " + waitForState + " state replica=" + cname + " state=" + replica.getState() + " waitForState=" + waitForState + " isLive=" + isLive + "\n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection));
+
+        errorMessage.set(
+            "Timeout waiting to see " + waitForState + " state replica=" + cname + " state=" + (replica == null ? "(null replica)" : replica.getState())
+                + " waitForState=" + waitForState + " isLive=" + isLive + "\n" + coreContainer.getZkController().getZkStateReader().getClusterState()
+                .getCollectionOrNull(collection));
         return false;
       });
 
@@ -101,10 +107,10 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     }
 
-    LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(leaderName);
-    if (leaderElector == null || !leaderElector.isLeader()) {
-      throw new IllegalStateException("Not the valid leader (replica=" + leaderName + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) +
-          " coll=" + it.handler.getCoreContainer().getZkController().getClusterState().getCollectionOrNull(collection));
-    }
+//    LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(leaderName);
+//    if (leaderElector == null || !leaderElector.isLeader()) {
+//      throw new IllegalStateException("Not the valid leader (replica=" + leaderName + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) +
+//          " coll=" + it.handler.getCoreContainer().getZkController().getClusterState().getCollectionOrNull(collection));
+//    }
   }
 }

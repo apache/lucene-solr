@@ -268,7 +268,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   @SuppressWarnings({"unchecked"})
   private AddReplicaCmd.Response moveNormalReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"}) NamedList results, String targetNode, String async, DocCollection coll,
       Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
-    String newCoreName = Assign.buildSolrCoreName(coll, slice.getName(), replica.getType());
+    String newCoreName = Assign.buildSolrCoreName(coll, slice.getName(), replica.getType(), ocmh.overseer).coreName;
     ZkNodeProps addReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), CoreAdminParams.NODE, targetNode, CoreAdminParams.NAME, newCoreName,
         ZkStateReader.REPLICA_TYPE, replica.getType().name());
 

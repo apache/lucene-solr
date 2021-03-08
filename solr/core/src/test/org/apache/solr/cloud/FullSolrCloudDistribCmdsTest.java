@@ -72,7 +72,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     System.setProperty("solr.tests.maxBufferedDocs", "1000");
     System.setProperty("solr.tests.ramBufferSizeMB", "-1");
-    System.setProperty("solr.tests.ramPerThreadHardLimitMB", String.valueOf(Integer.MAX_VALUE));
     System.setProperty("solr.tests.mergePolicyFactory", "solr.LogDocMergePolicyFactory");
 
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
@@ -86,7 +85,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     System.setProperty("solr.httpclient.defaultSoTimeout", "15000");
 
     System.setProperty("solr.httpclient.retries", "0");
-    System.setProperty("solr.retries.on.forward", "0");
+    System.setProperty("solr.retries.on.forward", "1");
     System.setProperty("solr.retries.to.followers", "0");
 
     System.setProperty("solr.waitForState", "10"); // secs
@@ -110,7 +109,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void after() throws Exception {
-
+    shutdownCluster();
   }
 
   /**

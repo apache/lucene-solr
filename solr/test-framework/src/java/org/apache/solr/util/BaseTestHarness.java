@@ -96,8 +96,7 @@ abstract public class BaseTestHarness {
         po.setEntityResolver(resourceLoader.getSysIdResolver());
       }
       // Set via conf already
-      po.setCheckEntityReferences(false);
-      po.setExpandAttributeDefaults(false);
+
       po.setPleaseCloseAfterUse(true);
       Sender.send(source, builder, po);
       docTree = (TinyDocumentImpl) builder.getCurrentRoot();

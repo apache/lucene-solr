@@ -1744,6 +1744,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       int cnt = 0;
       while (!canBeClosed() || refCount.get() != -1) {
         if (cnt >= 2 && !closing) {
+
           IllegalStateException exp = new IllegalStateException("CoreContainer is closed and SolrCore still has references out");
           try {
             doClose();
@@ -2464,7 +2465,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         } else {
           // newestSearcher == null at this point
-
+          if (coreContainer.isShutDown() || closing) {
+            throw new AlreadyClosedException();
+          }
           if (newReaderCreator != null) {
             // this is set in the constructor if there is a currently open index writer
             // so that we pick up any uncommitted changes and so we don't go backwards

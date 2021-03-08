@@ -257,18 +257,18 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
 
       }
     };
-    replicaTerms.addListener(watcher);
+    replicaTerms.addListener("replica", watcher);
     replicaTerms.registerTerm("replica");
     waitFor(1, count::get);
     leaderTerms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
     waitFor(2, count::get);
     replicaTerms.setTermEqualsToLeader("replica");
     waitFor(3, count::get);
-    
-    waitFor(0, replicaTerms::getNumListeners);
 
     leaderTerms.close();
     replicaTerms.close();
+
+    waitFor(0, replicaTerms::getNumListeners);
   }
 
   public void testEnsureTermsIsHigher() {

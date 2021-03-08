@@ -432,11 +432,11 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       try {
         tmp = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
       } catch (Exception exc) {}
-      if (tmp != null && "active".equals(tmp.getStr(ZkStateReader.STATE_PROP))) {
+      if (tmp != null && State.ACTIVE == tmp.getState()) {
         leader = tmp;
         break;
       }
-      Thread.sleep(300);
+      Thread.sleep(50);
     }
     assertNotNull("Could not find active leader for " + shardId + " of " +
         testCollectionName + " after "+timeoutSecs+" secs;", leader);
@@ -652,6 +652,8 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     for (Future future : futures) {
       future.get();
     }
+    // TODO: should not need this
+    cluster.waitForActiveCollection(collection, numShards, numReplicas);
   }
 
   protected boolean useTlogReplicas() {

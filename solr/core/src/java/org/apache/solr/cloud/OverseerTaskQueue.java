@@ -147,7 +147,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       if (Event.EventType.None.equals(event.getType())) {
         return;
       }
-      // If latchEventType is not null, only fire if the type matches
 
       if (log.isDebugEnabled()) log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState());
 
@@ -179,6 +178,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       createWatch();
 
       TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+
       lock.lock();
       try {
         while (!timeout.hasTimedOut() && event == null) {
@@ -201,7 +201,8 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       try {
         zkClient.addWatch(path, this, AddWatchMode.PERSISTENT);
       } catch (Exception e) {
-       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        log.error("could not add watch", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
 
@@ -212,7 +213,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     @Override
     public void close() {
       try {
-        zkClient.removeWatches(path, this, WatcherType.Data, true);
+        zkClient.removeWatches(path, this, WatcherType.Any, true);
       }  catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {
@@ -229,7 +230,18 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   private String createData(String path, byte[] data, CreateMode mode)
       throws KeeperException, InterruptedException {
     for (;;) {
-      return zookeeper.create(path, data, mode, true);
+      try {
+        return zookeeper.create(path, data, mode, true);
+      } catch (KeeperException.NodeExistsException e) {
+        log.warn("Found request node already, waiting to see if it frees up ...");
+        // TODO: use a watch?
+        Thread.sleep(50);
+        try {
+          return zookeeper.create(path, data, mode, true);
+        } catch (KeeperException.NodeExistsException ne) {
+          // someone created it
+        }
+      }
     }
   }
 
@@ -239,11 +251,11 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public QueueEvent offer(byte[] data, long timeout) throws KeeperException,
       InterruptedException {
-    if (log.isDebugEnabled()) log.debug("offer operation to the Overseeer queue {}", Utils.fromJSON(data));
+    if (log.isDebugEnabled()) log.debug("offer operation to the Overseer queue {}", Utils.fromJSON(data));
 
-    if (shuttingDown.get()) {
-      throw new SolrException(SolrException.ErrorCode.CONFLICT,"Solr is shutting down, no more overseer tasks may be offered");
-    }
+//    if (shuttingDown.get()) {
+//      throw new SolrException(SolrException.ErrorCode.CONFLICT,"Solr is shutting down, no more overseer tasks may be offered");
+//    }
    // Timer.Context time = stats.time(dir + "_offer");
     LatchWatcher watcher = null;
     try {
@@ -326,18 +338,14 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       return true;
     }
 
-    private WatchedEvent event = null;
-    private String id;
-    private byte[] bytes;
+    private final WatchedEvent event;
+    private final String id;
+    private volatile byte[] bytes;
 
     QueueEvent(String id, byte[] bytes, WatchedEvent event) {
       this.id = id;
       this.bytes = bytes;
       this.event = event;
-    }
-
-    public void setId(String id) {
-      this.id = id;
     }
 
     public String getId() {

@@ -47,7 +47,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -87,7 +87,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCollectionsAPIDistClusterPerZkTest() throws Exception {
     useFactory(null);
     // we don't want this test to have zk timeouts
     System.setProperty("zkClientTimeout", "60000");
@@ -105,9 +105,9 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         .configure();
   }
   
-  @After
-  public void tearDownCluster() throws Exception {
-
+  @AfterClass
+  public static void afterCollectionsAPIDistClusterPerZkTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test

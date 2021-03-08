@@ -259,7 +259,7 @@ public class HttpSolrCall {
       // Try to resolve a Solr core name
       core = cores.getCore(origCorename);
 
-      if (core == null && (!cores.isZooKeeperAware() || QoSParams.INTERNAL.equals(req.getHeader(QoSParams.REQUEST_SOURCE))) && cores.isCoreLoading(origCorename)) {
+      if (core == null && cores.isCoreLoading(origCorename)) {
         cores.waitForLoadingCore(origCorename, 10000);
         core = cores.getCore(origCorename);
       }
@@ -751,7 +751,7 @@ public class HttpSolrCall {
 
 
       if (hasContent(req)) {
-        InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 16384, false);
+        InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 8192, false);
         proxyRequest.content(defferedContent);
       }
       AtomicReference<Throwable> failException = new AtomicReference<>();
@@ -787,7 +787,7 @@ public class HttpSolrCall {
       proxyRequest.send(listener);
 
       try {
-        listener.get(5, TimeUnit.SECONDS);
+        listener.get(60, TimeUnit.SECONDS);
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }

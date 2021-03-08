@@ -58,12 +58,11 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   private static final int maxShardsPerNode = 1;
   private static final int nodeCount = 5;
   private static final String configName = "solrCloudCollectionConfig";
-  private static final Map<String,String> collectionProperties  // ensure indexes survive core shutdown
-      = Collections.singletonMap("solr.directoryFactory", "solr.StandardDirectoryFactory");
 
   @Override
   public void setUp() throws Exception {
     System.setProperty("solr.skipCommitOnClose", "false");
+    useFactory(null);
     configureCluster(nodeCount).addConfig(configName, SolrTestUtil.configset("cloud-minimal")).configure();
     super.setUp();
   }
@@ -80,7 +79,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
-          .setProperties(collectionProperties)
           .processAndWait(cluster.getSolrClient(), 10);
 
       // async will not currently gaurantee our cloud client is state up to date
@@ -94,9 +92,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
-          .setProperties(collectionProperties)
           .process(cluster.getSolrClient());
-
     }
   }
 
@@ -180,8 +176,9 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertEquals(nodeCount, cluster.getJettySolrRunners().size());
 
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-   // cluster.waitForRemovedCollection(collectionName);
 
+    log.info("create collection again");
+    cluster.getZkClient().printLayout();
     // create it again
     createCollection(collectionName, null);
     

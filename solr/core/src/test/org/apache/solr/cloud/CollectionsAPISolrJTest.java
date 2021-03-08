@@ -321,8 +321,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
 
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
-   // MRM TODO:
-    // assertEquals(6, coresStatus.size());
+
+    assertEquals(6, coresStatus.size());
 
     // Add a shard to the implicit collection
     response = CollectionAdminRequest.createShard(collectionName, "shardC").process(cluster.getSolrClient());

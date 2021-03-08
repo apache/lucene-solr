@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.SolrTestUtil;
@@ -109,17 +107,9 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    for (JettySolrRunner jetty:cluster.getJettySolrRunners()) {
-      if (!jetty.isRunning()) {
-        log.warn("Jetty {} not running, probably some bad test. Starting it", jetty.getLocalPort());
-        jetty.start();
-      }
-    }
     if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-      log.info("Collection deleted");
-      waitForDeletion(collectionName);
     }
     super.tearDown();
   }
@@ -419,7 +409,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
       // Wait for cluster state to be updated
       waitForState("Replica state not updated in cluster state",
-          collectionName, clusterStateReflectsActiveAndDownReplicas());
+          collectionName, notLive(Replica.Type.NRT));
     }
     docCollection = assertNumberOfReplicas(0, 0, 1, true, true);
 
@@ -463,7 +453,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     } else {
       leaderJetty.start();
     }
-    waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
+    cluster.waitForActiveCollection(collectionName, 1, 2);
     SolrTestCaseJ4.unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
@@ -504,7 +494,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     pullReplicaJetty.stop();
     waitForState("Replica not removed", collectionName, activeReplicaCount(1, 0, 0));
     // Also wait for the replica to be placed in state="down"
-    waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
+    waitForState("Didn't not live state", collectionName, notLive(Replica.Type.PULL));
 
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
@@ -530,18 +520,20 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query) throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    for (Replica r:replicas) {
-      try (Http2SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {
-        while (true) {
-          try {
-            assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
-                numDocs, replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
-            break;
-          } catch (AssertionError e) {
-            if (t.hasTimedOut()) {
-              throw e;
-            } else {
-              Thread.sleep(100);
+    for (Replica r : replicas) {
+      if (cluster.getSolrClient().getZkStateReader().isNodeLive(r.getNodeName())) {
+        try (Http2SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {
+          while (true) {
+            try {
+              assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds", numDocs,
+                  replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
+              break;
+            } catch (AssertionError e) {
+              if (t.hasTimedOut()) {
+                throw e;
+              } else {
+                Thread.sleep(100);
+              }
             }
           }
         }
@@ -570,27 +562,21 @@ public class TestPullReplica extends SolrCloudTestCase {
     DocCollection docCollection = getCollectionState(collectionName);
     assertNotNull(docCollection);
     assertEquals("Unexpected number of writer replicas: " + docCollection, numNrtReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE && cluster.getSolrClient().getZkStateReader().isNodeLive(r.getNodeName())).count());
     assertEquals("Unexpected number of pull replicas: " + docCollection, numPullReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE && cluster.getSolrClient().getZkStateReader().isNodeLive(r.getNodeName())).count());
     assertEquals("Unexpected number of active replicas: " + docCollection, numTlogReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE && cluster.getSolrClient().getZkStateReader().isNodeLive(r.getNodeName())).count());
     return docCollection;
   }
 
   /*
    * passes only if all replicas are active or down, and the "liveNodes" reflect the same status
    */
-  private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
+  private CollectionStatePredicate notLive(Replica.Type type) {
     return (liveNodes, collectionState) -> {
       for (Replica r:collectionState.getReplicas()) {
-        if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
-          return false;
-        }
-        if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
-          return false;
-        }
-        if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
+        if (liveNodes.contains(r.getNodeName()) && r.getType() == type) {
           return false;
         }
       }

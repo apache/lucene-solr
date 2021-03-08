@@ -50,6 +50,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    System.setProperty("solr.createCollectionTimeout", "10000");
     solrCluster = new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
   }
   
@@ -87,19 +88,18 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[2];
     final AtomicReference<Exception> failure = new AtomicReference<>();
-    
-      final int timeToRunSec = 15;
-      for (int i = 0; i < threads.length; i++) {
-        final String collectionName = "collection" + i;
 
-        threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName, timeToRunSec, baseUrl, failure);
-      }
-        startAll(threads);
-        joinAll(threads);
+    final int timeToRunSec = 5;
+    for (int i = 0; i < threads.length; i++) {
+      final String collectionName = "collection" + i;
 
-        assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
-      
-    
+      threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName, timeToRunSec, baseUrl, failure);
+    }
+    startAll(threads);
+    joinAll(threads);
+
+    assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
+
   }
   
   private void uploadConfig(Path configDir, String configName) {
@@ -156,8 +156,10 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     }
     
     protected void doWork(SolrClient solrClient) {
-      createCollection(solrClient);
-      deleteCollection(solrClient);
+      boolean cont = createCollection(solrClient);
+      if (cont) {
+        deleteCollection(solrClient);
+      }
     }
     
     protected void addFailure(Exception e) {
@@ -171,17 +173,18 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       }
     }
     
-    private void createCollection(SolrClient solrClient) {
+    private boolean createCollection(SolrClient solrClient) {
       try {
-        final CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName,configName,1,1)
+        final CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName,configName,3,3)
                 .process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to create collection " + collectionName));
         }
       } catch (Exception e) {
         addFailure(e);
+        return false;
       }
-      
+      return true;
     }
     
     private void deleteCollection(SolrClient solrClient) {

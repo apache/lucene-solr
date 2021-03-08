@@ -25,7 +25,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.ParWork;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -55,21 +54,16 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
-  @Before
-  public void deleteCollections() throws Exception {
-    cluster.deleteAllCollections();
-  }
-
   @Test
   public void start() throws Exception {
-    int collectionCnt = 1;
+    int collectionCnt = 50;
     List<Future> futures = new ArrayList<>();
     List<Future> indexFutures = new ArrayList<>();
     for (int i = 0; i < collectionCnt; i ++) {
       final String collectionName = "testCollection" + i;
       Future<?> future = ParWork.getRootSharedExecutor().submit(() -> {
         try {
-          log.info("Create {}", collectionName);
+          log.info("Create Collection {}", collectionName);
           CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).setMaxShardsPerNode(100).process(cluster.getSolrClient());
           StoppableIndexingThread indexThread;
           for (int j = 0; j < 2; j++) {

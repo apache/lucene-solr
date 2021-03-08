@@ -71,13 +71,13 @@ public class ZkCmdExecutor {
         if (!retryOnSessionExp && e instanceof KeeperException.SessionExpiredException) {
           throw e;
         }
-        log.warn("retryOperation", e);
+        log.info("retryOperation", e);
         if (exception == null) {
           exception = e;
         }
-//        if (zkCmdExecutor.solrZkClient.isClosed()) {
-//          throw e;
-//        }
+        if (zkCmdExecutor.solrZkClient.isClosed()) {
+          throw e;
+        }
         zkCmdExecutor.retryDelay(tryCnt);
       }
       tryCnt++;
@@ -95,9 +95,9 @@ public class ZkCmdExecutor {
    *          the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
-    if (isClosed != null && isClosed.isClosed()) {
-     throw new AlreadyClosedException();
-    }
+//    if (isClosed != null && isClosed.isClosed()) {
+//     throw new AlreadyClosedException();
+//    }
     log.info("retry, attempt={}", attemptCount);
     try {
       solrZkClient.getConnectionManager().waitForConnected(60000);

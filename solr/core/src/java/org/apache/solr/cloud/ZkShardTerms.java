@@ -74,7 +74,7 @@ public class ZkShardTerms implements Closeable {
   private final String shard;
   private final String znodePath;
   private final SolrZkClient zkClient;
-  private final Set<CoreTermWatcher> listeners = ConcurrentHashMap.newKeySet();
+  private final Map<String, CoreTermWatcher> listeners = new ConcurrentHashMap<>();
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   private final ReentrantLock lock = new ReentrantLock(true);
@@ -171,7 +171,7 @@ public class ZkShardTerms implements Closeable {
   public void close() {
     // no watcher will be registered
     //isClosed.set(true);
-    listeners.forEach(coreTermWatcher -> IOUtils.closeQuietly(coreTermWatcher));
+    listeners.values().forEach(coreTermWatcher -> IOUtils.closeQuietly(coreTermWatcher));
     listeners.clear();
     assert ObjectReleaseTracker.release(this);
   }
@@ -184,8 +184,8 @@ public class ZkShardTerms implements Closeable {
   /**
    * Add a listener so the next time the shard's term get updated, listeners will be called
    */
-  void addListener(CoreTermWatcher listener) {
-    listeners.add(listener);
+  void addListener(String core, CoreTermWatcher listener) {
+    listeners.put(core, listener);
   }
 
   /**
@@ -193,11 +193,9 @@ public class ZkShardTerms implements Closeable {
    * @return Return true if this object should not be reused
    */
   boolean removeTermFor(String name) throws KeeperException, InterruptedException {
-    int numListeners;
-    listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(terms.get()));
-    numListeners = listeners.size();
-
-    return removeTerm(name) || numListeners == 0;
+    IOUtils.closeQuietly(listeners.remove(name));
+    removeTerm(name);
+    return true;
   }
 
   // package private for testing, only used by tests
@@ -437,7 +435,7 @@ public class ZkShardTerms implements Closeable {
 
   private void onTermUpdates(ShardTerms newTerms) {
     try {
-      listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(newTerms));
+      listeners.values().forEach(coreTermWatcher -> coreTermWatcher.onTermChanged(newTerms));
     } catch (Exception e) {
       log.error("Error calling shard term listener", e);
     }

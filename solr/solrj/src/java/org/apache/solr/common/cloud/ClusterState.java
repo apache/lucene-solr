@@ -322,8 +322,9 @@ public class ClusterState implements JSONWriter.Writable {
         if (collection != null) {
           consumer.accept(collection);
         }
-      } catch (SolrException e) {
-        if (e.getCause() instanceof KeeperException.NoNodeException) {
+      } catch (Exception e) {
+        Throwable cause = e.getCause();
+        if (e instanceof  KeeperException.NoNodeException || (cause != null && cause instanceof KeeperException.NoNodeException)) {
           //don't do anything. This collection does not exist
         } else{
           throw e;

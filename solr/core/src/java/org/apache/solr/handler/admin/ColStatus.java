@@ -155,7 +155,7 @@ public class ColStatus {
           sliceMap.add("routingRules", rules);
         }
         sliceMap.add("replicas", replicaMap);
-        Replica leader = s.getLeader();
+        Replica leader = zkStateReader.getLeader(collection, s.getName());
         if (leader == null) { // pick the first one
           leader = s.getReplicas().size() > 0 ? s.getReplicas().iterator().next() : null;
         }

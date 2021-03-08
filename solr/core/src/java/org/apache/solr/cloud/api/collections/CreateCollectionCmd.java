@@ -249,11 +249,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                 "node", nodeName, CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
 
             new AddReplicaCmd(ocmh, true).call(clusterState, props, results);
-            clusterState = new SliceMutator(cloudManager).addReplica(clusterState, props);
+            clusterState = new SliceMutator(cloudManager).addReplica(clusterState, props, ocmh.overseer);
           }
         }
         DocCollection coll = clusterState.getCollectionOrNull(collectionName);
-        String coreName = Assign.buildSolrCoreName(coll, replicaPosition.shard, replicaPosition.type);
+        Assign.ReplicaName assignInfo = Assign.buildSolrCoreName(coll, replicaPosition.shard, replicaPosition.type, ocmh.overseer);
+        String coreName = assignInfo.coreName;
+        int replicaId = assignInfo.id;
         if (log.isDebugEnabled()) log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}", coreName, replicaPosition.shard, collectionName, nodeName));
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);
@@ -265,7 +267,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ZkNodeProps props = new ZkNodeProps();
         //props.getProperties().putAll(message.getProperties());
         ZkNodeProps addReplicaProps = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toString(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP,
-            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString(), ZkStateReader.NODE_NAME_PROP, nodeName, "node", nodeName,
+            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, "id", Integer.toString(replicaId), ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString(), "node", nodeName, ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(), ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP), "shards", message.getStr("shards"),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         props.getProperties().putAll(addReplicaProps.getProperties());
@@ -281,13 +283,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString());
 
         params.set(CoreAdminParams.NAME, coreName);
-        params.set(CoreAdminParams.PROPERTY_PREFIX + "id",  Long.toString(docCollection.getHighestReplicaId()));
+        params.set(CoreAdminParams.PROPERTY_PREFIX + "id",  replicaId);
         params.set(CoreAdminParams.PROPERTY_PREFIX + "collId", Long.toString(id));
         params.set(COLL_CONF, configName);
         params.set(CoreAdminParams.COLLECTION, collectionName);
         params.set(CoreAdminParams.SHARD, replicaPosition.shard);
         params.set(ZkStateReader.NUM_SHARDS_PROP, shardNames.size());
-        params.set(ZkStateReader.NODE_NAME_PROP, nodeName);
+        params.set("node", nodeName);
         params.set(CoreAdminParams.NEW_COLLECTION, "true");
         params.set(CoreAdminParams.REPLICA_TYPE, replicaPosition.type.name());
 

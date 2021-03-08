@@ -124,7 +124,7 @@ public class FieldTypeXmlAdapter {
       // po.setXIncludeAware(true);
       //  po.setExpandAttributeDefaults(true);
       //  po.setCheckEntityReferences(false);
-      po.setDTDValidationMode(Validation.STRIP);
+      //po.setDTDValidationMode(Validation.STRIP);
 
       po.setPleaseCloseAfterUse(true);
 

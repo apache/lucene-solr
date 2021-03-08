@@ -61,6 +61,8 @@
          <AsyncLogger name="org.apache.solr.cloud.OverseerTaskExecutorTask" level="DEBUG"/>-->
         <AsyncLogger name="org.apache.solr.cloud.LeaderElector" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.ShardLeaderElectionContextBase" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.servlet.HttpSolrCall" level="DEBUG"/>
+
 
         <!-- <AsyncLogger name="org.apache.solr.common.cloud.SolrZkClient" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="DEBUG"/>-->

@@ -98,25 +98,47 @@
 
     </Appenders>
     <Loggers>
-        <AsyncLogger name="org.eclipse.jetty.servlets" level="WARN"/>
-        <AsyncLogger name="org.eclipse.jetty" level="WARN"/>
-        <AsyncLogger name="org.eclipse.jetty.server.Server" level="WARN"/>
-        <AsyncLogger name="org.apache.hadoop" level="WARN"/>
+        <AsyncLogger name="org.apache.solr.servlet.HttpSolrCall" level="DEBUG"/>
         <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
         <AsyncLogger name="org.apache.zookeeper.ClientCnxn" level="ERROR"/>
         <AsyncLogger name="org.apache.zookeeper.server.ZooKeeperCriticalThread" level="OFF"/>
+        <AsyncLogger name="org.apache.hadoop" level="WARN"/>
+        <AsyncLogger name="org.apache.directory" level="WARN"/>
+        <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
+        <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.core.SolrCore" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.handler.admin.CollectionsHandler" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.handler.IndexFetcher" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.api.collections.CreateCollectionCmd" level="DEBUG"/>
+        <!--  <AsyncLogger name="org.apache.solr.common.patterns.DW" level="DEBUG"/> -->
+        <AsyncLogger name="org.apache.solr.cloud.overseer.ZkStateWriter" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.Overseer" level="DEBUG"/>
+        <!--  <AsyncLogger name="org.apache.solr.cloud.OverseerTaskProcessor" level="DEBUG"/>
+           <AsyncLogger name="org.apache.solr.cloud.ZkDistributedQueue" level="DEBUG"/>
+         <AsyncLogger name="org.apache.solr.cloud.OverseerTaskQueue" level="DEBUG"/>
+         <AsyncLogger name="org.apache.solr.cloud.OverseerTaskExecutorTask" level="DEBUG"/>-->
+        <AsyncLogger name="org.apache.solr.cloud.LeaderElector" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.ShardLeaderElectionContextBase" level="DEBUG"/>
 
-        <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="WARN"/>
+        <!-- <AsyncLogger name="org.apache.solr.common.cloud.SolrZkClient" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="DEBUG"/>-->
+        <AsyncLogger name="org.apache.solr.client.solrj.impl.LBSolrClient" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.ZkController" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.common.cloud.ZkStateReader" level="DEBUG"/>
+
+        <AsyncLogger name="org.apache.solr.core.SolrCore" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.common.cloud.ZkMaintenanceUtils" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedUpdateProcessor" level="DEBUG"/>
+
+        <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="TRACE"/>
+
+        <AsyncLogger name="com.google.inject.servlet" level="DEBUG"/>
+
         <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
 
-        <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="INFO" additivity="false">
-            <AppenderRef ref="SlowLogFile"/>
-        </AsyncLogger>
-        <AsyncLogger name="org.apache.solr.core.CoreContainer.Deprecation" level="INFO" additivity="false">
-            <AppenderRef ref="DeprecationLogFile"/>
-        </AsyncLogger>
-
-        <AsyncRoot level="INFO">
+        <AsyncRoot level="DEBUG">
             <AppenderRef ref="${appenderToUse}"/>
         </AsyncRoot>
     </Loggers>

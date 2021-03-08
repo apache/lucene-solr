@@ -370,7 +370,7 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   private boolean isClosed() {
-    return client.isClosed() || isClosed;
+    return client.isClosed();
   }
 
   public void waitForConnected(long waitForConnection)
@@ -388,7 +388,7 @@ public class ConnectionManager implements Watcher, Closeable {
       if (fkeeper != null && fkeeper.getState().isConnected()) return;
     }
     if (isClosed()) {
-      throw new AlreadyClosedException();
+      throw new AlreadyClosedException("SolrZkClient is not currently connected state=CLOSED");
     }
     if (timeout.hasTimedOut()) {
       throw new TimeoutException("Timeout waiting to connect to ZooKeeper "

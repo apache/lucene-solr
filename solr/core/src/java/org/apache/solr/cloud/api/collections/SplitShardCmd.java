@@ -244,7 +244,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       t = timings.sub("fillRanges");
       DocCollection collection = clusterState.getCollection(collectionName);
-      String rangesStr = fillRanges(message, collection, parentSlice, subRanges, subSlices, subShardNames, firstNrtReplica);
+      String rangesStr = fillRanges(message, collection, parentSlice, subRanges, subSlices, subShardNames, firstNrtReplica, ocmh.overseer);
       t.stop();
 
       boolean oldShardsDeleted = false;
@@ -312,6 +312,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             , subShardName, subSlice, collectionName, nodeName);
         propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
+        propMap.put(ZkStateReader.CORE_NAME_PROP, subShardName);
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, subSlice);
         propMap.put(REPLICA_TYPE, firstNrtReplica ? Replica.Type.NRT.toString() : Replica.Type.TLOG.toString());
@@ -502,7 +503,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Got null sub shard node name replicaPosition=" + replicaPosition);
         }
 
-        String solrCoreName = Assign.buildSolrCoreName(collection, sliceName, replicaPosition.type);
+        String solrCoreName = Assign.buildSolrCoreName(collection, sliceName, replicaPosition.type, ocmh.overseer).coreName;
 
         if (log.isDebugEnabled()) log.debug("Creating replica shard {} as part of slice {} of collection {} on {}"
             , solrCoreName, sliceName, collectionName, subShardNodeName);
@@ -518,7 +519,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(subShardNodeName),
-            ZkStateReader.NODE_NAME_PROP, subShardNodeName,
+            "node", subShardNodeName,
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
 
         AddReplicaCmd.Response resp = new AddReplicaCmd(ocmh, true).call(clusterState, props, results);
@@ -530,7 +531,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, sliceName);
         propMap.put(REPLICA_TYPE, replicaPosition.type.name());
-        propMap.put(ZkStateReader.NODE_NAME_PROP, subShardNodeName);
+        propMap.put("node", subShardNodeName);
         propMap.put(CoreAdminParams.NAME, solrCoreName);
         // copy over property params:
         for (String key : message.keySet()) {
@@ -900,7 +901,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   public static String fillRanges(ZkNodeProps message, DocCollection collection, Slice parentSlice,
                                 List<DocRouter.Range> subRanges, List<String> subSlices, List<String> subShardNames,
-                                  boolean firstReplicaNrt) {
+                                  boolean firstReplicaNrt, Overseer overseer) {
     String splitKey = message.getStr("split.key");
     String rangesStr = message.getStr(CoreAdminParams.RANGES);
     String fuzzStr = message.getStr(CommonAdminParams.SPLIT_FUZZ, "0");
@@ -988,7 +989,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       subSlices.add(subSlice);
 
       String subShardName = Assign.buildSolrCoreName(collection, subSlice,
-          firstReplicaNrt ? Replica.Type.NRT : Replica.Type.TLOG);
+          firstReplicaNrt ? Replica.Type.NRT : Replica.Type.TLOG, overseer).coreName;
       subShardNames.add(subShardName);
     }
     return rangesStr;

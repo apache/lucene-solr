@@ -113,7 +113,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Handle ZooKeeper interactions.
@@ -155,45 +154,6 @@ public class ZkController implements Closeable, Runnable {
   @Override
   public void run() {
     disconnect(true);
-    if (zkClient.isConnected()) {
-      try {
-        Thread.sleep(300);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-      }
-      //      log.info("Waiting to see DOWN states for node before shutdown ...");
-//      Collection<SolrCore> cores = cc.getCores();
-//      for (SolrCore core : cores) {
-//        CoreDescriptor desc = core.getCoreDescriptor();
-//        String collection = desc.getCollectionName();
-//        try {
-//          zkStateReader.waitForState(collection, 2, TimeUnit.SECONDS, (n, c) -> {
-//            if (c == null) {
-//              return false;
-//            }
-//            List<Replica> replicas = c.getReplicas();
-//            for (Replica replica : replicas) {
-//              if (replica.getNodeName().equals(getNodeName())) {
-//                if (!replica.getState().equals(Replica.State.DOWN)) {
-//                  // log.info("Found state {} {}", replica.getState(), replica.getNodeName());
-//                  return false;
-//                }
-//              }
-//            }
-//
-//            return true;
-//          });
-//        } catch (InterruptedException e) {
-//          ParWork.propagateInterrupt(e);
-//          return;
-//        } catch (TimeoutException e) {
-//          log.error("Timeout", e);
-//          break;
-//        }
-//      }
-    } else {
-      log.info("ZkClient is not connected, won't wait to see DOWN nodes on shutdown");
-    }
     log.info("Continuing to Solr shutdown");
   }
 
@@ -606,17 +566,17 @@ public class ZkController implements Closeable, Runnable {
       closer.collect("replicateFromLeaders", replicateFromLeaders);
       closer.collect(leaderElectors);
 
-      if (publishDown) {
-        closer.collect("PublishNodeAsDown&RepFromLeaders", () -> {
-          try {
-            log.info("Publish this node as DOWN...");
-            publishNodeAs(getNodeName(), OverseerAction.DOWNNODE);
-          } catch (Exception e) {
-            ParWork.propagateInterrupt("Error publishing nodes as down. Continuing to close CoreContainer", e);
-          }
-          return "PublishDown";
-        });
-      }
+//      if (publishDown) {
+//        closer.collect("PublishNodeAsDown&RepFromLeaders", () -> {
+//          try {
+//            log.info("Publish this node as DOWN...");
+//            publishNodeAs(getNodeName(), OverseerAction.DOWNNODE);
+//          } catch (Exception e) {
+//            ParWork.propagateInterrupt("Error publishing nodes as down. Continuing to close CoreContainer", e);
+//          }
+//          return "PublishDown";
+//        });
+//      }
     }
   }
 
@@ -1294,8 +1254,6 @@ public class ZkController implements Closeable, Runnable {
       final String shardId = cloudDesc.getShardId();
 
       log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
-      AtomicReference<DocCollection> coll = new AtomicReference<>();
-      AtomicReference<Replica> replicaRef = new AtomicReference<>();
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       if (!cloudDesc.hasRegistered()) {
@@ -1352,7 +1310,7 @@ public class ZkController implements Closeable, Runnable {
             throw new AlreadyClosedException();
           }
 
-          log.info("Timeout waiting to see leader, retry");
+          log.info("Timeout waiting to see leader, retry collection={} shard={}", collection, shardId);
         }
       }
 
@@ -1390,8 +1348,12 @@ public class ZkController implements Closeable, Runnable {
         // we will call register again after zk expiration and on reload
         if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
-          Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
-          if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
+          DocCollection coll = getClusterState().getCollectionOrNull(collection);
+          Slice slice = null;
+          if (coll != null) {
+            slice = coll.getSlice(shardId);
+          }
+          if ((slice != null && slice.getState() != Slice.State.CONSTRUCTION) || !isLeader) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {
               log.info("Replaying tlog for {} during startup... NOTE: This can take a while.", core);
@@ -1421,7 +1383,7 @@ public class ZkController implements Closeable, Runnable {
           shardTerms = getShardTerms(collection, cloudDesc.getShardId());
           // the watcher is added to a set so multiple calls of this method will left only one watcher
           if (log.isDebugEnabled()) log.debug("add shard terms listener for {}", coreName);
-          shardTerms.addListener(new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
+          shardTerms.addListener(desc.getName(), new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
         }
       }
 

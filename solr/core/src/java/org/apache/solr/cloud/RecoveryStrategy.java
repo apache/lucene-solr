@@ -407,9 +407,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         CloudDescriptor cloudDesc = coreDescriptor.getCloudDescriptor();
 
         try {
-          if (cnt > 1) {
-            leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
-          }
+
+          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
+
 
           if (leader != null && leader.getName().equals(coreName)) {
             log.info("We are the leader, STOP recovery");
@@ -603,9 +603,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
 
-        if (cnt > 1) {
-          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
-        }
+
+        leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
+
         if (leader != null && leader.getName().equals(coreName)) {
           log.info("We are the leader, STOP recovery");
           close = true;

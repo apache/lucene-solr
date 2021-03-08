@@ -29,13 +29,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -51,8 +50,6 @@ import org.slf4j.LoggerFactory;
 // MRM TODO: - this needs work, but lets not hit zk and other nodes if we dont need for base Assign
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static AtomicInteger REPLICA_CNT = new AtomicInteger(0);
 
   /**
    * Assign a new unique id up to slices count - then add replicas evenly.
@@ -98,57 +95,26 @@ public class Assign {
     return returnShardId;
   }
 
-  private static String buildSolrCoreName(DocCollection collection, String shard, Replica.Type type, int replicaNum) {
+  public static Pattern pattern = Pattern.compile(".*?(\\d+)");
+
+  public static ReplicaName buildSolrCoreName(DocCollection collection, String shard, Replica.Type type, Overseer overseer) {
     // TODO: Adding the suffix is great for debugging, but may be an issue if at some point we want to support a way to change replica type
 
     String namePrefix = String.format(Locale.ROOT, "%s_%s_r_%s", collection.getName(), shard, type.name().substring(0, 1).toLowerCase(Locale.ROOT));
 
-    Pattern pattern = Pattern.compile(".*?(\\d+)");
-    int max = 0;
-    Slice slice = collection.getSlice(shard);
-    if (slice != null) {
-      Collection<Replica> replicas = slice.getReplicas();
-      if (replicas.size() > 0) {
-        max = 1;
-        for (Replica replica : replicas) {
-          if (log.isDebugEnabled()) log.debug("compare names {} {}", namePrefix, replica.getName());
-          Matcher matcher = pattern.matcher(replica.getName());
-          if (matcher.matches()) {
-            if (log.isDebugEnabled()) log.debug("names are a match {} {}", namePrefix, replica.getName());
-            int val = Integer.parseInt(matcher.group(1));
-            max = Math.max(max, val);
-          }
-        }
-      }
-    }
+    int cnt = overseer.getZkStateWriter().getReplicaAssignCnt(collection.getName(), shard);
 
-    String corename = String.format(Locale.ROOT, "%s%s", namePrefix, max + 1);
-    log.info("Assigned SolrCore name {}", corename);
-    return corename;
+    String corename = String.format(Locale.ROOT, "%s%s", namePrefix, cnt);
+    log.info("Assigned SolrCore name={} id={}", corename, cnt);
+    ReplicaName replicaName = new ReplicaName();
+    replicaName.coreName = corename;
+    replicaName.id = cnt;
+    return replicaName;
   }
 
-  public static int defaultCounterValue(DocCollection coll, String shard) {
-
-    if (coll == null) {
-      throw new NullPointerException("DocCollection cannot be null");
-    }
-
-    if (coll.getSlice(shard) == null) {
-      return 1;
-    }
-
-    if (coll.getSlice(shard).getReplicas() == null) {
-      return 1;
-    }
-
-    return coll.getSlice(shard).getReplicas().size() + 1;
-  }
-
-  public static String buildSolrCoreName(DocCollection coll, String shard, Replica.Type type) {
-    int defaultValue = defaultCounterValue(coll, shard);
-    String coreName = buildSolrCoreName(coll, shard, type, defaultValue);
-
-    return coreName;
+  public static class ReplicaName {
+    public String coreName;
+    public int id;
   }
 
   public static List<String> getLiveOrLiveAndCreateNodeSetList(final Collection<String> liveNodes, final ZkNodeProps message, final Random random) {

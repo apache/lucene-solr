@@ -178,33 +178,27 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
       @Override
       public AddReplicaCmd.Response call() {
-        results.add("collection", collection);
-        if (finalShardHandler != null && finalShardRequestTracker != null) {
+        try {
+          results.add("collection", collection);
+          if (finalShardHandler != null && finalShardRequestTracker != null) {
+            try {
+              finalShardRequestTracker.processResponses(results, finalShardHandler, false, null, okayExceptions);
+
+            } catch (Exception e) {
+              log.error("Exception waiting for results of delete collection cmd", e);
+            }
+          }
+        } finally {
           try {
-            finalShardRequestTracker.processResponses(results, finalShardHandler, false, null, okayExceptions);
-            // TODO: wait for delete collection?
-           // zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (l, c) -> c == null);
-
+            ocmh.overseer.getZkStateWriter().removeCollection(collection);
+            // was there a race? let's get after it
+            while (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
+              zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+            }
           } catch (Exception e) {
-            log.error("Exception waiting for results of delete collection cmd", e);
+            log.error("Exception while trying to remove collection zknode", e);
           }
         }
-        // make sure it's gone again after cores have been removed
-        try {
-          ocmh.overseer.getCoreContainer().getZkController().removeCollectionTerms(collection);
-        } catch (Exception e) {
-          log.error("Exception while trying to remove collection terms", e);
-        }
-        try {
-          // was there a race? let's get after it
-          while (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
-            zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
-          }
-        } catch (Exception e) {
-          log.error("Exception while trying to remove collection zknode", e);
-        }
-
-
 
         AddReplicaCmd.Response response = new AddReplicaCmd.Response();
         return response;

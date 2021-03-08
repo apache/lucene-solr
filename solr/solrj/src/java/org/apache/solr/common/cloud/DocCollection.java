@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
@@ -64,6 +65,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Boolean readOnly;
   private final boolean withStateUpdates;
   private final Long id;
+
+  private AtomicInteger sliceAssignCnt = new AtomicInteger();
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, -1, false);
@@ -314,13 +317,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return id;
   }
 
-  public long getHighestReplicaId() {
-    long[] highest = new long[1];
-    List<Replica> replicas = getReplicas();
-    replicas.forEach(replica -> highest[0] = Math.max(highest[0], replica.id));
-    return highest[0] + 1;
-  }
-
   /**
    * Check that all replicas in a collection are live
    *
@@ -448,5 +444,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public boolean hasStateUpdates() {
     return withStateUpdates;
+  }
+
+  public void setSliceAssignCnt(int i) {
+    sliceAssignCnt.set(i);
+  }
+
+  public int getSliceAssignCnt() {
+    return sliceAssignCnt.incrementAndGet();
   }
 }

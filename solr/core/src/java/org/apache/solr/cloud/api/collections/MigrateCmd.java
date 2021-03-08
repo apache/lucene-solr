@@ -300,7 +300,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       replicas = docCollection.getReplicas().size();
     }
 
-    String tempCollectionReplica2 = Assign.buildSolrCoreName(docCollection, tempSourceSlice.getName(), Replica.Type.NRT);
+    String tempCollectionReplica2 = Assign.buildSolrCoreName(docCollection, tempSourceSlice.getName(), Replica.Type.NRT, ocmh.overseer).coreName;
     props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
     props.put(COLLECTION_PROP, tempSourceCollectionName);

@@ -27,6 +27,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
@@ -202,6 +203,10 @@ public class StatePublisher implements Closeable {
           String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
           String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
 
+          if ((state.equals(UpdateLog.State.ACTIVE.toString().toLowerCase(Locale.ROOT)) || state.equals("leader")) && cc.isCoreLoading(core)) {
+            cc.waitForLoadingCore(core, 10000);
+          }
+
           DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
           if (coll != null) {
             Replica replica = coll.getReplica(core);
@@ -211,7 +216,7 @@ public class StatePublisher implements Closeable {
               id = stateMessage.getStr("id");
             }
             String lastState = stateCache.get(id);
-            if (collection != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
+            if (collection != null && replica != null && !state.equals(lastState) && replica.getState().toString().equals(state)) {
               log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
               return;
             }

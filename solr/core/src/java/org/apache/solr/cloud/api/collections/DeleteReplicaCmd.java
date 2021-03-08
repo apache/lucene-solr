@@ -161,9 +161,9 @@ public class DeleteReplicaCmd implements Cmd {
     AddReplicaCmd.Response resp = deleteCore(clusterState, slice, collectionName, replicaName, message, shard, results, shardRequestTracker, shardHandler);
     clusterState = resp.clusterState;
 
-    if (clusterState.getCollectionOrNull(collectionName).getReplica(replicaName) != null) {
-      throw new IllegalStateException("Failed to remove replica from state " + replicaName);
-    }
+//    if (clusterState.getCollectionOrNull(collectionName).getReplica(replicaName) != null) {
+//      throw new IllegalStateException("Failed to remove replica from state " + replicaName);
+//    }
 
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
@@ -341,7 +341,7 @@ public class DeleteReplicaCmd implements Cmd {
     ZkNodeProps rep = new ZkNodeProps();
     rep.getProperties().put("replica", replicaName);
     rep.getProperties().put("collection", replica.getCollection());
-    rep.getProperties().put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
+    rep.getProperties().put("node", replica.getNodeName());
 
     if (log.isDebugEnabled()) log.debug("Before slice remove replica {} {}", rep, clusterState);
     clusterState = new SliceMutator(ocmh.cloudManager).removeReplica(clusterState, rep);

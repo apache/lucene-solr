@@ -181,6 +181,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       String id = replica.getId();
       if (id != null ) {
         this.idToReplica.put(id, replica);
+      } else {
+        throw new IllegalStateException("no id found in replica");
       }
     });
 
