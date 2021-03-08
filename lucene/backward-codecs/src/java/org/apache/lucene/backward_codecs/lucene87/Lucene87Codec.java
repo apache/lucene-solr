@@ -104,7 +104,7 @@ public class Lucene87Codec extends Codec {
   public Lucene87Codec() {
     this(Mode.BEST_COMPRESSION);
   }
-  
+
   /**
    * Instantiates a new codec, specifying the compression mode to use.
    *

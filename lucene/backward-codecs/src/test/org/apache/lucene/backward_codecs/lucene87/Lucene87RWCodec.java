@@ -41,7 +41,7 @@ public class Lucene87RWCodec extends Lucene87Codec {
   private final Mode mode;
 
   public Lucene87RWCodec() {
-    this(Mode.BEST_COMPRESSION);
+    this(Mode.BEST_SPEED);
   }
 
   public Lucene87RWCodec(Mode mode) {
