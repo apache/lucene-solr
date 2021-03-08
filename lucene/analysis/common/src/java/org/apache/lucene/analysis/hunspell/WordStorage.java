@@ -191,7 +191,7 @@ class WordStorage {
         return i == 0;
       }
     }
-    return length == 0;
+    return length == 0 && dataPos == 0;
   }
 
   private void readForms(IntsRef forms, ByteArrayDataInput in, int length) {

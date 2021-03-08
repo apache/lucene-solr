@@ -50,6 +50,10 @@ public class TestDictionary extends LuceneTestCase {
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
     assertEquals('A', assertSingleFlag(dictionary, ordList));
+
+    assertNotNull(dictionary.lookupWord(new char[] {'a', 'b'}, 0, 2));
+    assertNotNull(dictionary.lookupWord(new char[] {'d', 'b'}, 0, 2));
+    assertNull(dictionary.lookupWord(new char[] {'b'}, 0, 1));
   }
 
   private static char assertSingleFlag(Dictionary dictionary, IntsRef ordList) {
