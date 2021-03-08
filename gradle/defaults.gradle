@@ -23,6 +23,13 @@ allprojects {
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
+
+    if (System.getProperty("skip.lucene") as Boolean) {
+      maven {
+        name "ApacheSnapshots"
+        url 'https://repository.apache.org/content/repositories/snapshots/'
+      }
+    }
   }
 
   // Artifacts will have names after full gradle project path

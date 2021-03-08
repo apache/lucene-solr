@@ -49,71 +49,76 @@ configure(rootProject) {
     }
 }
 
-configure(project(":lucene:analysis:common")) {
-    rat {
-        srcExcludes += [
-            "**/*.aff",
-            "**/*.dic",
-            "**/*.wrong",
-            "**/*.good",
-            "**/*.sug",
-            "**/charfilter/*.htm*",
-            "**/*LuceneResourcesWikiPage.html"
-        ]
+if (!skipLucene) {
+    configure(project(":lucene:analysis:common")) {
+        rat {
+            srcExcludes += [
+                "**/*.aff",
+                "**/*.dic",
+                "**/*.wrong",
+                "**/*.good",
+                "**/*.sug",
+                "**/charfilter/*.htm*",
+                "**/*LuceneResourcesWikiPage.html"
+            ]
+        }
+    }
+
+    configure(project(":lucene:analysis:kuromoji")) {
+        rat {
+            srcExcludes += [
+                // whether rat detects this as binary or not is platform dependent?!
+                "**/bocchan.utf-8"
+            ]
+        }
+    }
+
+    configure(project(":lucene:analysis:opennlp")) {
+        rat {
+            excludes += [
+                "src/tools/test-model-data/*.txt",
+            ]
+        }
+    }
+
+    configure(project(":lucene:highlighter")) {
+        rat {
+            srcExcludes += [
+                "**/CambridgeMA.utf8"
+            ]
+        }
+    }
+
+    configure(project(":lucene:suggest")) {
+        rat {
+            srcExcludes += [
+                "**/Top50KWiki.utf8",
+                "**/stop-snowball.txt"
+            ]
+        }
     }
 }
 
-configure(project(":lucene:analysis:kuromoji")) {
-    rat {
-        srcExcludes += [
-            // whether rat detects this as binary or not is platform dependent?!
-            "**/bocchan.utf-8"
-        ]
+// SOLR ONLY
+if (!skipSolr) {
+    configure(project(":solr:core")) {
+        rat {
+            srcExcludes += [
+                "**/htmlStripReaderTest.html"
+            ]
+        }
     }
-}
 
-configure(project(":lucene:analysis:opennlp")) {
-    rat {
-        excludes += [
-            "src/tools/test-model-data/*.txt",
-        ]
-    }
-}
-
-configure(project(":lucene:highlighter")) {
-    rat {
-        srcExcludes += [
-            "**/CambridgeMA.utf8"
-        ]
-    }
-}
-
-configure(project(":lucene:suggest")) {
-    rat {
-        srcExcludes += [
-            "**/Top50KWiki.utf8",
-            "**/stop-snowball.txt"
-        ]
-    }
-}
-
-configure(project(":solr:core")) {
-    rat {
-        srcExcludes += [
-            "**/htmlStripReaderTest.html"
-        ]
-    }
-}
-
-configure(project(":solr:webapp")) {
-    rat {
-        includes = [ "**" ]
-        excludes += [
-            "web/img/**",
-            "*.iml",
-            "build.gradle",
-            "build/**",
-        ]
+    configure(project(":solr:webapp")) {
+        rat {
+            includes = ["**"]
+            excludes += [
+                "web/img/**",
+                "*.iml",
+                "build.gradle",
+                "build/**",
+            ]
+        }
     }
 }
 

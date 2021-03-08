@@ -22,8 +22,14 @@ description = 'Solr Test Framework'
 dependencies {
   api project(':solr:core')
   api project(':solr:solrj')
-  api project(':lucene:test-framework')
-  api project(':lucene:analysis:common')
+
+  if (skipLucene) {
+    api "org.apache.lucene:lucene-test-framework"
+    api "org.apache.lucene:lucene-analysis-common"
+  } else {
+    api project(':lucene:test-framework')
+    api project(':lucene:analysis:common')
+  }
 
   api 'org.apache.logging.log4j:log4j-core'
   api 'io.opentracing:opentracing-mock'

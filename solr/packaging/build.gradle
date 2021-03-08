@@ -97,10 +97,12 @@ distributions {
         include "README.md"
       })
 
-      from(project(":lucene").projectDir, {
-        include "CHANGES.txt"
-        rename { file -> 'LUCENE_CHANGES.txt' }
-      })
+      if (!skipLucene) {
+        from(project(":lucene").projectDir, {
+          include "CHANGES.txt"
+          rename { file -> 'LUCENE_CHANGES.txt' }
+        })
+      }
 
       from(configurations.contrib, {
         into "contrib"
