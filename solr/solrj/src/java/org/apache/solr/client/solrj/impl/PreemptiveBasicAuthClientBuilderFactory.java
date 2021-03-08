@@ -21,7 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -147,7 +147,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
         defaultParams = new MapSolrParams(map);
       } else if (configFile != null) {
         Properties defaultProps = new Properties();
-        try (BufferedReader reader = Files.newBufferedReader(Path.of(configFile), StandardCharsets.UTF_8)) {
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(configFile), StandardCharsets.UTF_8)) {
           defaultProps.load(reader);
         } catch (IOException e) {
           throw new IllegalArgumentException("Unable to read credentials file at " + configFile, e);
