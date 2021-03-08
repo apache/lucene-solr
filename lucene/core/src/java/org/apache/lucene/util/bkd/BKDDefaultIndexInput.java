@@ -554,40 +554,40 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     }
 
     private void readNodeData(boolean isLeft) {
-      System.arraycopy(
-          negativeDeltas,
-          (level - 1) * config.numIndexDims,
-          negativeDeltas,
-          level * config.numIndexDims,
-          config.numIndexDims);
-      negativeDeltas[level * config.numIndexDims + splitDims[level - 1]] = isLeft;
-
       try {
         leafBlockFPStack[level] = leafBlockFPStack[level - 1];
-
-        // read leaf block FP delta
         if (isLeft == false) {
+          // read leaf block FP delta
           leafBlockFPStack[level] += innerNodes.readVLong();
         }
 
         if (isLeafNode() == false) {
+          System.arraycopy(
+              negativeDeltas,
+              (level - 1) * config.numIndexDims,
+              negativeDeltas,
+              level * config.numIndexDims,
+              config.numIndexDims);
+          negativeDeltas[level * config.numIndexDims + splitDims[level - 1]] = isLeft;
+
+          if (splitValuesStack[level] == null) {
+            splitValuesStack[level] = splitValuesStack[level - 1].clone();
+          } else {
+            System.arraycopy(
+                splitValuesStack[level - 1],
+                0,
+                splitValuesStack[level],
+                0,
+                config.packedIndexBytesLength);
+          }
+
           // read split dim, prefix, firstDiffByteDelta encoded as int:
           int code = innerNodes.readVInt();
           splitDims[level] = code % config.numIndexDims;
-          ;
           code /= config.numIndexDims;
           int prefix = code % (1 + config.bytesPerDim);
           int suffix = config.bytesPerDim - prefix;
 
-          if (splitValuesStack[level] == null) {
-            splitValuesStack[level] = new byte[config.packedIndexBytesLength];
-          }
-          System.arraycopy(
-              splitValuesStack[level - 1],
-              0,
-              splitValuesStack[level],
-              0,
-              config.packedIndexBytesLength);
           if (suffix > 0) {
             int firstDiffByteDelta = code / (1 + config.bytesPerDim);
             if (negativeDeltas[level * config.numIndexDims + splitDims[level]]) {
