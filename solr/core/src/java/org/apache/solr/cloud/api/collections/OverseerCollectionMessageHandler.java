@@ -554,12 +554,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     //the rest of the processing is based on writing cluster state properties
     //remove the property here to avoid any errors down the pipeline due to this property appearing
-    String configName = (String) message.getProperties().remove(CollectionAdminParams.COLL_CONF);
+    String configName = (String) message.getProperties().get(CollectionAdminParams.COLL_CONF);
 
     if(configName != null) {
       validateConfigOrThrowSolrException(configName);
 
-      createConfNode(cloudManager.getDistribStateManager(), configName, collectionName);
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
 

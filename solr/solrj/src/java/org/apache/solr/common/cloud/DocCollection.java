@@ -91,11 +91,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (props == null) {
       props = new HashMap<>();
       props.put(CONFIGNAME_PROP, "_default");
-      propMap.putAll(props);
+    } else if (props.isEmpty()) {
+      props.put(CONFIGNAME_PROP, "_default");
     } else if (props.containsKey(COLLECTION_CONFIG_PROP)) {
       props.put(CONFIGNAME_PROP, props.get(COLLECTION_CONFIG_PROP));
-    } else if (!props.containsKey(CONFIGNAME_PROP) || props.get(CONFIGNAME_PROP) == null) {
-      props.put(CONFIGNAME_PROP, "_default");
+      props.remove(COLLECTION_CONFIG_PROP);
     }
     propMap = props;
 
@@ -133,7 +133,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
     this.znode = ZkStateReader.getCollectionPath(name);
-    this.configName = String.valueOf(props.get(CONFIGNAME_PROP)) == null ? String.valueOf(props.get(COLLECTION_CONFIG_PROP)) : String.valueOf(props.get(CONFIGNAME_PROP));
+    this.configName = String.valueOf(props.get(CONFIGNAME_PROP));
     if (this.configName == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "configName is missing");
     }

@@ -122,6 +122,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
 
     ocmh.validateConfigOrThrowSolrException(configName);
+    message.getProperties().put(COLL_CONF, configName);
 
     String router = message.getStr("router.name", DocRouter.DEFAULT_NAME);
 
@@ -136,8 +137,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       final String async = message.getStr(ASYNC);
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
-
-      OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName);
 
       Map<String,String> collectionParams = new HashMap<>();
       Map<String,Object> collectionProps = message.getProperties();
