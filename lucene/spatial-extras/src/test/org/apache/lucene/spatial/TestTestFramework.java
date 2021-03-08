@@ -59,6 +59,6 @@ public class TestTestFramework extends LuceneTestCase {
   public void spatialExample() throws Exception {
     // kind of a hack so that SpatialExample is tested despite
     // it not starting or ending with "Test".
-    SpatialExample.main(null);
+    TestSpatialExample.main(null);
   }
 }
