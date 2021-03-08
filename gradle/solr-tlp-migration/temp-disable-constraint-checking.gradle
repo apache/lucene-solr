@@ -30,3 +30,12 @@ configure(rootProject) {
     }
   }
 }
+
+if (skipLucene) {
+  configure(project(":solr:solr-ref-guide")) {
+    tasks.matching { it.name == "checkLocalJavadocLinksSite" }.all {
+      enabled = false
+      logger.warn("Skipping checkLocalJavadocLinksSite (tlp git migration)")
+    }
+  }
+}

@@ -456,22 +456,22 @@ class RenderJavadocTask extends DefaultTask {
     // lucene-test-framework was first, or broken links to things like LuceneTestCase if lucene-core was first)
     if (project.path != ':solr:test-framework') {  //
       findRenderTasksInDependencies()
-        .sort(false, Comparator.comparing { (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing { it.path }))
-        .each { otherTask ->
-          def otherProject = otherTask.project
-          // For relative links we compute the actual relative link between projects.
-          def crossLuceneSolr = (otherProject.docroot != project.docroot)
-          if (relativeProjectLinks && !crossLuceneSolr) {
-            def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
-            def pathFrom = outputDir.toPath().toAbsolutePath()
-            def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
-            opts << ['-link', relative]
-          } else {
-            // For absolute links, we determine the target URL by assembling the full URL.
-            def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
-            allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+          .sort(false, Comparator.comparing { (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing { it.path }))
+          .each { otherTask ->
+            def otherProject = otherTask.project
+            // For relative links we compute the actual relative link between projects.
+            def crossLuceneSolr = (otherProject.docroot != project.docroot)
+            if (relativeProjectLinks && !crossLuceneSolr) {
+              def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
+              def pathFrom = outputDir.toPath().toAbsolutePath()
+              def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
+              opts << ['-link', relative]
+            } else {
+              // For absolute links, we determine the target URL by assembling the full URL.
+              def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
+              allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+            }
           }
-        }
     }
     
     // Add offline links.
