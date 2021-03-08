@@ -72,12 +72,14 @@ configure(rootProject) {
     if (!skipSolr) {
       dependsOn ':solr:documentation:assemble'
 
-      doFirst {
-        // Sanity check doc. version vs. actual version.
-        def actualLuceneVersion = getVersion("org.apache.lucene", "lucene-core").replace('.', '_')
-        if (luceneDocVersion != actualLuceneVersion) {
-          throw new GradleException("Compiling documentation with Lucene version ${luceneDocVersion} which is " +
-              "different from actual dependency ${actualLuceneVersion}?")
+      if (skipLucene) {
+        doFirst {
+          // Sanity check doc. version vs. actual version.
+          def actualLuceneVersion = getVersion("org.apache.lucene", "lucene-core").replace('.', '_')
+          if (luceneDocVersion != actualLuceneVersion) {
+            throw new GradleException("Compiling documentation with Lucene version ${luceneDocVersion} which is " +
+                "different from actual dependency ${actualLuceneVersion}?")
+          }
         }
       }
     }
