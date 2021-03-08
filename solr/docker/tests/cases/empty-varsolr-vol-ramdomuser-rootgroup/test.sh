@@ -16,7 +16,7 @@ docker volume create "$myvarsolr"
 
 echo "Running $container_name"
 docker run \
-  --user 777:0 \
+  --user 7777:0 \
   -v "$myvarsolr:/var/solr" \
   --name "$container_name" \
   -d "$tag" solr-precreate getting-started

@@ -157,7 +157,7 @@ public class Lucene90Codec extends Codec {
   /**
    * Returns the postings format that should be used for writing new segments of <code>field</code>.
    *
-   * <p>The default implementation always returns "Lucene84".
+   * <p>The default implementation always returns "Lucene90".
    *
    * <p><b>WARNING:</b> if you subclass, you are responsible for index backwards compatibility:
    * future version of Lucene are only guaranteed to be able to read the default implementation,
@@ -170,7 +170,7 @@ public class Lucene90Codec extends Codec {
    * Returns the docvalues format that should be used for writing new segments of <code>field</code>
    * .
    *
-   * <p>The default implementation always returns "Lucene80".
+   * <p>The default implementation always returns "Lucene90".
    *
    * <p><b>WARNING:</b> if you subclass, you are responsible for index backwards compatibility:
    * future version of Lucene are only guaranteed to be able to read the default implementation.

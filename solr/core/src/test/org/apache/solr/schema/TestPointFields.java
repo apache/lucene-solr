@@ -364,7 +364,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     int bucketNum = 0;
     int minBucketVal = min;
     for (PosVal<Integer> value : sortedValues) {
-      while (value.val - minBucketVal >= gap) {
+      while ((long)value.val - (long)minBucketVal >= gap) {
         ++bucketNum;
         minBucketVal += gap;
       }
@@ -2215,17 +2215,20 @@ public class TestPointFields extends SolrTestCaseJ4 {
     });
   }
 
-  private List<Integer> getRandomInts(int length, boolean missingVals, int bound) {
-    return getRandomList(length, missingVals, () -> random().nextInt(bound));
+  private List<Integer> getRandomInts(int length, boolean missingVals, int boundPosNeg) {
+    assert boundPosNeg > 0L;
+    return getRandomList(length, missingVals,
+        () -> (random().nextBoolean() ? 1 : -1) * random().nextInt(boundPosNeg));
   }
 
   private List<Integer> getRandomInts(int length, boolean missingVals) {
     return getRandomList(length, missingVals, () -> random().nextInt());
   }
 
-  private List<Long> getRandomLongs(int length, boolean missingVals, long bound) {
-    assert bound > 0L;
-    return getRandomList(length, missingVals, () -> random().nextLong() % bound); // see Random.nextInt(int bound)
+  private List<Long> getRandomLongs(int length, boolean missingVals, long boundPosNeg) {
+    assert boundPosNeg > 0L;
+    return getRandomList(length, missingVals,
+        () -> random().nextLong() % boundPosNeg); // see Random.nextInt(int bound)
   }
 
   private List<Long> getRandomLongs(int length, boolean missingVals) {
