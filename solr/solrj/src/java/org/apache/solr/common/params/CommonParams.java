@@ -168,12 +168,7 @@ public interface CommonParams {
   /**
    * Custom query UUID if provided.
    */
-  String CUSTOM_QUERY_UUID = "queryUUID";
-
-  /**
-   * UUID for query to be cancelled
-   */
-  String QUERY_CANCELLATION_UUID = "cancelUUID";
+  String QUERY_UUID = "queryUUID";
 
   /**
    * UUID of the task whose status is to be checked

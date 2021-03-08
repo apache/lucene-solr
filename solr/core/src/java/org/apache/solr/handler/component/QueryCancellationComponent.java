@@ -46,7 +46,7 @@ public class QueryCancellationComponent extends SearchComponent {
             throw new RuntimeException("Null query UUID seen");
         }
 
-        CancellableTask cancellableTask = rb.req.getCore().getCancellableTask(cancellationUUID);
+        CancellableTask cancellableTask = rb.req.getCore().getCancellableQueryTracker().getCancellableTask(cancellationUUID);
 
         if (cancellableTask != null) {
             cancellableTask.cancelTask();

@@ -16,11 +16,15 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+
+import static java.util.Arrays.asList;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /** List the active tasks that can be cancelled */
 public class ActiveTasksListComponent extends SearchComponent {
@@ -42,22 +46,20 @@ public class ActiveTasksListComponent extends SearchComponent {
         }
 
         if (rb.getTaskStatusCheckUUID() != null) {
-            boolean isActiveOnThisShard = rb.req.getCore().isQueryIdActive(rb.getTaskStatusCheckUUID());
+            boolean isActiveOnThisShard = rb.req.getCore().getCancellableQueryTracker().isQueryIdActive(rb.getTaskStatusCheckUUID());
 
             rb.rsp.add("taskStatus", isActiveOnThisShard);
             return;
         }
 
-        NamedList<String> temp = new NamedList<>();
+        rb.rsp.add("taskList", (MapWriter) ew -> {
+            Iterator<Map.Entry<String, String>> iterator = rb.req.getCore().getCancellableQueryTracker().getActiveQueriesGenerated();
 
-        Iterator<Map.Entry<String, String>> iterator = rb.req.getCore().getActiveQueriesGenerated();
-
-        while (iterator.hasNext()) {
-            Map.Entry<String, String> entry = iterator.next();
-            temp.add(entry.getKey(), entry.getValue());
-        }
-
-        rb.rsp.add("taskList", temp);
+            while (iterator.hasNext()) {
+                Map.Entry<String, String> entry = iterator.next();
+                ew.put(entry.getKey(), entry.getValue());
+            }
+        });
     }
 
     @Override

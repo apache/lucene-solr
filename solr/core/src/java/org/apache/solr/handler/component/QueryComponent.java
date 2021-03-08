@@ -115,7 +115,7 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.CUSTOM_QUERY_UUID;
+import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 
 
 /**
@@ -668,7 +668,7 @@ public class QueryComponent extends SearchComponent
 
     if (rb.queryID != null) {
       // Remove the current queryID from the active list
-      rb.req.getCore().releaseQueryID(rb.queryID);
+      rb.req.getCore().getCancellableQueryTracker().releaseQueryID(rb.queryID);
     }
 
     if (rb.grouping()) {
@@ -1576,9 +1576,9 @@ public class QueryComponent extends SearchComponent
               getZkController().getNodeName();
     }
 
-    final String localQueryID = req.getCore().generateQueryID(req);
+    final String localQueryID = req.getCore().getCancellableQueryTracker().generateQueryID(req);
 
-    boolean isCustom = req.getParams().get(CUSTOM_QUERY_UUID, null) != null;
+    boolean isCustom = req.getParams().get(QUERY_UUID, null) != null;
 
     if (!isCustom && nodeName != null) {
       return nodeName.concat(localQueryID);

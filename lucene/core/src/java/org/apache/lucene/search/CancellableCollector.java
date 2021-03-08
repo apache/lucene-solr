@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.index.LeafReaderContext;
 
@@ -30,10 +31,7 @@ public class CancellableCollector implements Collector, CancellableTask {
   private AtomicBoolean isQueryCancelled;
 
   public CancellableCollector(Collector collector) {
-    if (collector == null) {
-      throw new IllegalStateException(
-          "Internal collector not provided but wrapper collector accessed");
-    }
+    Objects.requireNonNull(collector, "Internal collector not provided but wrapper collector accessed");
 
     this.collector = collector;
     this.isQueryCancelled = new AtomicBoolean();
@@ -53,7 +51,6 @@ public class CancellableCollector implements Collector, CancellableTask {
         if (isQueryCancelled.compareAndSet(true, false)) {
           throw new QueryCancelledException();
         }
-
         in.collect(doc);
       }
     };

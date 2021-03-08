@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.solr.common.params.CommonParams.QUERY_CANCELLATION_UUID;
+import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 
 /**
  * Handles requests for query cancellation for cancellable queries
@@ -46,7 +46,7 @@ public class QueryCancellationHandler extends TaskManagementHandler {
 
         rb.setCancellation(true);
 
-        String cancellationUUID = req.getParams().get(QUERY_CANCELLATION_UUID, null);
+        String cancellationUUID = req.getParams().get(QUERY_UUID, null);
 
         if (cancellationUUID == null) {
             throw new IllegalArgumentException("Query cancellation was requested but no query UUID for cancellation was given");
@@ -55,7 +55,7 @@ public class QueryCancellationHandler extends TaskManagementHandler {
         if (rb.isDistrib) {
             extraParams = new HashMap<>();
 
-            extraParams.put(QUERY_CANCELLATION_UUID, cancellationUUID);
+            extraParams.put(QUERY_UUID, cancellationUUID);
         }
 
         // Let this be visible to handleResponses in the handling component

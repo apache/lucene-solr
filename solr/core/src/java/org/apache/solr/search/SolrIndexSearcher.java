@@ -210,7 +210,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = new CancellableCollector(collector);
 
       // Add this to the local active queries map
-      core.addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
+      core.getCancellableQueryTracker().addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
     }
 
     try {
@@ -234,7 +234,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     if (cmd.isQueryCancellable()) {
-      core.removeCancellableQuery(cmd.getQueryID());
+      core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
     }
 
     return collector;

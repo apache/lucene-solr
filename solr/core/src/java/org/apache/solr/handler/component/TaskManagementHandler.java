@@ -43,10 +43,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 public abstract class TaskManagementHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
     private ShardHandlerFactory shardHandlerFactory;
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public abstract void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception;
-
     @Override
     public void inform(SolrCore core) {
         this.shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
