@@ -22,8 +22,6 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressionMode;
-import org.apache.lucene.codecs.compressing.DeflateWithPresetDictCompressionMode;
-import org.apache.lucene.codecs.compressing.LZ4WithPresetDictCompressionMode;
 import org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsFormat;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;

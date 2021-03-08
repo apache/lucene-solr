@@ -18,7 +18,6 @@ package org.apache.lucene.backward_codecs.lucene87;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.compressing.BugfixDeflater_JDK8252739;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
