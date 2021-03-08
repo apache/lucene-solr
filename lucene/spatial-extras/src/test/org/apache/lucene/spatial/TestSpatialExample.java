@@ -48,12 +48,12 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Shape;
 
 /** This class serves as example code to show how to use the Lucene spatial module. */
-public class SpatialExample extends LuceneTestCase {
+public class TestSpatialExample extends LuceneTestCase {
 
   // Note: Test invoked via TestTestFramework.spatialExample()
 
   public static void main(String[] args) throws Exception {
-    new SpatialExample().test();
+    new TestSpatialExample().test();
   }
 
   public void test() throws Exception {
