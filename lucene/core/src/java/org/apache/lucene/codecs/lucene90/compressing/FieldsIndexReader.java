@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.codecs.lucene90.compressing;
 
-import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_START;
+import static org.apache.lucene.codecs.lucene90.compressing.FieldsIndexWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene90.compressing.FieldsIndexWriter.VERSION_START;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

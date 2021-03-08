@@ -14,6 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene90.compressing;
 
-/** Compressing helper classes. */
-package org.apache.lucene.codecs.compressing;
+import java.io.Closeable;
+import java.io.IOException;
+import org.apache.lucene.util.Accountable;
+
+abstract class FieldsIndex implements Accountable, Cloneable, Closeable {
+
+  /** Get the start pointer for the block that contains the given docID. */
+  abstract long getStartPointer(int docID);
+
+  /** Check the integrity of the index. */
+  abstract void checkIntegrity() throws IOException;
+
+  @Override
+  public abstract FieldsIndex clone();
+}

@@ -14,29 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.codecs.lucene90.compressing;
 
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.BYTE_ARR;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.DAY;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.DAY_ENCODING;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.FIELDS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.HOUR;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.HOUR_ENCODING;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.INDEX_CODEC_NAME;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.INDEX_EXTENSION;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.META_EXTENSION;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.META_VERSION_START;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_FLOAT;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_INT;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_LONG;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.SECOND;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.SECOND_ENCODING;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.STRING;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.TYPE_BITS;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.TYPE_MASK;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_START;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.BYTE_ARR;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.DAY;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.DAY_ENCODING;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.FIELDS_EXTENSION;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.HOUR;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.HOUR_ENCODING;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.INDEX_CODEC_NAME;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.INDEX_EXTENSION;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.META_EXTENSION;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.META_VERSION_START;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_FLOAT;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_INT;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_LONG;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.SECOND;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.SECOND_ENCODING;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.STRING;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.TYPE_BITS;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.TYPE_MASK;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_START;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -45,6 +45,8 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.compressing.Decompressor;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;

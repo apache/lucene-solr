@@ -21,7 +21,6 @@ import org.apache.lucene.backward_codecs.lucene87.Lucene87StoredFieldsFormat;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
-import org.apache.lucene.codecs.compressing.FieldsIndexWriter;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
@@ -144,7 +143,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       <ul>
  *         <li>VectorIndex (.tvx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer
  *         <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}
- *         <li>ChunkIndex: See {@link FieldsIndexWriter}
+ *         <li>ChunkIndex: See FieldsIndexWriter
  *         <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}
  *       </ul>
  * </ol>

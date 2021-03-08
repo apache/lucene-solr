@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.Compressor;
 import org.apache.lucene.codecs.compressing.Decompressor;
-import org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsFormat;
+import org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsFormat;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;

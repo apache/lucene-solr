@@ -25,7 +25,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.Decompressor;
-import org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -50,7 +49,7 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link StoredFieldsReader} impl for {@link Lucene90CompressingStoredFieldsFormat}.
+ * {@link StoredFieldsReader} impl for {@link Lucene50CompressingStoredFieldsFormat}.
  *
  * @lucene.experimental
  */
