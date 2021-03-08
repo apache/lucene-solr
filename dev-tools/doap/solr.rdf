@@ -31,15 +31,15 @@
     <created>2006-01-17</created>
     <license rdf:resource="http://www.apache.org/licenses/LICENSE-2.0"/>
     <name>Apache Solr</name>
-    <homepage rdf:resource="http://lucene.apache.org/solr/" />
-    <asfext:pmc rdf:resource="http://lucene.apache.org" />
+    <homepage rdf:resource="http://solr.apache.org" />
+    <asfext:pmc rdf:resource="http://solr.apache.org" />
 
     <shortdesc>Solr is a full-text search server</shortdesc>
-    <description>Solr is an open source enterprise search server based on the Lucene Java search library, with XML/HTTP and JSON, Ruby, and Python APIs, hit highlighting, faceted search, caching, replication, and a web administration interface.
+    <description>Solr is an open source enterprise search server based on the Lucene Java search library, with Rest-like JSON/HTTP APIs, high performance, high availability, powerful analytics, hit highlighting, faceted search, caching, replication, and a web administration interface.
     </description>
     <bug-database rdf:resource="http://issues.apache.org/jira/browse/SOLR" />
-    <mailing-list rdf:resource="http://lucene.apache.org/solr/discussion.html" />
-    <download-page rdf:resource="http://lucene.apache.org/solr/downloads.html" />
+    <mailing-list rdf:resource="https://solr.apache.org/community.html#mailing-lists-chat" />
+    <download-page rdf:resource="https://solr.apache.org/downloads.html" />
     <programming-language>Java</programming-language>
 
     <!--
@@ -50,19 +50,20 @@
     <category rdf:resource="http://projects.apache.org/category/web-framework" />
     <category rdf:resource="http://projects.apache.org/category/network-server" />
     <category rdf:resource="http://projects.apache.org/category/search" />
+    <category rdf:resource="http://projects.apache.org/category/java" />
 
-    <wiki rdf:resource="http://wiki.apache.org/solr/"/>
+    <wiki rdf:resource="https://cwiki.apache.org/confluence/display/SOLR/"/>
 
     <repository>
       <GitRepository>
-        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/lucene-solr.git"/>
+        <location rdf:resource="https://gitbox.apache.org/repos/asf?p=solr.git"/>
       </GitRepository>
     </repository>
 
     <maintainer>
       <foaf:Person>
         <foaf:name>Apache Solr Team</foaf:name>
-        <foaf:mbox rdf:resource="mailto:dev@lucene.apache.org"/>
+        <foaf:mbox rdf:resource="mailto:dev@solr.apache.org"/>
       </foaf:Person>
     </maintainer>
 
