@@ -41,8 +41,7 @@ public class Lucene87RWCodec extends Lucene87Codec {
   private final Mode mode;
 
   public Lucene87RWCodec() {
-    super();
-    this.mode = Mode.BEST_COMPRESSION;
+    this(Mode.BEST_COMPRESSION);
   }
 
   public Lucene87RWCodec(Mode mode) {
@@ -72,7 +71,6 @@ public class Lucene87RWCodec extends Lucene87Codec {
 
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
-    // TODO needs to consider compression mode?
     return new Lucene87RWStoredFieldsFormat(mode.storedMode);
   }
 }

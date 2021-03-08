@@ -26,17 +26,6 @@ import org.apache.lucene.store.IOContext;
 /** RW impersonation of Lucene50CompressingStoredFieldsFormat. */
 public class Lucene50RWCompressingStoredFieldsFormat extends Lucene50CompressingStoredFieldsFormat {
 
-  /** Sole constructor. */
-  public Lucene50RWCompressingStoredFieldsFormat(
-      String formatName,
-      String segmentSuffix,
-      CompressionMode compressionMode,
-      int chunkSize,
-      int maxDocsPerChunk,
-      int blockShift) {
-    super(formatName, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
-  }
-
   public Lucene50RWCompressingStoredFieldsFormat(
       String formatName,
       CompressionMode compressionMode,
