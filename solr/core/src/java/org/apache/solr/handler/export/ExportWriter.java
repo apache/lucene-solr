@@ -33,7 +33,6 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -112,6 +111,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final String metricsPath;
   //The batch size for the output writer thread.
   final int batchSize;
+  final private String wt;
+  final int numWorkers;
+  final int workerId;
+  final String fieldList;
+  final List<String> partitionKeys;
+  final String partitionCacheKey;
   //The max combined size of the segment level priority queues.
   private int priorityQueueSize;
   StreamExpression streamExpression;
@@ -120,21 +125,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   int totalHits = 0;
   FixedBitSet[] sets = null;
   PushWriter writer;
-  final private String wt;
-  final int numWorkers;
-  final int workerId;
-  final String fieldList;
-  final List<String> partitionKeys;
-  final String partitionCacheKey;
 
   // per-segment caches for already populated partitioning filters when parallel() is in use
   final SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>> partitionCaches;
 
-  // per-segment partitioning filters that are incomplete (still being updated from the current request)
+  // local per-segment partitioning filters that are incomplete (still being updated from the current request)
   final Map<IndexReader.CacheKey, FixedBitSet> tempPartitionCaches;
 
 
 
+  @SuppressWarnings("unchecked")
   public ExportWriter(SolrQueryRequest req, SolrQueryResponse res, String wt,
                       StreamContext initialStreamContext, SolrMetricsContext solrMetricsContext,
                       String metricsPath) throws Exception {
@@ -164,7 +164,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     this.fieldList = req.getParams().get(CommonParams.FL);
     this.batchSize = DEFAULT_BATCH_SIZE;
-    this.partitionCaches = req.getSearcher().getCache(SOLR_CACHE_KEY);
+    this.partitionCaches = (SolrCache<IndexReader.CacheKey, SolrCache<String, FixedBitSet>>)req.getSearcher().getCache(SOLR_CACHE_KEY);
   }
 
   @Override
@@ -299,7 +299,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return;
     }
 
-    outputDoc = new DoubleArrayMapWriter(fieldWriters.length);
+    outputDoc = new OutputDocMapWriter(fields, partitionKeys);
 
     String expr = params.get(StreamParams.EXPR);
     if (expr != null) {
@@ -526,15 +526,32 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  // not sure about this class - it reduces object allocation but has linear cost of get()
-  private static final class DoubleArrayMapWriter implements MapWriter, EntryWriter {
+  // not sure about this class - it somewhat reduces object allocation as compared to LinkedHashMap
+  // NOTE: the lookup of values associated with partition keys uses an int lookup table that is
+  // indexed by the ord of the partition key in the list of partition keys.
+  private static final class OutputDocMapWriter implements MapWriter, EntryWriter {
     final CharSequence[] keys;
     final Object[] values;
+    final int[] partitionKeyToFieldIdx;
     int pos;
 
-    DoubleArrayMapWriter(int size) {
-      keys = new CharSequence[size];
-      values = new Object[size];
+    OutputDocMapWriter(String[] fields, List<String> partitionKeys) {
+      keys = new CharSequence[fields.length];
+      values = new Object[fields.length];
+      if (partitionKeys != null) {
+        partitionKeyToFieldIdx = new int[partitionKeys.size()];
+OUTER:  for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
+          for (int fieldIdx = 0; fieldIdx < fields.length; fieldIdx++) {
+            if (fields[fieldIdx].equals(partitionKeys.get(keyIdx))) {
+              partitionKeyToFieldIdx[keyIdx] = fieldIdx;
+              continue OUTER;
+            }
+          }
+          partitionKeyToFieldIdx[keyIdx] = -1;
+        }
+      } else {
+        partitionKeyToFieldIdx = null;
+      }
       pos = 0;
     }
 
@@ -561,18 +578,23 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
     }
 
-    public Object get(CharSequence key) {
-      for (int i = 0; i < pos; i++) {
-        if (keys[i].equals(key)) {
-          return values[i];
-        }
+    /**
+     * Get the value associated with the partition key
+     * @param keyIdx index of the partition key in the list of keys
+     * @return associated value or null if missing
+     */
+    public Object get(int keyIdx) {
+      final int fieldIdx = partitionKeyToFieldIdx[keyIdx];
+      if (fieldIdx == -1) {
+        return null;
+      } else {
+        return values[fieldIdx];
       }
-      return null;
     }
   }
 
   // we materialize this document so that we can potentially do hash partitioning
-  private DoubleArrayMapWriter outputDoc;
+  private OutputDocMapWriter outputDoc;
 
   // WARNING: single-thread only! shared var outputDoc
   MapWriter fillOutputDoc(SortDoc sortDoc,
@@ -588,7 +610,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         ++fieldIndex;
       }
     }
-    if (partitionKeys != null) {
+    if (partitionKeys == null) {
       return outputDoc;
     } else {
       // if we use partitioning then filter out unwanted docs
@@ -596,11 +618,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  MapWriter partitionFilter(SortDoc sortDoc, LeafReaderContext leaf, DoubleArrayMapWriter doc) {
+  MapWriter partitionFilter(SortDoc sortDoc, LeafReaderContext leaf, OutputDocMapWriter doc) {
     // calculate hash
     int hash = 0;
-    for (String key : partitionKeys) {
-      Object value = doc.get(key);
+    for (int keyIdx = 0; keyIdx < partitionKeys.size(); keyIdx++) {
+      Object value = doc.get(keyIdx);
       if (value != null) {
         hash += value.hashCode();
       }

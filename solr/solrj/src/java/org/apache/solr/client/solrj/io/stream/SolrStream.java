@@ -125,7 +125,7 @@ public class SolrStream extends TupleStream {
     try {
       SolrParams requestParams = loadParams(params);
       if (!distrib) {
-        ((ModifiableSolrParams) requestParams).add("distrib","false");
+        ((ModifiableSolrParams) requestParams).add(CommonParams.DISTRIB, "false");
       }
       tupleStreamParser = constructParser(requestParams);
     } catch (Exception e) {
@@ -153,17 +153,22 @@ public class SolrStream extends TupleStream {
     ModifiableSolrParams solrParams = new ModifiableSolrParams(paramsIn);
     if (params.get("partitionKeys") != null) {
       if (!params.get("partitionKeys").equals("none") && numWorkers > 1) {
-        if (params.getBool(ParallelStream.USE_HASH_QUERY_PARAM, false)) {
+        // turn on ExportWriter partitioning only for /export and only when requested
+        String qt = params.get(CommonParams.QT);
+        if (qt != null && qt.equals("/export")) {
+          solrParams.add(ParallelStream.WORKER_ID_PARAM, String.valueOf(workerID));
+          solrParams.add(ParallelStream.NUM_WORKERS_PARAM, String.valueOf(numWorkers));
+        } else {
           String partitionFilter = getPartitionFilter();
-          solrParams.add("fq", partitionFilter);
+          solrParams.add(CommonParams.FQ, partitionFilter);
         }
       }
-    } else if(numWorkers > 1) {
-        throw new IOException("When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
+    } else if (numWorkers > 1) {
+      throw new IOException("When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
     }
 
     if (checkpoint > 0) {
-      solrParams.add("fq", "{!frange cost=100 incl=false l="+checkpoint+"}_version_");
+      solrParams.add(CommonParams.FQ, "{!frange cost=100 incl=false l="+checkpoint+"}_version_");
     }
 
     return solrParams;
@@ -278,10 +283,10 @@ public class SolrStream extends TupleStream {
   }
 
   private TupleStreamParser constructParser(SolrParams requestParams) throws IOException, SolrServerException {
-    String p = requestParams.get("qt");
+    String p = requestParams.get(CommonParams.QT);
     if (p != null) {
       ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
-      modifiableSolrParams.remove("qt");
+      modifiableSolrParams.remove(CommonParams.QT);
       //performance optimization - remove extra whitespace by default when streaming
       modifiableSolrParams.set("indent", modifiableSolrParams.get("indent", "off"));
     }
