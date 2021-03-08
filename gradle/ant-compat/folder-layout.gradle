@@ -35,13 +35,6 @@ allprojects {
   }
 }
 
-// Adapt to custom 'web' folder location.
-configure(project(":solr:webapp")) {
-  plugins.withType(WarPlugin) {
-    webAppDirName = "web"
-  }
-}
-
 allprojects {
   plugins.withType(JavaPlugin) {
     // if 'src/tools' exists, add it as a separate sourceSet.

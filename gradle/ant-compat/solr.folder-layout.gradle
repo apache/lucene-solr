@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-
-apply plugin: 'java-library'
-
-description = 'Search Results Clustering Integraton'
-
-dependencies {
-  implementation project(':solr:core')
-
-  if (skipLucene) {
-    implementation "org.apache.lucene:lucene-analysis-common"
-  } else {
-    implementation project(':lucene:analysis:common')
+// Adapt to custom 'web' folder location.
+configure(project(":solr:webapp")) {
+  plugins.withType(WarPlugin) {
+    webAppDirName = "web"
   }
-
-  implementation 'org.carrot2:carrot2-core'
-
-  testImplementation project(':solr:test-framework')
 }

@@ -15,21 +15,27 @@
  * limitations under the License.
  */
 
+// Source test classes from Lucene won't be accessible anymore after the split.
 
-apply plugin: 'java-library'
-
-description = 'Search Results Clustering Integraton'
-
-dependencies {
-  implementation project(':solr:core')
-
-  if (skipLucene) {
-    implementation "org.apache.lucene:lucene-analysis-common"
-  } else {
-    implementation project(':lucene:analysis:common')
+configure(rootProject) {
+  // Temporarily disable checkUnusedConstraints since we can't live with
+  // lucene dependency in versions.props
+  tasks.matching { it.path == ":checkUnusedConstraints" }.all {
+    enabled = false
   }
 
-  implementation 'org.carrot2:carrot2-core'
+  if (skipLucene || skipSolr) {
+    tasks.matching { it.path == ":verifyLocks" }.all {
+      enabled = false
+    }
+  }
+}
 
-  testImplementation project(':solr:test-framework')
+if (skipLucene) {
+  configure(project(":solr:solr-ref-guide")) {
+    tasks.matching { it.name == "checkLocalJavadocLinksSite" }.all {
+      enabled = false
+      logger.warn("Skipping checkLocalJavadocLinksSite (tlp git migration)")
+    }
+  }
 }

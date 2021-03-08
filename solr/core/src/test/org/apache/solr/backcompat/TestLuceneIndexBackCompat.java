@@ -27,15 +27,15 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.backward_index.TestBackwardsCompatibility;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.TestHarness;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /** Verify we can read/write previous versions' Lucene indexes. */
-@Ignore("Missing Lucene back-compat index files")
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15224: Missing Lucene back-compat index files")
 public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
   private static final String[] oldNames = {
           "8.0.0-cfs",

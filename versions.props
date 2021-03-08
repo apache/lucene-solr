@@ -64,6 +64,7 @@ org.apache.httpcomponents:httpmime=4.5.10
 org.apache.james:apache-mime4j*=0.8.3
 org.apache.kerby:*=1.0.1
 org.apache.logging.log4j:*=2.13.2
+org.apache.lucene:*=9.0.0-SNAPSHOT
 org.apache.opennlp:opennlp-tools=1.9.1
 org.apache.pdfbox:*=2.0.17
 org.apache.pdfbox:jempbox=1.8.16
