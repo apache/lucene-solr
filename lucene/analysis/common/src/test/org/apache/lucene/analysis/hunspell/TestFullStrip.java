@@ -26,5 +26,7 @@ public class TestFullStrip extends StemmerTestBase {
 
   public void testStemming() {
     assertStemsTo("tasty", "beer");
+    assertStemsTo("as", "a");
+    assertStemsTo("s");
   }
 }

@@ -488,6 +488,8 @@ final class Stemmer {
     int stripEnd = dictionary.stripOffsets[stripOrd + 1];
     int stripLen = stripEnd - stripStart;
 
+    if (stripLen + deAffixedLen == 0) return null;
+
     char[] stripData = dictionary.stripData;
     int condition = dictionary.getAffixCondition(affix);
     if (condition != 0) {
