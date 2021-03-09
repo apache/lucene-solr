@@ -22,7 +22,7 @@
 grant {
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
   permission java.io.FilePermission "${common.dir}${/}-", "read";
-  permission java.io.FilePermission "${common.dir}${/}..${/}solr${/}-", "read";
+  permission java.io.FilePermission "${common-solr.dir}${/}-", "read";
 
   // system jar resources
   permission java.io.FilePermission "${java.home}${/}-", "read";

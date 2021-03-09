@@ -23,13 +23,11 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.backward_index.TestBackwardsCompatibility;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -37,16 +35,50 @@ import org.apache.solr.util.TestHarness;
 import org.junit.Test;
 
 /** Verify we can read/write previous versions' Lucene indexes. */
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15224: Missing Lucene back-compat index files")
 public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
-  private static final String[] oldNames = TestBackwardsCompatibility.getOldNames();
-  private static final String[] oldSingleSegmentNames = TestBackwardsCompatibility.getOldSingleSegmentNames();
+  private static final String[] oldNames = {
+          "8.0.0-cfs",
+          "8.0.0-nocfs",
+          "8.1.0-cfs",
+          "8.1.0-nocfs",
+          "8.1.1-cfs",
+          "8.1.1-nocfs",
+          "8.2.0-cfs",
+          "8.2.0-nocfs",
+          "8.3.0-cfs",
+          "8.3.0-nocfs",
+          "8.3.1-cfs",
+          "8.3.1-nocfs",
+          "8.4.0-cfs",
+          "8.4.0-nocfs",
+          "8.4.1-cfs",
+          "8.4.1-nocfs",
+          "8.5.0-cfs",
+          "8.5.0-nocfs",
+          "8.5.1-cfs",
+          "8.5.1-nocfs",
+          "8.5.2-cfs",
+          "8.5.2-nocfs",
+          "8.6.0-cfs",
+          "8.6.0-nocfs",
+          "8.6.1-cfs",
+          "8.6.1-nocfs",
+          "8.6.2-cfs",
+          "8.6.2-nocfs",
+          "8.6.3-cfs",
+          "8.6.3-nocfs",
+          "8.7.0-cfs",
+          "8.7.0-nocfs",
+          "8.8.0-cfs",
+          "8.8.0-nocfs",
+          "8.8.1-cfs",
+          "8.8.1-nocfs"
+  };
 
   @Test
   public void testOldIndexes() throws Exception {
-    List<String> names = new ArrayList<>(oldNames.length + oldSingleSegmentNames.length);
-    names.addAll(Arrays.asList(oldNames));
-    names.addAll(Arrays.asList(oldSingleSegmentNames));
-    for (String name : names) {
+    for (String name : oldNames) {
       setupCore(name);
 
       assertQ(req("q", "*:*", "rows", "0"), "//result[@numFound='35']");

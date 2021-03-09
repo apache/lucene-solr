@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** StoredFieldsFormat that allows cross-document and cross-field compression of stored fields. */
+/** Compressing helper classes. */
 package org.apache.lucene.codecs.compressing;

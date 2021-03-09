@@ -16,20 +16,22 @@
  */
 package org.apache.solr.schema;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
+import org.mockito.Mockito;
 
 /**
  * Tests {@link ICUCollationField} with TermQueries, RangeQueries, and sort order.
@@ -88,9 +90,13 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
     IOUtils.write(tailoredRules, os, "UTF-8");
     os.close();
 
+    assumeWorkingMockito();
+
     final ResourceLoader loader;
     if (random().nextBoolean()) {
-      loader = new StringMockResourceLoader(tailoredRules);
+      loader = Mockito.mock(ResourceLoader.class);
+      Mockito.when(loader.openResource(Mockito.anyString()))
+             .thenReturn(new ByteArrayInputStream(tailoredRules.getBytes(StandardCharsets.UTF_8)));
     } else {
       loader = new FilesystemResourceLoader(confDir.toPath());
     }

@@ -47,7 +47,7 @@ class ChangesToHtmlTask extends DefaultTask {
     .fileProvider(project.providers.provider { project.file("${project.docroot}/changes") })
 
   @Input
-  def luceneDocUrl = "${->project.luceneDocUrl}"
+  def luceneDocUrl = "${-> project.luceneDocUrl }"
 
   @InputFile
   def script

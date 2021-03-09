@@ -24,7 +24,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsFormat;
+import org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingTermVectorsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;

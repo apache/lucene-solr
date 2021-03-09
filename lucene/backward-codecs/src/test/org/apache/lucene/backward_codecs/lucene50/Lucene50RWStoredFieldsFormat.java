@@ -17,7 +17,10 @@
 package org.apache.lucene.backward_codecs.lucene50;
 
 import java.io.IOException;
+import org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50RWCompressingStoredFieldsFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -51,5 +54,19 @@ public final class Lucene50RWStoredFieldsFormat extends Lucene50StoredFieldsForm
               + mode.name());
     }
     return impl(mode).fieldsWriter(directory, si, context);
+  }
+
+  @Override
+  StoredFieldsFormat impl(Mode mode) {
+    switch (mode) {
+      case BEST_SPEED:
+        return new Lucene50RWCompressingStoredFieldsFormat(
+            "Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
+      case BEST_COMPRESSION:
+        return new Lucene50RWCompressingStoredFieldsFormat(
+            "Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
+      default:
+        throw new AssertionError();
+    }
   }
 }
