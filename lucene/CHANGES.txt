@@ -217,6 +217,9 @@ Bug fixes
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
 
+* LUCENE-9580: Fix bug in the polygon tessellator when introducing collinear edges during polygon 
+  splitting. (Ignacio Vera)  
+
 Changes in Backwards Compatibility Policy
 
 * LUCENE-9669: DirectoryReader#open now accepts an argument to open indices created with versions
