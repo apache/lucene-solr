@@ -19,7 +19,7 @@ package org.apache.lucene.util;
 /**
  * Estimates how {@link RamUsageEstimator} estimates physical memory consumption of Java objects.
  */
-public class StressRamUsageEstimator extends LuceneTestCase {
+public class TestStressRamUsageEstimator extends LuceneTestCase {
   static class Entry {
     Object o;
     Entry next;
