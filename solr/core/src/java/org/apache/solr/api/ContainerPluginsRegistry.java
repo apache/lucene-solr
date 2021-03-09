@@ -26,11 +26,13 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Phaser;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -79,10 +81,28 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   private final Map<String, ApiInfo> currentPlugins = new HashMap<>();
 
+  private Phaser phaser;
+
   @Override
   public boolean onChange(Map<String, Object> properties) {
     refresh();
+    Phaser localPhaser = phaser; // volatile read
+    if (localPhaser != null) {
+      assert localPhaser.getRegisteredParties() == 1;
+      localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
+    }
     return false;
+  }
+
+  /**
+   * A phaser that will advance phases every time {@link #onChange(Map)} is called.
+   * Useful for allowing tests to know when a new configuration is finished getting set.
+   */
+
+  @VisibleForTesting
+  public void setPhaser(Phaser phaser) {
+    phaser.register();
+    this.phaser = phaser;
   }
 
   public void registerListener(PluginRegistryListener listener) {
