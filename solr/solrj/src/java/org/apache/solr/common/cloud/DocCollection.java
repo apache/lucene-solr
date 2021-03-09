@@ -88,16 +88,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
-    if (props == null) {
-      props = new HashMap<>();
-      props.put(CONFIGNAME_PROP, "_default");
-    } else if (props.isEmpty()) {
-      props.put(CONFIGNAME_PROP, "_default");
-    } else if (props.containsKey(COLLECTION_CONFIG_PROP)) {
-      props.put(CONFIGNAME_PROP, props.get(COLLECTION_CONFIG_PROP));
-      props.remove(COLLECTION_CONFIG_PROP);
-    }
-    propMap = props;
+    super(initProps(props));
+    props = propMap; // in case initProps had to create a new Map
 
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
@@ -138,6 +130,19 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "configName is missing");
     }
     assert name != null && slices != null;
+  }
+
+  private static Map<String, Object> initProps(Map<String, Object> props) {
+    if (props == null) {
+      props = new HashMap<>();
+    }
+    if (props.isEmpty()) {
+      props.put(CONFIGNAME_PROP, "_default");
+    } else if (props.containsKey(COLLECTION_CONFIG_PROP)) {
+      props.put(CONFIGNAME_PROP, props.get(COLLECTION_CONFIG_PROP));
+      props.remove(COLLECTION_CONFIG_PROP);
+    }
+    return props;
   }
 
   /**Update our state with a state of a {@link Replica}

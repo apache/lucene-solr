@@ -35,7 +35,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
-  protected Map<String,Object> propMap;
+  protected final Map<String,Object> propMap;
 
   /**
    * Construct ZKNodeProps from map.
