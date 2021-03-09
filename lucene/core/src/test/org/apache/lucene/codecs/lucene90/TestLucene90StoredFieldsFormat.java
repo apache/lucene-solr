@@ -14,6 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene90;
 
-/** Compressing helper classes. */
-package org.apache.lucene.codecs.compressing;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.apache.lucene.util.TestUtil;
+
+public class TestLucene90StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
+  @Override
+  protected Codec getCodec() {
+    return TestUtil.getDefaultCodec();
+  }
+}

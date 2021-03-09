@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene87;
+package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
 import java.util.Objects;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsFormat;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -100,7 +100,7 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  *
  * @lucene.experimental
  */
-public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
+public class Lucene90StoredFieldsFormat extends StoredFieldsFormat {
 
   /** Configuration option for stored fields. */
   public static enum Mode {
@@ -111,17 +111,17 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   }
 
   /** Attribute key for compression mode. */
-  public static final String MODE_KEY = Lucene87StoredFieldsFormat.class.getSimpleName() + ".mode";
+  public static final String MODE_KEY = Lucene90StoredFieldsFormat.class.getSimpleName() + ".mode";
 
   final Mode mode;
 
   /** Stored fields format with default options */
-  public Lucene87StoredFieldsFormat() {
+  public Lucene90StoredFieldsFormat() {
     this(Mode.BEST_SPEED);
   }
 
   /** Stored fields format with specified mode */
-  public Lucene87StoredFieldsFormat(Mode mode) {
+  public Lucene90StoredFieldsFormat(Mode mode) {
     this.mode = Objects.requireNonNull(mode);
   }
 
@@ -157,10 +157,10 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   StoredFieldsFormat impl(Mode mode) {
     switch (mode) {
       case BEST_SPEED:
-        return new CompressingStoredFieldsFormat(
+        return new Lucene90CompressingStoredFieldsFormat(
             "Lucene87StoredFieldsFastData", BEST_SPEED_MODE, BEST_SPEED_BLOCK_LENGTH, 1024, 10);
       case BEST_COMPRESSION:
-        return new CompressingStoredFieldsFormat(
+        return new Lucene90CompressingStoredFieldsFormat(
             "Lucene87StoredFieldsHighData",
             BEST_COMPRESSION_MODE,
             BEST_COMPRESSION_BLOCK_LENGTH,

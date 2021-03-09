@@ -40,7 +40,6 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -64,8 +63,10 @@ public class Lucene87Codec extends Codec {
         Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
         Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
 
-    private final Lucene87StoredFieldsFormat.Mode storedMode;
-    private final Lucene80DocValuesFormat.Mode dvMode;
+    /** compression mode for stored fields */
+    protected final Lucene87StoredFieldsFormat.Mode storedMode;
+    /** compression mode for doc value fields */
+    protected final Lucene80DocValuesFormat.Mode dvMode;
 
     private Mode(Lucene87StoredFieldsFormat.Mode storedMode, Lucene80DocValuesFormat.Mode dvMode) {
       this.storedMode = Objects.requireNonNull(storedMode);
@@ -101,14 +102,23 @@ public class Lucene87Codec extends Codec {
 
   /** Instantiates a new codec. */
   public Lucene87Codec() {
+    this(Mode.BEST_COMPRESSION);
+  }
+
+  /**
+   * Instantiates a new codec, specifying the compression mode to use.
+   *
+   * @param mode compression mode to use for newly flushed/merged segments.
+   */
+  public Lucene87Codec(Mode mode) {
     super("Lucene87");
-    this.storedFieldsFormat = new Lucene87StoredFieldsFormat();
+    this.storedFieldsFormat = new Lucene87StoredFieldsFormat(mode.storedMode);
     this.defaultFormat = new Lucene84PostingsFormat();
-    this.defaultDVFormat = new Lucene80DocValuesFormat();
+    this.defaultDVFormat = new Lucene80DocValuesFormat(mode.dvMode);
   }
 
   @Override
-  public final StoredFieldsFormat storedFieldsFormat() {
+  public StoredFieldsFormat storedFieldsFormat() {
     return storedFieldsFormat;
   }
 

@@ -14,31 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
-
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.BYTE_ARR;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY_ENCODING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR_ENCODING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_CODEC_NAME;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.META_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.META_VERSION_START;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_FLOAT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_INT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_LONG;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.SECOND;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.SECOND_ENCODING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.STRING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_META;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
+package org.apache.lucene.backward_codecs.lucene50.compressing;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -47,6 +23,8 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.compressing.Decompressor;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -71,11 +49,46 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link StoredFieldsReader} impl for {@link CompressingStoredFieldsFormat}.
+ * {@link StoredFieldsReader} impl for {@link Lucene50CompressingStoredFieldsFormat}.
  *
  * @lucene.experimental
  */
-public final class CompressingStoredFieldsReader extends StoredFieldsReader {
+public final class Lucene50CompressingStoredFieldsReader extends StoredFieldsReader {
+
+  /** Extension of stored fields file */
+  public static final String FIELDS_EXTENSION = "fdt";
+  /** Extension of stored fields index */
+  public static final String INDEX_EXTENSION = "fdx";
+  /** Extension of stored fields meta */
+  public static final String META_EXTENSION = "fdm";
+  /** Codec name for the index. */
+  public static final String INDEX_CODEC_NAME = "Lucene85FieldsIndex";
+
+  static final int STRING = 0x00;
+  static final int BYTE_ARR = 0x01;
+  static final int NUMERIC_INT = 0x02;
+  static final int NUMERIC_FLOAT = 0x03;
+  static final int NUMERIC_LONG = 0x04;
+  static final int NUMERIC_DOUBLE = 0x05;
+
+  static final int TYPE_BITS = PackedInts.bitsRequired(NUMERIC_DOUBLE);
+  static final int TYPE_MASK = (int) PackedInts.maxValue(TYPE_BITS);
+
+  static final int VERSION_START = 1;
+  static final int VERSION_OFFHEAP_INDEX = 2;
+  /** Version where all metadata were moved to the meta file. */
+  static final int VERSION_META = 3;
+
+  static final int VERSION_CURRENT = VERSION_META;
+  static final int META_VERSION_START = 0;
+
+  // for compression of timestamps
+  static final long SECOND = 1000L;
+  static final long HOUR = 60 * 60 * SECOND;
+  static final long DAY = 24 * HOUR;
+  static final int SECOND_ENCODING = 0x40;
+  static final int HOUR_ENCODING = 0x80;
+  static final int DAY_ENCODING = 0xC0;
 
   private final int version;
   private final FieldInfos fieldInfos;
@@ -94,7 +107,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private boolean closed;
 
   // used by clone
-  private CompressingStoredFieldsReader(CompressingStoredFieldsReader reader, boolean merging) {
+  private Lucene50CompressingStoredFieldsReader(
+      Lucene50CompressingStoredFieldsReader reader, boolean merging) {
     this.version = reader.version;
     this.fieldInfos = reader.fieldInfos;
     this.fieldsStream = reader.fieldsStream.clone();
@@ -113,7 +127,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   }
 
   /** Sole constructor. */
-  public CompressingStoredFieldsReader(
+  public Lucene50CompressingStoredFieldsReader(
       Directory d,
       SegmentInfo si,
       String segmentSuffix,
@@ -718,13 +732,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public StoredFieldsReader clone() {
     ensureOpen();
-    return new CompressingStoredFieldsReader(this, false);
+    return new Lucene50CompressingStoredFieldsReader(this, false);
   }
 
   @Override
   public StoredFieldsReader getMergeInstance() {
     ensureOpen();
-    return new CompressingStoredFieldsReader(this, true);
+    return new Lucene50CompressingStoredFieldsReader(this, true);
   }
 
   int getVersion() {

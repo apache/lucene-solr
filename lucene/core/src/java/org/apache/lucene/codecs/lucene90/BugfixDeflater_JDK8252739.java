@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene87;
+package org.apache.lucene.codecs.lucene90;
 
 import java.util.Arrays;
 import java.util.zip.DataFormatException;
@@ -26,6 +26,8 @@ import org.apache.lucene.util.SuppressForbidden;
 /**
  * This class is a workaround for JDK bug <a
  * href="https://bugs.openjdk.java.net/browse/JDK-8252739">JDK-8252739</a>.
+ *
+ * @lucene.internal
  */
 @FunctionalInterface
 interface BugfixDeflater_JDK8252739 {

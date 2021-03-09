@@ -23,6 +23,7 @@ import org.apache.lucene.backward_codecs.lucene84.Lucene84RWPostingsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -37,6 +38,16 @@ public class Lucene87RWCodec extends Lucene87Codec {
           return defaultPF;
         }
       };
+  private final Mode mode;
+
+  public Lucene87RWCodec() {
+    this(Mode.BEST_SPEED);
+  }
+
+  public Lucene87RWCodec(Mode mode) {
+    super(mode);
+    this.mode = mode;
+  }
 
   @Override
   public final CompoundFormat compoundFormat() {
@@ -56,5 +67,10 @@ public class Lucene87RWCodec extends Lucene87Codec {
   @Override
   public TermVectorsFormat termVectorsFormat() {
     return new Lucene50RWTermVectorsFormat();
+  }
+
+  @Override
+  public StoredFieldsFormat storedFieldsFormat() {
+    return new Lucene87RWStoredFieldsFormat(mode.storedMode);
   }
 }

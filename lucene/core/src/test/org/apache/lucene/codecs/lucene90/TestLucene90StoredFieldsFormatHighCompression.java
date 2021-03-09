@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene87;
+package org.apache.lucene.codecs.lucene90;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec.Mode;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
@@ -28,7 +27,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 
-public class TestLucene87StoredFieldsFormatHighCompression extends BaseStoredFieldsFormatTestCase {
+public class TestLucene90StoredFieldsFormatHighCompression extends BaseStoredFieldsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return new Lucene90Codec(Mode.BEST_COMPRESSION);
@@ -76,7 +75,7 @@ public class TestLucene87StoredFieldsFormatHighCompression extends BaseStoredFie
     expectThrows(
         NullPointerException.class,
         () -> {
-          new Lucene87StoredFieldsFormat(null);
+          new Lucene90StoredFieldsFormat(null);
         });
   }
 

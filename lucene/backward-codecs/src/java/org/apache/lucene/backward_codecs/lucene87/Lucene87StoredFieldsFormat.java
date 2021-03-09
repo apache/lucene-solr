@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.lucene50;
+package org.apache.lucene.backward_codecs.lucene87;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -31,7 +31,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 /**
- * Lucene 5.0 stored fields format.
+ * Lucene 8.7 stored fields format.
  *
  * <p><b>Principle</b>
  *
@@ -43,14 +43,15 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * compression ratio, it should provide interesting compression ratios for redundant inputs (such as
  * log files, HTML or plain text). For higher compression, you can choose ({@link
  * Mode#BEST_COMPRESSION BEST_COMPRESSION}), which uses the <a
- * href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 60KB blocks for a better
- * ratio at the expense of slower performance. These two options can be configured like this:
+ * href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 48kB blocks and shared
+ * dictionaries for a better ratio at the expense of slower performance. These two options can be
+ * configured like this:
  *
  * <pre class="prettyprint">
  *   // the default: for high performance
- *   indexWriterConfig.setCodec(new Lucene54Codec(Mode.BEST_SPEED));
+ *   indexWriterConfig.setCodec(new Lucene87Codec(Mode.BEST_SPEED));
  *   // instead for higher performance (but slower):
- *   // indexWriterConfig.setCodec(new Lucene54Codec(Mode.BEST_COMPRESSION));
+ *   // indexWriterConfig.setCodec(new Lucene87Codec(Mode.BEST_COMPRESSION));
  * </pre>
  *
  * <p><b>File formats</b>
@@ -69,9 +70,6 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  *       format</a>.
  *       <p>Notes
  *       <ul>
- *         <li>If documents are larger than 16KB then chunks will likely contain only one document.
- *             However, documents can never spread across several chunks (all fields of a single
- *             document are in the same chunk).
  *         <li>When at least one document in a chunk is large enough so that the chunk is larger
  *             than 32KB, the chunk will actually be compressed in several LZ4 blocks of 16KB. This
  *             allows {@link StoredFieldVisitor}s which are only interested in the first fields of a
@@ -102,7 +100,7 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  *
  * @lucene.experimental
  */
-public class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
+public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
 
   /** Configuration option for stored fields. */
   public static enum Mode {
@@ -113,22 +111,22 @@ public class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
   }
 
   /** Attribute key for compression mode. */
-  public static final String MODE_KEY = Lucene50StoredFieldsFormat.class.getSimpleName() + ".mode";
+  public static final String MODE_KEY = Lucene87StoredFieldsFormat.class.getSimpleName() + ".mode";
 
   final Mode mode;
 
   /** Stored fields format with default options */
-  public Lucene50StoredFieldsFormat() {
+  public Lucene87StoredFieldsFormat() {
     this(Mode.BEST_SPEED);
   }
 
   /** Stored fields format with specified mode */
-  public Lucene50StoredFieldsFormat(Mode mode) {
+  public Lucene87StoredFieldsFormat(Mode mode) {
     this.mode = Objects.requireNonNull(mode);
   }
 
   @Override
-  public final StoredFieldsReader fieldsReader(
+  public StoredFieldsReader fieldsReader(
       Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     String value = si.getAttribute(MODE_KEY);
     if (value == null) {
@@ -148,12 +146,31 @@ public class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
     switch (mode) {
       case BEST_SPEED:
         return new Lucene50CompressingStoredFieldsFormat(
-            "Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
+            "Lucene87StoredFieldsFastData", BEST_SPEED_MODE, BEST_SPEED_BLOCK_LENGTH, 1024, 10);
       case BEST_COMPRESSION:
         return new Lucene50CompressingStoredFieldsFormat(
-            "Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
+            "Lucene87StoredFieldsHighData",
+            BEST_COMPRESSION_MODE,
+            BEST_COMPRESSION_BLOCK_LENGTH,
+            4096,
+            10);
       default:
         throw new AssertionError();
     }
   }
+
+  // Shoot for 10 sub blocks of 48kB each.
+  /** Block length for {@link Mode#BEST_COMPRESSION} */
+  protected static final int BEST_COMPRESSION_BLOCK_LENGTH = 10 * 48 * 1024;
+
+  /** Compression mode for {@link Mode#BEST_COMPRESSION} */
+  public static final CompressionMode BEST_COMPRESSION_MODE =
+      new DeflateWithPresetDictCompressionMode();
+
+  // Shoot for 10 sub blocks of 60kB each.
+  /** Block length for {@link Mode#BEST_SPEED} */
+  protected static final int BEST_SPEED_BLOCK_LENGTH = 10 * 60 * 1024;
+
+  /** Compression mode for {@link Mode#BEST_SPEED} */
+  public static final CompressionMode BEST_SPEED_MODE = new LZ4WithPresetDictCompressionMode();
 }

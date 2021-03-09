@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Components from the Lucene 8.7 index format. See {@link org.apache.lucene.codecs.lucene90} for an
- * overview of the current index format.
- */
-package org.apache.lucene.codecs.lucene87;
+/** Lucene 9.0 compressing format. */
+package org.apache.lucene.codecs.lucene90.compressing;

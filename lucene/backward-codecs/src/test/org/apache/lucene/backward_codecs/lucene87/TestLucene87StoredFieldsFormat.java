@@ -14,20 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.backward_codecs.lucene87;
 
-import java.io.Closeable;
-import java.io.IOException;
-import org.apache.lucene.util.Accountable;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 
-abstract class FieldsIndex implements Accountable, Cloneable, Closeable {
-
-  /** Get the start pointer for the block that contains the given docID. */
-  abstract long getStartPointer(int docID);
-
-  /** Check the integrity of the index. */
-  abstract void checkIntegrity() throws IOException;
-
+public class TestLucene87StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   @Override
-  public abstract FieldsIndex clone();
+  protected Codec getCodec() {
+    return new Lucene87RWCodec();
+  }
 }

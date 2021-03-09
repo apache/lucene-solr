@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.codecs.lucene90.compressing;
 
 import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
+import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentInfo;
@@ -40,7 +41,7 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  *
  * @lucene.experimental
  */
-public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
+public class Lucene90CompressingStoredFieldsFormat extends StoredFieldsFormat {
 
   private final String formatName;
   private final String segmentSuffix;
@@ -50,12 +51,12 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   private final int blockShift;
 
   /**
-   * Create a new {@link CompressingStoredFieldsFormat} with an empty segment suffix.
+   * Create a new {@link Lucene90CompressingStoredFieldsFormat} with an empty segment suffix.
    *
-   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(String, String,
-   *     CompressionMode, int, int, int)
+   * @see Lucene90CompressingStoredFieldsFormat#Lucene90CompressingStoredFieldsFormat(String,
+   *     String, CompressionMode, int, int, int)
    */
-  public CompressingStoredFieldsFormat(
+  public Lucene90CompressingStoredFieldsFormat(
       String formatName,
       CompressionMode compressionMode,
       int chunkSize,
@@ -65,7 +66,7 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   }
 
   /**
-   * Create a new {@link CompressingStoredFieldsFormat}.
+   * Create a new {@link Lucene90CompressingStoredFieldsFormat}.
    *
    * <p><code>formatName</code> is the name of the format. This name will be used in the file
    * formats to perform {@link CodecUtil#checkIndexHeader codec header checks}.
@@ -76,7 +77,8 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * <p>The <code>compressionMode</code> parameter allows you to choose between compression
    * algorithms that have various compression and decompression speeds so that you can pick the one
    * that best fits your indexing and searching throughput. You should never instantiate two {@link
-   * CompressingStoredFieldsFormat}s that have the same name but different {@link CompressionMode}s.
+   * Lucene90CompressingStoredFieldsFormat}s that have the same name but different {@link
+   * CompressionMode}s.
    *
    * <p><code>chunkSize</code> is the minimum byte size of a chunk of documents. A value of <code>1
    * </code> can make sense if there is redundancy across fields. <code>maxDocsPerChunk</code> is an
@@ -94,7 +96,7 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * @param blockShift the log in base 2 of number of chunks to store in an index block
    * @see CompressionMode
    */
-  public CompressingStoredFieldsFormat(
+  public Lucene90CompressingStoredFieldsFormat(
       String formatName,
       String segmentSuffix,
       CompressionMode compressionMode,
@@ -128,14 +130,14 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   @Override
   public StoredFieldsReader fieldsReader(
       Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
-    return new CompressingStoredFieldsReader(
+    return new Lucene90CompressingStoredFieldsReader(
         directory, si, segmentSuffix, fn, context, formatName, compressionMode);
   }
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context)
       throws IOException {
-    return new CompressingStoredFieldsWriter(
+    return new Lucene90CompressingStoredFieldsWriter(
         directory,
         si,
         segmentSuffix,

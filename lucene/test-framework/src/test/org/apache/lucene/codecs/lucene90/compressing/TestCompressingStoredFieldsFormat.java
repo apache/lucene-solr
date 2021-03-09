@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.codecs.lucene90.compressing;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -105,9 +106,9 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     // round-trip small integer values
     for (int i = Short.MIN_VALUE; i < Short.MAX_VALUE; i++) {
       float f = (float) i;
-      CompressingStoredFieldsWriter.writeZFloat(out, f);
+      Lucene90CompressingStoredFieldsWriter.writeZFloat(out, f);
       in.reset(buffer, 0, out.getPosition());
-      float g = CompressingStoredFieldsReader.readZFloat(in);
+      float g = Lucene90CompressingStoredFieldsReader.readZFloat(in);
       assertTrue(in.eof());
       assertEquals(Float.floatToIntBits(f), Float.floatToIntBits(g));
 
@@ -130,9 +131,9 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     };
 
     for (float f : special) {
-      CompressingStoredFieldsWriter.writeZFloat(out, f);
+      Lucene90CompressingStoredFieldsWriter.writeZFloat(out, f);
       in.reset(buffer, 0, out.getPosition());
-      float g = CompressingStoredFieldsReader.readZFloat(in);
+      float g = Lucene90CompressingStoredFieldsReader.readZFloat(in);
       assertTrue(in.eof());
       assertEquals(Float.floatToIntBits(f), Float.floatToIntBits(g));
       out.reset(buffer);
@@ -142,12 +143,12 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     Random r = random();
     for (int i = 0; i < 100000; i++) {
       float f = r.nextFloat() * (random().nextInt(100) - 50);
-      CompressingStoredFieldsWriter.writeZFloat(out, f);
+      Lucene90CompressingStoredFieldsWriter.writeZFloat(out, f);
       assertTrue(
           "length=" + out.getPosition() + ", f=" + f,
           out.getPosition() <= ((Float.floatToIntBits(f) >>> 31) == 1 ? 5 : 4));
       in.reset(buffer, 0, out.getPosition());
-      float g = CompressingStoredFieldsReader.readZFloat(in);
+      float g = Lucene90CompressingStoredFieldsReader.readZFloat(in);
       assertTrue(in.eof());
       assertEquals(Float.floatToIntBits(f), Float.floatToIntBits(g));
       out.reset(buffer);
@@ -162,9 +163,9 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     // round-trip small integer values
     for (int i = Short.MIN_VALUE; i < Short.MAX_VALUE; i++) {
       double x = (double) i;
-      CompressingStoredFieldsWriter.writeZDouble(out, x);
+      Lucene90CompressingStoredFieldsWriter.writeZDouble(out, x);
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = Lucene90CompressingStoredFieldsReader.readZDouble(in);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
 
@@ -187,9 +188,9 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     };
 
     for (double x : special) {
-      CompressingStoredFieldsWriter.writeZDouble(out, x);
+      Lucene90CompressingStoredFieldsWriter.writeZDouble(out, x);
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = Lucene90CompressingStoredFieldsReader.readZDouble(in);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
       out.reset(buffer);
@@ -199,10 +200,10 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     Random r = random();
     for (int i = 0; i < 100000; i++) {
       double x = r.nextDouble() * (random().nextInt(100) - 50);
-      CompressingStoredFieldsWriter.writeZDouble(out, x);
+      Lucene90CompressingStoredFieldsWriter.writeZDouble(out, x);
       assertTrue("length=" + out.getPosition() + ", d=" + x, out.getPosition() <= (x < 0 ? 9 : 8));
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = Lucene90CompressingStoredFieldsReader.readZDouble(in);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
       out.reset(buffer);
@@ -211,10 +212,10 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     // same with floats
     for (int i = 0; i < 100000; i++) {
       double x = (double) (r.nextFloat() * (random().nextInt(100) - 50));
-      CompressingStoredFieldsWriter.writeZDouble(out, x);
+      Lucene90CompressingStoredFieldsWriter.writeZDouble(out, x);
       assertTrue("length=" + out.getPosition() + ", d=" + x, out.getPosition() <= 5);
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = Lucene90CompressingStoredFieldsReader.readZDouble(in);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
       out.reset(buffer);
@@ -230,9 +231,9 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     for (int i = Short.MIN_VALUE; i < Short.MAX_VALUE; i++) {
       for (long mul : new long[] {SECOND, HOUR, DAY}) {
         long l1 = (long) i * mul;
-        CompressingStoredFieldsWriter.writeTLong(out, l1);
+        Lucene90CompressingStoredFieldsWriter.writeTLong(out, l1);
         in.reset(buffer, 0, out.getPosition());
-        long l2 = CompressingStoredFieldsReader.readTLong(in);
+        long l2 = Lucene90CompressingStoredFieldsReader.readTLong(in);
         assertTrue(in.eof());
         assertEquals(l1, l2);
 
@@ -262,9 +263,9 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
         default:
           break;
       }
-      CompressingStoredFieldsWriter.writeTLong(out, l1);
+      Lucene90CompressingStoredFieldsWriter.writeTLong(out, l1);
       in.reset(buffer, 0, out.getPosition());
-      long l2 = CompressingStoredFieldsReader.readTLong(in);
+      long l2 = Lucene90CompressingStoredFieldsReader.readTLong(in);
       assertTrue(in.eof());
       assertEquals(l1, l2);
       out.reset(buffer);
@@ -297,7 +298,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       // examine dirty counts:
       for (LeafReaderContext leaf : ir2.leaves()) {
         CodecReader sr = (CodecReader) leaf.reader();
-        CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader) sr.getFieldsReader();
+        Lucene90CompressingStoredFieldsReader reader =
+            (Lucene90CompressingStoredFieldsReader) sr.getFieldsReader();
         assertTrue(reader.getNumDirtyDocs() > 0);
         assertTrue(reader.getNumDirtyDocs() < 100); // can't be gte the number of docs per chunk
         assertEquals(1, reader.getNumDirtyChunks());
@@ -310,7 +312,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     ir.close();
     ir = ir2;
     CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
-    CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader) sr.getFieldsReader();
+    Lucene90CompressingStoredFieldsReader reader =
+        (Lucene90CompressingStoredFieldsReader) sr.getFieldsReader();
     // we could get lucky, and have zero, but typically one.
     assertTrue(reader.getNumDirtyChunks() <= 1);
     ir.close();
