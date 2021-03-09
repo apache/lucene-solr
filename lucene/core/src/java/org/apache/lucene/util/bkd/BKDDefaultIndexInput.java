@@ -379,29 +379,28 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       readNodeData(true);
     }
 
-    private void pushRight() {
-      final int splitDimPos = splitDims[level] * config.bytesPerDim;
+    private void moveRight() {
+      final int splitDimPos = splitDims[level - 1] * config.bytesPerDim;
       assert Arrays.compareUnsigned(
-                  minPackedValueStack[level],
+                  minPackedValueStack[level - 1],
                   splitDimPos,
                   splitDimPos + config.bytesPerDim,
-                  splitValuesStack[level],
+                  splitValuesStack[level - 1],
                   splitDimPos,
                   splitDimPos + config.bytesPerDim)
               <= 0
           : "config.bytesPerDim="
               + config.bytesPerDim
               + " splitDim="
-              + splitDims[level]
+              + splitDims[level - 1]
               + " config.numIndexDims="
               + config.numIndexDims
               + " config.numDims="
               + config.numDims;
-      final int nodePosition = rightNodePositions[level];
+      final int nodePosition = rightNodePositions[level - 1];
       assert nodePosition >= innerNodes.getFilePointer()
           : "nodePosition = " + nodePosition + " < currentPosition=" + innerNodes.getFilePointer();
-      nodeID = nodeID * 2 + 1;
-      level++;
+      nodeID += 1;
       try {
         innerNodes.seek(nodePosition);
       } catch (IOException e) {
@@ -430,8 +429,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     @Override
     public boolean moveToSibling() {
       if ((nodeID & 1) == 0) {
-        pop();
-        pushRight();
+        moveRight();
         assert nodeExists();
         return true;
       }
