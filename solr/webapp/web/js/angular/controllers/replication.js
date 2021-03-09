@@ -195,7 +195,7 @@ var getFollowerSettings = function(data) {
     } else if (!settings.isPollingDisabled && settings.pollInterval) {
         if( settings.nextExecutionAt ) {
             settings.nextExecutionAtEpoch = parseDateToEpoch(settings.nextExecutionAt);
-            settings.currentTime = parseDateToEpoch(data.follower.currentDate);
+            settings.currentTime = parseDateToEpoch(data.slave.currentDate);
 
             if( settings.nextExecutionAtEpoch > settings.currentTime) {
                 settings.isApprox = false;

@@ -40,7 +40,7 @@ Improvements
 * SOLR-15191: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some other/custom field types
   too. (Thomas Wöckinger, David Smiley)
 
-* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)  
+* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)
 
 * SOLR-15154: Let Http2SolrClient pass Basic Auth credentials to all requests (Tomás Fernández Löbbe)
 
@@ -63,6 +63,8 @@ Bug Fixes
 
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
   (Thomas Wöckinger, David Smiley)
+
+* SOLR-15216: Fix for Invalid Reference to data.followers in Admin UI. (Dean Pearce)
 
 Other Changes
 ---------------------
