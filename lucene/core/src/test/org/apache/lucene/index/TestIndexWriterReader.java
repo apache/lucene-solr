@@ -150,7 +150,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     Document newDoc = r1.document(10);
     newDoc.removeField("id");
-    newDoc.add(newStringField("id", Integer.toString(8000), Field.Store.YES));
+    newDoc.add(new Field("id", Integer.toString(8000), DocHelper.STRING_TYPE_STORED_WITH_TVS));
     writer.updateDocument(new Term("id", id10), newDoc);
     assertFalse(r1.isCurrent());
 

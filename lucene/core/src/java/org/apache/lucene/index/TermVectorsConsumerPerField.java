@@ -149,9 +149,6 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
       doVectors = field.fieldType().storeTermVectors();
 
       if (doVectors) {
-
-        termsWriter.hasVectors = true;
-
         doVectorPositions = field.fieldType().storeTermVectorPositions();
 
         // Somewhat confusingly, unlike postings, you are

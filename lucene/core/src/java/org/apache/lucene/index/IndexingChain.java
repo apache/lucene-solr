@@ -635,15 +635,16 @@ final class IndexingChain implements Accountable {
           fields[i].finish(docID);
         }
         finishStoredFields();
+        // TODO: for broken docs, optimize termsHash.finishDocument
+        try {
+          termsHash.finishDocument(docID);
+        } catch (Throwable th) {
+          // Must abort, on the possibility that on-disk term
+          // vectors are now corrupt:
+          abortingExceptionConsumer.accept(th);
+          throw th;
+        }
       }
-    }
-    try {
-      termsHash.finishDocument(docID);
-    } catch (Throwable th) {
-      // Must abort, on the possibility that on-disk term
-      // vectors are now corrupt:
-      abortingExceptionConsumer.accept(th);
-      throw th;
     }
   }
 
@@ -1084,8 +1085,11 @@ final class IndexingChain implements Accountable {
       if (fieldInfo.omitsNorms() == false) {
         assert norms == null;
         // Even if no documents actually succeed in setting a norm, we still write norms for this
-        // segment:
+        // segment
         norms = new NormValuesWriter(fieldInfo, bytesUsed);
+      }
+      if (fieldInfo.hasVectors()) {
+        termVectorsWriter.setHasVectors();
       }
     }
 

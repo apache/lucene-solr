@@ -24,8 +24,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -71,9 +69,9 @@ public class TestAtomicUpdate extends LuceneTestCase {
       // Update all 100 docs...
       for (int i = 0; i < 100; i++) {
         Document d = new Document();
-        d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+        d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
         d.add(
-            new TextField(
+            newTextField(
                 "contents", English.intToEnglish(i + 10 * currentIteration), Field.Store.NO));
         d.add(new IntPoint("doc", i));
         d.add(new IntPoint("doc2d", i, i));

@@ -1242,7 +1242,8 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
         expectThrows(
             IllegalArgumentException.class,
             () -> writer.updateNumericDocValue(new Term("id", "doc1"), "ndv2", 10L));
-    String expectedErrMsg = "can only update existing numeric docvalues only fields!";
+    String expectedErrMsg =
+        "can't update [ndv2], can only update existing numeric doc values only fields!";
     assertEquals(expectedErrMsg, exception.getMessage());
     writer.close();
 
@@ -1272,13 +1273,21 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     doc.add(new NumericDocValuesField("f", 5));
     writer.addDocument(doc);
     writer.commit();
-    writer.updateNumericDocValue(new Term("f", "mock-value"), "f", 17L);
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> writer.updateNumericDocValue(new Term("f", "mock-value"), "f", 17L));
+    String expectedErrMsg =
+        "can't update [f], can only update existing numeric doc values only fields!";
+    assertEquals(expectedErrMsg, exception.getMessage());
+
     writer.close();
 
     DirectoryReader r = DirectoryReader.open(dir);
     NumericDocValues ndv = r.leaves().get(0).reader().getNumericDocValues("f");
     assertEquals(0, ndv.nextDoc());
-    assertEquals(17, ndv.longValue());
+    assertEquals(5, ndv.longValue());
     r.close();
 
     dir.close();

@@ -653,11 +653,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
     // ensure broken doc hits exception
     IllegalArgumentException expected =
-        expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              iw.addDocument(doc);
-            });
+        expectThrows(IllegalArgumentException.class, () -> iw.addDocument(doc));
     assertNotNull(expected.getMessage());
     MatcherAssert.assertThat(
         expected.getMessage(),

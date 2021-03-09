@@ -1851,7 +1851,7 @@ public class IndexWriter
   /**
    * Updates a document's {@link NumericDocValues} for <code>field</code> to the given <code>value
    * </code>. You can only update fields that already exist in the index, not add new fields through
-   * this method.
+   * this method. You can only update fields that were indexed with doc values only.
    *
    * @param term the term to identify the document(s) to be updated
    * @param field field name of the {@link NumericDocValues} field
@@ -1863,7 +1863,8 @@ public class IndexWriter
   public long updateNumericDocValue(Term term, String field, long value) throws IOException {
     ensureOpen();
     if (globalFieldNumberMap.containsDvOnlyField(field, DocValuesType.NUMERIC) == false) {
-      throw new IllegalArgumentException("can only update existing numeric docvalues only fields!");
+      throw new IllegalArgumentException(
+          "can't update [" + field + "], can only update existing numeric doc values only fields!");
     }
     if (config.getIndexSortFields().contains(field)) {
       throw new IllegalArgumentException(
@@ -1884,7 +1885,7 @@ public class IndexWriter
   /**
    * Updates a document's {@link BinaryDocValues} for <code>field</code> to the given <code>value
    * </code>. You can only update fields that already exist in the index, not add new fields through
-   * this method.
+   * this method. You can only update fields that were indexed only with doc values.
    *
    * <p><b>NOTE:</b> this method currently replaces the existing value of all affected documents
    * with the new value.
@@ -1902,7 +1903,8 @@ public class IndexWriter
       throw new IllegalArgumentException("cannot update a field to a null value: " + field);
     }
     if (globalFieldNumberMap.containsDvOnlyField(field, DocValuesType.BINARY) == false) {
-      throw new IllegalArgumentException("can only update existing binary docvalues only fields!");
+      throw new IllegalArgumentException(
+          "can't update [" + field + "], can only update existing binary doc values only fields!");
     }
     try {
       return maybeProcessEvents(

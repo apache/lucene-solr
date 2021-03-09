@@ -964,8 +964,15 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
     doc2.add(new BinaryDocValuesField("bdv", toBytes(10L)));
     writer.addDocument(doc2);
-    // update document in the second segment
-    writer.updateBinaryDocValue(new Term("id", "doc1"), "bdv", toBytes(5L));
+
+    // update doc values of bdv field in the second segment
+    exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> writer.updateBinaryDocValue(new Term("id", "doc1"), "bdv", toBytes(5L)));
+    expectedErrMsg = "can't update [bdv], can only update existing binary doc values only fields!";
+    assertEquals(expectedErrMsg, exception.getMessage());
+
     writer.commit();
     writer.close();
 
@@ -977,7 +984,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     LeafReader r2 = reader.leaves().get(1).reader();
     BinaryDocValues bdv2 = r2.getBinaryDocValues("bdv");
     assertEquals(1, bdv2.nextDoc());
-    assertEquals(5L, getValue(bdv2));
+    assertEquals(10L, getValue(bdv2));
 
     reader.close();
     dir.close();
@@ -995,13 +1002,20 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     doc.add(new BinaryDocValuesField("f", toBytes(5L)));
     writer.addDocument(doc);
     writer.commit();
-    writer.updateBinaryDocValue(new Term("f", "mock-value"), "f", toBytes(17L));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> writer.updateBinaryDocValue(new Term("f", "mock-value"), "f", toBytes(17L)));
+    String expectedErrMsg =
+        "can't update [f], can only update existing binary doc values only fields!";
+    assertEquals(expectedErrMsg, exception.getMessage());
     writer.close();
 
     DirectoryReader r = DirectoryReader.open(dir);
     BinaryDocValues bdv = r.leaves().get(0).reader().getBinaryDocValues("f");
     assertEquals(0, bdv.nextDoc());
-    assertEquals(17, getValue(bdv));
+    assertEquals(5, getValue(bdv));
     r.close();
 
     dir.close();

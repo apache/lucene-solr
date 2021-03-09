@@ -47,7 +47,7 @@ public class DocHelper {
     textField1 = new Field(TEXT_FIELD_1_KEY, FIELD_1_TEXT, customType);
   }
 
-  public static final FieldType customType2;
+  public static final FieldType TEXT_TYPE_STORED_WITH_TVS;
   public static final String FIELD_2_TEXT = "field field field two text";
   // Fields will be lexicographically sorted.  So, the order is: field, text, two
   public static final int[] FIELD_2_FREQS = {3, 1, 1};
@@ -55,11 +55,12 @@ public class DocHelper {
   public static Field textField2;
 
   static {
-    customType2 = new FieldType(TextField.TYPE_STORED);
-    customType2.setStoreTermVectors(true);
-    customType2.setStoreTermVectorPositions(true);
-    customType2.setStoreTermVectorOffsets(true);
-    textField2 = new Field(TEXT_FIELD_2_KEY, FIELD_2_TEXT, customType2);
+    TEXT_TYPE_STORED_WITH_TVS = new FieldType(TextField.TYPE_STORED);
+    TEXT_TYPE_STORED_WITH_TVS.setStoreTermVectors(true);
+    TEXT_TYPE_STORED_WITH_TVS.setStoreTermVectorPositions(true);
+    TEXT_TYPE_STORED_WITH_TVS.setStoreTermVectorOffsets(true);
+    TEXT_TYPE_STORED_WITH_TVS.freeze();
+    textField2 = new Field(TEXT_FIELD_2_KEY, FIELD_2_TEXT, TEXT_TYPE_STORED_WITH_TVS);
   }
 
   public static final FieldType customType3;
@@ -115,6 +116,16 @@ public class DocHelper {
     unIndField = new Field(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT, customType7);
   }
 
+  public static final FieldType STRING_TYPE_STORED_WITH_TVS;
+
+  static {
+    STRING_TYPE_STORED_WITH_TVS = new FieldType(StringField.TYPE_STORED);
+    STRING_TYPE_STORED_WITH_TVS.setStoreTermVectors(true);
+    STRING_TYPE_STORED_WITH_TVS.setStoreTermVectorPositions(true);
+    STRING_TYPE_STORED_WITH_TVS.setStoreTermVectorOffsets(true);
+    STRING_TYPE_STORED_WITH_TVS.freeze();
+  }
+
   public static final String UNSTORED_1_FIELD_TEXT = "unstored field text";
   public static final String UNSTORED_FIELD_1_KEY = "unStoredField1";
   public static Field unStoredField1 =
@@ -152,7 +163,8 @@ public class DocHelper {
   // Fields will be lexicographically sorted.  So, the order is: field, text, two
   public static final int[] FIELD_UTF2_FREQS = {3, 1, 1};
   public static final String TEXT_FIELD_UTF2_KEY = "textField2Utf8";
-  public static Field textUtfField2 = new Field(TEXT_FIELD_UTF2_KEY, FIELD_UTF2_TEXT, customType2);
+  public static Field textUtfField2 =
+      new Field(TEXT_FIELD_UTF2_KEY, FIELD_UTF2_TEXT, TEXT_TYPE_STORED_WITH_TVS);
 
   public static Map<String, Object> nameValues = null;
 
@@ -291,26 +303,17 @@ public class DocHelper {
 
   public static Document createDocument(int n, String indexName, int numFields) {
     StringBuilder sb = new StringBuilder();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-
-    FieldType customType1 = new FieldType(StringField.TYPE_STORED);
-    customType1.setStoreTermVectors(true);
-    customType1.setStoreTermVectorPositions(true);
-    customType1.setStoreTermVectorOffsets(true);
 
     final Document doc = new Document();
-    doc.add(new Field("id", Integer.toString(n), customType1));
-    doc.add(new Field("indexname", indexName, customType1));
+    doc.add(new Field("id", Integer.toString(n), STRING_TYPE_STORED_WITH_TVS));
+    doc.add(new Field("indexname", indexName, STRING_TYPE_STORED_WITH_TVS));
     sb.append("a");
     sb.append(n);
-    doc.add(new Field("field1", sb.toString(), customType));
+    doc.add(new Field("field1", sb.toString(), TEXT_TYPE_STORED_WITH_TVS));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i + 1), sb.toString(), customType));
+      doc.add(new Field("field" + (i + 1), sb.toString(), TEXT_TYPE_STORED_WITH_TVS));
     }
     return doc;
   }

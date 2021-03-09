@@ -119,10 +119,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
                 .setMergePolicy(NoMergePolicy.INSTANCE));
 
     Document d2 = new Document();
-    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
-    customType2.setStoreTermVectors(true);
     d2.add(new TextField("f2", "second field", Field.Store.YES));
-    d2.add(new Field("f1", "first field", customType2));
+    d2.add(new TextField("f1", "first field", Field.Store.YES));
     d2.add(new TextField("f3", "third field", Field.Store.YES));
     d2.add(new TextField("f4", "fourth field", Field.Store.YES));
     writer.addDocument(d2);
