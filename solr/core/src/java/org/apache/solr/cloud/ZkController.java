@@ -1256,14 +1256,14 @@ public class ZkController implements Closeable, Runnable {
 
       log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
 
-//      DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
-//      if (coll != null) {
-//        Replica replica = coll.getReplica(coreName);
-//        if (replica != null && !baseUrl.equals(replica.getBaseUrl())) {
-//          log.error("wrong base url for this node in replica entry replica={}", replica);
-//          throw new SolrException(ErrorCode.SERVER_ERROR, "wrong base url for this node in replica entry baseUrl=" + baseUrl + " replica=" + replica);
-//        }
-//      }
+      DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+      if (docCollection != null) {
+        Replica replica = docCollection.getReplica(coreName);
+        if (replica != null && !baseUrl.equals(replica.getBaseUrl())) {
+          log.error("wrong base url for this node in replica entry replica={}", replica);
+          throw new IllegalArgumentException("wrong base url for this node in replica entry baseUrl=" + baseUrl + " replica=" + replica);
+        }
+      }
 
       // multiple calls of this method will left only one watcher
 
