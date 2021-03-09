@@ -95,6 +95,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import junit.framework.AssertionFailedError;
 import org.apache.lucene.analysis.Analyzer;
@@ -612,6 +613,9 @@ public abstract class LuceneTestCase extends Assert {
         RuleChain.outerRule(new TestRuleIgnoreTestSuites())
             .around(ignoreAfterMaxFailures)
             .around(suiteFailureMarker = new TestRuleMarkFailure())
+            .around(
+                new VerifyTestClassNamingConvention(
+                    "org.apache.lucene", Pattern.compile("(.+\\.)(Test)([^.]+)")))
             .around(new TestRuleAssertionsRequired())
             .around(new TestRuleLimitSysouts(suiteFailureMarker))
             .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker));

@@ -194,6 +194,9 @@ def checkAll(dirName):
         elif link == 'http://lucene.apache.org/core/':
           # OK
           pass
+        elif re.match("^https?://lucene.apache.org/core/[^/]+/index.html", link):
+          # OK
+          pass
         elif link == 'http://lucene.apache.org/solr/':
           # OK
           pass

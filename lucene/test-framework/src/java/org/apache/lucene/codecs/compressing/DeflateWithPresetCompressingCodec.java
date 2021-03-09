@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.lucene87.DeflateWithPresetDictCompressionMode;
+import org.apache.lucene.codecs.lucene90.DeflateWithPresetDictCompressionMode;
 
 /** CompressionCodec that uses {@link DeflateWithPresetDictCompressionMode}. */
 public class DeflateWithPresetCompressingCodec extends CompressingCodec {

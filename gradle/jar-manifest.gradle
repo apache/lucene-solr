@@ -17,7 +17,7 @@
 
 // Configures JAR manifest entries
 
-allprojects {
+subprojects {
     // Declare these inline for now. Don't know if it makes sense to declare them
     // per-project.
     def title;

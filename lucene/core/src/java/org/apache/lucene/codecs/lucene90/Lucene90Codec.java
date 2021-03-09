@@ -32,7 +32,6 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -49,16 +48,16 @@ public class Lucene90Codec extends Codec {
   /** Configuration option for the codec. */
   public static enum Mode {
     /** Trade compression ratio for retrieval speed. */
-    BEST_SPEED(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, Lucene90DocValuesFormat.Mode.BEST_SPEED),
+    BEST_SPEED(Lucene90StoredFieldsFormat.Mode.BEST_SPEED, Lucene90DocValuesFormat.Mode.BEST_SPEED),
     /** Trade retrieval speed for compression ratio. */
     BEST_COMPRESSION(
-        Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
+        Lucene90StoredFieldsFormat.Mode.BEST_COMPRESSION,
         Lucene90DocValuesFormat.Mode.BEST_COMPRESSION);
 
-    private final Lucene87StoredFieldsFormat.Mode storedMode;
+    private final Lucene90StoredFieldsFormat.Mode storedMode;
     private final Lucene90DocValuesFormat.Mode dvMode;
 
-    private Mode(Lucene87StoredFieldsFormat.Mode storedMode, Lucene90DocValuesFormat.Mode dvMode) {
+    private Mode(Lucene90StoredFieldsFormat.Mode storedMode, Lucene90DocValuesFormat.Mode dvMode) {
       this.storedMode = Objects.requireNonNull(storedMode);
       this.dvMode = Objects.requireNonNull(dvMode);
     }
@@ -104,7 +103,7 @@ public class Lucene90Codec extends Codec {
   public Lucene90Codec(Mode mode) {
     super("Lucene90");
     this.storedFieldsFormat =
-        new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
+        new Lucene90StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
     this.defaultFormat = new Lucene90PostingsFormat();
     this.defaultDVFormat = new Lucene90DocValuesFormat(mode.dvMode);
   }
@@ -157,7 +156,7 @@ public class Lucene90Codec extends Codec {
   /**
    * Returns the postings format that should be used for writing new segments of <code>field</code>.
    *
-   * <p>The default implementation always returns "Lucene84".
+   * <p>The default implementation always returns "Lucene90".
    *
    * <p><b>WARNING:</b> if you subclass, you are responsible for index backwards compatibility:
    * future version of Lucene are only guaranteed to be able to read the default implementation,
@@ -170,7 +169,7 @@ public class Lucene90Codec extends Codec {
    * Returns the docvalues format that should be used for writing new segments of <code>field</code>
    * .
    *
-   * <p>The default implementation always returns "Lucene80".
+   * <p>The default implementation always returns "Lucene90".
    *
    * <p><b>WARNING:</b> if you subclass, you are responsible for index backwards compatibility:
    * future version of Lucene are only guaranteed to be able to read the default implementation.

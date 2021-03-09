@@ -21,24 +21,45 @@ apply plugin: 'java-library'
 description = 'Apache Solr Core'
 
 dependencies {
-  api project(':lucene:core')
-  api project(':lucene:analysis:common')
-  api project(':lucene:analysis:kuromoji')
-  api project(':lucene:analysis:nori')
-  api project(':lucene:analysis:phonetic')
-  api project(':lucene:backward-codecs')
-  api project(':lucene:classification')
-  api project(':lucene:codecs')
-  api project(':lucene:expressions')
-  api project(':lucene:grouping')
-  api project(':lucene:highlighter')
-  api project(':lucene:join')
-  api project(':lucene:misc')
-  api project(':lucene:queries')
-  api project(':lucene:queryparser')
-  api project(':lucene:sandbox')
-  api project(':lucene:spatial-extras')
-  api project(':lucene:suggest')
+  if (skipLucene) {
+    api "org.apache.lucene:lucene-core"
+    api "org.apache.lucene:lucene-analysis-common"
+    api "org.apache.lucene:lucene-analysis-kuromoji"
+    api "org.apache.lucene:lucene-analysis-nori"
+    api "org.apache.lucene:lucene-analysis-phonetic"
+    api "org.apache.lucene:lucene-backward-codecs"
+    api "org.apache.lucene:lucene-classification"
+    api "org.apache.lucene:lucene-codecs"
+    api "org.apache.lucene:lucene-expressions"
+    api "org.apache.lucene:lucene-grouping"
+    api "org.apache.lucene:lucene-highlighter"
+    api "org.apache.lucene:lucene-join"
+    api "org.apache.lucene:lucene-misc"
+    api "org.apache.lucene:lucene-queries"
+    api "org.apache.lucene:lucene-queryparser"
+    api "org.apache.lucene:lucene-sandbox"
+    api "org.apache.lucene:lucene-spatial-extras"
+    api "org.apache.lucene:lucene-suggest"
+  } else {
+    api project(':lucene:core')
+    api project(':lucene:analysis:common')
+    api project(':lucene:analysis:kuromoji')
+    api project(':lucene:analysis:nori')
+    api project(':lucene:analysis:phonetic')
+    api project(':lucene:backward-codecs')
+    api project(':lucene:classification')
+    api project(':lucene:codecs')
+    api project(':lucene:expressions')
+    api project(':lucene:grouping')
+    api project(':lucene:highlighter')
+    api project(':lucene:join')
+    api project(':lucene:misc')
+    api project(':lucene:queries')
+    api project(':lucene:queryparser')
+    api project(':lucene:sandbox')
+    api project(':lucene:spatial-extras')
+    api project(':lucene:suggest')
+  }
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
@@ -97,6 +118,11 @@ dependencies {
 
   implementation 'org.rrd4j:rrd4j'
 
+  // For faster XML processing than the JDK
+  implementation ('org.codehaus.woodstox:woodstox-core-asl', {
+    exclude group: "javax.xml.stream", module: "stax-api"
+  })
+
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
@@ -117,7 +143,12 @@ dependencies {
   runtimeOnly ('org.apache.kerby:kerby-pkix')
   runtimeOnly ('com.google.protobuf:protobuf-java')
 
-  testImplementation project(':lucene:analysis:icu')
+  if (skipLucene) {
+    testImplementation "org.apache.lucene:lucene-analysis-icu"
+  } else {
+    testImplementation project(':lucene:analysis:icu')
+  }
+
   testImplementation project(':solr:contrib:analysis-extras')
   testImplementation project(':solr:test-framework')
 

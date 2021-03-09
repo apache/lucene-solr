@@ -1025,6 +1025,7 @@ public class Dictionary {
     assert morphSep > 0;
     assert morphSep > flagSep;
     int sep = flagSep < 0 ? morphSep : flagSep;
+    if (sep == 0) return 0;
 
     CharSequence toWrite;
     String beforeSep = line.substring(0, sep);

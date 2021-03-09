@@ -146,7 +146,7 @@
  *       information about how the segment is sorted
  *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90FieldInfosFormat Field names}. This
  *       contains metadata about the set of named fields used in the index.
- *   <li>{@link org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat Stored Field values}.
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat Stored Field values}.
  *       This contains, for each document, a list of attribute-value pairs, where the attributes are
  *       field names. These are used to store auxiliary information about the document, such as its
  *       title, url, or an identifier to access a database. The set of stored fields are what is
@@ -245,12 +245,12 @@
  * <td>Stores information about the fields</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat Field Index}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat Field Index}</td>
  * <td>.fdx</td>
  * <td>Contains pointers to field data</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat Field Data}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat Field Data}</td>
  * <td>.fdt</td>
  * <td>The stored fields for documents</td>
  * </tr>
