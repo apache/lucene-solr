@@ -85,11 +85,7 @@ public class CloudConfigSetService extends ConfigSetService {
     }
 
     // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only populated in standalone
-    final String configSetName;
-    configSetName = zkController.getZkStateReader().getClusterState().getCollection(colName).getConfigName();
-    if (configSetName == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "configName is missing");
-    }
+    final String configSetName = zkController.getZkStateReader().getClusterState().getCollection(colName).getConfigName();
     cd.setConfigSet(configSetName);
 
     return new ZkSolrResourceLoader(cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController);

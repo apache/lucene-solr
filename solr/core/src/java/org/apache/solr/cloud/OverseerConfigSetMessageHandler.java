@@ -366,8 +366,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
 
     for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
-      String configName = null;
-      configName = entry.getValue().getConfigName();
+      String configName = entry.getValue().getConfigName();
       if (configSetName.equals(configName))
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
