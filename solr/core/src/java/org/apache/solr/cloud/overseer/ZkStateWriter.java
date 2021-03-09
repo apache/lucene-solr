@@ -112,35 +112,22 @@ public class ZkStateWriter {
           throw new NullPointerException("clusterState cannot be null");
         }
 
-
         clusterState.forEachCollection(collection -> {
-          idToCollection.put(collection.getId(), collection.getName());
-//          if (trackVersions.get(collection.getName()) == null) {
-//            DocCollection latestColl = reader.getClusterState().getCollectionOrNull(collection.getName()).copy();
-//
-//            if (latestColl == null) {
-//              reader.forciblyRefreshClusterStateSlow(collection.getName());
-//              latestColl = reader.getClusterState().getCollectionOrNull(collection.getName()).copy();
-//            }
-//
-//            if (latestColl == null) {
-//              //log.info("no node exists, using version 0");
-//              trackVersions.remove(collection.getName());
-//            } else {
-//              int version = latestColl.getZNodeVersion();
-//
-//              log.debug("Updating local tracked version to {} for {}", version, collection.getName());
-//              trackVersions.put(collection.getName(), version);
-//            }
-//          }
-
 
           DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
           log.debug("zkwriter collection={}", collection);
           log.debug("zkwriter currentCollection={}", currentCollection);
 
+          idToCollection.put(collection.getId(), collection.getName());
 
-          if (currentCollection != null && currentCollection.getId() == collection.getId()) {
+          if (currentCollection != null) {
+            if (currentCollection.getId() != collection.getId()) {
+              removeCollection(collection.getName());
+            }
+          }
+
+          if (currentCollection != null) {
+
             currentCollection.getProperties().keySet().retainAll(collection.getProperties().keySet());
 
             for (Slice slice : collection) {
@@ -612,8 +599,6 @@ public class ZkStateWriter {
       cs.getCollectionStates().remove(collection);
       assignMap.remove(collection);
       trackVersions.remove(collection);
-      reader.getZkClient().delete(ZkStateReader.getCollectionSCNPath(collection), -1, true, false);
-      reader.getZkClient().delete(ZkStateReader.getCollectionStateUpdatesPath(collection), -1, true, false);
       dirtyStructure.remove(collection);
       dirtyState.remove(collection);
       ZkNodeProps message = new ZkNodeProps("name", collection);

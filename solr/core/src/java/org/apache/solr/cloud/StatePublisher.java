@@ -22,6 +22,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -212,6 +213,11 @@ public class StatePublisher implements Closeable {
           String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
           String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
 
+          if (core == null || state == null) {
+            log.error("Nulls in published state");
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
+          }
+
           if ((state.equals(UpdateLog.State.ACTIVE.toString().toLowerCase(Locale.ROOT)) || state.equals("leader")) && cc.isCoreLoading(core)) {
             cc.waitForLoadingCore(core, 10000);
           }
@@ -224,17 +230,13 @@ public class StatePublisher implements Closeable {
             } else {
               id = stateMessage.getStr("id");
             }
-            // MRM TODO: this needs thought and work - what about session recovery? what about zkshardterm recovery?
-//            CacheEntry lastState = stateCache.get(id);
-//            if (collection != null && replica != null && (System.currentTimeMillis() - lastState.time < 1000) && !state.equals(lastState.state) && replica.getState().toString().equals(state)) {
-//              log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
-//              return;
-//            }
-          }
 
-          if (core == null || state == null) {
-            log.error("Nulls in published state");
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
+            CacheEntry lastState = stateCache.get(id);
+            //&& (System.currentTimeMillis() - lastState.time < 1000) &&
+            if (!state.equals("leader") && collection != null && lastState != null && replica != null && !state.equals(lastState.state) && replica.getState().toString().equals(state)) {
+              log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
+              return;
+            }
           }
 
           if (id == null) {
@@ -297,7 +299,11 @@ public class StatePublisher implements Closeable {
   }
 
   public void clearStatCache(String core) {
-    // stateCache.remove(core);
+     stateCache.remove(core);
+  }
+
+  public void clearStatCache() {
+    stateCache.clear();
   }
 
   public void start() {

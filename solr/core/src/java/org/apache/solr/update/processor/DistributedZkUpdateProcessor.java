@@ -524,7 +524,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String sliceName = slice.getName();
         Replica leader;
         try {
-          leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
+          leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName, 10000);
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "error getting leader", e);
         }

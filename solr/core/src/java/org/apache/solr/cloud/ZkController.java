@@ -447,6 +447,8 @@ public class ZkController implements Closeable, Runnable {
 
               removeEphemeralLiveNode();
 
+              statePublisher.clearStatCache();
+
               // recreate our watchers first so that they exist even on any problems below
               zkStateReader.createClusterStateWatchersAndUpdate();
 

@@ -2314,6 +2314,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
+        .withSocketTimeout(120000)
         .build();
   }
   
