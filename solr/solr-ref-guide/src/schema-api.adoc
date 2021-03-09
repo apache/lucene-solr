@@ -1035,24 +1035,14 @@ The sample output below has been truncated to show a few different field types f
                 }
             },
             "class": "solr.TextField",
-            "dynamicFields": [],
-            "fields": [],
             "name": "alphaOnlySort",
             "omitNorms": true,
             "sortMissingLast": true
         },
         {
             "class": "solr.FloatPointField",
-            "dynamicFields": [
-                "*_fs",
-                "*_f"
-            ],
-            "fields": [
-                "price",
-                "weight"
-            ],
             "name": "float",
-            "positionIncrementGap": "0",
+            "positionIncrementGap": "0"
         }]
 }
 ----
