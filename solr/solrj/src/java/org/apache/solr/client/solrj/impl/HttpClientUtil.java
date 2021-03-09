@@ -84,7 +84,7 @@ public class HttpClientUtil {
   public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
   public static final int DEFAULT_MAXCONNECTIONS = 100000;
 
-  private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 15000;
+  private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
   private static final String VALIDATE_AFTER_INACTIVITY = "validateAfterInactivity";
 
   // Maximum connections allowed per host

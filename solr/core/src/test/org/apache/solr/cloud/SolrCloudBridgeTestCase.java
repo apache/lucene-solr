@@ -652,8 +652,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     for (Future future : futures) {
       future.get();
     }
-    // TODO: should not need this
-    cluster.waitForActiveCollection(collection, numShards, numReplicas);
   }
 
   protected boolean useTlogReplicas() {

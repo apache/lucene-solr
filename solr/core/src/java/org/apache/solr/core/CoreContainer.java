@@ -865,22 +865,24 @@ public class CoreContainer implements Closeable {
       log.info("Waiting to see RECOVERY states for node on startup ...");
       for (final CoreDescriptor cd : cds) {
         String collection = cd.getCollectionName();
+        getZkController().getZkStateReader().registerCore(collection, cd.getName());
         try {
           getZkController().getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (n, c) -> {
             if (c == null) {
               if (log.isDebugEnabled()) log.debug("Found  incorrect state c={}", c);
-              return false;
+              return true;
             }
+
             String nodeName = getZkController().getNodeName();
             List<Replica> replicas = c.getReplicas();
             for (Replica replica : replicas) {
               if (replica.getNodeName().equals(nodeName)) {
                 if (!replica.getState().equals(Replica.State.RECOVERING)) {
-                  if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+                  if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={} replica={}", replica.getState(), replica.getNodeName(), nodeName, replica);
                   return false;
                 }
               } else {
-                if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+               // if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
               }
             }
 
@@ -1277,6 +1279,14 @@ public class CoreContainer implements Closeable {
     }
   }
 
+  public void markCoreAsLoading(String name) {
+    solrCores.markCoreAsLoading(name);
+  }
+
+  public void markCoreAsNotLoading(String name) {
+    solrCores.markCoreAsNotLoading(name);
+  }
+
   /**
    * Creates a new core, publishing the core state to the cluster
    *
@@ -1303,12 +1313,6 @@ public class CoreContainer implements Closeable {
     StopWatch timeStartToCreate = new StopWatch(coreName + "-startToCreate");
     SolrCore core = null;
     CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
-
-    if (getAllCoreNames().contains(coreName) || solrCores.isCoreLoading(coreName)) {
-      log.warn("Creating a core with existing name is not allowed {}", coreName);
-
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
-    }
 
     boolean preExisitingZkEntry = false;
     try {
@@ -1430,9 +1434,6 @@ public class CoreContainer implements Closeable {
       try {
 
         try {
-
-          solrCores.markCoreAsLoading(dcore);
-
           core = new SolrCore(this, dcore, coreConfig);
         } catch (Exception e) {
           core = processCoreCreateException(e, dcore, coreConfig);
@@ -1444,7 +1445,6 @@ public class CoreContainer implements Closeable {
         old = registerCore(dcore, core, true);
         registered = true;
         timeRegisterCore.done();
-        solrCores.markCoreAsNotLoading(dcore);
 
         if (isZooKeeperAware()) {
           StopWatch timeKickOffAsyncZkReg = new StopWatch(dcore.getName() + "-kickOffAsyncZkReg");
@@ -1492,6 +1492,7 @@ public class CoreContainer implements Closeable {
 
       throw t;
     } finally {
+      solrCores.markCoreAsNotLoading(dcore);
       try {
         if (core != null) {
           if (!registered) {

@@ -156,7 +156,7 @@ public class Replica extends ZkNodeProps {
 
     String rawId = (String) propMap.get("id");
 
-    if (!rawId.contains(":")) {
+    if (rawId != null && !rawId.contains(":")) {
       this.id = Long.parseLong(rawId);
     }
 

@@ -381,7 +381,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           // Then delete the non-managed schema znode
           if (zkClient.exists(nonManagedSchemaPath)) {
             try {
-              zkClient.delete(nonManagedSchemaPath, -1);
+              zkClient.delete(nonManagedSchemaPath, -1, true, false);
             } catch (KeeperException.NoNodeException ex) {
               // ignore - someone beat us to it
             }
@@ -408,7 +408,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         if (locked) {
           // unlock
           try {
-            zkClient.delete(lockPath, -1);
+            zkClient.delete(lockPath, -1, true, false);
           } catch (KeeperException.NoNodeException nne) {
             // ignore - someone else deleted it
           } catch (Exception e) {

@@ -255,27 +255,38 @@ public class SolrZkClient implements Closeable {
    * Returns true if client is connected
    */
   public boolean isConnected() {
-
-    return connManager.getKeeper() != null && connManager.getKeeper().getState().isConnected();
+    try {
+      return started && !isClosed && connManager.getKeeper().getState().isConnected();
+    } catch (AlreadyClosedException e) {
+      return true;
+    }
   }
 
   public boolean isAlive() {
-
-    return connManager.getKeeper() != null && connManager.getKeeper().getState().isAlive();
+    try {
+      return started && !isClosed && connManager.getKeeper().getState().isAlive();
+    } catch (AlreadyClosedException e) {
+      return true;
+    }
   }
 
   public void delete(final String path, final int version) throws KeeperException, InterruptedException {
-    delete(path, version, true);
+    delete(path, version, true, true);
   }
 
   public void delete(final String path, final int version, boolean retryOnConnLoss)
+      throws InterruptedException, KeeperException {
+    delete(path, version, retryOnConnLoss, true);
+  }
+
+  public void delete(final String path, final int version, boolean retryOnConnLoss, boolean retryOnSessionExpiration)
       throws InterruptedException, KeeperException {
 
     if (retryOnConnLoss) {
       ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> {
         connManager.getKeeper().delete(path, version);
         return null;
-      });
+      }, retryOnSessionExpiration);
     } else {
       connManager.getKeeper().delete(path, version);
     }
@@ -375,7 +386,7 @@ public class SolrZkClient implements Closeable {
 
   public List<String> getChildren(final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return getChildren(path, watcher, stat, retryOnConnLoss, true);
+    return getChildren(path, watcher, stat, retryOnConnLoss, false);
   }
 
   public List<String> getChildren(final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss,  boolean retrySessionExpiration)
@@ -394,7 +405,7 @@ public class SolrZkClient implements Closeable {
 
   public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return getData(path, watcher, stat, retryOnConnLoss, true);
+    return getData(path, watcher, stat, retryOnConnLoss, false);
   }
 
       /**
@@ -412,7 +423,7 @@ public class SolrZkClient implements Closeable {
 
   public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    return setData(path, data, version, retryOnConnLoss, true);
+    return setData(path, data, version, retryOnConnLoss, false);
   }
 
   /**
@@ -478,7 +489,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public String create(final String path, final byte[] data, final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
-    return create(path, data, createMode, retryOnConnLoss, retryOnConnLoss);
+    return create(path, data, createMode, retryOnConnLoss, false);
   }
 
   /**
@@ -874,7 +885,7 @@ public class SolrZkClient implements Closeable {
           throw ke[0];
         }
         try {
-          success = latch.await(2, TimeUnit.SECONDS);
+          success = latch.await(10, TimeUnit.SECONDS);
           if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
           if (success) {
             break;

@@ -211,7 +211,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
 
     // Register the core with ZkStateReader
-    zkStateReader.registerCore(collectionName);
+    zkStateReader.registerCore(collectionName, "core1");
 
     // Subsequent watchers won't be triggered when adding
     final Watcher watcher1 = new Watcher("Watcher1", random().nextBoolean());
@@ -230,7 +230,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     assertEquals("value1", watcher2.getProps().get("property"));
 
     // The watchers should be triggered when after the core is unregistered
-    zkStateReader.unregisterCore(collectionName);
+    zkStateReader.unregisterCore(collectionName, "core1");
     log.info("setting value2");
     collectionProps.setCollectionProperty(collectionName, "property", "value2");
     assertEquals(1, watcher1.waitForTrigger());
@@ -247,7 +247,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     assertEquals("value3", watcher1.getProps().get("property"));
 
     // The last watcher shouldn't be triggered after removed, even if the core is registered
-    zkStateReader.registerCore(collectionName);
+    zkStateReader.registerCore(collectionName, "core1");
     log.info("removing watcher1");
     zkStateReader.removeCollectionPropsWatcher(collectionName, watcher1);
     log.info("setting value4");

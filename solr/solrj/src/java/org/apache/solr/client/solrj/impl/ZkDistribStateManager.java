@@ -124,7 +124,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   @Override
   public void removeData(String path, int version) throws NoSuchElementException, BadVersionException, NotEmptyException, IOException, KeeperException, InterruptedException {
     try {
-      zkClient.delete(path, version);
+      zkClient.delete(path, version, true, false);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (KeeperException.NotEmptyException e) {

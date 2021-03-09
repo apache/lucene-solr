@@ -114,7 +114,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   public CollectionRef getCollectionRef(String coll) {
-    return  collectionStates.get(coll);
+    return collectionStates.get(coll);
   }
 
   /**

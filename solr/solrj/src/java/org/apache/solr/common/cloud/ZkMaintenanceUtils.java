@@ -238,7 +238,7 @@ public class ZkMaintenanceUtils {
       try {
         if (!znode.equals("/")) {
           try {
-            zkClient.delete(znode, -1);
+            zkClient.delete(znode, -1, true, false);
           } catch (KeeperException.NotEmptyException e) {
             clean(zkClient, znode);
           }
@@ -254,7 +254,7 @@ public class ZkMaintenanceUtils {
       try {
         if (!znode.equals("/") && !znode.equals(path)) {
           try {
-            zkClient.delete(znode, -1);
+            zkClient.delete(znode, -1, true, false);
           } catch (KeeperException.NotEmptyException e) {
             clean(zkClient, znode);
           }

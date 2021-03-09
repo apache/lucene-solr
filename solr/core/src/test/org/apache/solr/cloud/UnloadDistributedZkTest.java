@@ -62,6 +62,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     numJettys = 4;
     sliceCount = 2;
     createCollection1 = false;
+    createControl = false;
     uploadSelectCollection1Config = true;
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("solr.skipCommitOnClose", "false");
@@ -106,8 +107,8 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
     final String collection = "test_unload_shard_and_collection";
 
-    final String coreName1 = collection+"_1";
-    final String coreName2 = collection+"_2";
+    final String coreName1 = collection+"_s1_r_n2";
+    final String coreName2 = collection+"_s2_r_n2";
 
     assertEquals(0, CollectionAdminRequest.createCollection(collection, "_default", numShards, 1)
             .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY)
@@ -317,7 +318,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
   public void testUnloadLotsOfCores() throws Exception {
     JettySolrRunner jetty = cluster.getJettySolrRunner(1);
     try (final Http2SolrClient adminClient = (Http2SolrClient) jetty.newClient(15000, 60000)) {
-      int numReplicas = LuceneTestCase.atLeast(3);
+      int numReplicas = 3;//LuceneTestCase.atLeast(3);
 
 
       // create the cores

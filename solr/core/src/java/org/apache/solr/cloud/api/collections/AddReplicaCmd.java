@@ -165,14 +165,19 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       collection = clusterState.getCollection(collectionName);
       CreateReplica cr = assignReplicaDetails(collection, message, replicaPosition, ocmh.overseer);
 
-      message = message.plus(NODE_NAME_PROP, replicaPosition.node);
-      message = message.plus(ZkStateReader.REPLICA_TYPE, cr.replicaType.name());
-      message = message.plus(ZkStateReader.CORE_NAME_PROP, cr.coreName);
-      message = message.plus("id", cr.id);
+      message.getProperties().put(ZkStateReader.CORE_NAME_PROP, cr.coreName);
+      message.getProperties().put("id", cr.id);
+      message.getProperties().put(NODE_NAME_PROP, cr.node);
+      message.getProperties().put(ZkStateReader.REPLICA_TYPE, cr.replicaType.name());
+
 
       clusterState = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, message, ocmh.overseer);
       createReplicas.add(cr);
 
+      message.getProperties().remove(ZkStateReader.CORE_NAME_PROP);
+      message.getProperties().remove("id");
+      message.getProperties().remove(NODE_NAME_PROP);
+      message.getProperties().remove(ZkStateReader.REPLICA_TYPE);
       // message.getProperties().put("node_name", cr.node)
     }
 
@@ -184,6 +189,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
     for (CreateReplica createReplica : createReplicas) {
+      message.getProperties().put(ZkStateReader.CORE_NAME_PROP, createReplica.coreName);
+      message.getProperties().put("id", createReplica.id);
+      message.getProperties().put(NODE_NAME_PROP, createReplica.node);
+      message.getProperties().put(ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
 
       ModifiableSolrParams params = getReplicaParams(collection, message, results, skipCreateReplicaInClusterState, shardHandler, createReplica);
 
@@ -191,6 +200,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (!onlyUpdateState) {
         shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
       }
+
+      message.getProperties().remove(ZkStateReader.CORE_NAME_PROP);
+      message.getProperties().remove("id");
+      message.getProperties().remove(NODE_NAME_PROP);
+      message.getProperties().remove(ZkStateReader.REPLICA_TYPE);
     }
 
     Response response = new Response();

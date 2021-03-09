@@ -495,7 +495,9 @@ public class Overseer implements SolrCloseable {
         try {
           zkController.rejoinOverseerElection(false);
         } catch (AlreadyClosedException e) {
-          return;
+
+        } catch (Exception e) {
+          log.warn("Could not rejoin election", e);
         }
       }
 
@@ -735,7 +737,7 @@ public class Overseer implements SolrCloseable {
 
         if (log.isDebugEnabled()) log.debug("get items from Overseer work queue {}", path);
 
-        List<String> children = zkController.getZkClient().getChildren(path, null, null, true, true);
+        List<String> children = zkController.getZkClient().getChildren(path, null, null, true, false);
 
         List<String> items = new ArrayList<>(children);
         Collections.sort(items);
@@ -814,10 +816,10 @@ public class Overseer implements SolrCloseable {
 
     @Override
     protected void processQueueItems(List<String> items, boolean onStart) {
+      List<String> fullPaths = new ArrayList<>(items.size());
       ourLock.lock();
       try {
         if (log.isDebugEnabled()) log.debug("Found state update queue items {}", items);
-        List<String> fullPaths = new ArrayList<>(items.size());
         for (String item : items) {
           fullPaths.add(path + "/" + item);
         }
@@ -828,10 +830,10 @@ public class Overseer implements SolrCloseable {
           final ZkNodeProps message = ZkNodeProps.load(item);
           try {
             if (onStart) {
-              String operation = message.getStr(Overseer.QUEUE_OPERATION);
-              if (operation.equals("state")) {
-                message.getProperties().remove(OverseerAction.DOWNNODE);
-              }
+//              String operation = message.getStr(Overseer.QUEUE_OPERATION);
+//              if (operation.equals("state")) {
+//                message.getProperties().remove(OverseerAction.DOWNNODE);
+//              }
             }
             boolean success = overseer.processQueueItem(message);
           } catch (Exception e) {
@@ -841,6 +843,7 @@ public class Overseer implements SolrCloseable {
 
         overseer.writePendingUpdates();
 
+      } finally {
         if (overseer.zkStateWriter != null) {
           if (zkController.getZkClient().isAlive()) {
             try {
@@ -850,8 +853,6 @@ public class Overseer implements SolrCloseable {
             }
           }
         }
-
-      } finally {
         ourLock.unlock();
       }
     }
@@ -918,7 +919,9 @@ public class Overseer implements SolrCloseable {
           }
         } finally {
           try {
-            zkController.getZkClient().delete(fullPaths, true);
+            if (zkController.getZkClient().isAlive()) {
+              zkController.getZkClient().delete(fullPaths, true);
+            }
           } catch (Exception e) {
             log.warn("Delete items failed {}", e.getMessage());
           }

@@ -87,7 +87,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
               // okay
               if (leaderSeqPath != null) {
                 if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-                zkClient.delete(leaderSeqPath, -1);
+                zkClient.delete(leaderSeqPath, -1, true, false);
               }
               return;
             }
@@ -105,7 +105,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   try {
                     if (leaderSeqPath != null) {
                       if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-                      zkClient.delete(leaderSeqPath, -1);
+                      zkClient.delete(leaderSeqPath, -1, true, false);
                     }
                   } catch (NoNodeException e1) {
                     // fine
@@ -120,7 +120,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   try {
                     if (leaderSeqPath != null) {
                       if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-                      zkClient.delete(leaderSeqPath, -1);
+                      zkClient.delete(leaderSeqPath, -1, true, false);
                     }
                   } catch (NoNodeException e1) {
                     // fine
@@ -135,7 +135,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           } catch (Exception e) {
             if (leaderSeqPath != null) {
               if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-              zkClient.delete(leaderSeqPath, -1);
+              zkClient.delete(leaderSeqPath, -1, true, false);
             }
             throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
           }
@@ -143,7 +143,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           try {
             if (leaderSeqPath != null) {
               if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-              zkClient.delete(leaderSeqPath, -1);
+              zkClient.delete(leaderSeqPath, -1, true, false);
             }
           } catch (NoNodeException e) {
             // fine
@@ -155,15 +155,16 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         if (leaderSeqPath != null) {
           if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
           try {
-            zkClient.delete(leaderSeqPath, -1);
+            zkClient.delete(leaderSeqPath, -1, true, false);
           } catch (NoNodeException | AlreadyClosedException e1) {
             // fine
           }
         }
 
         log.info("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
+      } finally {
+        leaderZkNodeParentVersion = null;
       }
-      leaderZkNodeParentVersion = null;
  //   }
   }
 

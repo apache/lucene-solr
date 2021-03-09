@@ -1034,7 +1034,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
-        log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
+        log.warn("Re-trying request to collection(s) {} after stale state error from server. retryCound={}", inputCollections, retryCount);
         resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections);
       } else {
         if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {

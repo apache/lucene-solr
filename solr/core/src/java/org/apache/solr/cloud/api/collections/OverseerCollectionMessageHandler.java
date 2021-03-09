@@ -354,7 +354,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           }
         }
 
-        if (collection != null && responce.clusterState != null) {
+        if (collection != null) {
           Integer version = zkWriter.lastWrittenVersion(collection);
           if (version != null && !action.equals(DELETE)) {
             results.add("csver", version);

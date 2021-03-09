@@ -31,6 +31,25 @@ public class ImplicitDocRouter extends DocRouter {
 
   public static final String NAME = "implicit";
 
+  public static class NoShardException extends SolrException {
+
+    private final String shard;
+
+    public NoShardException(ErrorCode code, String msg, String shard) {
+      super(code, msg);
+      this.shard = shard;
+    }
+
+    public NoShardException(ErrorCode code, String msg, String shard, Throwable t) {
+      super(code, msg, t);
+      this.shard = shard;
+    }
+
+    public String getShard() {
+      return shard;
+    }
+  }
+
   @Override
   public Slice getTargetSlice(String id, SolrInputDocument sdoc, String route, SolrParams params, DocCollection collection) {
     String shard = null;
@@ -60,7 +79,7 @@ public class ImplicitDocRouter extends DocRouter {
 
       Slice slice = collection.getSlice(shard);
       if (slice == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No shard called =" + shard + " in " + collection);
+        throw new NoShardException(SolrException.ErrorCode.BAD_REQUEST, "No shard called =" + shard + " in " + collection, shard);
       }
       return slice;
     }

@@ -67,6 +67,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Long id;
 
   private AtomicInteger sliceAssignCnt = new AtomicInteger();
+  private volatile boolean createdLazy;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, -1, false);
@@ -264,7 +265,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+":" + ":v=" + znodeVersion + " u=" + hasStateUpdates() + ")=" + toJSONString(this);
+    return "DocCollection("+name+":" + ":v=" + znodeVersion + " u=" + hasStateUpdates() + " l=" + createdLazy + ")=" + toJSONString(this);
+  }
+  
+  public void setCreatedLazy() {
+    this.createdLazy = true;
   }
 
   @Override

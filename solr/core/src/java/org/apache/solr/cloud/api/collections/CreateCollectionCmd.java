@@ -145,6 +145,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ocmh.zkStateReader.aliasesManager.update(); // MRM TODO: - check into this
     }
     final String async = message.getStr(ASYNC);
+    Object createNodeSet = message.get(ZkStateReader.CREATE_NODE_SET);
     Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
     List<ReplicaPosition> replicaPositions = null;
     final Aliases aliases = ocmh.zkStateReader.getAliases();
@@ -220,12 +221,16 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       long id = ocmh.overseer.getZkStateWriter().getHighestId();
       DocCollection docCollection = buildDocCollection(cloudManager, id, message, true);
       clusterState = clusterState.copyWith(collectionName, docCollection);
-      try {
-        replicaPositions = buildReplicaPositions(cloudManager, message, shardNames);
-      } catch (Exception e) {
-        log.error("Exception building replica positions", e);
-        // unwrap the exception
-        throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
+      if (createNodeSet == null || !(createNodeSet.equals("") && createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY))) {
+        try {
+          replicaPositions = buildReplicaPositions(cloudManager, message, shardNames);
+        } catch (Exception e) {
+          log.error("Exception building replica positions", e);
+          // unwrap the exception
+          throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
+        }
+      } else {
+        replicaPositions = Collections.emptyList();
       }
 
       //      if (replicaPositions.isEmpty()) {
@@ -384,7 +389,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           if (log.isDebugEnabled()) log.debug("Cleaned up artifacts for failed create collection for [{}]", collectionName);
           throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
         } else {
-          Object createNodeSet = message.get(ZkStateReader.CREATE_NODE_SET);
+
           if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
           if (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
             try {

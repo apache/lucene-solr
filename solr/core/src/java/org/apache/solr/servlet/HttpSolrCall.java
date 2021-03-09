@@ -1081,9 +1081,8 @@ public class HttpSolrCall {
   }
 
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) throws TimeoutException, InterruptedException {
-    if (log.isDebugEnabled()) {
-      log.debug("get core by collection {} {}", collectionName, isPreferLeader);
-    }
+    log.debug("get core by collection {} {}", collectionName, isPreferLeader);
+
     ensureStatesAreAtLeastAtClient();
 
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
@@ -1092,28 +1091,30 @@ public class HttpSolrCall {
     DocCollection collection = clusterState.getCollectionOrNull(collectionName);
 
     if (collection == null) {
+      log.debug("no local core found for collection={}", collectionName);
       return null;
     }
 
     if (isPreferLeader) {
       List<Replica> leaderReplicas = collection.getLeaderReplicas(cores.getZkController().getNodeName());
-      SolrCore core = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), leaderReplicas);
+      log.debug("preferLeader leaderReplicas={}", leaderReplicas);
+      SolrCore core = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), leaderReplicas, true);
       if (core != null) return core;
     }
 
     List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
-    if (log.isTraceEnabled()) log.trace("replicas for node {} {}", replicas, cores.getZkController().getNodeName());
-    SolrCore returnCore = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), replicas);
-    if (log.isTraceEnabled()) log.trace("returning core by collection {}", returnCore == null ? null : returnCore.getName());
-    return  returnCore;
+    if (log.isDebugEnabled()) log.debug("replicas for node {} {}", replicas, cores.getZkController().getNodeName());
+    SolrCore returnCore = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), replicas, true);
+    if (log.isDebugEnabled()) log.debug("returning core by collection {}", returnCore == null ? null : returnCore.getName());
+    return returnCore;
   }
 
-  private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas) {
+  private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas, boolean checkActive) {
     if (replicas != null) {
       RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
       while (it.hasNext()) {
         Replica replica = it.next();
-        if (liveNodes.contains(replica.getNodeName()) && replica.getState() == Replica.State.ACTIVE) {
+        if (!checkActive || (liveNodes.contains(replica.getNodeName()) && replica.getState() == Replica.State.ACTIVE)) {
           SolrCore core = checkProps(replica);
           if (core != null) return core;
         }
@@ -1122,11 +1123,12 @@ public class HttpSolrCall {
     return null;
   }
 
-  private SolrCore checkProps(Replica zkProps) {
+  private SolrCore checkProps(Replica replica) {
     SolrCore core = null;
-    if (cores.getZkController().getNodeName().equals(zkProps.getNodeName())) {
-      core = cores.getCore(zkProps.getName());
+    if (cores.getZkController().getNodeName().equals(replica.getNodeName())) {
+      core = cores.getCore(replica.getName());
     }
+    log.debug("check local core has correct props replica={} nodename={} core found={}", replica, cores.getZkController().getNodeName(), core != null);
     return core;
   }
 

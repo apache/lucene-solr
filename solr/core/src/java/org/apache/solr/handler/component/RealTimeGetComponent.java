@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -59,6 +60,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
@@ -906,7 +908,27 @@ public class RealTimeGetComponent extends SearchComponent
 
       Map<String, List<String>> sliceToId = new HashMap<>();
       for (String id : reqIds.allIds) {
-        Slice slice = coll.getRouter().getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
+        Slice slice;
+        try {
+          slice = coll.getRouter().getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
+        } catch (ImplicitDocRouter.NoShardException e) {
+          try {
+            zkController.getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+              if (collectionState == null) {
+                return false;
+              }
+              if (collectionState.getSlice(e.getShard()) != null) {
+                return true;
+              }
+              return false;
+            });
+          } catch (Exception e2) {
+            throw new ImplicitDocRouter.NoShardException(SolrException.ErrorCode.BAD_REQUEST, "No shard found for " + e.getShard(), e.getShard(), e2);
+          }
+          clusterState = zkController.getClusterState();
+          coll = clusterState.getCollection(collection);
+          slice = coll.getRouter().getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
+        }
 
         List<String> idsForShard = sliceToId.get(slice.getName());
         if (idsForShard == null) {

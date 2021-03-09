@@ -384,9 +384,7 @@ public class SolrTestCase extends Assert {
       System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "800");
 
       System.setProperty("solr.enablePublicKeyHandler", "false");
-      System.setProperty("solr.zkregister.leaderwait", "3000");
       System.setProperty("solr.lbclient.live_check_interval", "3000");
-      System.setProperty("solr.httpShardHandler.completionTimeout", "10000");
       System.setProperty("zookeeper.request.timeout", "15000");
 
 
@@ -465,16 +463,12 @@ public class SolrTestCase extends Assert {
       System.setProperty("leaderVoteWait", "2500"); // this is also apparently controlling how long we wait for a leader on register MRM TODO:
       System.setProperty("leaderConflictResolveWait", "10000");
 
-      System.setProperty("solr.recovery.recoveryThrottle", "0");
-      System.setProperty("solr.recovery.leaderThrottle", "0");
-
       System.setProperty("bucketVersionLockTimeoutMs", "8000");
       System.setProperty("socketTimeout", "15000");
       System.setProperty("connTimeout", "10000");
       System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "0");
       System.setProperty("solr.cloud.starting-recovery-delay-milli-seconds", "0");
 
-      System.setProperty("solr.waitForState", "15"); // secs
 
       System.setProperty("solr.default.collection_op_timeout", "15000");
 

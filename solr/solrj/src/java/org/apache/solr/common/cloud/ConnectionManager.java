@@ -93,9 +93,9 @@ public class ConnectionManager implements Watcher, Closeable {
       throw new IllegalStateException("You must call start on " + SolrZkClient.class.getName() + " before you can use it");
     }
 
-//    if (keeper != null && keeper.getState() == ZooKeeper.States.CLOSED) {
-//      throw new AlreadyClosedException(this + " SolrZkClient is not currently connected state=" + keeper.getState());
-//    }
+    if (keeper != null && !keeper.getState().isAlive()) {
+      throw new AlreadyClosedException(this + " SolrZkClient is not currently connected state=" + keeper.getState());
+    }
 
     SolrZooKeeper rKeeper = keeper;
     return rKeeper;
@@ -208,12 +208,15 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public void start() throws IOException {
-    this.started = true;
     updatezk();
+    this.started = true;
   }
 
   private void updatezk() throws IOException {
     keeperLock.lock();
+    if (isClosed()) {
+      throw new AlreadyClosedException("SolrZkClient is not currently connected state=CLOSED");
+    }
     try {
       if (keeper != null) {
         IOUtils.closeQuietly(keeper);
@@ -370,7 +373,7 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   private boolean isClosed() {
-    return client.isClosed();
+    return started && client.isClosed();
   }
 
   public void waitForConnected(long waitForConnection)

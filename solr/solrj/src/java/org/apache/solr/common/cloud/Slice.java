@@ -20,11 +20,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -37,8 +39,9 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public final String collection;
-  private final Replica.NodeNameToBaseUrl nodeNameToBaseUrl;
+  public Replica.NodeNameToBaseUrl nodeNameToBaseUrl;
   private final HashMap<String,Replica> idToReplica;
+  private final Long collectionId;
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
   public static Map<String,Slice> loadAllFromMap(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, String collection, long id, Map<String, Object> genericSlices) {
@@ -67,6 +70,45 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public Map<String,Replica> getReplicaByIds() {
     return idToReplica;
+  }
+
+  public Slice update(Slice currentSlice) {
+    Set<String> remove = new HashSet<>();
+    Map<String,Replica> replicas = new HashMap<>();
+    for (Replica replica : this.replicas.values()) {
+
+      if (replica.get("remove") != null) {
+        remove.add(replica.getName());
+      } else {
+
+        Replica currentReplica = currentSlice.getReplica(replica.getName());
+        if (currentReplica != null) {
+
+          Replica newReplica = new Replica(replica.getName(), currentReplica.getProperties(), replica.collection, replica.collectionId, replica.slice,
+              nodeNameToBaseUrl);
+          replicas.put(replica.getName(), newReplica);
+        } else {
+          replicas.put(replica.getName(), replica);
+        }
+      }
+
+      Object removed = replica.getProperties().remove("numShards");
+    }
+
+    for (Replica replica : currentSlice) {
+      if (!replicas.containsKey(replica.getName())) {
+        replicas.put(replica.getName(), replica);
+      }
+    }
+
+    for (String removeReplica : remove) {
+      replicas.remove(removeReplica);
+    }
+//  /  propMap.remove("state");
+   // currentSlice.propMap.putAll(propMap);
+    Slice newSlice = new Slice(currentSlice.name, replicas, currentSlice.propMap, currentSlice.collection, currentSlice.collectionId, nodeNameToBaseUrl);
+
+    return newSlice;
   }
 
   /** The slice's state. */
@@ -204,7 +246,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     } else {
       this.routingRules = null;
     }
-
+    this.collectionId = collectionId;
     leader = findLeader();
   }
 

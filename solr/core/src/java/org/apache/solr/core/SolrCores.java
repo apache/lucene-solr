@@ -227,6 +227,17 @@ class SolrCores implements Closeable {
     return set;
   }
 
+  public Collection<String> getRegisteredCoreNames() {
+    Set<String> set;
+    set = new TreeSet<>();
+    if (getTransientCacheHandler() != null) {
+      set.addAll(getTransientCacheHandler().getAllCoreNames());
+    }
+    set.addAll(residentDesciptors.keySet());
+
+    return set;
+  }
+
 //  SolrCore getCore(String name) {
 //      return cores.get(name);
 //  }
@@ -377,12 +388,26 @@ class SolrCores implements Closeable {
 
   // cores marked as loading will block on getCore
   public void markCoreAsLoading(CoreDescriptor cd) {
-    currentlyLoadingCores.add(cd.getName());
+    markCoreAsLoading(cd.getName());
+  }
+
+  public void markCoreAsLoading(String name) {
+    if (getAllCoreNames().contains(name)) {
+      log.warn("Creating a core with existing name is not allowed {}", name);
+
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core with name '" + name + "' already exists.");
+    }
+
+    currentlyLoadingCores.add(name);
   }
 
   //cores marked as loading will block on getCore
   public void markCoreAsNotLoading(CoreDescriptor cd) {
-    currentlyLoadingCores.remove(cd.getName());
+    markCoreAsNotLoading(cd.getName());
+  }
+
+  public void markCoreAsNotLoading(String name) {
+    currentlyLoadingCores.remove(name);
     synchronized (loadingSignal) {
       loadingSignal.notifyAll();
     }

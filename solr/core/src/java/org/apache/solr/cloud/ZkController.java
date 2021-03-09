@@ -1098,6 +1098,7 @@ public class ZkController implements Closeable, Runnable {
           log.info("Overseer joining election {}", context.leaderProps.getNodeName());
           overseerElector.joinElection(false);
 
+      zkStateReader.forciblyRefreshAllClusterStateSlow();
       publishNodeAs(getNodeName(), OverseerAction.RECOVERYNODE);
 
     } catch (InterruptedException e) {
@@ -1201,7 +1202,7 @@ public class ZkController implements Closeable, Runnable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     try {
-      zkClient.delete(nodePath, -1);
+      zkClient.delete(nodePath, -1, true, false);
     } catch (NoNodeException | SessionExpiredException e) {
       // okay
     } catch (Exception e) {
@@ -1255,10 +1256,19 @@ public class ZkController implements Closeable, Runnable {
 
       log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
 
-      // the watcher is added to a set so multiple calls of this method will left only one watcher
-      if (!cloudDesc.hasRegistered()) {
-        getZkStateReader().registerCore(cloudDesc.getCollectionName());
-      }
+//      DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
+//      if (coll != null) {
+//        Replica replica = coll.getReplica(coreName);
+//        if (replica != null && !baseUrl.equals(replica.getBaseUrl())) {
+//          log.error("wrong base url for this node in replica entry replica={}", replica);
+//          throw new SolrException(ErrorCode.SERVER_ERROR, "wrong base url for this node in replica entry baseUrl=" + baseUrl + " replica=" + replica);
+//        }
+//      }
+
+      // multiple calls of this method will left only one watcher
+
+      getZkStateReader().registerCore(cloudDesc.getCollectionName(), coreName);
+
 
       log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, cloudDesc.getReplicaType());
 
@@ -1297,12 +1307,16 @@ public class ZkController implements Closeable, Runnable {
       String leaderName = null;
 
       for (int i = 0; i < 60; i++) {
+        if (isClosed() || isDcCalled() || cc.isShutDown()) {
+          throw new AlreadyClosedException();
+        }
+
         if (leaderElector.isLeader()) {
           leaderName = coreName;
           break;
         }
         try {
-          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 6000, true);
+          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 1500, true);
           leaderName = leader.getName();
 
         } catch (TimeoutException timeoutException) {
@@ -1356,6 +1370,7 @@ public class ZkController implements Closeable, Runnable {
           if ((slice != null && slice.getState() != Slice.State.CONSTRUCTION) || !isLeader) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {
+              // MRM TODO: if we publish active early (like we will) log replay will not be done
               log.info("Replaying tlog for {} during startup... NOTE: This can take a while.", core);
               recoveryFuture.get(); // NOTE: this could potentially block for
               // minutes or more!
@@ -1389,7 +1404,7 @@ public class ZkController implements Closeable, Runnable {
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       // MRM TODO:
-      registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), desc.getName());
+     // registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), desc.getName());
 
       log.info("SolrCore Registered, core{} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
 
@@ -1689,7 +1704,7 @@ public class ZkController implements Closeable, Runnable {
 
     } finally {
       try {
-        zkStateReader.unregisterCore(collection);
+        zkStateReader.unregisterCore(collection, coreName);
       } finally {
         if (statePublisher != null) {
           statePublisher.clearStatCache(coreName);

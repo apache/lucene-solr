@@ -81,12 +81,12 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
     }
 
     for (Future future : futures) {
-      future.get(20, TimeUnit.SECONDS);
+      future.get(120, TimeUnit.SECONDS);
     }
 
     for (Future future : indexFutures) {
       if (future != null) {
-        future.get(20, TimeUnit.SECONDS);
+        future.get(120, TimeUnit.SECONDS);
       }
     }
 

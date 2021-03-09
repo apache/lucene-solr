@@ -38,7 +38,6 @@ import org.apache.solr.cloud.StatePublisher;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -82,7 +81,7 @@ public class ZkStateWriter {
 
   protected final ReentrantLock ourLock = new ReentrantLock();
 
-  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 100), new TimeSource.NanoTimeSource(){
+  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 50), new TimeSource.NanoTimeSource(){
     public void sleep(long ms) throws InterruptedException {
       ourLock.newCondition().await(ms, TimeUnit.MILLISECONDS);
     }
@@ -113,94 +112,64 @@ public class ZkStateWriter {
           throw new NullPointerException("clusterState cannot be null");
         }
 
+
         clusterState.forEachCollection(collection -> {
           idToCollection.put(collection.getId(), collection.getName());
-          if (trackVersions.get(collection.getName()) == null) {
-            DocCollection latestColl = reader.getClusterState().getCollectionOrNull(collection.getName());
-
-            if (latestColl == null) {
-              reader.forciblyRefreshClusterStateSlow(collection.getName());
-              latestColl = reader.getClusterState().getCollectionOrNull(collection.getName());
-            }
-
-            if (latestColl == null) {
-              //log.info("no node exists, using version 0");
-              trackVersions.remove(collection.getName());
-            } else {
-              int version = latestColl.getZNodeVersion();
-
-              log.debug("Updating local tracked version to {} for {}", version, collection.getName());
-              trackVersions.put(collection.getName(), version);
-            }
-          }
+//          if (trackVersions.get(collection.getName()) == null) {
+//            DocCollection latestColl = reader.getClusterState().getCollectionOrNull(collection.getName()).copy();
+//
+//            if (latestColl == null) {
+//              reader.forciblyRefreshClusterStateSlow(collection.getName());
+//              latestColl = reader.getClusterState().getCollectionOrNull(collection.getName()).copy();
+//            }
+//
+//            if (latestColl == null) {
+//              //log.info("no node exists, using version 0");
+//              trackVersions.remove(collection.getName());
+//            } else {
+//              int version = latestColl.getZNodeVersion();
+//
+//              log.debug("Updating local tracked version to {} for {}", version, collection.getName());
+//              trackVersions.put(collection.getName(), version);
+//            }
+//          }
 
 
           DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
-          log.debug("currentCollection={}", currentCollection);
-          collection.getProperties().remove("pullReplicas");
-          collection.getProperties().remove("replicationFactor");
-          collection.getProperties().remove("maxShardsPerNode");
-          collection.getProperties().remove("nrtReplicas");
-          collection.getProperties().remove("tlogReplicas");
-          Map<String,Replica> remove = new HashMap<>();
-          for (Slice slice : collection) {
-            if (currentCollection != null) {
+          log.debug("zkwriter collection={}", collection);
+          log.debug("zkwriter currentCollection={}", currentCollection);
+
+
+          if (currentCollection != null && currentCollection.getId() == collection.getId()) {
+            currentCollection.getProperties().keySet().retainAll(collection.getProperties().keySet());
+
+            for (Slice slice : collection) {
               Slice currentSlice = currentCollection.getSlice(slice.getName());
               if (currentSlice != null) {
-                slice.setState(currentSlice.getState());
-              }
-            }
-
-            for (Replica replica : slice) {
-              if (replica.get("remove") != null) {
-                remove.put(replica.getName(), replica);
-              }
-
-              if (currentCollection != null) {
-                Replica currentReplica = currentCollection.getReplica(replica.getName());
-                if (currentReplica != null) {
-                  replica.setState(currentReplica.getState());
+                if (slice.getProperties().get("remove") != null) {
+                  currentCollection.getSlicesMap().remove(slice.getName());
+                } else {
+                  currentCollection.getSlicesMap().put(slice.getName(), slice.update(currentSlice));
                 }
+              } else {
+                currentCollection.getSlicesMap().put(slice.getName(), slice);
               }
-              Object removed = replica.getProperties().remove("numShards");
             }
-            for (Map.Entry<String,Replica> removeReplica : remove.entrySet()) {
-              slice.getReplicasMap().remove(removeReplica.getKey());
-              slice.getReplicaByIds().remove(removeReplica.getValue().getId());
-            }
+            cs = cs.copyWith(currentCollection.getName(), currentCollection);
+
+          } else {
+            collection.getProperties().remove("pullReplicas");
+            collection.getProperties().remove("replicationFactor");
+            collection.getProperties().remove("maxShardsPerNode");
+            collection.getProperties().remove("nrtReplicas");
+            collection.getProperties().remove("tlogReplicas");
+            cs = cs.copyWith(collection.getName(), collection);
           }
 
-          if (currentCollection != null) {
-
-            for (Slice slice : currentCollection) {
-              Slice newSlice = collection.getSlice(slice.getName());
-              if (newSlice != null) {
-                Replica leader = slice.getLeader();
-                String leaderName = null;
-                if (leader != null) {
-                  leaderName = leader.getName();
-                }
-                for (Replica replica : slice) {
-                  if (newSlice.get(replica.getName()) == null && !remove.keySet().contains(replica.getName())) {
-                    newSlice.getReplicasMap().put(replica.getName(), replica);
-                    newSlice.getReplicaByIds().put(replica.getId(), replica);
-                  }
-                }
-              }
-
-            }
-          }
           dirtyStructure.add(collection.getName());
         });
 
-        Collection<DocCollection> collections = cs.getCollectionsMap().values();
-        for (DocCollection collection : collections) {
-          if (clusterState.getCollectionOrNull(collection.getName()) == null) {
-            clusterState = clusterState.copyWith(collection.getName(), collection);
-          }
-        }
-
-        this.cs = clusterState;
+       // this.cs = clusterState;
       } else {
         final String operation = message.getStr(StatePublisher.OPERATION);
         OverseerAction overseerAction = OverseerAction.get(operation);
@@ -245,31 +214,32 @@ public class ZkStateWriter {
                 String collection = idToCollection.get(collectionId);
                 if (collection == null) {
                   log.info("collection for id={} is null", collectionId);
+                  continue;
                 }
-                if (collection == null) {
-                  Collection<ClusterState.CollectionRef> colls = cs.getCollectionStates().values();
-                  log.info("look for collection for id={} in {}}", id, cs.getCollectionStates().keySet());
-
-                  for (ClusterState.CollectionRef docCollectionRef : colls) {
-                    DocCollection docCollection = docCollectionRef.get();
-                    if (docCollection == null) {
-                      log.info("docCollection={}", docCollection);
-                    }
-                    if (docCollection.getId() == collectionId) {
-                      collection = docCollection.getName();
-                      break;
-                    }
-                  }
-                  if (collection == null) {
-                    continue;
-                  }
-                }
+//                if (collection == null) {
+//                  Collection<ClusterState.CollectionRef> colls = cs.getCollectionStates().values();
+//                  log.info("look for collection for id={} in {}}", id, cs.getCollectionStates().keySet());
+//
+//                  for (ClusterState.CollectionRef docCollectionRef : colls) {
+//                    DocCollection docCollection = docCollectionRef.get();
+//                    if (docCollection == null) {
+//                      log.info("docCollection={}", docCollection);
+//                    }
+//                    if (docCollection.getId() == collectionId) {
+//                      collection = docCollection.getName();
+//                      break;
+//                    }
+//                  }
+//                  if (collection == null) {
+//                    continue;
+//                  }
+//                }
 
                 String setState = Replica.State.shortStateToState(stateString).toString();
 
                 if (trackVersions.get(collection) == null) {
                  // reader.forciblyRefreshClusterStateSlow(collection);
-                  DocCollection latestColl = reader.getClusterState().getCollectionOrNull(collection);
+                  DocCollection latestColl = null; //reader.getClusterState().getCollectionOrNull(collection);
 
                   if (latestColl == null) {
                     //log.info("no node exists, using version 0");
@@ -384,32 +354,30 @@ public class ZkStateWriter {
   }
 
   private void nodeOperation(Map.Entry<String,Object> entry, String operation) {
-    log.debug("set operation {} for {} cs={}}", operation, entry.getValue(), cs);
+    log.debug("zkwriter set node operation {} for {} cs={}}", operation, entry.getValue(), cs);
     ClusterState clusterState = cs;
 
-
-    if (cs.getCollectionStates().size() == 0) {
-        clusterState = reader.getClusterState();
-       // cs = clusterState;
-    }
+//
+//    if (cs.getCollectionStates().size() == 0) {
+//        reader.forciblyRefreshAllClusterStateSlow();
+//        clusterState = reader.getClusterState().copy();
+//       log.debug("set operation try again {} for {} cs={}}", operation, entry.getValue(), clusterState);
+//       // cs = clusterState;
+//    }
 
     clusterState.forEachCollection(docColl -> {
 
       if (trackVersions.get(docColl.getName()) == null) {
        // reader.forciblyRefreshClusterStateSlow(docColl.getName());
-        DocCollection latestColl = reader.getClusterState().getCollectionOrNull(docColl.getName());
 
-        if (latestColl == null) {
-          //log.info("no node exists, using version 0");
-          trackVersions.remove(docColl.getName());
-        } else {
-          cs.getCollectionStates().put(latestColl.getName(), new ClusterState.CollectionRef(latestColl));
+
+
           //log.info("got version from zk {}", existsStat.getVersion());
-          int version = latestColl.getZNodeVersion();
+          int version = docColl.getZNodeVersion();
           log.info("Updating local tracked version to {} for {}", version, docColl.getName());
           trackVersions.put(docColl.getName(), version);
           idToCollection.put(docColl.getId(), docColl.getName());
-        }
+
       }
 
       ZkNodeProps updates = stateUpdates.get(docColl.getName());
@@ -419,25 +387,23 @@ public class ZkStateWriter {
       }
       Integer ver = trackVersions.get(docColl.getName());
       if (ver == null) {
-        //   ver = docColl.getZNodeVersion();
-        if (ver == null) {
-          ver = 0;
-        }
+        ver = 1;
       }
       updates.getProperties().put("_cs_ver_", ver.toString());
  //     dirtyState.add(docColl.getName());
-     // dirtyStructure.add(docColl.getName());
+   //   dirtyStructure.add(docColl.getName());
       List<Replica> replicas = docColl.getReplicas();
+      log.debug("update replicas with node operation {} reps={}", operation, replicas.size());
       for (Replica replica : replicas) {
         if (!Replica.State.getShortState(replica.getState()).equals(operation) && replica.getNodeName().equals(entry.getValue())) {
-          if (log.isDebugEnabled()) log.debug("set {} for replica {}", operation, replica);
+          if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", operation, replica);
           // MRM TODO:
-          Slice slice = docColl.getSlice(replica.getSlice());
-          Replica leaderReplica = slice.getLeader();
-          if (leaderReplica != null && replica == leaderReplica) {
-            leaderReplica.getProperties().remove("leader");
-            slice.setLeader(null);
-          }
+       //   Slice slice = docColl.getSlice(replica.getSlice());
+//          Replica leaderReplica = slice.getLeader();
+//          if (leaderReplica != null && replica == leaderReplica) {
+//            leaderReplica.getProperties().remove("leader");
+//            slice.setLeader(null);
+//          }
           replica.setState(Replica.State.shortStateToState(operation));
           updates.getProperties().put(replica.getId(), operation);
           dirtyState.add(docColl.getName());
@@ -488,13 +454,13 @@ public class ZkStateWriter {
       throttle.minimumWaitBetweenActions();
       throttle.markAttemptingAction();
 
-      if (failedUpdates.size() > 0) {
-        Exception lfe = lastFailedException.get();
-        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lfe); // MRM TODO: expand
-        failedUpdates.clear();
-        lfe = null;
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lfe);
-      }
+//      if (failedUpdates.size() > 0) {
+//        Exception lfe = lastFailedException.get();
+//        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lfe); // MRM TODO: expand
+//        failedUpdates.clear();
+//        lfe = null;
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lfe);
+//      }
 //      } finally {
 //        ourLock.unlock();
 //      }
@@ -509,20 +475,20 @@ public class ZkStateWriter {
     //log.info("writing out state, looking at collections count={} toWrite={} {} : {}", cs.getCollectionsMap().size(), collectionsToWrite.size(), cs.getCollectionsMap().keySet(), collectionsToWrite);
     //try {
       cs.forEachCollection(collection -> {
-       // log.info("check collection {}", collection);
+        log.info("check collection {} {} {}", collection, dirtyStructure, dirtyState);
         Integer version = null;
         if (dirtyStructure.contains(collection.getName()) || dirtyState.contains(collection.getName())) {
-        //  log.info("process collection {}", collection);
+            log.info("process collection {}", collection);
           String name = collection.getName();
           String path = ZkStateReader.getCollectionPath(collection.getName());
           String pathSCN = ZkStateReader.getCollectionSCNPath(collection.getName());
-         // log.info("process collection {} path {}", collection.getName(), path);
+          // log.info("process collection {} path {}", collection.getName(), path);
           Stat existsStat = null;
           if (log.isTraceEnabled()) log.trace("process {}", collection);
           try {
-           // log.info("get data for {}", name);
+            // log.info("get data for {}", name);
             byte[] data = Utils.toJSON(singletonMap(name, collection));
-          //  log.info("got data for {} {}", name, data.length);
+            //  log.info("got data for {} {}", name, data.length);
 
             try {
               Integer v = trackVersions.get(collection.getName());
@@ -536,26 +502,25 @@ public class ZkStateWriter {
               lastVersion.set(version);
               if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", version, data.length, collection);
 
-              reader.getZkClient().setData(path, data, version, true, true);
+              reader.getZkClient().setData(path, data, version, true, false);
+              if (log.isDebugEnabled()) log.debug("set new version {} {}", collection.getName(),  version + 1);
               trackVersions.put(collection.getName(), version + 1);
+
+
               if (dirtyStructure.contains(collection.getName())) {
                 if (log.isDebugEnabled()) log.debug("structure change in {}", collection.getName());
+                reader.getZkClient().setData(pathSCN, null, -1, true, false);
                 dirtyStructure.remove(collection.getName());
-                reader.getZkClient().setData(pathSCN, null, -1, true, true);
 
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
                   updates.getProperties().clear();
-                 String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
-                 if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
+                  String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
+                  if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
                   try {
-                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, true);
+                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
                   } catch (KeeperException.NoNodeException e) {
                     if (log.isDebugEnabled()) log.debug("No node found for " + stateUpdatesPath, e);
-                    assignMap.remove(collection);
-                    lastVersion.set(-1);
-                    trackVersions.remove(collection.getName());
-                    idToCollection.remove(collection.getName());
                   }
                 }
               }
@@ -563,28 +528,29 @@ public class ZkStateWriter {
             } catch (KeeperException.NoNodeException e) {
               if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
 
-              lastVersion.set(-1);
-              trackVersions.remove(collection.getName());
-              assignMap.remove(collection);
-              stateUpdates.remove(collection.getName());
-              idToCollection.remove(collection.getName());
-              cs.getCollectionStates().remove(collection);
+//              lastVersion.set(-1);
+//              trackVersions.remove(collection.getName());
+//              stateUpdates.remove(collection.getName());
+//              cs.getCollectionStates().remove(collection);
               // likely deleted
 
             } catch (KeeperException.BadVersionException bve) {
+              log.info("Tried to update state.json ({}) with bad version", collection);
               //lastFailedException.set(bve);
               //failedUpdates.put(collection.getName(), collection);
-             // Stat estate = reader.getZkClient().exists(path, null);
+              // Stat estate = reader.getZkClient().exists(path, null);
               trackVersions.remove(collection.getName());
               Stat stat = reader.getZkClient().exists(path, null, false, false);
               log.info("Tried to update state.json ({}) with bad version {} \n {}", collection, version, stat != null ? stat.getVersion() : "null");
 
-              trackVersions.put(collection.getName(), stat.getVersion());
 
+              if (!overseer.isClosed() && stat != null) {
+                trackVersions.put(collection.getName(), stat.getVersion());
+              }
               throw bve;
             }
 
-            if (dirtyState.contains(collection.getName())) {
+            if (dirtyState.contains(collection.getName()) && !dirtyStructure.contains(collection.getName())) {
               ZkNodeProps updates = stateUpdates.get(collection.getName());
               if (updates != null) {
                 writeStateUpdates(lastVersion, collection, updates);
@@ -629,14 +595,12 @@ public class ZkStateWriter {
     if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
     dirtyState.remove(collection.getName());
     try {
-      reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, true);
+      reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
     } catch (KeeperException.NoNodeException e) {
       if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
      // cs.getCollectionStates().remove(collection.getName());
-      assignMap.remove(collection);
       lastVersion.set(-1);
       trackVersions.remove(collection.getName());
-      idToCollection.remove(collection.getName());
       // likely deleted
     }
   }
@@ -658,8 +622,10 @@ public class ZkStateWriter {
       cs.getCollectionStates().remove(collection);
       assignMap.remove(collection);
       trackVersions.remove(collection);
-      reader.getZkClient().delete(ZkStateReader.getCollectionSCNPath(collection), -1);
-      reader.getZkClient().delete(ZkStateReader.getCollectionStateUpdatesPath(collection), -1);
+      reader.getZkClient().delete(ZkStateReader.getCollectionSCNPath(collection), -1, true, false);
+      reader.getZkClient().delete(ZkStateReader.getCollectionStateUpdatesPath(collection), -1, true, false);
+      dirtyStructure.remove(collection);
+      dirtyState.remove(collection);
       ZkNodeProps message = new ZkNodeProps("name", collection);
 
      // cs = new ClusterStateMutator(overseer.getSolrCloudManager()).deleteCollection(cs, message);
@@ -707,7 +673,7 @@ public class ZkStateWriter {
     reader.forciblyRefreshAllClusterStateSlow();
     ClusterState readerState = reader.getClusterState();
     if (readerState != null) {
-      cs = readerState;
+      cs = readerState.copy();
     }
 
     long[] highId = new long[1];

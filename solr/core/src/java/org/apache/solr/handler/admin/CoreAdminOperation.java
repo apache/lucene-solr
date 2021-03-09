@@ -29,7 +29,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -88,6 +87,8 @@ enum CoreAdminOperation implements CoreAdminOp {
 
         Map<String,String> coreParams = buildCoreParams(params);
         CoreContainer coreContainer = it.handler.coreContainer;
+
+        coreContainer.markCoreAsLoading(coreName);
         Path instancePath;
 
         // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
@@ -111,6 +112,9 @@ enum CoreAdminOperation implements CoreAdminOp {
 
         it.rsp.add("core", coreName);
       } finally {
+        if (it.handler.coreContainer.isCoreLoading(coreName)) {
+          it.handler.coreContainer.markCoreAsNotLoading(coreName);
+        }
         MDCLoggingContext.clear();
       }
     }
@@ -384,11 +388,14 @@ enum CoreAdminOperation implements CoreAdminOp {
     try {
       fun.execute(it);
     } catch (SolrException | InterruptedException e) {
-      ParWork.propagateInterrupt(e);
+      log.error("Error handling CoreAdmin action", e);
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       // No need to re-wrap; throw as-is.
       throw e;
     } catch (Exception e) {
-      log.error("", e);
+      log.error("Error handling CoreAdmin action", e);
       if (action == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling CoreAdmin action. " + e.getMessage(), e);
       } else {

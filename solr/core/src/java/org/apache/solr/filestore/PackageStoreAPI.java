@@ -181,7 +181,7 @@ public class PackageStoreAPI {
         log.error("Unexpected error", e);
       } finally {
         try {
-          coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
+          coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true, false);
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           log.error("Unexpected error  ", e);

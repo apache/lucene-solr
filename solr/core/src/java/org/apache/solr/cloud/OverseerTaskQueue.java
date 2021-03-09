@@ -284,7 +284,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
       QueueEvent event =  new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
 
-      zookeeper.delete(watchID,-1);
+      zookeeper.delete(watchID,-1, true, false);
 
       return event;
     } finally {

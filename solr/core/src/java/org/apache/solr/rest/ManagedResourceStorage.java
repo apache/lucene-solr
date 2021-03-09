@@ -289,7 +289,7 @@ public abstract class ManagedResourceStorage {
       try {
         if (zkClient.exists(znodePath)) {
           log.debug("Attempting to delete znode {}", znodePath);
-          zkClient.delete(znodePath, -1);
+          zkClient.delete(znodePath, -1, true, false);
           wasDeleted = zkClient.exists(znodePath);
           
           if (wasDeleted) {

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +35,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -237,7 +239,26 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     String idFieldName = uniqueKeyField == null ? null : uniqueKeyField.getName();
     String idValue = uniqueKeyField == null ? null : doc.getFieldValue(idFieldName).toString();
     DocCollection coll = zkController.getClusterState().getCollection(collection);
-    Slice slice = coll.getRouter().getTargetSlice(idValue, doc, null, req.getParams(), coll);
+    Slice slice;
+    try {
+      slice = coll.getRouter().getTargetSlice(idValue, doc, null, req.getParams(), coll);
+    } catch (ImplicitDocRouter.NoShardException e) {
+      try {
+        zkController.getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          if (collectionState == null) {
+            return false;
+          }
+          if (collectionState.getSlice(e.getShard()) != null) {
+            return true;
+          }
+          return false;
+        });
+      } catch (Exception e2) {
+        throw new ImplicitDocRouter.NoShardException(SolrException.ErrorCode.BAD_REQUEST, "No shard found for " + e.getShard(), e.getShard(), e2);
+      }
+      coll = zkController.getClusterState().getCollection(collection);
+      slice = coll.getRouter().getTargetSlice(idValue, doc, null, req.getParams(), coll);
+    }
     return getLeaderNode(collection, slice);
   }
 

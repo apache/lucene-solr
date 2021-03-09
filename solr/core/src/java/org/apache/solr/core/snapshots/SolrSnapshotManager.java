@@ -116,7 +116,7 @@ public class SolrSnapshotManager {
   public static void deleteCollectionLevelSnapshot(SolrZkClient zkClient, String collectionName, String commitName)
       throws InterruptedException, KeeperException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(commitName));
-    zkClient.delete(zkPath, -1);
+    zkClient.delete(zkPath, -1, true, false);
   }
 
   /**
@@ -136,7 +136,7 @@ public class SolrSnapshotManager {
       for (String snapshot : snapshots) {
         String path = getSnapshotMetaDataZkPath(collectionName, Optional.of(snapshot));
         try {
-          zkClient.delete(path, -1);
+          zkClient.delete(path, -1, true, false);
         } catch (KeeperException ex) {
           // Gracefully handle the case when the zk node doesn't exist
           if ( ex.code() != KeeperException.Code.NONODE ) {
@@ -146,7 +146,7 @@ public class SolrSnapshotManager {
       }
 
       // Delete the parent node.
-      zkClient.delete(zkPath, -1);
+      zkClient.delete(zkPath, -1, true, false);
     } catch (KeeperException ex) {
       // Gracefully handle the case when the zk node doesn't exist (e.g. if no snapshots were created for this collection).
       if ( ex.code() != KeeperException.Code.NONODE ) {

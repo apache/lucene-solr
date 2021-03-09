@@ -49,7 +49,13 @@ public class StatePublisher implements Closeable {
       .getLogger(MethodHandles.lookup().lookupClass());
   public static final String OPERATION = "op";
 
-  private final Map<String,String> stateCache = new ConcurrentHashMap<>(32, 0.75f, 6);
+
+  private static class CacheEntry {
+    String state;
+    long time;
+  }
+
+  private final Map<String,CacheEntry> stateCache = new ConcurrentHashMap<>(32, 0.75f, 6);
   private final ZkStateReader zkStateReader;
   private final CoreContainer cc;
 
@@ -180,6 +186,9 @@ public class StatePublisher implements Closeable {
     }
 
     private void processMessage(ZkNodeProps message) throws KeeperException, InterruptedException {
+      if (message.getProperties().size() <= 1) {
+        return;
+      }
       byte[] updates = Utils.toJSON(message);
       if (log.isDebugEnabled()) log.debug("Send state updates to Overseer {}", message);
       overseerJobQueue.offer(updates);
@@ -215,11 +224,12 @@ public class StatePublisher implements Closeable {
             } else {
               id = stateMessage.getStr("id");
             }
-            String lastState = stateCache.get(id);
-            if (collection != null && replica != null && !state.equals(lastState) && replica.getState().toString().equals(state)) {
-              log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
-              return;
-            }
+            // MRM TODO: this needs thought and work - what about session recovery? what about zkshardterm recovery?
+//            CacheEntry lastState = stateCache.get(id);
+//            if (collection != null && replica != null && (System.currentTimeMillis() - lastState.time < 1000) && !state.equals(lastState.state) && replica.getState().toString().equals(state)) {
+//              log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
+//              return;
+//            }
           }
 
           if (core == null || state == null) {
@@ -232,8 +242,10 @@ public class StatePublisher implements Closeable {
           }
 
           stateMessage.getProperties().put("id", id);
-
-          stateCache.put(id, state);
+          CacheEntry cacheEntry = new CacheEntry();
+          cacheEntry.time = System.currentTimeMillis();
+          cacheEntry.state = state;
+          stateCache.put(id, cacheEntry);
         } else if (operation.equalsIgnoreCase(OverseerAction.DOWNNODE.toLower())) {
           // set all statecache entries for replica to a state
 
@@ -245,7 +257,10 @@ public class StatePublisher implements Closeable {
               replica = doc.getReplica(cd.getName());
 
               if (replica != null) {
-                stateCache.put(replica.getId(), Replica.State.getShortState(Replica.State.DOWN));
+                CacheEntry cacheEntry = new CacheEntry();
+                cacheEntry.time = System.currentTimeMillis();
+                cacheEntry.state = Replica.State.getShortState(Replica.State.DOWN);
+                stateCache.put(replica.getId(), cacheEntry);
               }
             }
           }
@@ -261,7 +276,10 @@ public class StatePublisher implements Closeable {
               replica = doc.getReplica(cd.getName());
 
               if (replica != null) {
-                stateCache.put(replica.getId(), Replica.State.getShortState(Replica.State.RECOVERING));
+                CacheEntry cacheEntry = new CacheEntry();
+                cacheEntry.time = System.currentTimeMillis();
+                cacheEntry.state = Replica.State.getShortState(Replica.State.RECOVERING);
+                stateCache.put(replica.getId(), cacheEntry);
               }
             }
           }
@@ -279,7 +297,7 @@ public class StatePublisher implements Closeable {
   }
 
   public void clearStatCache(String core) {
-    stateCache.remove(core);
+    // stateCache.remove(core);
   }
 
   public void start() {
