@@ -968,7 +968,12 @@ public final class Tessellator {
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b)
         && isLocallyInside(b, a)
-        && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY());
+        && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY())
+        // make sure we don't introduce collinear lines
+        && area(a.previous.getX(), a.previous.getY(), a.getX(), a.getY(), b.getX(), b.getY()) != 0
+        && area(a.getX(), a.getY(), b.getX(), b.getY(), b.next.getX(), b.next.getY()) != 0
+        && area(a.next.getX(), a.next.getY(), a.getX(), a.getY(), b.getX(), b.getY()) != 0
+        && area(a.getX(), a.getY(), b.getX(), b.getY(), b.previous.getX(), b.previous.getY()) != 0;
   }
 
   /** Determine whether the polygon defined between node start and node end is CW */
@@ -1175,11 +1180,7 @@ public final class Tessellator {
                       nextNode.getY())
                   == 0)) {
         // Remove the node
-        boolean nextEdgeFromPol =
-            prevNode.isNextEdgeFromPolygon != node.isNextEdgeFromPolygon
-                ? true
-                : prevNode.isNextEdgeFromPolygon;
-        removeNode(node, nextEdgeFromPol);
+        removeNode(node, prevNode.isNextEdgeFromPolygon);
         node = end = prevNode;
 
         if (node == nextNode) {
