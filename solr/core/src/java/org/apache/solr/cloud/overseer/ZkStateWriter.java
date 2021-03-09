@@ -515,23 +515,16 @@ public class ZkStateWriter {
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
                   updates.getProperties().clear();
-                  String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
-                  if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
-                  try {
-                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
-                  } catch (KeeperException.NoNodeException e) {
-                    if (log.isDebugEnabled()) log.debug("No node found for " + stateUpdatesPath, e);
-                  }
                 }
               }
 
             } catch (KeeperException.NoNodeException e) {
               if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
 
-//              lastVersion.set(-1);
-//              trackVersions.remove(collection.getName());
-//              stateUpdates.remove(collection.getName());
-//              cs.getCollectionStates().remove(collection);
+              lastVersion.set(-1);
+              trackVersions.remove(collection.getName());
+              stateUpdates.remove(collection.getName());
+              cs.getCollectionStates().remove(collection);
               // likely deleted
 
             } catch (KeeperException.BadVersionException bve) {
@@ -553,7 +546,7 @@ public class ZkStateWriter {
             if (dirtyState.contains(collection.getName()) && !dirtyStructure.contains(collection.getName())) {
               ZkNodeProps updates = stateUpdates.get(collection.getName());
               if (updates != null) {
-                writeStateUpdates(lastVersion, collection, updates);
+                writeStateUpdates(collection, updates);
               }
             }
 
@@ -590,7 +583,7 @@ public class ZkStateWriter {
     //    }
   }
 
-  private void writeStateUpdates(AtomicInteger lastVersion, DocCollection collection, ZkNodeProps updates) throws KeeperException, InterruptedException {
+  private void writeStateUpdates(DocCollection collection, ZkNodeProps updates) throws KeeperException, InterruptedException {
     String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
     if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
     dirtyState.remove(collection.getName());
@@ -598,14 +591,11 @@ public class ZkStateWriter {
       reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
     } catch (KeeperException.NoNodeException e) {
       if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
-     // cs.getCollectionStates().remove(collection.getName());
-      lastVersion.set(-1);
-      trackVersions.remove(collection.getName());
       // likely deleted
     }
   }
 
-  public ClusterState getClusterstate(boolean stateUpdate) {
+  public ClusterState getClusterstate() {
     ourLock.lock();
     try {
       return ClusterState.getRefCS(cs.getCollectionsMap(), -2);
@@ -627,9 +617,7 @@ public class ZkStateWriter {
       dirtyStructure.remove(collection);
       dirtyState.remove(collection);
       ZkNodeProps message = new ZkNodeProps("name", collection);
-
-     // cs = new ClusterStateMutator(overseer.getSolrCloudManager()).deleteCollection(cs, message);
-
+      cs = new ClusterStateMutator(overseer.getSolrCloudManager()).deleteCollection(cs, message);
       Long id = null;
       for (Map.Entry<Long, String> entry : idToCollection.entrySet()) {
         if (entry.getValue().equals(collection)) {
