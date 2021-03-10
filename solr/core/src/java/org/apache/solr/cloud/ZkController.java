@@ -1263,7 +1263,7 @@ public class ZkController implements Closeable, Runnable {
         Replica replica = docCollection.getReplica(coreName);
         if (replica != null && !baseUrl.equals(replica.getBaseUrl())) {
           log.error("wrong base url for this node in replica entry replica={}", replica);
-          throw new IllegalArgumentException("wrong base url for this node in replica entry baseUrl=" + baseUrl + " replica=" + replica);
+          //throw new IllegalArgumentException("wrong base url for this node in replica entry baseUrl=" + baseUrl + " replica=" + replica);
         }
       }
 
