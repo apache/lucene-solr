@@ -268,7 +268,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       handleIncludes(map, includeLocation, 4);
       return map;
     } catch (IOException e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
   }
 
@@ -357,7 +357,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
               return getDeepCopy(map, 5, false);
             }
           } catch (IOException e) {
-
+            // TODO: at least log
           }
         }
       }

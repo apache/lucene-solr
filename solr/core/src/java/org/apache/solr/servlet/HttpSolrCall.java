@@ -260,7 +260,7 @@ public class HttpSolrCall {
       core = cores.getCore(origCorename);
 
       if (core == null && cores.isCoreLoading(origCorename)) {
-        cores.waitForLoadingCore(origCorename, 10000);
+        cores.waitForLoadingCore(origCorename, 5000);
         core = cores.getCore(origCorename);
       }
 

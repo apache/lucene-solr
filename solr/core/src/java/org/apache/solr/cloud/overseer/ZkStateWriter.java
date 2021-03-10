@@ -100,8 +100,6 @@ public class ZkStateWriter {
   }
 
   public void enqueueUpdate(ClusterState clusterState, ZkNodeProps message, boolean stateUpdate) throws Exception {
-
-
     //log.info("Get our write lock for enq");
     ourLock.lock();
     //log.info("Got our write lock for enq");
@@ -344,26 +342,24 @@ public class ZkStateWriter {
     log.debug("zkwriter set node operation {} for {} cs={}}", operation, entry.getValue(), cs);
     ClusterState clusterState = cs;
 
-//
-//    if (cs.getCollectionStates().size() == 0) {
-//        reader.forciblyRefreshAllClusterStateSlow();
-//        clusterState = reader.getClusterState().copy();
-//       log.debug("set operation try again {} for {} cs={}}", operation, entry.getValue(), clusterState);
-//       // cs = clusterState;
-//    }
+    //
+    //    if (cs.getCollectionStates().size() == 0) {
+    //        reader.forciblyRefreshAllClusterStateSlow();
+    //        clusterState = reader.getClusterState().copy();
+    //       log.debug("set operation try again {} for {} cs={}}", operation, entry.getValue(), clusterState);
+    //       // cs = clusterState;
+    //    }
 
     clusterState.forEachCollection(docColl -> {
 
       if (trackVersions.get(docColl.getName()) == null) {
-       // reader.forciblyRefreshClusterStateSlow(docColl.getName());
+        // reader.forciblyRefreshClusterStateSlow(docColl.getName());
 
-
-
-          //log.info("got version from zk {}", existsStat.getVersion());
-          int version = docColl.getZNodeVersion();
-          log.info("Updating local tracked version to {} for {}", version, docColl.getName());
-          trackVersions.put(docColl.getName(), version);
-          idToCollection.put(docColl.getId(), docColl.getName());
+        //log.info("got version from zk {}", existsStat.getVersion());
+        int version = docColl.getZNodeVersion();
+        log.info("Updating local tracked version to {} for {}", version, docColl.getName());
+        trackVersions.put(docColl.getName(), version);
+        idToCollection.put(docColl.getId(), docColl.getName());
 
       }
 
@@ -377,20 +373,20 @@ public class ZkStateWriter {
         ver = 1;
       }
       updates.getProperties().put("_cs_ver_", ver.toString());
- //     dirtyState.add(docColl.getName());
-   //   dirtyStructure.add(docColl.getName());
+      //     dirtyState.add(docColl.getName());
+      //   dirtyStructure.add(docColl.getName());
       List<Replica> replicas = docColl.getReplicas();
       log.debug("update replicas with node operation {} reps={}", operation, replicas.size());
       for (Replica replica : replicas) {
         if (!Replica.State.getShortState(replica.getState()).equals(operation) && replica.getNodeName().equals(entry.getValue())) {
           if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", operation, replica);
           // MRM TODO:
-       //   Slice slice = docColl.getSlice(replica.getSlice());
-//          Replica leaderReplica = slice.getLeader();
-//          if (leaderReplica != null && replica == leaderReplica) {
-//            leaderReplica.getProperties().remove("leader");
-//            slice.setLeader(null);
-//          }
+          //   Slice slice = docColl.getSlice(replica.getSlice());
+          //          Replica leaderReplica = slice.getLeader();
+          //          if (leaderReplica != null && replica == leaderReplica) {
+          //            leaderReplica.getProperties().remove("leader");
+          //            slice.setLeader(null);
+          //          }
           replica.setState(Replica.State.shortStateToState(operation));
           updates.getProperties().put(replica.getId(), operation);
           dirtyState.add(docColl.getName());
@@ -573,13 +569,13 @@ public class ZkStateWriter {
   private void writeStateUpdates(DocCollection collection, ZkNodeProps updates) throws KeeperException, InterruptedException {
     String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
     if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
-    dirtyState.remove(collection.getName());
     try {
       reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
     } catch (KeeperException.NoNodeException e) {
       if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
       // likely deleted
     }
+    dirtyState.remove(collection.getName());
   }
 
   public ClusterState getClusterstate() {

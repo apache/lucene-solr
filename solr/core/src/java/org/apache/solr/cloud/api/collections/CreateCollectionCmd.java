@@ -251,7 +251,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           List<Replica> replicas = wcollection.getReplicas(nodeName);
           if (replicas == null || replicas.isEmpty()) {
             ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toString(), ZkStateReader.COLLECTION_PROP, withCollection, ZkStateReader.SHARD_ID_PROP, withCollectionShard,
-                "node", nodeName, CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
+                "node", nodeName, ZkStateReader.NODE_NAME_PROP, nodeName, CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
 
             new AddReplicaCmd(ocmh, true).call(clusterState, props, results);
             clusterState = new SliceMutator(cloudManager).addReplica(clusterState, props, ocmh.overseer);

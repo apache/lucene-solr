@@ -218,9 +218,9 @@ public class StatePublisher implements Closeable {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
           }
 
-          if ((state.equals(UpdateLog.State.ACTIVE.toString().toLowerCase(Locale.ROOT)) || state.equals("leader")) && cc.isCoreLoading(core)) {
-            cc.waitForLoadingCore(core, 10000);
-          }
+//          if ((state.equals(UpdateLog.State.ACTIVE.toString().toLowerCase(Locale.ROOT)) || state.equals("leader")) && cc.isCoreLoading(core)) {
+//            cc.waitForLoadingCore(core, 10000);
+//          }
 
           DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
           if (coll != null) {
