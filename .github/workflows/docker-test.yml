@@ -3,7 +3,7 @@ name: Docker Build & Test
 on:
   pull_request:
     branches:
-      - 'master'
+      - 'main'
     paths:
       - '.github/workflows/docker-test.yml'
       - 'solr/bin/**'
