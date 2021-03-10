@@ -39,12 +39,6 @@ buildscript {
 // Configure license checksum folder for top-level projects.
 // (The file("licenses") inside the configure scope resolves
 // relative to the current project so they're not the same).
-if (!skipLucene) {
-  configure(project(":lucene")) {
-    ext.licensesDir = file("licenses")
-  }
-}
-
 if (!skipSolr) {
   configure(project(":solr")) {
     ext.licensesDir = file("licenses")
@@ -279,9 +273,6 @@ subprojects {
 // Add top-project level tasks validating dangling files
 // and regenerating dependency checksums.
 def plist = []
-if (!skipLucene) {
-  plist.add(project(":lucene"))
-}
 if (!skipSolr) {
   plist.add(project(":solr"))
 }
@@ -375,17 +366,6 @@ configure(plist) {
 // Exclude files that are not a result of direct dependencies but have to be there.
 // It would be probably better to move non-dependency licenses into the actual project
 // where they're used and only assemble them for the distribution package.
-if (!skipLucene) {
-  configure(project(":lucene")) {
-    checkDanglingLicenseFiles {
-      exclude += [
-          "elegant-icon-font-*",
-          "ant-*",
-          "ivy-*",
-      ]
-    }
-  }
-}
 
 // SOLR ONLY
 if (!skipSolr) {

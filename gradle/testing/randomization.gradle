@@ -195,10 +195,6 @@ allprojects {
             systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
           }
 
-          if (!skipLucene) {
-            systemProperty 'common.dir', commonDir
-          }
-
           def gradleUserHome = project.gradle.getGradleUserHomeDir()
           systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')
           systemProperty 'gradle.worker.jar', Paths.get("${gradleUserHome}/caches/${gradle.gradleVersion}/workerMain/gradle-worker.jar").toAbsolutePath().toString()

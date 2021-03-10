@@ -15,23 +15,9 @@
  * limitations under the License.
  */
 
-// Source test classes from Lucene won't be accessible anymore after the split.
-
-configure(project(":solr:core")) {
-  afterEvaluate {
-    sourceSets {
-      test {
-        java {
-          exclude '**/TestLuceneIndexBackCompat.java'
-          exclude '**/TestXmlQParser.java'
-          exclude '**/TestCodecSupport.java'
-        }
-      }
-    }
-  }
-
-  // disable for now because individual file excludes cannot be applied to ecj.
-  tasks.matching { it.name == "ecjLintTest" }.all { task ->
-    task.enabled = false
+configure(project(":solr:solr-ref-guide")) {
+  tasks.matching { it.name == "checkLocalJavadocLinksSite" }.all {
+    enabled = false
+    logger.warn("Skipping checkLocalJavadocLinksSite (tlp git migration)")
   }
 }

@@ -97,12 +97,13 @@ distributions {
         include "README.md"
       })
 
-      if (!skipLucene) {
+      // Should we include Lucene changes?
+      /*
         from(project(":lucene").projectDir, {
           include "CHANGES.txt"
           rename { file -> 'LUCENE_CHANGES.txt' }
         })
-      }
+      */
 
       from(configurations.contrib, {
         into "contrib"

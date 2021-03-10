@@ -132,7 +132,8 @@ ext {
          // NOTE: extra '../' because we'll in a sub-dir of buildDir that will be built later...
          props: [
             htmlSolrJavadocs : 'link:../' + buildDir.toPath().relativize(project(':solr:documentation').docroot.toPath()).toString().replace(File.separator, '/'),
-            htmlLuceneJavadocs : skipLucene ? 'link:../' : 'link:../' + buildDir.toPath().relativize(project(':lucene:documentation').docroot.toPath()).toString().replace(File.separator, '/')
+            // TODO: decide what to do with lucene javadocs
+            htmlLuceneJavadocs : 'link:../'
         ]
     ]
 }

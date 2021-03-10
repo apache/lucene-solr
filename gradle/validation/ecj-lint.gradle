@@ -52,7 +52,7 @@ allprojects {
 
         // We create a task for all source sets but ignore those
         // that don't have any Java source directories.
-        enabled = !srcDirs.isEmpty()
+        enabled = enabled && !srcDirs.isEmpty()
 
         classpath = rootProject.configurations.ecjDeps
         main = "org.eclipse.jdt.internal.compiler.batch.Main"
@@ -73,11 +73,6 @@ allprojects {
         args += [ "-nowarn" ]
         args += [ "-enableJavadoc" ]
         args += [ "-properties", file("${resources}/ecj.javadocs.prefs").absolutePath ]
-
-        if (skipLucene) {
-          // disable for now because individual file excludes cannot be applied to ecj.
-          enabled = false
-        }
 
         doFirst {
           tmpDst.mkdirs()

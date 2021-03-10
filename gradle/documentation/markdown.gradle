@@ -52,43 +52,6 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
   }
 }
 
-if (!skipLucene) {
-  configure(project(':lucene:documentation')) {
-    markdownToHtml {
-      from(project.parent.projectDir) {
-        include 'MIGRATE.md'
-        include 'JRE_VERSION_MIGRATION.md'
-        include 'SYSTEM_REQUIREMENTS.md'
-      }
-    }
-
-    task createDocumentationIndex(type: MarkdownTemplateTask) {
-      dependsOn markdownToHtml
-
-      outputFile = file("${project.docroot}/index.html")
-      templateFile = file("${project.markdownSrc}/index.template.md")
-
-      def defaultCodecFile = project(':lucene:core').file('src/java/org/apache/lucene/codecs/Codec.java')
-      inputs.file(defaultCodecFile)
-
-      // list all properties used by the template here to allow uptodate checks to be correct:
-      inputs.property('version', project.version)
-
-      binding.put('defaultCodecPackage', providers.provider {
-        // static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"  )   ;
-        def regex = ~/\bdefaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*"([^"]+)"\s*\)\s*;/
-        def matcher = regex.matcher(defaultCodecFile.getText('UTF-8'))
-        if (!matcher.find()) {
-          throw GradleException("Cannot determine default codec from file ${defaultCodecFile}")
-        }
-        return matcher.group(1).toLowerCase(Locale.ROOT)
-      })
-
-      withProjectList()
-    }
-  }
-}
-
 // SOLR ONLY
 if (!skipSolr) {
   configure(project(':solr:documentation')) {

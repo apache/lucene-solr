@@ -63,14 +63,7 @@ allprojects {
       testsCwd = file("${buildDir}/tmp/tests-cwd")
       testsTmpDir = file(resolvedTestOption("tests.workDir"))
 
-      if (!skipLucene) {
-        commonDir = project(":lucene").projectDir
-      }
-
-      // SOLR ONLY
-      if (!skipSolr) {
-        commonSolrDir = project(":solr").projectDir
-      }
+      commonSolrDir = project(":solr").projectDir
     }
 
     def verboseMode = resolvedTestOption("tests.verbose").toBoolean()

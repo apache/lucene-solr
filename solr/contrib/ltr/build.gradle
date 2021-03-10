@@ -22,11 +22,7 @@ description = 'Learning to Rank Package'
 dependencies {
   implementation project(':solr:core')
 
-  if (skipLucene) {
-    implementation "org.apache.lucene:lucene-analysis-common"
-  } else {
-    implementation project(':lucene:analysis:common')
-  }
+  implementation "org.apache.lucene:lucene-analysis-common"
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"

@@ -23,11 +23,7 @@ description = 'Search Results Clustering Integraton'
 dependencies {
   implementation project(':solr:core')
 
-  if (skipLucene) {
-    implementation "org.apache.lucene:lucene-analysis-common"
-  } else {
-    implementation project(':lucene:analysis:common')
-  }
+  implementation "org.apache.lucene:lucene-analysis-common"
 
   implementation 'org.carrot2:carrot2-core'
 

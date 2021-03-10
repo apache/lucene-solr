@@ -1,7 +1,0 @@
-# A very expensive MAP: each character from each group has to be replaced with every other character from the same group,
-# so for long words the enumeration is very long
-
-MAP 3
-MAP qwertyuiop
-MAP asdfghjkl
-MAP zxcvbnm
