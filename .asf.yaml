@@ -1,8 +1,8 @@
 # https://cwiki.apache.org/confluence/display/INFRA/.asf.yaml+features+for+git+repositories
 
 github:
-  description: "Apache Lucene and Solr open-source search software"
-  homepage: https://lucene.apache.org/
+  description: "Apache Solr open-source search software"
+  homepage: https://solr.apache.org/
   labels:
     - lucene
     - solr
@@ -19,7 +19,7 @@ github:
     rebase: false
 
 notifications:
-  commits:      commits@lucene.apache.org
-  issues:       issues@lucene.apache.org
-  pullrequests: issues@lucene.apache.org
+  commits:      commits@solr.apache.org
+  issues:       issues@solr.apache.org
+  pullrequests: issues@solr.apache.org
   jira_options: link label worklog
