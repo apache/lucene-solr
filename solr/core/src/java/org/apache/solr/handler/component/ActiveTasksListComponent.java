@@ -21,10 +21,8 @@ import org.apache.solr.common.util.NamedList;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static java.util.Arrays.asList;
-import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /** List the active tasks that can be cancelled */
 public class ActiveTasksListComponent extends SearchComponent {
@@ -84,10 +82,10 @@ public class ActiveTasksListComponent extends SearchComponent {
                 }
             }
 
-            NamedList<String> result = (NamedList<String>) r.getSolrResponse()
+            LinkedHashMap<String, String> result = (LinkedHashMap<String, String>) r.getSolrResponse()
                     .getResponse().get("taskList");
 
-            Iterator<Map.Entry<String, String>> iterator = result.iterator();
+            Iterator<Map.Entry<String, String>> iterator = result.entrySet().iterator();
 
             while (iterator.hasNext()) {
                 Map.Entry<String, String> entry = iterator.next();

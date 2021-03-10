@@ -100,7 +100,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
     public void testNonExistentQuery() throws Exception {
         ModifiableSolrParams params = new ModifiableSolrParams();
 
-        params.set("cancelUUID", "foobar");
+        params.set("queryUUID", "foobar");
         @SuppressWarnings({"rawtypes"})
         SolrRequest request = new QueryRequest(params);
         request.setPath("/tasks/cancel");
@@ -200,7 +200,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
         return CompletableFuture.runAsync(() -> {
             ModifiableSolrParams params = new ModifiableSolrParams();
 
-            params.set("cancelUUID", queryID);
+            params.set("queryUUID", queryID);
             @SuppressWarnings({"rawtypes"})
             SolrRequest request = new QueryRequest(params);
             request.setPath("/tasks/cancel");
