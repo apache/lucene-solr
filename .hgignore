@@ -1,4 +1,0 @@
-syntax: glob
-*/build/*
-*.class
-

@@ -1,9 +1,0 @@
-{
-  "auditlogging": {
-    "class": "solr.CallbackAuditLoggerPlugin",
-    "callbackPort": "_PORT_",
-    "async": _ASYNC_,
-    "semaphore": _SEMAPHORE_,
-    "muteRules": _MUTERULES_
-  },_AUTH_
-}

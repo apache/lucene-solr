@@ -1,2 +1,0 @@
-This product includes BSD-licensed software developed by Dawid Weiss and Marcin Miłkowski
-(http://morfologik.blogspot.com/).

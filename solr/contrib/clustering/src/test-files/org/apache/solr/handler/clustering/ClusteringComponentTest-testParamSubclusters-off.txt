@@ -1,4 +1,0 @@
-- Cluster 1 [9]
-- Cluster 2 [9]
-- Cluster 3 [9]
-- Other topics [3]

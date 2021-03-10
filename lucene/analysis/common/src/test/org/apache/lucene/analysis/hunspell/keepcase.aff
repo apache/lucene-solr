@@ -1,8 +1,0 @@
-SET UTF-8
-
-KEEPCASE Z
-
-SFX X Y 1
-SFX X 0 s . +s
-
-COMPOUNDFLAG C
