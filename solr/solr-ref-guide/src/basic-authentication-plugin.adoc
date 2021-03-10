@@ -220,6 +220,17 @@ QueryResponse rsp = req.process(solrClient);
 
 While this is method is simple, it can often be inconvenient to ensure the credentials are provided everywhere they're needed.  It also doesn't work with the many `SolrClient` methods which don't consume `SolrRequest` objects.
 
+=== Per-Client credentials
+Http2SolrClient support setting the credentials a the client level when building it. This will ensure all requests issued with this particular client get the Basic Authentication headers set.
+
++
+[source,java]
+----
+Http2SolrClient client = new Http2SolrClient.Builder(solrUrl)
+        .withBasicAuthCredentials(userName, password).build();
+QueryResponse rsp = req.process(client);
+----
+
 === Global (JVM) Basic Auth Credentials
 Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientBuilderFactory` to add basic authentication credentials to _all_ requests automatically.
 To enable this feature, users should set the following system property `-Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory`.
