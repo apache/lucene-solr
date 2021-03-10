@@ -28,7 +28,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.util.SysStats;
 import org.eclipse.jetty.servlets.QoSFilter;
 import org.slf4j.Logger;
@@ -60,28 +59,29 @@ public class SolrQoSFilter extends QoSFilter {
   // MRM TODO: - this is all just test/prototype - we should extract an actual strategy for adjusting on load
   // allow the user to select and configure one
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-    HttpServletRequest req = (HttpServletRequest) request;
-    String source = req.getHeader(QoSParams.REQUEST_SOURCE);
-    boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
-    boolean externalRequest = !imagePath && (source == null || !source.equals(QoSParams.INTERNAL));
-    if (log.isDebugEnabled()) log.debug("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
-    //log.info("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
-
-    if (externalRequest) {
-      if (log.isDebugEnabled()) {
-        log.debug("external request"); //MRM TODO:: remove when testing is done
-      }
-      checkLoad();
-
-      //chain.doFilter(req, response);
-      super.doFilter(req, response, chain);
-
-    } else {
-      if (log.isDebugEnabled()) {
-        log.debug("internal request, allow");
-      }
-      chain.doFilter(req, response);
-    }
+    chain.doFilter(request, response);
+//    HttpServletRequest req = (HttpServletRequest) request;
+//    String source = req.getHeader(QoSParams.REQUEST_SOURCE);
+//    boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
+//    boolean externalRequest = !imagePath && (source == null || !source.equals(QoSParams.INTERNAL));
+//    if (log.isDebugEnabled()) log.debug("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
+//    //log.info("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
+//
+//    if (externalRequest) {
+//      if (log.isDebugEnabled()) {
+//        log.debug("external request"); //MRM TODO:: remove when testing is done
+//      }
+//      checkLoad();
+//
+//      //chain.doFilter(req, response);
+//      super.doFilter(req, response, chain);
+//
+//    } else {
+//      if (log.isDebugEnabled()) {
+//        log.debug("internal request, allow");
+//      }
+//      chain.doFilter(req, response);
+//    }
   }
 
   private void checkLoad() {
