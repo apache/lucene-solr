@@ -503,7 +503,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (stat == null) {
         if (log.isDebugEnabled()) log.debug("Collections znode not found, waiting on latch");
         try {
-          boolean success = latch.await(1000, TimeUnit.MILLISECONDS);
+          boolean success = latch.await(15000, TimeUnit.MILLISECONDS);
           if (!success) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "cluster not found/not ready");
           }
