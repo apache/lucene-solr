@@ -1572,8 +1572,7 @@ public class QueryComponent extends SearchComponent
     String nodeName = req.getCore().getCoreContainer().getHostName();
 
     if (zkController != null) {
-      nodeName = req.getCore().getCoreContainer().
-              getZkController().getNodeName();
+      nodeName = zkController.getNodeName();
     }
 
     final String localQueryID = req.getCore().getCancellableQueryTracker().generateQueryID(req);

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Random;
@@ -29,6 +29,15 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -91,14 +100,11 @@ public class TestCancellableCollector extends LuceneTestCase {
     TopScoreDocCollector topScoreDocCollector = TopScoreDocCollector.create(numHits, null, 1);
     CancellableCollector collector = new CancellableCollector(topScoreDocCollector);
 
-    DummyCancellableCollector dummyCancellableCollector =
-        new DummyCancellableCollector(collector, delayStart, delayCollection);
-
-    return dummyCancellableCollector;
+    return new DummyCancellableCollector(collector, delayStart, delayCollection);
   }
 
   private void executeSearchTest(
-      IndexSearcher searcher, Query query, CancellableCollector cancellableCollector, int numHits)
+          IndexSearcher searcher, Query query, CancellableCollector cancellableCollector, int numHits)
       throws Exception {
     TopDocs topDocs = searcher.search(query, numHits);
 
@@ -109,7 +115,7 @@ public class TestCancellableCollector extends LuceneTestCase {
     TopScoreDocCollector topScoreDocCollector =
         (TopScoreDocCollector) internalCancellableCollector.getInternalCollector();
 
-    assertEquals(topDocs.totalHits.value, topScoreDocCollector.totalHits);
+    assertEquals(topDocs.totalHits.value, topScoreDocCollector.getTotalHits());
   }
 
   private void cancelQuery(CancellableCollector cancellableCollector, final int sleepTime) {
@@ -122,7 +128,7 @@ public class TestCancellableCollector extends LuceneTestCase {
               Thread.sleep(sleepTime);
             }
 
-            cancellableCollector.cancelTask();
+            cancellableCollector.cancel();
           } catch (InterruptedException e) {
             throw new RuntimeException(e.getMessage());
           }
@@ -174,9 +180,9 @@ public class TestCancellableCollector extends LuceneTestCase {
   }
 
   public class DummyCancellableCollector extends CancellableCollector {
-    private CancellableCollector collector;
-    private boolean delayStart;
-    private boolean delayCollection;
+    private final CancellableCollector collector;
+    private final boolean delayStart;
+    private final boolean delayCollection;
 
     public DummyCancellableCollector(
         CancellableCollector cancellableCollector, boolean delayStart, boolean delayCollection) {
@@ -221,8 +227,8 @@ public class TestCancellableCollector extends LuceneTestCase {
     }
 
     @Override
-    public void cancelTask() {
-      collector.cancelTask();
+    public void cancel() {
+      collector.cancel();
     }
   }
 }

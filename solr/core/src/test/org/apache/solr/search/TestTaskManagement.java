@@ -105,7 +105,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
         SolrRequest request = new QueryRequest(params);
         request.setPath("/tasks/cancel");
 
-        NamedList<Object> queryResponse = null;
+        NamedList<Object> queryResponse;
 
         queryResponse = cluster.getSolrClient().request(request);
 
@@ -152,7 +152,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
             executeQueryAsync(Integer.toString(i));
         }
 
-        NamedList<Object> queryResponse = null;
+        NamedList<Object> queryResponse;
 
         queryResponse = cluster.getSolrClient().request(request);
 
@@ -171,12 +171,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
         assertTrue(presentQueryIDs.size() > 0 && presentQueryIDs.size() <= 50);
 
-        Iterator<Integer> integerIterator = presentQueryIDs.iterator();
-
-        while (integerIterator.hasNext()) {
-            int value = integerIterator.next();
-
-            assertTrue (value >= 0 && value < 50);
+        for (int value : presentQueryIDs) {
+            assertTrue(value >= 0 && value < 50);
         }
     }
 
@@ -216,7 +212,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
                 }
 
                 try {
-                    NamedList<Object> queryResponse = null;
+                    NamedList<Object> queryResponse;
 
                     queryResponse = cluster.getSolrClient().request(request);
 

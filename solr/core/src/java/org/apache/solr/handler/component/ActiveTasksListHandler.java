@@ -79,7 +79,7 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
     @Override
     public SolrRequestHandler getSubHandler(String path) {
-        if (path.equals("/tasks/list")) {
+        if (path.startsWith("/tasks/list")) {
             return this;
         }
 

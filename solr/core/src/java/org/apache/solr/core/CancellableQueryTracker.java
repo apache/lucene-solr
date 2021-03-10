@@ -1,7 +1,7 @@
 package org.apache.solr.core;
 
-import org.apache.lucene.search.CancellableCollector;
-import org.apache.lucene.search.CancellableTask;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.search.CancellableCollector;
 import org.apache.solr.request.SolrQueryRequest;
 
 import java.util.Iterator;
@@ -16,7 +16,7 @@ import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
  */
 public class CancellableQueryTracker {
     //TODO: This needs to become a time aware storage model
-    private final Map<String, CancellableTask> activeCancellableQueries = new ConcurrentHashMap<>();
+    private final Map<String, Cancellable> activeCancellableQueries = new ConcurrentHashMap<>();
     private final Map<String, String> activeQueriesGenerated = new ConcurrentHashMap<>();
 
     /** Generates a UUID for the given query or if the user provided a UUID
@@ -67,7 +67,7 @@ public class CancellableQueryTracker {
         activeCancellableQueries.put(queryID, collector);
     }
 
-    public CancellableTask getCancellableTask(String queryID) {
+    public Cancellable getCancellableTask(String queryID) {
         if (queryID == null) {
             throw new IllegalArgumentException("Input queryID is null");
         }

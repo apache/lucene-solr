@@ -22,7 +22,7 @@ cancellation of the same.
 This is achieved using the task management interface. Currently, this is supported for queries.
 
 == Types of Operations
-Task management interface (TMI) supports the following types of operations:
+Task management interface supports the following types of operations:
 
 1. List all currently running cancellable tasks.
 2. Cancel a specific task.

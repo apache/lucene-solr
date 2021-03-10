@@ -93,7 +93,8 @@ task management interface.
 
 For cancellable queries, this allows specifying a custom UUID to identify the query with. If `canCancel` is specified and `queryUUID` is not set, an auto generated UUID will be assigned to the query.
 
-If `queryUUID` is specified, this UUID will be used for identifying the query. Note that if using `queryUUID`, the responsibility of ensuring uniqueness of the UUID lies with the caller.
+If `queryUUID` is specified, this UUID will be used for identifying the query. Note that if using `queryUUID`, the responsibility of ensuring uniqueness of the UUID lies with the caller. If a query UUID
+is reused while the original query UUID is still active, it will cause an exception to be throws for the second query.
 
 
 == fq (Filter Query) Parameter

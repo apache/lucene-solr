@@ -14,21 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.solr.client.solrj.util.Cancellable;
 
 /** Allows a query to be cancelled */
-public class CancellableCollector implements Collector, CancellableTask {
+public class CancellableCollector implements Collector, Cancellable {
 
   /** Thrown when a query gets cancelled */
   public static class QueryCancelledException extends RuntimeException {}
 
-  private Collector collector;
-  private AtomicBoolean isQueryCancelled;
+  private final Collector collector;
+  private final AtomicBoolean isQueryCancelled;
 
   public CancellableCollector(Collector collector) {
     Objects.requireNonNull(collector, "Internal collector not provided but wrapper collector accessed");
@@ -40,7 +45,7 @@ public class CancellableCollector implements Collector, CancellableTask {
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
 
-    if (isQueryCancelled.compareAndSet(true, false)) {
+    if (isQueryCancelled.compareAndSet(true, true)) {
       throw new QueryCancelledException();
     }
 
@@ -48,7 +53,7 @@ public class CancellableCollector implements Collector, CancellableTask {
 
       @Override
       public void collect(int doc) throws IOException {
-        if (isQueryCancelled.compareAndSet(true, false)) {
+        if (isQueryCancelled.compareAndSet(true, true)) {
           throw new QueryCancelledException();
         }
         in.collect(doc);
@@ -62,7 +67,7 @@ public class CancellableCollector implements Collector, CancellableTask {
   }
 
   @Override
-  public void cancelTask() {
+  public void cancel() {
     isQueryCancelled.compareAndSet(false, true);
   }
 

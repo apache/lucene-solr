@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.search.CancellableTask;
+import org.apache.solr.client.solrj.util.Cancellable;
 
 import java.io.IOException;
 
@@ -46,10 +46,10 @@ public class QueryCancellationComponent extends SearchComponent {
             throw new RuntimeException("Null query UUID seen");
         }
 
-        CancellableTask cancellableTask = rb.req.getCore().getCancellableQueryTracker().getCancellableTask(cancellationUUID);
+        Cancellable cancellableTask = rb.req.getCore().getCancellableQueryTracker().getCancellableTask(cancellationUUID);
 
         if (cancellableTask != null) {
-            cancellableTask.cancelTask();
+            cancellableTask.cancel();
             rb.rsp.add("cancellationResult", "success");
         } else {
             rb.rsp.add("cancellationResult", "not found");
@@ -63,34 +63,30 @@ public class QueryCancellationComponent extends SearchComponent {
             return;
         }
 
-        boolean failureSeen = false;
-        boolean queryNotFound = false;
+        boolean queryFound = false;
 
         for (ShardResponse r : sreq.responses) {
 
             String cancellationResult = (String) r.getSolrResponse()
                     .getResponse().get("cancellationResult");
 
-            if (!cancellationResult.equalsIgnoreCase("success")) {
-                if (cancellationResult.equalsIgnoreCase("not found")) {
-                    queryNotFound = true;
-                } else {
-                    failureSeen = true;
-                }
+            if (cancellationResult.equalsIgnoreCase("success")) {
+                queryFound = true;
 
                 break;
             }
         }
 
-        if (failureSeen) {
-            rb.rsp.getValues().add("status", "Query with queryID " + rb.getCancellationUUID() +
-                    " could not be cancelled successfully");
-        } else if (queryNotFound) {
-            rb.rsp.getValues().add("status", "Query with queryID " + rb.getCancellationUUID() +
-                    " not found");
-        } else {
+        // If any shard sees the query as present, then we mark the query as successfully cancelled. If no shard found
+        // the query, then that can denote that the query was not found. This is important since the query cancellation
+        // request is broadcast to all shards, and the query might have completed on some shards but not on others
+
+        if(queryFound) {
             rb.rsp.getValues().add("status", "Query with queryID " + rb.getCancellationUUID() +
                     " cancelled successfully");
+        } else {
+            rb.rsp.getValues().add("status", "Query with queryID " + rb.getCancellationUUID() +
+                    " not found");
         }
     }
 

@@ -81,7 +81,7 @@ public class QueryCancellationHandler extends TaskManagementHandler {
 
     @Override
     public SolrRequestHandler getSubHandler(String path) {
-        if (path.equals("/tasks/cancel")) {
+        if (path.startsWith("/tasks/cancel")) {
             return this;
         }
 
