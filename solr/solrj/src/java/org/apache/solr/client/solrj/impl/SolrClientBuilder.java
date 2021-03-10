@@ -22,7 +22,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 
 public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   public static final int DEFAULT_CONNECT_TIMEOUT = Integer.getInteger("solr.httpclient.defaultConnectTimeout", 10000);
-  public static final int DEFAULT_SO_TIMEOUT = Integer.getInteger("solr.httpclient.defaultSoTimeout", 30000);
+  public static final int DEFAULT_SO_TIMEOUT = Integer.getInteger("solr.httpclient.defaultSoTimeout", 120000);
 
   protected HttpClient httpClient;
   protected ResponseParser responseParser;
