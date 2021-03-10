@@ -113,7 +113,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
     }
 
     @Test
-    public void testCancellationQuery() throws Exception {
+    public void testCancellationQuery() {
         ConcurrentHashSet<Integer> queryIdsSet = new ConcurrentHashSet<>();
         ConcurrentHashSet<Integer> notFoundIdsSet = new ConcurrentHashSet<>();
 
