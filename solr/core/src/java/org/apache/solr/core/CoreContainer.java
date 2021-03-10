@@ -2378,7 +2378,7 @@ public class CoreContainer implements Closeable {
       try {
         Files.delete(file);
       } catch (IOException e) {
-        log.info("Could not delete file {} {} {}", file, e.getClass().getName(), e.getMessage());
+        log.debug("Could not delete file {} {} {}", file, e.getClass().getName(), e.getMessage());
       }
     }
   }
