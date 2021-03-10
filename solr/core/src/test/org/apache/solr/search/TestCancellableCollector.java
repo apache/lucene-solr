@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -42,6 +41,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.solr.common.util.ExecutorUtil;
 
 public class TestCancellableCollector extends LuceneTestCase {
   Directory dir;
@@ -73,7 +73,7 @@ public class TestCancellableCollector extends LuceneTestCase {
     searcher = new IndexSearcher(reader);
 
     executor =
-        new ThreadPoolExecutor(
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
             4,
             4,
             0L,
