@@ -39,11 +39,11 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 
-public class TestCancellableCollector extends LuceneTestCase {
+public class TestCancellableCollector extends SolrTestCase {
   Directory dir;
   IndexReader reader;
   IndexSearcher searcher;
