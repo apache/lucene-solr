@@ -28,7 +28,7 @@ Lucene:
 https://github.com/apache/lucene-solr/pull/2459
 
 1. You can just apply this PR directly as a patch:
-
+```
 git clone https://github.com/apache/lucene.git
 cd lucene
 wget https://github.com/apache/lucene-solr/pull/2459.patch
@@ -36,7 +36,7 @@ git apply 2459.patch
 git add -A .
 git commit -m "Applying PR # ..."
 git push
-
+```
 2. You can "rebase" the PR via a separate fork on github. This preserves commit
    history but is slightly longer. Example:
 
@@ -47,6 +47,7 @@ git push
   https://github.com/donnerpeter/lucene-solr/tree/revTrie
 
 - Now create a "cloned" PR:
+```
 # clone your own fork
 git clone https://github.com/dweiss/lucene.git
 cd lucene
@@ -62,3 +63,4 @@ https://github.com/apache/lucene/compare/main...dweiss:revTrie
 Look at the PR and create it if it looks good.
 # This example's PR was at:
 https://github.com/apache/lucene/pull/2
+```
