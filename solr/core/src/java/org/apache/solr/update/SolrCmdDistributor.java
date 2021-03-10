@@ -246,13 +246,13 @@ public class SolrCmdDistributor implements Closeable {
 //    if (log.isDebugEnabled()) {
 //      log.debug("sending update to " + req.node.getUrl() + " retry:" + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
 //    }
-    if (req.cmd instanceof AddUpdateCommand) {
-      log.info("sending update to " + req.node.getUrl() + " retry:" + req.retries + " docid=" + ((AddUpdateCommand) req.cmd).getPrintableId() + " " + req.cmd + " params:" + req.uReq.getParams());
-    } else {
-      log.info("sending update to " + req.node.getUrl() + " retry:" + req.retries + " docid=" + req.cmd + " params:" + req.uReq.getParams());
+    if (log.isDebugEnabled()) {
+      if (req.cmd instanceof AddUpdateCommand) {
+        log.info("sending update to " + req.node.getUrl() + " retry:" + req.retries + " docid=" + ((AddUpdateCommand) req.cmd).getPrintableId() + " " + req.cmd + " params:" + req.uReq.getParams());
+      } else {
+        log.info("sending update to " + req.node.getUrl() + " retry:" + req.retries + " docid=" + req.cmd + " params:" + req.uReq.getParams());
+      }
     }
-
-
 
     req.uReq.setBasePath(req.node.getUrl());
 

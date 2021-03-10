@@ -120,11 +120,11 @@ public class ZkStateWriter {
 
           idToCollection.put(collection.getId(), collection.getName());
 
-          if (currentCollection != null) {
-            if (currentCollection.getId() != collection.getId()) {
-              removeCollection(collection.getName());
-            }
-          }
+//          if (currentCollection != null) {
+//            if (currentCollection.getId() != collection.getId()) {
+//              removeCollection(collection.getName());
+//            }
+//          }
 
           if (currentCollection != null) {
 
@@ -462,7 +462,7 @@ public class ZkStateWriter {
     //log.info("writing out state, looking at collections count={} toWrite={} {} : {}", cs.getCollectionsMap().size(), collectionsToWrite.size(), cs.getCollectionsMap().keySet(), collectionsToWrite);
     //try {
       cs.forEachCollection(collection -> {
-        log.info("check collection {} {} {}", collection, dirtyStructure, dirtyState);
+        if (log.isDebugEnabled()) log.debug("check collection {} {} {}", collection, dirtyStructure, dirtyState);
         Integer version = null;
         if (dirtyStructure.contains(collection.getName()) || dirtyState.contains(collection.getName())) {
             log.info("process collection {}", collection);
@@ -549,7 +549,7 @@ public class ZkStateWriter {
 
       });
 
-      removeCollections.forEach(c ->  removeCollection(c));
+      //removeCollections.forEach(c ->  removeCollection(c));
 
       if (badVersionException.get() != null) {
         throw badVersionException.get();

@@ -107,7 +107,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     zkStateReader.getZkClient().getSolrZooKeeper().sync(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,  (rc, path, ctx) -> {
       latch.countDown();
     }, null);
-    latch.await(5, TimeUnit.SECONDS);
+    latch.await(10, TimeUnit.SECONDS);
     if (!zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection " + collection);
     }
