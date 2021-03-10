@@ -840,6 +840,8 @@ public class ZkController implements Closeable, Runnable {
 
     paths.put(ZkStateReader.ROLES, emptyJson);
 
+    paths.put("/clusterstate.json", emptyJson);
+
 
     paths.put(COLLECTIONS_ZKNODE, null);
 //
