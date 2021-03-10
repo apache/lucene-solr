@@ -327,7 +327,7 @@ public class Overseer implements SolrCloseable {
     //systemCollectionCompatCheck(new StringBiConsumer());
     this.zkStateWriter.init();
 
-    queueWatcher = new WorkQueueWatcher(getCoreContainer());
+    queueWatcher = new WorkQueueWatcher(getCoreContainer(), this);
     collectionQueueWatcher = new WorkQueueWatcher.CollectionWorkQueueWatcher(getCoreContainer(), id, overseerLbClient, adminPath, stats, Overseer.this);
     try {
       queueWatcher.start();
@@ -723,10 +723,10 @@ public class Overseer implements SolrCloseable {
     protected volatile boolean closed;
     protected final ReentrantLock ourLock = new ReentrantLock(true);
 
-    public QueueWatcher(CoreContainer cc, String path) throws KeeperException {
+    public QueueWatcher(CoreContainer cc, Overseer overseer, String path) throws KeeperException {
       this.cc = cc;
       this.zkController = cc.getZkController();
-      this.overseer = zkController.getOverseer();
+      this.overseer = overseer;
       this.path = path;
     }
 
@@ -802,8 +802,8 @@ public class Overseer implements SolrCloseable {
 
   private static class WorkQueueWatcher extends QueueWatcher {
 
-    public WorkQueueWatcher(CoreContainer cc) throws KeeperException {
-      super(cc, Overseer.OVERSEER_QUEUE);
+    public WorkQueueWatcher(CoreContainer cc, Overseer overseer) throws KeeperException {
+      super(cc, overseer, Overseer.OVERSEER_QUEUE);
     }
 
 
@@ -866,7 +866,7 @@ public class Overseer implements SolrCloseable {
       private final DistributedMap completedMap;
 
       public CollectionWorkQueueWatcher(CoreContainer cc, String myId, LBHttp2SolrClient overseerLbClient, String adminPath, Stats stats, Overseer overseer) throws KeeperException {
-        super(cc, Overseer.OVERSEER_COLLECTION_QUEUE_WORK);
+        super(cc, overseer, Overseer.OVERSEER_COLLECTION_QUEUE_WORK);
         collMessageHandler = new OverseerCollectionMessageHandler(cc, myId, overseerLbClient, adminPath, stats, overseer);
         configMessageHandler = new OverseerConfigSetMessageHandler(cc);
         failureMap = Overseer.getFailureMap(cc.getZkController().getZkClient());

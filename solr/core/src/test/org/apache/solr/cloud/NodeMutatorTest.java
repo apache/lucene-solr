@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.SolrTestCaseJ4Test;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
