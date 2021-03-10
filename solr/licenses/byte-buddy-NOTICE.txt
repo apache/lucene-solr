@@ -1,4 +1,0 @@
-Byte Buddy is a code generation and manipulation library for creating and modifying Java
-classes during the runtime of a Java application and without the help of a compiler.
-
-Copyright 2014 Rafael Winterhalter

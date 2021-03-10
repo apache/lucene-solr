@@ -1,5 +1,0 @@
-# simple AnalyzingInfix suggest phrase dictionary for testing
-Japanese Autocomplete and Japanese Highlighter broken
-Add Japanese Kanji number normalization to Kuromoji
-Add decompose compound Japanese Katakana token capability to Kuromoji
-This is just another entry!

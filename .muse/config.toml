@@ -1,5 +1,0 @@
-# This file can configure Muse PR static analysis. 
-# Docs for adding, removing or changing checks can be found here:
-# https://docs.muse.dev/docs/repository-configuration/
-
-jdk11 = true

@@ -1,5 +1,0 @@
-# simple auto-suggest phrase dictionary for testing
-# note this uses tabs as separator!
-北海道	1.0
-今夜	3.0
-話した	6.0

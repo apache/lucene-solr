@@ -1,8 +1,0 @@
-= block_with_title class: ['colist', style]
-  table
-    - items.to_enum.with_index 1 do |item, num|
-      tr
-        td
-          i.conum data-value=num
-          b =num
-        td =item.text

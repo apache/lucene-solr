@@ -1,3 +1,0 @@
-org.apache.solr.handler.clustering.MockClusteringAlgorithmProvider
-org.apache.solr.handler.clustering.EchoClusteringAlgorithmProvider
-org.apache.solr.handler.clustering.ResourceCheckAlgorithmProvider

@@ -1,3 +1,0 @@
-
-This product includes data from BSD-licensed dictionary of Polish (Morfologik, PoliMorf)
-(http://morfologik.blogspot.com/)

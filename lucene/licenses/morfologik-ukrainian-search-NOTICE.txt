@@ -1,6 +1,0 @@
-morfologik-ukrainian-search is a POS tag dictionary in morfologik format adjusted for searching.
-It's part of dict_uk project (https://github.com/brown-uk/dict_uk)
-
-Note: to better fit into full-text search model this dictionary has all word forms in lower case but keeps lemmas for proper nouns in upper case.
-
-Licensed under Apache License 2.0.

@@ -1,8 +1,0 @@
-six>=1.11.0
-Jinja2>=2.10.1
-PyYAML>=5.1
-holidays>=0.9.10
-ics>=0.4
-console-menu>=0.5.1
-PyGithub
-jira

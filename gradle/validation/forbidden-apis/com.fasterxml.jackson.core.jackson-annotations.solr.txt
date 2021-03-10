@@ -1,2 +1,0 @@
-@defaultMessage Use org.apache.solr.common.annotation.JsonProperty  instead
-com.fasterxml.jackson.annotation.JsonProperty

@@ -1,6 +1,0 @@
-= block_with_title :class=>'quoteblock'
-  blockquote
-    = html_tag_if !blocks?, :p
-      =content
-    - if attr?(:attribution) || attr?(:citetitle)
-      include _attribution.html
