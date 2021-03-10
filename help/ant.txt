@@ -10,8 +10,8 @@ Gradle tasks apply to all modules that contain a given task name. Use
 "-p" switch with a directory or a colon-notation to specify a particular
 task or module. For example these two are equivalent:
 
-gradlew -p lucene/core check
-gradlew :lucene:core:check
+gradlew -p solr/core check
+gradlew :solr:core:check
 
 List of common dev task equivalents
 -----------------------------------

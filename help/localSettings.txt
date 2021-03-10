@@ -1,7 +1,7 @@
 Local developer settings
 ========================
 
-The first invocation of any task in Lucene/Solr gradle build will generate
+The first invocation of any task in Solr gradle build will generate
 and save a project-local 'gradle.properties' file. This file contains
 the defaults you may (but don't have to) tweak for your particular hardware
 (or taste).
@@ -12,7 +12,7 @@ Parallelism
 -----------
 
 Gradle build can run tasks in parallel but by default it consumes all CPU cores which
-is too optimistic a default for Lucene/Solr tests. You can disable the parallelism
+is too optimistic a default for Solr tests. You can disable the parallelism
 entirely or assign it a 'low' priority with these properties:
 
 org.gradle.parallel=[true, false]

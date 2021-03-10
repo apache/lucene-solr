@@ -12,7 +12,7 @@ property (-P...).
 
 Example:
 
-gradlew test -p lucene/test-framework --tests TestJvmInfo -Dtests.verbose=true -Druntime.java.home=/jvms/jdk14
+gradlew test -p solr/test-framework --tests TestLogLevelAnnotations -Dtests.verbose=true -Druntime.java.home=/jvms/jdk14
 
 Note that an alternative JVM can also be made the "default" setting
 by adding it to (project-local) gradle.properties.
