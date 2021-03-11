@@ -119,7 +119,7 @@ public class PackageAPI {
             } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
               log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
             } catch (KeeperException e) {
-              log.error("A ZK error has occurred", e);
+              log.error("A ZK error has occurred in registerListener for PackageAPI", e);
             } catch (InterruptedException e) {
               log.info("interrupted");
             }

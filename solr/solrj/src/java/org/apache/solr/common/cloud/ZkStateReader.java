@@ -611,7 +611,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
               }
 
             } catch (KeeperException e) {
-              log.error("A ZK error has occurred", e);
+              log.error("A ZK error has adding the security node watcher", e);
               return;
             } catch (InterruptedException e) {
               log.warn("", e);
@@ -1439,8 +1439,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         }
         constructState(newState, "state.json watcher");
       } catch (Exception e) {
-        log.error("Unwatched collection: [{}]", coll, e);
-        throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+        log.error("A ZK error has occurred refreshing CollectionStateWatcher for collection={}", coll, e);
+        throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred refreshing CollectionStateWatcher", e);
       } finally {
         collectionStateLock.unlock();
       }
@@ -1652,7 +1652,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
       } catch (KeeperException e) {
         log.error("Lost collection property watcher for {} due to ZK error", coll, e);
-        throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+        throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred refreshing property watcher", e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         log.error("Lost collection property watcher for {} due to the thread being interrupted", coll, e);
@@ -1695,8 +1695,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       } catch (AlreadyClosedException e) {
 
       } catch (KeeperException e) {
-        log.error("A ZK error has occurred", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+        log.error("A ZK error has occurred refreshing CollectionsChildWatcher", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred refreshing CollectionsChildWatcher", e);
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -1758,7 +1758,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       } catch (KeeperException.SessionExpiredException e) {
         // okay
       } catch (Exception e) {
-        log.error("A ZK error has occurred", e);
+        log.error("A ZK error has occurred refreshing CollectionsChildWatcher", e);
       }
     }
 
@@ -1798,8 +1798,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     try {
       newState = fetchCollectionState(coll);
     } catch (KeeperException e) {
-      log.error("Unwatched collection: [{}]", coll, e);
-      throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+      log.warn("Zookeeper error getting latest collection state for collection={}", coll, e);
+      return null;
     } catch (InterruptedException e) {
       log.error("Unwatched collection: [{}]", coll, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "interrupted", e);
@@ -2705,7 +2705,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         // note: aliases.json is required to be present
         log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
       } catch (KeeperException e) {
-        log.error("A ZK error has occurred", e);
+        log.error("A ZK error has occurred on Alias update", e);
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
       } catch (InterruptedException e) {
         // Restore the interrupted status
