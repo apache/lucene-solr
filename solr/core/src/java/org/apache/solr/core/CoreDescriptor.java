@@ -121,7 +121,8 @@ public class CoreDescriptor {
       CORE_COLLECTION,
       CORE_ROLES,
       CORE_NODE_NAME,
-      CloudDescriptor.NUM_SHARDS
+      CloudDescriptor.NUM_SHARDS,
+      "id"
   );
 
   private final CloudDescriptor cloudDesc;

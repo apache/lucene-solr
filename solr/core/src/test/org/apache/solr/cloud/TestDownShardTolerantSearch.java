@@ -64,6 +64,8 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
 
+    cluster.waitForJettyToStop(stoppedServer);
+
     try (SolrClient client = cluster.buildSolrClient()) {
 
       response = client.query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
