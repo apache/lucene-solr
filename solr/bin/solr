@@ -2177,6 +2177,8 @@ function start_solr() {
         '-XX:+PerfDisableSharedMem' \
         '-XX:+ParallelRefProcEnabled' \
         '-XX:MaxGCPauseMillis=250' \
+        '-XX:+UseLargePages' \
+        '-XX:+AlwaysPreTouch' \
         '-XX:+UseStringDeduplication' \
         '-XX:MaxTenuringThreshold=16' \
         '-XX:+ExplicitGCInvokesConcurrent')
