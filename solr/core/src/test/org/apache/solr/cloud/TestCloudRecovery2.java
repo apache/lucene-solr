@@ -138,7 +138,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       new UpdateRequest().add("id", "1", "num", "30")
           .commit(client1, COLLECTION);
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
-      SolrTestCaseJ4.      assertEquals("30", v.toString());
+      SolrTestCaseJ4.assertEquals("30", v.toString());
 
       node2.start();
 
@@ -154,6 +154,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());
     }
+    Replica oldLeader = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION).getLeader("s1");
+
 
     node1.stop();
 
@@ -161,7 +163,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     Thread.sleep(250);
     waitForState("", COLLECTION, (liveNodes, collectionState) -> {
       Replica leader = collectionState.getLeader("s1");
-      return leader != null && leader.getNodeName().equals(node2.getNodeName());
+      return leader != null && !leader.getName().equals(oldLeader.getName());
     });
 
     node1.start();

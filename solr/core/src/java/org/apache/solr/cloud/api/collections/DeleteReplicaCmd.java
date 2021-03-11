@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -134,10 +135,10 @@ public class DeleteReplicaCmd implements Cmd {
                 log.error("Exception waiting for delete replica response");
               }
             }
-            List<Replica> replicas = (List<Replica>) resp.results.get("replicas_deleted");
-            for (Replica replica : replicas) {
+            Set<String> replicas = (Set<String>) resp.results.get("replicas_deleted");
+            for (String replica : replicas) {
               try {
-                waitForCoreNodeGone(finalCollectionName, shard, replica.getName(), 30000);
+                waitForCoreNodeGone(finalCollectionName, shard, replica, 30000);
               } catch (Exception e) {
                 log.error("", e);
               }
@@ -209,6 +210,7 @@ public class DeleteReplicaCmd implements Cmd {
       };
     }
     response.clusterState = clusterState;
+    response.results = results;
     return response;
   }
 
@@ -250,6 +252,7 @@ public class DeleteReplicaCmd implements Cmd {
       }
     }
     List<OverseerCollectionMessageHandler.Finalize> finalizers = new ArrayList<>();
+    List<Future> futures = new ArrayList<>();
     for (Map.Entry<Slice,Set<String>> entry : shardToReplicasMapping.entrySet()) {
       Slice shardSlice = entry.getKey();
       String shardId = shardSlice.getName();
@@ -257,14 +260,30 @@ public class DeleteReplicaCmd implements Cmd {
       // callDeleteReplica on all replicas
       for (String replica : replicas) {
         if (log.isDebugEnabled()) log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
-        // MRM TODO: - DONT DO THIS ONE AT TIME
 
         CollectionCmdResponse.Response resp = deleteCore(clusterState, shardSlice, collectionName, replica, message, shard, results, shardRequestTracker, shardHandler);
         clusterState = resp.clusterState;
+        if (clusterState != null) {
+          try {
+            futures.add(ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collectionName), null, false));
+          } catch (Exception e) {
+            log.error("failed sending update to zkstatewriter", e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        }
         if (resp.asyncFinalRunner != null) {
           finalizers.add(resp.asyncFinalRunner);
         }
+      }
 
+      try {
+        for (Future future : futures) {
+          future.get();
+        }
+        ocmh.overseer.writePendingUpdates();
+      } catch (Exception e) {
+        log.error("failed writing update to zkstatewriter", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       results.add("shard_id", shardId);
       results.add("replicas_deleted", replicas);
@@ -282,6 +301,7 @@ public class DeleteReplicaCmd implements Cmd {
       };
       return resp;
     };
+    response.results = results;
     return response;
   }
 
