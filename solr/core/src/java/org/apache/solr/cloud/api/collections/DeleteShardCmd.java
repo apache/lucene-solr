@@ -112,7 +112,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     slice = clusterState.getCollection(collectionName).getSlice(sliceId);
 
     String asyncId = message.getStr(ASYNC);
-    List<OverseerCollectionMessageHandler.Finalize> finalizers = new ArrayList<>();
+    List<CollectionCmdResponse.Response> finalizers = new ArrayList<>();
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
     OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr(Overseer.QUEUE_OPERATION));
@@ -128,9 +128,10 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         try {
 
           // MRM TODO: - return results from deleteReplica cmd
-          CollectionCmdResponse.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, shardHandler, shardRequestTracker, deleteResult);
+          CollectionCmdResponse.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(
+              clusterState, replica, shardHandler, shardRequestTracker, deleteResult, collectionName, sliceId);
           if (resp.asyncFinalRunner != null) {
-            finalizers.add(resp.asyncFinalRunner);
+            finalizers.add(resp);
           }
           clusterState = resp.clusterState;
         } catch (KeeperException e) {
@@ -158,11 +159,13 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
+    ClusterState finalClusterState = clusterState;
     response.asyncFinalRunner = () -> {
       CollectionCmdResponse.Response resp = new CollectionCmdResponse.Response();
 
-      for (OverseerCollectionMessageHandler.Finalize finalize : finalizers) {
-        finalize.call();
+      for (CollectionCmdResponse.Response finalize : finalizers) {
+        finalize.asyncFinalRunner.call();
+        finalize.writeFuture.get();
       }
       try {
         if (log.isDebugEnabled())  log.debug("Processs responses");
@@ -172,7 +175,8 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       if (waitForFinalState) {
-        resp.writeFuture = ocmh.overseer.writePendingUpdates();
+        ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(collectionName), null, false).get();
+        ocmh.overseer.writePendingUpdates().get();
         ocmh.overseer.getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, coll) -> {
           if (coll == null) {
             return true;

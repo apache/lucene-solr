@@ -83,15 +83,24 @@ public class DeleteReplicaCmd implements Cmd {
       shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
       createdShardHandler = true;
     }
+    String shardId = message.getStr(SHARD_ID_PROP);
+    String extCollectionName = message.getStr(COLLECTION_PROP);
 
-    CollectionCmdResponse.Response response = deleteReplica(clusterState, message, shardHandler, shardRequestTracker, results);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collectionName;
+    if (followAliases) {
+      collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
+    CollectionCmdResponse.Response response = deleteReplica(clusterState, message, shardHandler, shardRequestTracker, results, collectionName, shardId);
     return response;
   }
 
 
   @SuppressWarnings("unchecked")
   CollectionCmdResponse.Response deleteReplica(ClusterState clusterState, ZkNodeProps message, ShardHandler shardHandler,
-      ShardRequestTracker shardRequestTracker, @SuppressWarnings({"rawtypes"})NamedList results)
+      ShardRequestTracker shardRequestTracker, @SuppressWarnings({"rawtypes"})NamedList results, String collectionName, String shard)
           throws KeeperException, InterruptedException {
 
     log.info("deleteReplica() : {}", Utils.toJSONString(message));
@@ -106,6 +115,7 @@ public class DeleteReplicaCmd implements Cmd {
       if (results.get("failure") == null && results.get("exception") == null) {
         ShardRequestTracker finalShardRequestTracker = shardRequestTracker;
         ShardHandler finalShardHandler = shardHandler;
+        String finalCollectionName = collectionName;
         response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
           @Override
           public CollectionCmdResponse.Response call() {
@@ -124,11 +134,14 @@ public class DeleteReplicaCmd implements Cmd {
                 log.error("Exception waiting for delete replica response");
               }
             }
-            //          try {
-            //            waitForCoreNodeGone(collectionName, shard, replicaName, 30000);
-            //          } catch (Exception e) {
-            //            log.error("", e);
-            //          }
+            List<Replica> replicas = (List<Replica>) resp.results.get("replicas_deleted");
+            for (Replica replica : replicas) {
+              try {
+                waitForCoreNodeGone(finalCollectionName, shard, replica.getName(), 30000);
+              } catch (Exception e) {
+                log.error("", e);
+              }
+            }
             CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
             return response;
           }
@@ -140,11 +153,11 @@ public class DeleteReplicaCmd implements Cmd {
 
     ocmh.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP);
     String extCollectionName = message.getStr(COLLECTION_PROP);
-    String shard = message.getStr(SHARD_ID_PROP);
+
     String replicaName = message.getStr(REPLICA_PROP);
 
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
-    String collectionName;
+
     if (followAliases) {
       collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     } else {
@@ -169,6 +182,8 @@ public class DeleteReplicaCmd implements Cmd {
     if (!onlyUpdateState && createdShardHandler) {
       ShardRequestTracker finalShardRequestTracker = shardRequestTracker;
       ShardHandler finalShardHandler = shardHandler;
+      ClusterState finalClusterState = clusterState;
+      String finalCollectionName1 = collectionName;
       response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
         @Override
         public CollectionCmdResponse.Response call() {
@@ -178,11 +193,14 @@ public class DeleteReplicaCmd implements Cmd {
           } catch (Exception e) {
             log.error("Exception waiting for delete replica response");
           }
+
           if (waitForFinalState) {
             try {
-              waitForCoreNodeGone(collectionName, shard, replicaName, 5000); // MRM TODO: timeout
+              ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(finalCollectionName1), null, false).get();
+              ocmh.overseer.writePendingUpdates();
+              waitForCoreNodeGone(finalCollectionName1, shard, replicaName, 5000); // MRM TODO: timeout
             } catch (Exception e) {
-              log.error("", e);
+              log.error("Failed waiting for replica to be removed", e);
             }
           }
           CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();

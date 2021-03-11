@@ -83,6 +83,9 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
         Replica currentReplica = currentSlice.getReplica(replica.getName());
         if (currentReplica != null) {
+          if (currentReplica.getBool("remove", false)) {
+            continue;
+          }
           replica.getProperties().put(ZkStateReader.STATE_PROP, currentReplica.getState().toString().toLowerCase(Locale.ROOT));
           if (Boolean.parseBoolean((String) currentReplica.getProperties().get("leader"))) {
             replica.propMap.put("leader", "true");
@@ -100,7 +103,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       Object removed = replica.getProperties().remove("numShards");
     }
 
-    for (Replica replica : currentSlice) {
+    for (Replica replica : replicas.values()) {
       if (!replicas.containsKey(replica.getName())) {
         replicas.put(replica.getName(), replica);
       }

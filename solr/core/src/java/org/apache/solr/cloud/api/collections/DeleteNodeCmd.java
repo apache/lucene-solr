@@ -133,7 +133,8 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
       try {
         // MRM TODO: - return results from deleteReplica cmd
-        CollectionCmdResponse.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica, shardHandler, shardRequestTracker, deleteResult);
+        CollectionCmdResponse.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA))
+            .deleteReplica(clusterState, sourceReplica, shardHandler, shardRequestTracker, deleteResult, coll, shard);
         clusterState = resp.clusterState;
         responses.add(resp);
       } catch (KeeperException e) {

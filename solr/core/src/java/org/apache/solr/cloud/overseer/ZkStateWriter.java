@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -139,12 +140,26 @@ public class ZkStateWriter {
               for (Slice slice : docCollection) {
                 Slice currentSlice = currentCollection.getSlice(slice.getName());
                 if (currentSlice != null) {
-                  if (slice.getProperties().get("remove") != null) {
+                  if (currentSlice.get("remove") != null || slice.getProperties().get("remove") != null) {
                     removeSlices.add(slice.getName());
                   } else {
                     currentCollection.getSlicesMap().put(slice.getName(), slice.update(currentSlice));
                   }
                 } else {
+                  if (slice.getProperties().get("remove") != null) {
+                    continue;
+                  }
+                  Set<String> remove = new HashSet<>();
+
+                  for (Replica replica : slice) {
+
+                    if (replica.get("remove") != null) {
+                      remove.add(replica.getName());
+                    }
+                  }
+                  for (String removeReplica : remove) {
+                    slice.getReplicasMap().remove(removeReplica);
+                  }
                   currentCollection.getSlicesMap().put(slice.getName(), slice);
                 }
               }
@@ -159,6 +174,19 @@ public class ZkStateWriter {
               docCollection.getProperties().remove("maxShardsPerNode");
               docCollection.getProperties().remove("nrtReplicas");
               docCollection.getProperties().remove("tlogReplicas");
+              List<String> removeSlices = new ArrayList();
+              for (Slice slice : docCollection) {
+                Slice currentSlice = docCollection.getSlice(slice.getName());
+                if (currentSlice != null) {
+                  if (slice.getProperties().get("remove") != null) {
+                    removeSlices.add(slice.getName());
+                  }
+                }
+              }
+              for (String removeSlice : removeSlices) {
+                docCollection.getSlicesMap().remove(removeSlice);
+              }
+
               cs.put(docCollection.getName(), docCollection);
             }
 
