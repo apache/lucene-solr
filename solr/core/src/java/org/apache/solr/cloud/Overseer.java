@@ -810,15 +810,24 @@ public class Overseer implements SolrCloseable {
 
 
     public void start() throws KeeperException, InterruptedException {
-      zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
-      startItems = super.getItems();
-      log.info("Overseer found entries on start {}", startItems);
-      processQueueItems(startItems, true);
+      if (closed) return;
+      ourLock.lock();
+      try {
+        if (closed) return;
+        zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
+        startItems = super.getItems();
+        log.info("Overseer found entries on start {}", startItems);
+        processQueueItems(startItems, true);
+      } finally {
+        ourLock.unlock();
+      }
     }
 
     @Override
     protected void processQueueItems(List<String> items, boolean onStart) {
+      if (closed) return;
       List<String> fullPaths = new ArrayList<>(items.size());
+      ourLock.lock();
       try {
         if (log.isDebugEnabled()) log.debug("Found state update queue items {}", items);
         for (String item : items) {
@@ -826,12 +835,13 @@ public class Overseer implements SolrCloseable {
         }
 
         Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
+        Set<String> shardStateCollections = null;
         List<Future> futures = new ArrayList<>();
         for (byte[] item : data.values()) {
           final ZkNodeProps message = ZkNodeProps.load(item);
           try {
+            String operation = message.getStr(Overseer.QUEUE_OPERATION);
             if (onStart) {
-              String operation = message.getStr(Overseer.QUEUE_OPERATION);
               if (operation.equals("state")) {
                 message.getProperties().remove(OverseerAction.DOWNNODE);
                 if (message.getProperties().size() == 1) {
@@ -839,6 +849,15 @@ public class Overseer implements SolrCloseable {
                 }
               }
             }
+
+            // hack
+            if (operation.equals("updateshardstate")) {
+              if (shardStateCollections == null) {
+                shardStateCollections = new HashSet<>();
+              }
+              shardStateCollections.add(message.getStr("collection"));
+            }
+
             Future future = overseer.processQueueItem(message);
             if (future != null) {
               futures.add(future);
@@ -854,10 +873,31 @@ public class Overseer implements SolrCloseable {
             log.error("failed waiting for enqueued updates", e);
           }
         }
-
+        futures.clear();
         Set<String> collections = overseer.zkStateWriter.getDirtyStateCollections();
         for (String collection : collections) {
-          overseer.writePendingUpdates(collection);
+          futures.add(overseer.writePendingUpdates(collection));
+        }
+
+        for (Future future : futures) {
+          try {
+            future.get();
+          } catch (Exception e) {
+            log.error("failed waiting for enqueued updates", e);
+          }
+        }
+        futures.clear();
+        if (shardStateCollections != null) {
+          for (String collection : shardStateCollections) {
+            futures.add(overseer.writePendingUpdates(collection));
+          }
+        }
+        for (Future future : futures) {
+          try {
+            future.get();
+          } catch (Exception e) {
+            log.error("failed waiting for enqueued updates", e);
+          }
         }
       } finally {
 
@@ -869,7 +909,7 @@ public class Overseer implements SolrCloseable {
               log.warn("Failed deleting processed items", e);
             }
           }
-
+          ourLock.unlock();
         }
       }
     }
@@ -893,23 +933,32 @@ public class Overseer implements SolrCloseable {
 
       @Override
       public void close() {
+        super.close();
         IOUtils.closeQuietly(collMessageHandler);
         IOUtils.closeQuietly(configMessageHandler);
-        super.close();
       }
 
       @Override
       public void start() throws KeeperException, InterruptedException {
-        zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
+        if (closed) return;
+        ourLock.lock();
+        try {
+          if (closed) return;
+          zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
 
-        startItems = super.getItems();
+          startItems = super.getItems();
 
-        log.info("Overseer found entries on start {}", startItems);
-        processQueueItems(startItems, true);
+          log.info("Overseer found entries on start {}", startItems);
+          processQueueItems(startItems, true);
+        } finally {
+          ourLock.unlock();
+        }
       }
 
       @Override
       protected void processQueueItems(List<String> items, boolean onStart) {
+        if (closed) return;
+        ourLock.lock();
         List<String> fullPaths = new ArrayList<>(items.size());
         try {
           log.info("Found collection queue items {} onStart={}", items, onStart);
@@ -941,6 +990,7 @@ public class Overseer implements SolrCloseable {
           } catch (Exception e) {
             log.warn("Delete items failed {}", e.getMessage());
           }
+          ourLock.unlock();
         }
       }
 
