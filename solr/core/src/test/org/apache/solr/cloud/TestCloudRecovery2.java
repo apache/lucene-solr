@@ -160,14 +160,14 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     node1.stop();
 
 
-    Thread.sleep(250);
-    waitForState("", COLLECTION, (liveNodes, collectionState) -> {
-      Replica leader = collectionState.getLeader("s1");
-      return leader != null && !leader.getName().equals(oldLeader.getName());
-    });
+    if (oldLeader.getNodeName().equals(node1.getNodeName())) {
+      waitForState("", COLLECTION, (liveNodes, collectionState) -> {
+        Replica leader = collectionState.getLeader("s1");
+        return leader != null && !leader.getName().equals(oldLeader.getName());
+      });
+    }
 
     node1.start();
-
 
     Thread.sleep(250);
 

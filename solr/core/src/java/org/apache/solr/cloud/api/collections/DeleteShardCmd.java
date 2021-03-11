@@ -165,7 +165,9 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       for (CollectionCmdResponse.Response finalize : finalizers) {
         finalize.asyncFinalRunner.call();
-        finalize.writeFuture.get();
+        if (finalize.writeFuture != null) {
+          finalize.writeFuture.get();
+        }
       }
       try {
         if (log.isDebugEnabled())  log.debug("Processs responses");

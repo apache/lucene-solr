@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -777,6 +776,7 @@ public class ZkStateWriter {
 
       idToCollection.put(collection.getId(), collection.getName());
 
+      trackVersions.put(collection.getName(), collection.getZNodeVersion());
 
       DocAssign docAssign = new DocAssign();
       docAssign.name = collection.getName();
