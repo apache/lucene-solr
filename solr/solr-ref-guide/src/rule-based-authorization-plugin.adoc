@@ -242,6 +242,7 @@ The predefined permission names (and their effects) are:
 ** REQUESTSTATUS
 * *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#update-request-handlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
 * *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-handlers,request handlers>>) such as `/select`, `/get`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
+* *zk-read* : Permission to read content from ZK (`/api/cluster/zk/data/*` , `/api/cluster/zk/ls/*` )
 * *all*: Any requests coming to Solr.
 
 === Permission Ordering and Resolution
@@ -252,7 +253,7 @@ Since Solr only uses the first matching permission it finds, it's important for 
 
 The ordering Solr uses is complex.  Solr tries to check first any permissions which are specific or relevant to the incoming request, only moving on to more general permissions if none of the more-specific ones match.  In effect, this means that different requests may check the same permissions in very different orders.
 
-If the incoming request is collection-agnostic (doesn't apply to a paritcular collection), Solr checks permissions in the following order:
+If the incoming request is collection-agnostic (doesn't apply to a particular collection), Solr checks permissions in the following order:
 
 . Permissions with a `collection` value of `null` and a `path` value matching the request's request handler
 . Permissions with a `collection` value of `null` and a `path` value of `*`
