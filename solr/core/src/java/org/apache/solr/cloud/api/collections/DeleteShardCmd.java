@@ -178,7 +178,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       if (waitForFinalState) {
         ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(collectionName), null, false).get();
-        ocmh.overseer.writePendingUpdates().get();
+        ocmh.overseer.writePendingUpdates(collectionName).get();
         ocmh.overseer.getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, coll) -> {
           if (coll == null) {
             return true;

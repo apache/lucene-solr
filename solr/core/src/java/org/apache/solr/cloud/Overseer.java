@@ -72,7 +72,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -712,8 +711,8 @@ public class Overseer implements SolrCloseable {
     return future;
   }
 
-  public Future writePendingUpdates() {
-    return ParWork.getRootSharedExecutor().submit(new OverseerTaskExecutorTask.WriteTask(getCoreContainer(), zkStateWriter));
+  public Future writePendingUpdates(String collection) {
+    return ParWork.getRootSharedExecutor().submit(new OverseerTaskExecutorTask.WriteTask(getCoreContainer(), collection));
   }
 
   private static abstract class QueueWatcher implements Watcher, Closeable {
@@ -766,7 +765,7 @@ public class Overseer implements SolrCloseable {
         return;
       }
 
-      //ourLock.lock();
+      ourLock.lock();
       try {
         try {
           List<String> items = getItems();
@@ -779,7 +778,7 @@ public class Overseer implements SolrCloseable {
           log.error("Exception during overseer queue queue processing", e);
         }
       } finally {
-     //   ourLock.unlock();
+        ourLock.unlock();
       }
 
     }
@@ -820,7 +819,6 @@ public class Overseer implements SolrCloseable {
     @Override
     protected void processQueueItems(List<String> items, boolean onStart) {
       List<String> fullPaths = new ArrayList<>(items.size());
-      ourLock.lock();
       try {
         if (log.isDebugEnabled()) log.debug("Found state update queue items {}", items);
         for (String item : items) {
@@ -856,9 +854,13 @@ public class Overseer implements SolrCloseable {
             log.error("failed waiting for enqueued updates", e);
           }
         }
-        overseer.writePendingUpdates();
 
+        Set<String> collections = overseer.zkStateWriter.getDirtyStateCollections();
+        for (String collection : collections) {
+          overseer.writePendingUpdates(collection);
+        }
       } finally {
+
         if (overseer.zkStateWriter != null) {
           if (zkController.getZkClient().isAlive()) {
             try {
@@ -867,8 +869,8 @@ public class Overseer implements SolrCloseable {
               log.warn("Failed deleting processed items", e);
             }
           }
+
         }
-        ourLock.unlock();
       }
     }
 
@@ -909,7 +911,6 @@ public class Overseer implements SolrCloseable {
       @Override
       protected void processQueueItems(List<String> items, boolean onStart) {
         List<String> fullPaths = new ArrayList<>(items.size());
-        ourLock.lock();
         try {
           log.info("Found collection queue items {} onStart={}", items, onStart);
           for (String item : items) {
@@ -940,9 +941,7 @@ public class Overseer implements SolrCloseable {
           } catch (Exception e) {
             log.warn("Delete items failed {}", e.getMessage());
           }
-          ourLock.unlock();
         }
-
       }
 
       private void runAsync(Map.Entry<String,byte[]> entry, boolean onStart) {

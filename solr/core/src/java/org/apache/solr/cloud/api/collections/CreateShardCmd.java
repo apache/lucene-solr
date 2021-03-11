@@ -188,7 +188,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
         log.error("failure", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-      response.writeFuture = overseer.writePendingUpdates();
+      response.writeFuture = overseer.writePendingUpdates(collection);
       if (resp.asyncFinalRunner != null) {
         try {
           resp.asyncFinalRunner.call();

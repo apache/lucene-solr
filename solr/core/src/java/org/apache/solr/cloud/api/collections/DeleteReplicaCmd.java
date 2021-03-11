@@ -198,7 +198,7 @@ public class DeleteReplicaCmd implements Cmd {
           if (waitForFinalState) {
             try {
               ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(finalCollectionName1), null, false).get();
-              ocmh.overseer.writePendingUpdates();
+              ocmh.overseer.writePendingUpdates(finalCollectionName1);
               waitForCoreNodeGone(finalCollectionName1, shard, replicaName, 5000); // MRM TODO: timeout
             } catch (Exception e) {
               log.error("Failed waiting for replica to be removed", e);
@@ -280,7 +280,7 @@ public class DeleteReplicaCmd implements Cmd {
         for (Future future : futures) {
           future.get();
         }
-        ocmh.overseer.writePendingUpdates();
+        ocmh.overseer.writePendingUpdates(collectionName);
       } catch (Exception e) {
         log.error("failed writing update to zkstatewriter", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

@@ -82,16 +82,18 @@ public class OverseerTaskExecutorTask {
   }
 
   public static class WriteTask implements Runnable {
+    private final String collection;
     CoreContainer coreContainer;
 
-    public WriteTask(CoreContainer coreContainer, ZkStateWriter zkStateWriter) {
+    public WriteTask(CoreContainer coreContainer, String collection) {
+      this.collection = collection;
       this.coreContainer = coreContainer;
     }
 
     @Override
     public void run() {
       try {
-        coreContainer.getZkController().getOverseer().getZkStateWriter().writePendingUpdates();
+        coreContainer.getZkController().getOverseer().getZkStateWriter().writePendingUpdates(collection);
       } catch (NullPointerException e) {
         if (log.isDebugEnabled()) log.debug("Won't write pending updates, zkStateWriter=null");
       } catch (Exception e) {

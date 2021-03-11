@@ -145,9 +145,9 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       };
       runners.add(runner);
     }
-
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(clusterState.getCollectionStates().keySet().iterator().next()), null, false).get();
-    ocmh.overseer.writePendingUpdates();
+    String collection = clusterState.getCollectionStates().keySet().iterator().next();
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collection), null, false).get();
+    ocmh.overseer.writePendingUpdates(collection);
 
     CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     response.results = results;

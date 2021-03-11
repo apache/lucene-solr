@@ -308,8 +308,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
         try {
           response1.clusterState = ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult).clusterState;
-          ocmh.overseer.getZkStateWriter().enqueueUpdate( response1.clusterState.getCollection(response1.clusterState.getCollectionsMap().keySet().iterator().next()), null,false).get();
-          asyncResp.writeFuture = ocmh.overseer.writePendingUpdates();
+          String collection = response1.clusterState.getCollectionsMap().keySet().iterator().next();
+          ocmh.overseer.getZkStateWriter().enqueueUpdate( response1.clusterState.getCollection(collection), null,false).get();
+          asyncResp.writeFuture = ocmh.overseer.writePendingUpdates(collection);
         } catch (SolrException e) {
           deleteResult.add("failure", e.toString());
         }

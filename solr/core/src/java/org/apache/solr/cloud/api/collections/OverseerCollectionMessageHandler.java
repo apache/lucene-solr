@@ -333,7 +333,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
             }
             if (asyncResp == null || asyncResp.writeFuture == null) {
               future.get();
-              writeFuture2 = overseer.writePendingUpdates();
+              writeFuture2 = overseer.writePendingUpdates(collection);
             }
 
           } else {
@@ -356,7 +356,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
               if (future != null) {
                 future.get();
               }
-              writeFuture = overseer.writePendingUpdates();
+              writeFuture = overseer.writePendingUpdates(collection);
             }
           }
         }
