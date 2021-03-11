@@ -594,6 +594,7 @@ public class ZkStateWriter {
               ZkNodeProps updates = stateUpdates.get(collection.getName());
               if (updates != null) {
                 updates.getProperties().clear();
+                writeStateUpdates(collection, updates);
               }
             }
 

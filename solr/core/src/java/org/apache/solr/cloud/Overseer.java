@@ -892,13 +892,13 @@ public class Overseer implements SolrCloseable {
             futures.add(overseer.writePendingUpdates(collection));
           }
         }
-        for (Future future : futures) {
-          try {
-            future.get();
-          } catch (Exception e) {
-            log.error("failed waiting for enqueued updates", e);
-          }
-        }
+//        for (Future future : futures) {
+//          try {
+//            future.get();
+//          } catch (Exception e) {
+//            log.error("failed waiting for enqueued updates", e);
+//          }
+//        }
       } finally {
 
         if (overseer.zkStateWriter != null) {
