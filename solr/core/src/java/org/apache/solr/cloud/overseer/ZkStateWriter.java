@@ -90,8 +90,8 @@ public class ZkStateWriter {
 
   private AtomicLong ID = new AtomicLong();
 
-  private Set<String> dirtyStructure = new HashSet<>();
-  private Set<String> dirtyState = new HashSet<>();
+  private Set<String> dirtyStructure = ConcurrentHashMap.newKeySet();
+  private Set<String> dirtyState = ConcurrentHashMap.newKeySet();
 
   public ZkStateWriter(ZkStateReader zkStateReader, Stats stats, Overseer overseer) {
     this.overseer = overseer;
@@ -124,7 +124,7 @@ public class ZkStateWriter {
             log.debug("zkwriter collection={}", docCollection);
             log.debug("zkwriter currentCollection={}", currentCollection);
 
-            idToCollection.put(docCollection.getId(), docCollection.getName());
+            idToCollection.putIfAbsent(docCollection.getId(), docCollection.getName());
 
             //          if (currentCollection != null) {
             //            if (currentCollection.getId() != collection.getId()) {
