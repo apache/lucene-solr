@@ -1269,7 +1269,7 @@ public class ZkController implements Closeable, Runnable {
       if (docCollection != null) {
         Replica replica = docCollection.getReplica(coreName);
         if (replica != null && !baseUrl.equals(replica.getBaseUrl())) {
-          log.error("wrong base url for this node in replica entry replica={}", replica);
+          log.error("IllegalStateException wrong base url for this node in replica entry replica={}", replica);
           //throw new IllegalArgumentException("wrong base url for this node in replica entry baseUrl=" + baseUrl + " replica=" + replica);
         }
       }
@@ -1279,7 +1279,7 @@ public class ZkController implements Closeable, Runnable {
       getZkStateReader().registerCore(cloudDesc.getCollectionName(), coreName);
 
 
-      log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, cloudDesc.getReplicaType());
+      log.info("Register replica - core={} id={} address={} collection={} shard={} type={}", coreName, desc.getCoreProperties().get("id"), baseUrl, collection, shardId, cloudDesc.getReplicaType());
 
       log.info("Register terms for replica {}", coreName);
 

@@ -1114,8 +1114,26 @@ public class HttpSolrCall {
       RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
       while (it.hasNext()) {
         Replica replica = it.next();
-        if (!checkActive || (liveNodes.contains(replica.getNodeName()) && replica.getState() == Replica.State.ACTIVE)) {
+        if (!checkActive || (liveNodes.contains(replica.getNodeName()))) {
           SolrCore core = checkProps(replica);
+          if (core != null && checkActive && replica.getState() != Replica.State.ACTIVE) {
+            try {
+              cores.getZkController().getZkStateReader().waitForState(core.getCoreDescriptor().getCollectionName(), 1, TimeUnit.SECONDS, (liveNodes1, coll) -> {
+                if (coll == null) {
+                  return false;
+                }
+                Replica rep = coll.getReplica(core.getName());
+                if (rep == null) {
+                  return false;
+                }
+                if (rep.getState() != Replica.State.ACTIVE) {
+                  return false;
+                }
+                return true;
+              });
+            } catch (InterruptedException e) {
+            } catch (TimeoutException e) { }
+          }
           if (core != null) return core;
         }
       }
