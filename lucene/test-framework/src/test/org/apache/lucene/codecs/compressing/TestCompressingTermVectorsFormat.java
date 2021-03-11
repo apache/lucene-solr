@@ -108,14 +108,21 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     }
     iw.getConfig().setMergePolicy(newLogMergePolicy());
     iw.forceMerge(1);
+    // add one more doc and merge again
+    Document doc = new Document();
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setStoreTermVectors(true);
+    doc.add(new Field("text", "not very long at all", ft));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
     DirectoryReader ir2 = DirectoryReader.openIfChanged(ir);
     assertNotNull(ir2);
     ir.close();
     ir = ir2;
     CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
     CompressingTermVectorsReader reader = (CompressingTermVectorsReader)sr.getTermVectorsReader();
-    // we could get lucky, and have zero, but typically one.
-    assertTrue(reader.getNumDirtyChunks() <= 1);
+    // at most 2: the 5 chunks from 5 doc segment will be collapsed into a single chunk
+    assertTrue(reader.getNumDirtyChunks() <= 2);
     ir.close();
     iw.close();
     dir.close();
