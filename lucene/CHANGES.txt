@@ -1,4 +1,4 @@
-Lucene Change Log
+KLucene Change Log
 
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
@@ -46,6 +46,10 @@ Bug Fixes
 * LUCENE-9762: DoubleValuesSource.fromQuery (also used by FunctionScoreQuery.boostByQuery) could
   throw an exception when the query implements TwoPhaseIterator and when the score is requested
   repeatedly. (David Smiley, hossman)
+
+* LUCENE-9791: BytesRefHash.equals/find is now thread safe, fixing a
+  Luwak/Monitor bug causing registered queries to sometimes fail to
+  match. (Paweł Bugalski)
 
 Other
 ---------------------
