@@ -43,11 +43,10 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
  * @lucene.internal
  */
 public final class BytesRefHash implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class) +
-      // size of scratch1
-      RamUsageEstimator.shallowSizeOfInstance(BytesRef.class) +
-      // size of Counter
-      RamUsageEstimator.primitiveSizes.get(long.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class) +
+          // size of Counter
+          RamUsageEstimator.primitiveSizes.get(long.class);
 
   public static final int DEFAULT_CAPACITY = 16;
 
@@ -56,7 +55,6 @@ public final class BytesRefHash implements Accountable {
   final ByteBlockPool pool;
   int[] bytesStart;
 
-  private final BytesRef scratch1 = new BytesRef();
   private int hashSize;
   private int hashHalfSize;
   private int hashMask;
@@ -187,8 +185,21 @@ public final class BytesRefHash implements Accountable {
   }
 
   private boolean equals(int id, BytesRef b) {
-    pool.setBytesRef(scratch1, bytesStart[id]);
-    return scratch1.bytesEquals(b);
+    final int textStart = bytesStart[id];
+    final byte[] bytes = pool.buffers[textStart >> BYTE_BLOCK_SHIFT];
+    int pos = textStart & BYTE_BLOCK_MASK;
+    final int length;
+    final int offset;
+    if ((bytes[pos] & 0x80) == 0) {
+      // length is 1 byte
+      length = bytes[pos];
+      offset = pos + 1;
+    } else {
+      // length is 2 bytes
+      length = (bytes[pos] & 0x7f) + ((bytes[pos + 1] & 0xff) << 7);
+      offset = pos + 2;
+    }
+    return Arrays.equals(bytes, offset, offset + length, b.bytes, b.offset, b.offset + b.length);
   }
 
   private boolean shrink(int targetSize) {

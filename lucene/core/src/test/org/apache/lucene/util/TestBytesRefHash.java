@@ -16,15 +16,19 @@
  */
 package org.apache.lucene.util;
 
-
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
 import org.junit.Before;
@@ -275,6 +279,69 @@ public class TestBytesRefHash extends LuceneTestCase {
       }
       
       assertAllIn(strings, hash);
+      hash.clear();
+      assertEquals(0, hash.size());
+      hash.reinit();
+    }
+  }
+
+  @Test
+  public void testConcurrentAccessToBytesRefHash() throws Exception {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
+      int numStrings = 797;
+      List<String> strings = new ArrayList<>(numStrings);
+      for (int i = 0; i < numStrings; i++) {
+        final String str = TestUtil.randomRealisticUnicodeString(random(), 1, 1000);
+        hash.add(new BytesRef(str));
+        assertTrue(strings.add(str));
+      }
+      int hashSize = hash.size();
+
+      AtomicInteger notFound = new AtomicInteger();
+      AtomicInteger notEquals = new AtomicInteger();
+      AtomicInteger wrongSize = new AtomicInteger();
+      int numThreads = atLeast(3);
+      CountDownLatch latch = new CountDownLatch(numThreads);
+      Thread[] threads = new Thread[numThreads];
+      for (int i = 0; i < threads.length; i++) {
+        int loops = atLeast(100);
+        threads[i] =
+            new Thread(
+                () -> {
+                  BytesRef scratch = new BytesRef();
+                  latch.countDown();
+                  try {
+                    latch.await();
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                  }
+                  for (int k = 0; k < loops; k++) {
+                    BytesRef find = new BytesRef(strings.get(k % strings.size()));
+                    int id = hash.find(find);
+                    if (id < 0) {
+                      notFound.incrementAndGet();
+                    } else {
+                      BytesRef get = hash.get(id, scratch);
+                      if (!get.bytesEquals(find)) {
+                        notEquals.incrementAndGet();
+                      }
+                    }
+                    if (hash.size() != hashSize) {
+                      wrongSize.incrementAndGet();
+                    }
+                  }
+                },
+                "t" + i);
+      }
+
+      for (Thread t : threads) t.start();
+      for (Thread t : threads) t.join();
+
+      assertEquals(0, notFound.get());
+      assertEquals(0, notEquals.get());
+      assertEquals(0, wrongSize.get());
       hash.clear();
       assertEquals(0, hash.size());
       hash.reinit();
