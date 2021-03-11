@@ -70,89 +70,81 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
 
   @Test
   public void test() throws Exception {
-    
+
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    
-   // waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+
+    // waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     List<JettySolrRunner> skipServers = new ArrayList<>();
     int docId = 0;
-    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
-        "to come to the aid of their country.");
-    
-    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
-        "old haven was blue.");
-     List<Replica> replicas = new ArrayList<>();
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1, "to come to the aid of their country.");
 
-   replicas.addAll(cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION).getSlice("s1").getReplicas());
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1, "old haven was blue.");
+    List<Replica> replicas = new ArrayList<>();
+
+    replicas.addAll(cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION).getSlice("s1").getReplicas());
 
     skipServers.add(getJettyOnPort(getReplicaPort(replicas.get(0))));
-    
-    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
-        "but the song was fancy.");
-    
+
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1, "but the song was fancy.");
+
     skipServers.add(getJettyOnPort(getReplicaPort(replicas.get(1))));
-    
-    indexDoc(skipServers, id,docId++, i1, 50, tlong, 50, t1,
-        "under the moon and over the lake");
-    
+
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1, "under the moon and over the lake");
+
     commit();
-    
-   //d waitForRecoveriesToFinish(false);
+
+    //d waitForRecoveriesToFinish(false);
 
     // shard should be inconsistent
-  //  String shardFailMessage = checkShardConsistency("shard1", true, false);
-  //  assertNotNull(shardFailMessage);
-    
+    //  String shardFailMessage = checkShardConsistency("shard1", true, false);
+    //  assertNotNull(shardFailMessage);
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.SYNCSHARD.toString());
     params.set("collection", COLLECTION);
     params.set("shard", "s1");
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    
+
     String baseUrl = replicas.get(1).getBaseUrl();
     request.setBasePath(baseUrl);
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
-    
+
     // we only set the connect timeout, not so timeout
 
     try (SolrClient baseClient = getClient(baseUrl)) {
       baseClient.request(request);
     }
 
+    // waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
-   // waitForThingsToLevelOut(15, TimeUnit.SECONDS);
-    
-  //  checkShardConsistency(false, true);
-    
+    //  checkShardConsistency(false, true);
+
     long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(4, cloudClientDocs);
-    
-    
+
     // kill the leader - new leader could have all the docs or be missing one
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 10000)));
-    
-    skipServers = getRandomOtherJetty(leaderJetty, null); // but not the leader
-    
-    // this doc won't be on one node
-    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
-        "to come to the aid of their country.");
-    commit();
-    
-    leaderJetty.stop();
 
+    skipServers = getRandomOtherJetty(leaderJetty, null); // but not the leader
+
+    // this doc won't be on one node
+    indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1, "to come to the aid of their country.");
+    commit();
+
+    leaderJetty.stop();
 
     cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(5, cloudClientDocs);
 
     JettySolrRunner deadJetty = leaderJetty;
-    
+
     // let's get the latest leader
     int cnt = 0;
     while (deadJetty == leaderJetty) {
-   //   updateMappingsFromZk(this.jettys, this.clients);
+      //   updateMappingsFromZk(this.jettys, this.clients);
       leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 5)));
       if (deadJetty == leaderJetty) {
         Thread.sleep(100);
@@ -161,53 +153,55 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
         fail("don't expect leader to be on the jetty we stopped deadJetty=" + deadJetty.getNodeName() + " leaderJetty=" + leaderJetty.getNodeName());
       }
     }
-    
+
     // bring back dead node
     deadJetty.start(); // he is not the leader anymore
 
     log.info("numJettys=" + numJettys);
     cluster.waitForActiveCollection(COLLECTION, 1, numJettys);
-    
+
     skipServers = getRandomOtherJetty(leaderJetty, deadJetty);
-    skipServers.addAll( getRandomOtherJetty(leaderJetty, deadJetty));
+    skipServers.addAll(getRandomOtherJetty(leaderJetty, deadJetty));
     // skip list should be 
-    
-//    System.out.println("leader:" + leaderJetty.url);
-//    System.out.println("dead:" + deadJetty.url);
-//    System.out.println("skip list:" + skipServers);
-    
+
+    //    System.out.println("leader:" + leaderJetty.url);
+    //    System.out.println("dead:" + deadJetty.url);
+    //    System.out.println("skip list:" + skipServers);
+
     // we are skipping  2 nodes
     assertEquals(2, skipServers.size());
-    
+
     // more docs than can peer sync
     for (int i = 0; i < 300; i++) {
-      indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
-          "to come to the aid of their country.");
+      indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1, "to come to the aid of their country.");
     }
-    
+
     commit();
-    
-   // waitForRecoveriesToFinish(false);
-    
+
+    // waitForRecoveriesToFinish(false);
+
     // shard should be inconsistent
-//    String shardFailMessage = waitTillInconsistent();
-//    assertNotNull(
-//        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:"
-//            + leaderJetty.getBaseUrl() + " Dead Guy:" + deadJetty.getBaseUrl() + "skip list:" + skipServers, shardFailMessage);
-//
+    //    String shardFailMessage = waitTillInconsistent();
+    //    assertNotNull(
+    //        "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:"
+    //            + leaderJetty.getBaseUrl() + " Dead Guy:" + deadJetty.getBaseUrl() + "skip list:" + skipServers, shardFailMessage);
+    //
     // good place to test compareResults
     if (controlClient != null) {
       boolean shouldFail = CloudInspectUtil.compareResults(controlClient, cloudClient);
       assertTrue("A test that compareResults is working correctly failed", shouldFail);
     }
-    
+
     // kill the current leader
     leaderJetty.stop();
-    
+
+    // MRM TODO:
     //waitForNoShardInconsistency();
 
     //checkShardConsistency(true, true);
-    
+
+    //cluster.getSolrClient().getZkStateReader().checkShardConsistency(COLLECTION);
+
     success = true;
   }
 

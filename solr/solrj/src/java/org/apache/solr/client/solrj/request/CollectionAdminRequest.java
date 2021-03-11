@@ -111,6 +111,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, action.toString());
+
     return params;
   }
 
@@ -147,6 +148,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public abstract static class AsyncCollectionAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String asyncId = null;
+
     protected boolean waitForFinalState = false;
 
     public AsyncCollectionAdminRequest(CollectionAction action) {
@@ -164,10 +166,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public String getAsyncId() {
       return asyncId;
-    }
-
-    public void setWaitForFinalState(boolean waitForFinalState) {
-      this.waitForFinalState = waitForFinalState;
     }
 
     public void setAsyncId(String asyncId) {
@@ -225,9 +223,18 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return requestStatus(asyncId).waitFor(client, timeoutSeconds);
     }
 
+    public void setWaitForFinalState(boolean waitForFinalState) {
+      this.waitForFinalState = waitForFinalState;
+    }
+
+    public CollectionAdminRequest waitForFinalState(boolean waitForFinalState) {
+      this.waitForFinalState = waitForFinalState;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
-      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       if (asyncId != null) {
         params.set(CommonAdminParams.ASYNC, asyncId);
       }
@@ -258,7 +265,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     @Override
     public SolrParams getParams() {
-      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.NAME, collection);
       params.setNonNull(CollectionAdminParams.FOLLOW_ALIASES, followAliases);
       return params;
@@ -278,9 +285,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     @Override
     public SolrParams getParams() {
-      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.COLLECTION, collection);
       params.set(CoreAdminParams.SHARD, shard);
+      if (waitForFinalState) {
+        params.set(CommonAdminParams.WAIT_FOR_FINAL_STATE, waitForFinalState);
+      }
       return params;
     }
   }
@@ -474,6 +484,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
     public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
     public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
+    public Create waitForFinalState(boolean wait) { this.waitForFinalState = wait; return this;}
 
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
@@ -1287,6 +1298,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.CREATESHARD, collection, SolrIdentifierValidator.validateShardName(shard));
     }
 
+    public CreateShard waitForFinalState(boolean wait) { this.waitForFinalState = wait; return this;}
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1436,9 +1449,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.DELETESHARD, collection, shard);
     }
 
+    public DeleteShard waitForFinalState(boolean waitForFinalState) {
+      this.waitForFinalState = waitForFinalState;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
-      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      SolrParams params = super.getParams();
 
       return params;
     }
@@ -2069,6 +2087,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.properties = properties;
       return this;
     }
+
+    public AddReplica waitForFinalState(boolean wait) { this.waitForFinalState = wait; return this;}
 
     public AddReplica withProperty(String key, String value) {
       if (this.properties == null)

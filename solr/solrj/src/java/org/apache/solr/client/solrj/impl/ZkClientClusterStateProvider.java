@@ -157,15 +157,11 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
       throw new AlreadyClosedException();
     }
     if (this.zkStateReader == null) {
-      boolean createWatchers = false;
       synchronized (this) {
         if (this.zkStateReader == null) {
           this.zkStateReader = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
-          createWatchers = true;
+          this.zkStateReader.createClusterStateWatchersAndUpdate();
         }
-      }
-      if (createWatchers)  {
-        this.zkStateReader.createClusterStateWatchersAndUpdate();
       }
     }
   }

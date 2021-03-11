@@ -76,21 +76,15 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   private void createCollection(String collectionName, String createNodeSet) throws Exception {
     if (random().nextBoolean()) { // process asynchronously
-      CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-          .setMaxShardsPerNode(maxShardsPerNode)
-          .setCreateNodeSet(createNodeSet)
-          .processAndWait(cluster.getSolrClient(), 10);
-
-      // async will not currently gaurantee our cloud client is state up to date
-      if (createNodeSet != null && createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
-        cluster.waitForActiveCollection(collectionName, numShards, 0);
-      } else {
-        cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
-      }
+      CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas).setMaxShardsPerNode(maxShardsPerNode)
+          .waitForFinalState(true).setCreateNodeSet(createNodeSet);
+          req.setWaitForFinalState(true);
+          req.processAndWait(cluster.getSolrClient(), 10);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .setMaxShardsPerNode(maxShardsPerNode)
+          .waitForFinalState(true)
           .setCreateNodeSet(createNodeSet)
           .process(cluster.getSolrClient());
     }
@@ -181,8 +175,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     cluster.getZkClient().printLayout();
     // create it again
     createCollection(collectionName, null);
-    
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
 
     // check that there's no left-over state
     assertEquals(0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());

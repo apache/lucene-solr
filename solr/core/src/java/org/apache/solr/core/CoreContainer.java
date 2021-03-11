@@ -862,7 +862,7 @@ public class CoreContainer implements Closeable {
 
     if (isZooKeeperAware()) {
 
-      log.info("Waiting to see RECOVERY states for node on startup ...");
+      log.info("Waiting to see not ACTIVE states for node on startup ...");
       for (final CoreDescriptor cd : cds) {
         String collection = cd.getCollectionName();
         getZkController().getZkStateReader().registerCore(collection, cd.getName());
@@ -876,8 +876,9 @@ public class CoreContainer implements Closeable {
             String nodeName = getZkController().getNodeName();
             List<Replica> replicas = c.getReplicas();
             for (Replica replica : replicas) {
+              log.debug("startup replica on node={} replica={}", zkSys.getZkController().getNodeName(), replica);
               if (replica.getNodeName().equals(nodeName)) {
-                if (!replica.getState().equals(Replica.State.RECOVERING)) {
+                if (replica.getState().equals(State.ACTIVE)) {
                   if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={} replica={}", replica.getState(), replica.getNodeName(), nodeName, replica);
                   return false;
                 }

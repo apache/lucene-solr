@@ -34,7 +34,7 @@ public class TestExclusionRuleCollectionAccess extends SolrCloudTestCase {
   @Test
   public void doTest() throws Exception {
 
-    CollectionAdminRequest.createCollection("css33", "conf", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("css33", "conf", 1, 1).waitForFinalState(true).process(cluster.getSolrClient());
 
     new UpdateRequest()
         .add("id", "1")

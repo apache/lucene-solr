@@ -67,7 +67,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -136,7 +136,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     backupMgr.downloadCollectionProperties(location, backupName, collectionName);
 
     log.info("Completed backing up ZK data for backupName={}", backupName);
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     response.results = results;
 

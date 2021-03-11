@@ -45,6 +45,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -74,7 +75,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   @Override
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.info("delete collection called {}", message);
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
@@ -85,6 +86,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     ShardHandler shardHandler = null;
     OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = null;
     boolean skipFinalStateWork = false;
+
+    message.getProperties().put(WAIT_FOR_FINAL_STATE, "true");
 
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
@@ -168,7 +171,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
     }
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
 
     //if (results.get("failure") == null && results.get("exception") == null) {
@@ -177,7 +180,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     OverseerCollectionMessageHandler.ShardRequestTracker finalShardRequestTracker = shardRequestTracker;
     response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
       @Override
-      public AddReplicaCmd.Response call() {
+      public CollectionCmdResponse.Response call() {
         try {
           results.add("collection", collection);
           if (finalShardHandler != null && finalShardRequestTracker != null) {
@@ -200,7 +203,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           }
         }
 
-        AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+        CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
         return response;
       }
     };

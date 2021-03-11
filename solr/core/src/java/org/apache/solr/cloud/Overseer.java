@@ -72,7 +72,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -485,23 +487,6 @@ public class Overseer implements SolrCloseable {
     OUR_JVM_OVERSEER = null;
     closed = true;
 
-    if (!cd) {
-      boolean retry;
-      synchronized (this) {
-        retry = !zkController.getCoreContainer().isShutDown() && !zkController.isShutdownCalled() && !zkController.isClosed() && !closeAndDone;
-      }
-      if (retry && zkController.getZkClient().isAlive()) {
-        log.info("rejoining the overseer election after closing");
-        try {
-          zkController.rejoinOverseerElection(false);
-        } catch (AlreadyClosedException e) {
-
-        } catch (Exception e) {
-          log.warn("Could not rejoin election", e);
-        }
-      }
-
-    }
 
     IOUtils.closeQuietly(queueWatcher);
     IOUtils.closeQuietly(collectionQueueWatcher);
@@ -534,6 +519,24 @@ public class Overseer implements SolrCloseable {
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e, true);
       }
+    }
+
+    if (!cd) {
+      boolean retry;
+      synchronized (this) {
+        retry = !zkController.getCoreContainer().isShutDown() && !zkController.isShutdownCalled() && !zkController.isClosed() && !closeAndDone;
+      }
+      if (retry && zkController.getZkClient().isAlive()) {
+        log.info("rejoining the overseer election after closing");
+        try {
+          zkController.rejoinOverseerElection(false);
+        } catch (AlreadyClosedException e) {
+
+        } catch (Exception e) {
+          log.warn("Could not rejoin election", e);
+        }
+      }
+
     }
 
     if (log.isDebugEnabled()) {
@@ -701,16 +704,16 @@ public class Overseer implements SolrCloseable {
     getStateUpdateQueue().offer(data, false);
   }
 
-  public boolean processQueueItem(ZkNodeProps message) throws InterruptedException {
+  public Future processQueueItem(ZkNodeProps message) throws InterruptedException {
     if (log.isDebugEnabled()) log.debug("processQueueItem {}", message);
 
-    new OverseerTaskExecutorTask(getCoreContainer(), message).run();
+    Future future = new OverseerTaskExecutorTask(getCoreContainer(), message).run();
 
-    return true;
+    return future;
   }
 
-  public void writePendingUpdates() {
-    new OverseerTaskExecutorTask.WriteTask(getCoreContainer(), zkStateWriter).run();
+  public Future writePendingUpdates() {
+    return ParWork.getRootSharedExecutor().submit(new OverseerTaskExecutorTask.WriteTask(getCoreContainer(), zkStateWriter));
   }
 
   private static abstract class QueueWatcher implements Watcher, Closeable {
@@ -758,12 +761,12 @@ public class Overseer implements SolrCloseable {
       if (Event.EventType.None.equals(event.getType())) {
         return;
       }
-      if (this.closed) {
+      if (this.closed || zkController.getZkClient().isClosed()) {
         log.info("Overseer is closed, do not process watcher for queue");
         return;
       }
 
-      ourLock.lock();
+      //ourLock.lock();
       try {
         try {
           List<String> items = getItems();
@@ -776,7 +779,7 @@ public class Overseer implements SolrCloseable {
           log.error("Exception during overseer queue queue processing", e);
         }
       } finally {
-        ourLock.unlock();
+     //   ourLock.unlock();
       }
 
     }
@@ -825,22 +828,34 @@ public class Overseer implements SolrCloseable {
         }
 
         Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
-
+        List<Future> futures = new ArrayList<>();
         for (byte[] item : data.values()) {
           final ZkNodeProps message = ZkNodeProps.load(item);
           try {
             if (onStart) {
-//              String operation = message.getStr(Overseer.QUEUE_OPERATION);
-//              if (operation.equals("state")) {
-//                message.getProperties().remove(OverseerAction.DOWNNODE);
-//              }
+              String operation = message.getStr(Overseer.QUEUE_OPERATION);
+              if (operation.equals("state")) {
+                message.getProperties().remove(OverseerAction.DOWNNODE);
+                if (message.getProperties().size() == 1) {
+                  continue;
+                }
+              }
             }
-            boolean success = overseer.processQueueItem(message);
+            Future future = overseer.processQueueItem(message);
+            if (future != null) {
+              futures.add(future);
+            }
           } catch (Exception e) {
             log.error("Overseer state update queue processing failed", e);
           }
         }
-
+        for (Future future : futures) {
+          try {
+            future.get();
+          } catch (Exception e) {
+            log.error("failed waiting for enqueued updates", e);
+          }
+        }
         overseer.writePendingUpdates();
 
       } finally {

@@ -53,12 +53,12 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ocmh.checkRequired(message, "node");
     String node = message.getStr("node");
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
     List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
-    AddReplicaCmd.Response resp = null;
+    CollectionCmdResponse.Response resp = null;
     if (!singleReplicas.isEmpty()) {
       results.add("failure", "Can't delete the only existing non-PULL replica(s) on node " + node + ": " + singleReplicas.toString());
     } else {
@@ -66,8 +66,8 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr(Overseer.QUEUE_OPERATION));
       resp = cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC), shardHandler, shardRequestTracker);
 
-      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-      AddReplicaCmd.Response finalResp = resp;
+      CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
+      CollectionCmdResponse.Response finalResp = resp;
       response.asyncFinalRunner = () -> {
         try {
           if (log.isDebugEnabled())  log.debug("Processs responses");
@@ -82,7 +82,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
    // response
     return response;
   }
@@ -116,13 +116,13 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  static AddReplicaCmd.Response cleanupReplicas(@SuppressWarnings({"rawtypes"})NamedList results,
+  static CollectionCmdResponse.Response cleanupReplicas(@SuppressWarnings({"rawtypes"})NamedList results,
                               ClusterState clusterState,
                               List<ZkNodeProps> sourceReplicas,
                               OverseerCollectionMessageHandler ocmh,
                               String node,
                               String async, ShardHandler shardHandler, OverseerCollectionMessageHandler.ShardRequestTracker  shardRequestTracker) throws InterruptedException {
-    List<AddReplicaCmd.Response> responses = new ArrayList<>(sourceReplicas.size());
+    List<CollectionCmdResponse.Response> responses = new ArrayList<>(sourceReplicas.size());
     for (ZkNodeProps sReplica : sourceReplicas) {
 
       ZkNodeProps sourceReplica = sReplica;
@@ -133,7 +133,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
       try {
         // MRM TODO: - return results from deleteReplica cmd
-        AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica, shardHandler, shardRequestTracker, deleteResult);
+        CollectionCmdResponse.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica, shardHandler, shardRequestTracker, deleteResult);
         clusterState = resp.clusterState;
         responses.add(resp);
       } catch (KeeperException e) {
@@ -147,10 +147,10 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
     }
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     response.clusterState = clusterState;
     response.asyncFinalRunner = () -> {
-      for (AddReplicaCmd.Response r : responses) {
+      for (CollectionCmdResponse.Response r : responses) {
         if (r.asyncFinalRunner != null) {
           r.asyncFinalRunner.call();
         }

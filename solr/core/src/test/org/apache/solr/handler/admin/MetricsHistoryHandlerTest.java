@@ -90,7 +90,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
     // create .system collection
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL,
-        "conf", 1, 1);
+        "conf", 1, 1).waitForFinalState(true);
     create.process(solrClient);
   }
 

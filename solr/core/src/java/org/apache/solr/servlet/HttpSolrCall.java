@@ -1125,10 +1125,14 @@ public class HttpSolrCall {
 
   private SolrCore checkProps(Replica replica) {
     SolrCore core = null;
-    if (cores.getZkController().getNodeName().equals(replica.getNodeName())) {
+    boolean nodeMatches = cores.getZkController().getNodeName().equals(replica.getNodeName());
+    if (nodeMatches) {
+      if (cores.isCoreLoading(replica.getName())) {
+        cores.waitForLoadingCore(replica.getName(), 10000);
+      }
       core = cores.getCore(replica.getName());
     }
-    log.debug("check local core has correct props replica={} nodename={} core found={}", replica, cores.getZkController().getNodeName(), core != null);
+    log.debug("check local core has correct props replica={} nodename={} nodematches={} core found={}", replica, cores.getZkController().getNodeName(), nodeMatches, core != null);
     return core;
   }
 

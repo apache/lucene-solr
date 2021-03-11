@@ -55,11 +55,11 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     return addShard(clusterState, clusterState.getCollection(message.getStr(COLLECTION_PROP)), message, results);
   }
 
-  AddReplicaCmd.Response addShard(ClusterState clusterState, DocCollection collection, ZkNodeProps message, NamedList results) throws Exception {
+  CollectionCmdResponse.Response addShard(ClusterState clusterState, DocCollection collection, ZkNodeProps message, NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -110,10 +110,10 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
 
     final NamedList addResult = new NamedList();
-    AddReplicaCmd.Response resp;
+    CollectionCmdResponse.Response resp;
     try {
       //ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
-      resp = new AddReplicaCmd(ocmh)
+      resp = new CollectionCmdResponse(ocmh)
           .addReplica(clusterState, addReplicasProps, shardHandler, shardRequestTracker, results); //ocmh.addReplica(clusterState, addReplicasProps, addResult).clusterState;
       clusterState = resp.clusterState;
     } catch (Assign.AssignmentException e) {
@@ -144,9 +144,9 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
 //    }
 
     log.info("Finished create command on all shards for collection: {}", collectionName);
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
-    response.asyncFinalRunner = new MyFinalize(shardRequestTracker, results, shardHandler, resp);
+    response.asyncFinalRunner = new MyFinalize(collectionName, shardRequestTracker, results, shardHandler, resp, ocmh.overseer);
 
     response.clusterState = clusterState;
     return response;
@@ -156,17 +156,22 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     private final OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker;
     private final NamedList results;
     private final ShardHandler shardHandler;
-    private final AddReplicaCmd.Response resp;
+    private final CollectionCmdResponse.Response resp;
+    private final Overseer overseer;
+    private final String collection;
 
-    public MyFinalize(OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker, NamedList results, ShardHandler shardHandler, AddReplicaCmd.Response resp) {
+    public MyFinalize(String collection, OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker, NamedList results, ShardHandler shardHandler, CollectionCmdResponse.Response resp, Overseer overseer) {
       this.shardRequestTracker = shardRequestTracker;
       this.results = results;
       this.shardHandler = shardHandler;
       this.resp = resp;
+      this.overseer = overseer;
+      this.collection = collection;
     }
 
     @Override
-    public AddReplicaCmd.Response call() {
+    public CollectionCmdResponse.Response call() {
+      CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
       try {
         shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
       } catch (KeeperException e) {
@@ -177,7 +182,13 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       //  MRM TODO: - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
-
+      try {
+        overseer.getZkStateWriter().enqueueUpdate(resp.clusterState.getCollection(collection), null, false).get();
+      } catch (Exception e) {
+        log.error("failure", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+      response.writeFuture = overseer.writePendingUpdates();
       if (resp.asyncFinalRunner != null) {
         try {
           resp.asyncFinalRunner.call();
@@ -194,7 +205,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       //ocmh.zkStateReader.waitForActiveCollection(collectionName, 10, TimeUnit.SECONDS, shardNames.size(), finalReplicaPositions.size());
-      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
       return response;
     }
 

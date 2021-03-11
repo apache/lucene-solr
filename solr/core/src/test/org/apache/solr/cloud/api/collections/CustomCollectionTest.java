@@ -165,6 +165,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     new UpdateRequest()
@@ -191,11 +192,12 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   @Test
   public void testCreateShardRepFactor() throws Exception  {
     final String collectionName = "testCreateShardRepFactor";
-    CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "a,b", 1)
+    CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "a,b", 1).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
-    CollectionAdminRequest.createShard(collectionName, "x")
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.CreateShard req = CollectionAdminRequest.createShard(collectionName, "x");
+    req.setWaitForFinalState(true);
+    req.process(cluster.getSolrClient());
 
     waitForState("Not enough active replicas in shard 'x'", collectionName, (n, c) -> {
       return c.getSlice("x").getReplicas().size() == 1;

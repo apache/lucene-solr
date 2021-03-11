@@ -48,7 +48,7 @@ public class FuzzySearchTest extends SolrCloudTestCase {
     client = cluster.getSolrClient();
     client.setDefaultCollection(COLLECTION);
 
-    CollectionAdminRequest.createCollection(COLLECTION, 1, 1).process(client);
+    CollectionAdminRequest.createCollection(COLLECTION, 1, 1).waitForFinalState(true).process(client);
   }
 
   @Test

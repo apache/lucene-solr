@@ -133,7 +133,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("ReloadCollection did not complete", RequestStatusState.COMPLETED, state);
 
-    state = CollectionAdminRequest.createShard(collection,"s2")
+    state = CollectionAdminRequest.createShard(collection,"s2").waitForFinalState(true)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateShard did not complete", RequestStatusState.COMPLETED, state);
 
@@ -147,10 +147,12 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     query.set("shards", "s2");
     assertEquals(1, client.query(collection, query).getResults().getNumFound());
 
-    state = CollectionAdminRequest.deleteShard(collection,"s2").processAndWait(client, MAX_TIMEOUT_SECONDS);
+    CollectionAdminRequest.DeleteShard req = CollectionAdminRequest.deleteShard(collection, "s2");
+    req.setWaitForFinalState(true);
+    state = req.processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteShard did not complete", RequestStatusState.COMPLETED, state);
 
-    state = CollectionAdminRequest.addReplicaToShard(collection, "s1")
+    state = CollectionAdminRequest.addReplicaToShard(collection, "s1").waitForFinalState(true)
       .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 

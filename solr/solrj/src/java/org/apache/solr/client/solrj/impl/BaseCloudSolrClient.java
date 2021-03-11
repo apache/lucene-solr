@@ -290,6 +290,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   public ZkStateReader getZkStateReader() {
     if (getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
       ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) getClusterStateProvider();
+      getClusterStateProvider().connect();
       return provider.zkStateReader;
     }
     throw new IllegalStateException("This has no Zk stateReader: " + getClusterStateProvider().getClass().getSimpleName());
@@ -865,26 +866,20 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
-
     boolean isUpdate = (request instanceof IsUpdateRequest) && (request instanceof UpdateRequest);
-
-    if (true) { // we always state check all our collections TODO: we could just do it for the collections related to our request
-     // Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
-      Set<String> requestedCollectionNames;
-      if (getClusterStateProvider() instanceof ZkClientClusterStateProvider && isAdmin) {
-        requestedCollectionNames = getClusterStateProvider().getClusterState().getCollectionStates().keySet();
-      } else {
-        requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
-      }
+    if (!inputCollections.isEmpty() && !isAdmin && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
+      Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
 
       StringBuilder stateVerParamBuilder = null;
-      if (log.isDebugEnabled()) log.debug("build version params for collections {}", requestedCollectionNames);
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
-        DocCollection coll = getClusterStateProvider().getClusterState().getCollectionOrNull(requestedCollection);
-        if (coll != null) {
-          int collVer = coll.getZNodeVersion();
-          if (requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
+        DocCollection coll = getDocCollection(requestedCollection, null);
+        if (coll == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
+        }
+        int collVer = coll.getZNodeVersion();
+        if (coll.getStateFormat()>1) {
+          if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
           requestedCollections.add(coll);
 
           if (stateVerParamBuilder == null) {
@@ -907,19 +902,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (stateVerParam != null) {
         params.set(STATE_VERSION, stateVerParam);
       } else {
-       // params.remove(STATE_VERSION);
+        params.remove(STATE_VERSION);
       }
-    } else {
-      ModifiableSolrParams sp = new ModifiableSolrParams(request.getParams());
-      if (stateVerParam != null) {
-        sp.set(STATE_VERSION, stateVerParam);
-      } else {
-        //sp.remove(STATE_VERSION);
-      }
-    }
+    } // else: ??? how to set this ???
 
-
-//    log.info("state version param {}", request.getParams().get(STATE_VERSION));
     NamedList<Object> resp = null;
     try {
       resp = sendRequest(request, inputCollections);
@@ -1018,7 +1004,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           wasCommError) {
         for (DocCollection ext : requestedCollections) {
           DocCollection latestStateFromZk = getDocCollection(ext.getName(), null);
-          if (latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion()) {
+          if (latestStateFromZk != null && latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion()) {
             log.info("stale state:" + latestStateFromZk.getZNodeVersion() + " " + ext.getZNodeVersion());
             // looks like we couldn't reach the server because the state was stale == retry
             stateWasStale = true;
@@ -1252,12 +1238,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
 
   protected DocCollection getDocCollection(String collection, Integer expectedVersion) throws SolrException {
-    if (expectedVersion == null) expectedVersion = 0;
+    if (expectedVersion == null) expectedVersion = -1;
     if (collection == null) return null;
     ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(collection);
     DocCollection col = cacheEntry == null ? null : cacheEntry.cached;
     if (col != null) {
-      if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
+      if (expectedVersion <= col.getZNodeVersion()
+          && !cacheEntry.shouldRetry()) return col;
     }
 
     ClusterState.CollectionRef ref = getCollectionRef(collection);

@@ -65,11 +65,11 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
     return moveReplica(ocmh.zkStateReader.getClusterState(), message, results);
   }
 
-  private AddReplicaCmd.Response moveReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+  private CollectionCmdResponse.Response moveReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("moveReplica() : {}", Utils.toJSONString(message));
     }
@@ -153,7 +153,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Object dataDir = replica.get("dataDir");
     boolean isSharedFS = replica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && dataDir != null;
 
-    AddReplicaCmd.Response resp = null;
+    CollectionCmdResponse.Response resp = null;
     if (isSharedFS && inPlaceMove) {
       log.debug("-- moveHdfsReplica");
       // MRM TODO: TODO
@@ -163,7 +163,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       resp = moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     }
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     OverseerCollectionMessageHandler.Finalize finalizer = resp.asyncFinalRunner;
     response.asyncFinalRunner = new MyFinalize(finalizer);
@@ -232,7 +232,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       log.warn("Error adding replica {} - trying to roll back...", addReplicasProps, e);
       addReplicasProps = addReplicasProps.plus(CoreAdminParams.NODE, replica.getNodeName());
       @SuppressWarnings({"rawtypes"}) NamedList rollback = new NamedList();
-      ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback);
+      clusterState = ocmh.addReplica(clusterState, addReplicasProps, rollback).clusterState;
       if (rollback.get("failure") != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Fatal error during MOVEREPLICA of " + replica + ", collection may be inconsistent: " + rollback.get("failure"));
       }
@@ -246,6 +246,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       log.debug("--- trying to roll back...");
       // try to roll back
       addReplicasProps = addReplicasProps.plus(CoreAdminParams.NODE, replica.getNodeName());
+      addReplicasProps = addReplicasProps.plus(WAIT_FOR_FINAL_STATE, true);
       @SuppressWarnings({"rawtypes"}) NamedList rollback = new NamedList();
       try {
         ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, rollback);
@@ -266,27 +267,24 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  private AddReplicaCmd.Response moveNormalReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"}) NamedList results, String targetNode, String async, DocCollection coll,
+  private CollectionCmdResponse.Response moveNormalReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"}) NamedList results, String targetNode, String async, DocCollection coll,
       Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String newCoreName = Assign.buildSolrCoreName(coll, slice.getName(), replica.getType(), ocmh.overseer).coreName;
     ZkNodeProps addReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), CoreAdminParams.NODE, targetNode, CoreAdminParams.NAME, newCoreName,
-        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+        ZkStateReader.REPLICA_TYPE, replica.getType().name(), WAIT_FOR_FINAL_STATE, "true");
 
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async + "-AddReplica-" + Math.abs(System.nanoTime()));
     @SuppressWarnings({"rawtypes"}) NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
 
-    AddReplicaCmd.Response response = ocmh.addReplicaWithResp(clusterState, addReplicasProps, addResult);
-
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState, null,false);
-    ocmh.overseer.writePendingUpdates();
-
+    CollectionCmdResponse.Response response = ocmh.addReplicaWithResp(clusterState, addReplicasProps, addResult);
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState.getCollection(coll.getName()), null,false).get();
 
     // wait for the other replica to be active if the source replica was a leader
 
-    AddReplicaCmd.Response finalResponse = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response finalResponse = new CollectionCmdResponse.Response();
     
-    finalResponse.clusterState = response.clusterState;
+   // finalResponse.clusterState = response.clusterState;
 
     finalResponse.asyncFinalRunner = () -> {
       log.debug("Waiting for leader's replica to recover.");
@@ -299,23 +297,26 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         log.warn(errorString);
         results.add("failure", errorString);
 
-        AddReplicaCmd.Response response1 = new AddReplicaCmd.Response();
+        CollectionCmdResponse.Response response1 = new CollectionCmdResponse.Response();
         return response1;
       } else {
 
-        AddReplicaCmd.Response response1 = new AddReplicaCmd.Response();
-
-        ZkNodeProps removeReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), REPLICA_PROP, replica.getName());
+        CollectionCmdResponse.Response response1 = new CollectionCmdResponse.Response();
+        CollectionCmdResponse.Response asyncResp = new CollectionCmdResponse.Response();
+        ZkNodeProps removeReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), REPLICA_PROP, replica.getName(), WAIT_FOR_FINAL_STATE, "true");
         if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
         @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
         try {
           response1.clusterState = ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult).clusterState;
+          ocmh.overseer.getZkStateWriter().enqueueUpdate( response1.clusterState.getCollection(response1.clusterState.getCollectionsMap().keySet().iterator().next()), null,false).get();
+          asyncResp.writeFuture = ocmh.overseer.writePendingUpdates();
         } catch (SolrException e) {
           deleteResult.add("failure", e.toString());
         }
         if (deleteResult.get("failure") != null) {
           String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s", coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));
           log.warn(errorString);
+          response1.asyncFinalRunner.call();
           results.add("failure", errorString);
         } else {
           String successString = String
@@ -324,7 +325,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           results.add("success", successString);
         }
 
-        return response1;
+        return asyncResp;
       }
     };
     
@@ -339,7 +340,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     @Override
-    public AddReplicaCmd.Response call() {
+    public CollectionCmdResponse.Response call() {
       if (finalizer != null) {
         try {
           finalizer.call();
@@ -347,7 +348,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           log.error("Exception during MoveReplica", e);
         }
       }
-      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+      CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
       return response;
     }
   }

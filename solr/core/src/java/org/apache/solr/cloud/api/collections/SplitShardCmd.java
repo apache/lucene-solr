@@ -97,12 +97,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @SuppressWarnings("unchecked")
   @Override
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     return split(state, message,(NamedList<Object>) results);
   }
 
   @SuppressWarnings({"rawtypes"})
-  public AddReplicaCmd.Response split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public CollectionCmdResponse.Response split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     final String asyncId = message.getStr(ASYNC);
 
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -330,7 +330,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         if (asyncId != null) {
           propMap.put(ASYNC, asyncId);
         }
-        AddReplicaCmd.Response resp = ocmh.addReplicaWithResp(clusterState, new ZkNodeProps(propMap), results);
+        CollectionCmdResponse.Response resp = ocmh.addReplicaWithResp(clusterState, new ZkNodeProps(propMap), results);
         clusterState = resp.clusterState;
         firstReplicaFutures.add(resp.asyncFinalRunner);
 //        Map<String,Object> finalPropMap = propMap;
@@ -349,7 +349,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 //        firstReplicaFutures.add(future);
       }
 
-      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, null,false);
+      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collectionName), null,false).get();
       ocmh.overseer.writePendingUpdates();
 
       log.info("Clusterstate after adding new shard for split {}", clusterState);
@@ -522,7 +522,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             "node", subShardNodeName,
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
 
-        AddReplicaCmd.Response resp = new AddReplicaCmd(ocmh, true).call(clusterState, props, results);
+        CollectionCmdResponse.Response resp = new CollectionCmdResponse(ocmh, true).call(clusterState, props, results);
         clusterState = resp.clusterState;
 
 
@@ -619,16 +619,16 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       List<Future> replicaFutures = new ArrayList<>();
       Set<OverseerCollectionMessageHandler.Finalize> replicaRunAfters = ConcurrentHashMap.newKeySet();
       for (Map<String, Object> replica : replicas) {
-        new AddReplicaCmd(ocmh, true).call(clusterState, new ZkNodeProps(replica), results);
+        new CollectionCmdResponse(ocmh, true).call(clusterState, new ZkNodeProps(replica), results);
       }
 
       // now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
         ClusterState finalClusterState = clusterState;
         Future<?> future = ocmh.overseer.getTaskExecutor().submit(() -> {
-          AddReplicaCmd.Response response = null;
+          CollectionCmdResponse.Response response = null;
           try {
-            response = new AddReplicaCmd(ocmh).call(finalClusterState, new ZkNodeProps(replica), results);
+            response = new CollectionCmdResponse(ocmh).call(finalClusterState, new ZkNodeProps(replica), results);
           } catch (Exception e) {
             log.error("", e);
           }
@@ -676,12 +676,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       success = true;
 
 
-      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+      CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
       ClusterState finalClusterState = clusterState;
       response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
         @Override
-        public AddReplicaCmd.Response call() {
+        public CollectionCmdResponse.Response call() {
           DocCollection coll = ocmh.overseer.getZkStateReader().getClusterState().getCollection(collectionName);
           ClusterState completeCs = finalClusterState;
           for (Map<String,Object> replica : replicas) {
@@ -689,7 +689,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
                 new Replica(replica.get("name").toString(), replica, replica.get("collection").toString(), -1l, replica.get("shard").toString(), ocmh.zkStateReader));
           }
 
-          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+          CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
           response.clusterState = completeCs;
           return response;
 

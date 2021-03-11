@@ -57,7 +57,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
@@ -118,7 +118,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
       log.info("Add replacement replica {}", msg);
-      AddReplicaCmd.Response response = new AddReplicaCmd(ocmh).addReplica(clusterState, msg, shardHandler, shardRequestTracker, nl);
+      CollectionCmdResponse.Response response = new CollectionCmdResponse(ocmh).addReplica(clusterState, msg, shardHandler, shardRequestTracker, nl);
       clusterState = response.clusterState;
       Runnable runner = () -> {
         final ZkNodeProps addedReplica = response.responseProps.get(0);
@@ -146,10 +146,10 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       runners.add(runner);
     }
 
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, null, false);
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(clusterState.getCollectionStates().keySet().iterator().next()), null, false).get();
     ocmh.overseer.writePendingUpdates();
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     response.results = results;
     response.clusterState = clusterState;
 
@@ -182,7 +182,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
           try {
             // MRM TODO: - return results from deleteReplica cmd, update clusterstate
-            AddReplicaCmd.Response dr = ocmh.deleteReplica(finalClusterState, createdReplica.plus("parallel", "true"), deleteResult);
+            CollectionCmdResponse.Response dr = ocmh.deleteReplica(finalClusterState, createdReplica.plus("parallel", "true"), deleteResult);
 
           } catch (KeeperException e) {
 
@@ -204,7 +204,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
         OverseerCollectionMessageHandler.ShardRequestTracker srt = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr(Overseer.QUEUE_OPERATION));
 
         log.info("Cleanup replicas {}", sourceReplicas);
-        AddReplicaCmd.Response r = DeleteNodeCmd.cleanupReplicas(results, finalClusterState, sourceReplicas, ocmh, source, null, sh, srt);
+        CollectionCmdResponse.Response r = DeleteNodeCmd.cleanupReplicas(results, finalClusterState, sourceReplicas, ocmh, source, null, sh, srt);
 
         try {
           if (log.isDebugEnabled())  log.debug("Processs responses");
@@ -216,7 +216,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
         r.asyncFinalRunner.call();
 
         results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
-        AddReplicaCmd.Response resp = new AddReplicaCmd.Response();
+        CollectionCmdResponse.Response resp = new CollectionCmdResponse.Response();
         resp.clusterState = r.clusterState;
         return resp;
       } catch (InterruptedException e) {

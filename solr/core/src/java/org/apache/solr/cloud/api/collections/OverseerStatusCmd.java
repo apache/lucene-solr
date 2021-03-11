@@ -46,7 +46,7 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings("unchecked")
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
@@ -107,7 +107,7 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     results.add("collection_queue", collectionQueueStats);
 
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     response.clusterState = null;
 

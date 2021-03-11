@@ -25,8 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.Future;
 
-public class OverseerTaskExecutorTask implements Runnable {
+public class OverseerTaskExecutorTask {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ZkController zkController;
   private final SolrCloudManager cloudManager;
@@ -41,7 +42,7 @@ public class OverseerTaskExecutorTask implements Runnable {
   }
 
 
-  private boolean processQueueItem(ZkNodeProps message) throws Exception {
+  private Future processQueueItem(ZkNodeProps message) throws Exception {
     if (log.isDebugEnabled()) log.debug("Consume state update from queue {} {}", message);
 
     // assert clusterState != null;
@@ -51,7 +52,7 @@ public class OverseerTaskExecutorTask implements Runnable {
     final String operation = message.getStr(Overseer.QUEUE_OPERATION);
     if (operation == null) {
       log.error("Message missing " + Overseer.QUEUE_OPERATION + ":" + message);
-      return false;
+      return null;
     }
 
     if (log.isDebugEnabled()) log.debug("Queue operation is {}", operation);
@@ -60,26 +61,24 @@ public class OverseerTaskExecutorTask implements Runnable {
 
     if (log.isDebugEnabled()) log.debug("Enqueue message {}", operation);
     try {
-      zkController.getOverseer().getZkStateWriter().enqueueUpdate(null, message, true);
+      return zkController.getOverseer().getZkStateWriter().enqueueUpdate(null, message, true);
     } catch (NullPointerException e) {
       log.info("Overseer is stopped, won't process message " + zkController.getOverseer());
-      return false;
+      return null;
     }
 
-
-    if (log.isDebugEnabled()) log.debug("State update consumed from queue {}", message);
-    return true;
   }
 
-  @Override
-  public void run() {
+
+  public Future run() {
     if (log.isDebugEnabled()) log.debug("OverseerTaskExecutorTask, going to process message {}", message);
 
     try {
-      processQueueItem(message);
+      return processQueueItem(message);
     } catch (Exception e) {
       log.error("Failed to process message " + message, e);
     }
+    return null;
   }
 
   public static class WriteTask implements Runnable {

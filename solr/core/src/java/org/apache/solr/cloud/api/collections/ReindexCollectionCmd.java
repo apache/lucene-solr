@@ -167,7 +167,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
 
     log.debug("*** called: {}", message);
 
@@ -508,7 +508,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       }
       results.add(REINDEX_STATUS, reindexingState);
     }
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     response.clusterState = null;
 

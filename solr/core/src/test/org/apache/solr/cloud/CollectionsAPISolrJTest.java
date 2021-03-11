@@ -315,6 +315,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse response
         = CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardA,shardB", 3, 0, 0)
         .setMaxShardsPerNode(3)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
@@ -325,7 +326,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(6, coresStatus.size());
 
     // Add a shard to the implicit collection
-    response = CollectionAdminRequest.createShard(collectionName, "shardC").process(cluster.getSolrClient());
+    response = CollectionAdminRequest.createShard(collectionName, "shardC").waitForFinalState(true).process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -346,7 +347,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 //    assertEquals(1, replicaTlog);
 //    assertEquals(1, replicaPull);
 
-    response = CollectionAdminRequest.deleteShard(collectionName, "shardC").process(cluster.getSolrClient());
+    CollectionAdminRequest.DeleteShard req = CollectionAdminRequest.deleteShard(collectionName, "shardC");
+    req.setWaitForFinalState(true);
+    response =  req.process(cluster.getSolrClient());
 
 //    assertEquals(0, response.getStatus());
 //    assertTrue(response.isSuccess());
@@ -359,7 +362,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testCreateAndDeleteAlias() throws IOException, SolrServerException {
 
     final String collection = "aliasedCollection";
-    CollectionAdminRequest.createCollection(collection, "conf", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1).waitForFinalState(true).process(cluster.getSolrClient());
 
     CollectionAdminResponse response
         = CollectionAdminRequest.createAlias("solrj_alias", collection).process(cluster.getSolrClient());
@@ -373,7 +376,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testSplitShard() throws Exception {
 
     final String collectionName = "solrj_test_splitshard";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CollectionAdminResponse response = CollectionAdminRequest.splitShard(collectionName)
@@ -425,6 +428,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
         .withProperty(CoreAdminParams.DATA_DIR, dataDir.toString())
         .withProperty(CoreAdminParams.ULOG_DIR, ulogDir.toString())
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
@@ -447,7 +451,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testAddAndDeleteReplica() throws Exception {
 
     final String collectionName = "solrj_replicatests";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     ArrayList<String> nodeList
@@ -457,9 +461,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     List<Replica> originalReplicas = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getReplicas();
 
-    CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
-        .setNode(node)
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.AddReplica req = CollectionAdminRequest.addReplicaToShard(collectionName, "s1").setNode(node);
+    req.setWaitForFinalState(true);
+    req.process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 1, 3);
     // MRM TODO: - look at returned status not coming back
@@ -473,8 +477,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Replica newReplica = (Replica) rlist.get(0);
 
     // Test DELETEREPLICA
-    response = CollectionAdminRequest.deleteReplica(collectionName, "s1", newReplica.getName())
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.DeleteReplica delReq = CollectionAdminRequest.deleteReplica(collectionName, "s1", newReplica.getName());
+    delReq.setWaitForFinalState(true);
+    CollectionAdminResponse response = delReq.process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
     waitForState("Expected replica " + newReplica.getName() + " to vanish from cluster state", collectionName,
@@ -519,7 +524,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String collectionName = "collectionPropTest";
     final String propName = "testProperty";
 
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).waitForFinalState(true)
             .setMaxShardsPerNode(4).process(cluster.getSolrClient());
 
     // Check for value change
@@ -552,6 +557,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String collectionName = "collectionStatusTest";
     CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
         .setMaxShardsPerNode(100)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     SolrClient client = cluster.getSolrClient();
@@ -628,13 +634,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private void doTestRenameCollection(boolean followAliases) throws Exception {
     String collectionName1 = "testRename1_" + followAliases;
     String collectionName2 = "testRename2_" + followAliases;
-    CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).setAlias("col1").process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).setAlias("col2").process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).setAlias("col1").waitForFinalState(true).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).setAlias("col2").waitForFinalState(true).process(cluster.getSolrClient());
 
     CollectionAdminRequest.createAlias("compoundAlias", "col1,col2").process(cluster.getSolrClient());
     CollectionAdminRequest.createAlias("simpleAlias", "col1").process(cluster.getSolrClient());
     CollectionAdminRequest.createCategoryRoutedAlias("catAlias", "field1", 100,
-        CollectionAdminRequest.createCollection("_unused_", "conf", 1, 1)).process(cluster.getSolrClient());
+        CollectionAdminRequest.createCollection("_unused_", "conf", 1, 1).waitForFinalState(true)).process(cluster.getSolrClient());
 
     CollectionAdminRequest.Rename rename = CollectionAdminRequest.renameCollection("col1", "foo");
     rename.setFollowAliases(followAliases);
@@ -706,8 +712,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName1 = "aliasedCollection1";
     String collectionName2 = "aliasedCollection2";
-    CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).process(solrClient);
-    CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).process(solrClient);
+    CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).waitForFinalState(true).process(solrClient);
+    CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).waitForFinalState(true).process(solrClient);
 
     SolrInputDocument doc = new SolrInputDocument("id", "1");
     solrClient.add(collectionName1, doc);
@@ -739,6 +745,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // should be able to remove collection 1 when followAliases = false
     CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(collectionName1);
     delete.setFollowAliases(false);
+    delete.setWaitForFinalState(true);
     delete.process(solrClient);
     ClusterState state = solrClient.getClusterStateProvider().getClusterState();
     assertFalse(state.getCollectionsMap().toString(), state.hasCollection(collectionName1));
@@ -749,6 +756,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // without aliases this collection doesn't exist anymore
     delete = CollectionAdminRequest.deleteCollection(collectionName1);
     delete.setFollowAliases(false);
+    delete.setWaitForFinalState(true);
     try {
       delete.process(solrClient);
       fail("delete of nonexistent collection 1 should have failed when followAliases=false");
@@ -804,7 +812,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testAddAndDeleteReplicaProp() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "replicaProperties";
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).setMaxShardsPerNode(3)
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).setMaxShardsPerNode(3).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     final Replica replica = getCollectionState(collection).getLeader("shard1");
@@ -831,7 +839,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       SolrServerException, KeeperException, InterruptedException {
 
     final String collection = "balancedProperties";
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).waitForFinalState(true)
             .setMaxShardsPerNode(4).process(cluster.getSolrClient());
 
     CollectionAdminResponse response = CollectionAdminRequest.balanceReplicaProperty(collection, "preferredLeader")
@@ -856,7 +864,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testModifyCollectionAttribute() throws IOException, SolrServerException {
     final String collection = "testAddAndDeleteCollectionAttribute";
-    CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.modifyCollection(collection, null)

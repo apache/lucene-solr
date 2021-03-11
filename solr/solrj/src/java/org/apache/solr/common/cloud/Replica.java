@@ -211,7 +211,7 @@ public class Replica extends ZkNodeProps {
   final Long collectionId;
 
   public String getId() {
-    return collectionId + "-" + id.toString();
+    return collectionId + "-" + (id == null ? null : id.toString());
   }
 
   public Long getCollectionId() {

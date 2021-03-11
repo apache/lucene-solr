@@ -134,6 +134,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .setProperties(collectionProperties)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CLOUD_CLIENT = cluster.getSolrClient();

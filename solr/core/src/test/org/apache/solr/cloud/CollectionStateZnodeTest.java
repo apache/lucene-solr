@@ -23,6 +23,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 // MRM TODO: - speed this up - waits for zkwriter to see its own state after delete
@@ -44,7 +45,7 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
   public void testZkNodeLocation() throws Exception {
 
     String collectionName = "myExternColl";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     assertTrue("State Format 2 collection path does not exist",

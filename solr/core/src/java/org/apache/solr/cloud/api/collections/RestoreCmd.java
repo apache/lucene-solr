@@ -87,7 +87,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
 
     String restoreCollectionName = message.getStr(COLLECTION_PROP);
@@ -420,7 +420,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     response.clusterState = null;
 

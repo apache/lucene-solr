@@ -73,7 +73,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
   @Override
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
     String extTargetCollectionName = message.getStr("target.collection");
@@ -317,7 +317,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     if (asyncId != null) {
       props.put(ASYNC, asyncId);
     }
-    ((AddReplicaCmd)ocmh.commandMap.get(ADDREPLICA)).call(clusterState, new ZkNodeProps(props), results);
+    ((CollectionCmdResponse)ocmh.commandMap.get(ADDREPLICA)).call(clusterState, new ZkNodeProps(props), results);
 
     {
       final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();

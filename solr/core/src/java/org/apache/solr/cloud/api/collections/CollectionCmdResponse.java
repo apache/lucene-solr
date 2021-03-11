@@ -25,8 +25,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -67,7 +66,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 
-public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
+public class CollectionCmdResponse implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -80,12 +79,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private final boolean onlyUpdateState;
   private boolean createdShardHandler;
 
-  public AddReplicaCmd(OverseerCollectionMessageHandler ocmh) {
+  public CollectionCmdResponse(OverseerCollectionMessageHandler ocmh) {
     this.onlyUpdateState = false;
     this.ocmh = ocmh;
   }
 
-  public AddReplicaCmd(OverseerCollectionMessageHandler ocmh, boolean onlyUpdateState) {
+  public CollectionCmdResponse(OverseerCollectionMessageHandler ocmh, boolean onlyUpdateState) {
     this.onlyUpdateState = onlyUpdateState;
     this.ocmh = ocmh;
   }
@@ -124,7 +123,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       collectionName = extCollectionName;
     }
 
-    // MRM TODO:
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
@@ -231,10 +229,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             }
 
             String asyncId = finalMessage.getStr(ASYNC);
-            for (CreateReplica createReplica : createReplicas) {
-              waitForActiveReplica(createReplica.sliceName, collectionName, asyncId, ocmh.zkStateReader, createReplica);
+            if (waitForFinalState) {
+              for (CreateReplica createReplica : createReplicas) {
+                waitForActiveReplica(createReplica.sliceName, collectionName, asyncId, ocmh.zkStateReader, createReplica);
+              }
             }
-            AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+            CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
             return response;
           }
         };
@@ -247,29 +247,29 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   private void waitForActiveReplica(String shard, String collectionName, String asyncId, ZkStateReader zkStateReader, CreateReplica createReplica) {
-    try {
-      log.info("waiting for created replica shard={} {}", shard, createReplica.coreName);
-      zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // MRM TODO: timeout
-        if (collectionState == null) {
-          return false;
-        }
-
-        Slice slice = collectionState.getSlice(shard);
-        if (slice == null) {
-          return false;
-        }
-
-        Replica replica = collectionState.getReplica(createReplica.coreName);
-        if (replica != null && replica.getState().equals(Replica.State.ACTIVE)) {
-          return true;
-        }
-
-        return false;
-      });
-    } catch (TimeoutException | InterruptedException e) {
-      log.error("addReplica name={}", createReplica.coreName, e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+//    try {
+//      log.info("waiting for created replica shard={} {}", shard, createReplica.coreName);
+//      zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // MRM TODO: timeout
+//        if (collectionState == null) {
+//          return false;
+//        }
+//
+//        Slice slice = collectionState.getSlice(shard);
+//        if (slice == null) {
+//          return false;
+//        }
+//
+//        Replica replica = collectionState.getReplica(createReplica.coreName);
+//        if (replica != null && replica.getState().equals(Replica.State.ACTIVE)) {
+//          return true;
+//        }
+//
+//        return false;
+//      });
+//    } catch (TimeoutException | InterruptedException e) {
+//      log.error("addReplica name={}", createReplica.coreName, e);
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//    }
   }
 
   private ModifiableSolrParams getReplicaParams(DocCollection collection, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results,
@@ -455,6 +455,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   public static class Response {
+    public Future writeFuture;
     List<ZkNodeProps> responseProps;
     OverseerCollectionMessageHandler.Finalize asyncFinalRunner;
 

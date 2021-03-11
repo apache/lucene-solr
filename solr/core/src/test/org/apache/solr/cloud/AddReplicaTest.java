@@ -73,6 +73,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1);
+    create.waitForFinalState(true);
     create.setMaxShardsPerNode(20);
     cloudClient.request(create);
 
@@ -80,6 +81,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
         .setNrtReplicas(1)
         .setTlogReplicas(1)
         .setPullReplicas(1);
+    addReplica.setWaitForFinalState(true);
     CollectionAdminResponse status = addReplica.process(cloudClient, collection + "_xyz1");
 
      assertTrue(status.isSuccess());
@@ -129,6 +131,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, "conf1", 2, 1);
+    create.waitForFinalState(true);
     create.setMaxShardsPerNode(100);
     cloudClient.request(create);
 

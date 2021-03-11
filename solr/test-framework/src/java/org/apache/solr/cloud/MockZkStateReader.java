@@ -30,7 +30,9 @@ public class MockZkStateReader extends ZkStateReader {
 
   public MockZkStateReader(ClusterState clusterState, Set<String> liveNodes, Set<String> collections) {
     super(new MockSolrZkClient());
-    this.clusterState = clusterState;
+
+
+    this.clusterState.putAll(clusterState.getCollectionStates());
     this.collections = collections;
     this.liveNodes = liveNodes;
   }
@@ -47,6 +49,6 @@ public class MockZkStateReader extends ZkStateReader {
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
     // the doc collection will never be changed by this mock
     // so we just call onStateChanged once with the existing DocCollection object an return
-    stateWatcher.onStateChanged(clusterState.getCollectionOrNull(collection));
+    stateWatcher.onStateChanged(clusterState.get(collection).get());
   }
 }

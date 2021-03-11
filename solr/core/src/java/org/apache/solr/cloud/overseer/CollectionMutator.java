@@ -119,7 +119,7 @@ public class CollectionMutator {
     DocCollection coll = clusterState.getCollection(collection);
 
     Map<String, Slice> newSlices = new LinkedHashMap<>(coll.getSlicesMap());
-    newSlices.get(sliceId).getProperties().put("remove", true);
+    newSlices.get(sliceId).getProperties().put("remove", "true");
 
     DocCollection newCollection = coll.copyWithSlices(newSlices);
     return clusterState.copyWith(collection, newCollection);
@@ -159,7 +159,7 @@ public class CollectionMutator {
     }
 
     return clusterState.copyWith(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), false));
+        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getStateUpdates()));
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {

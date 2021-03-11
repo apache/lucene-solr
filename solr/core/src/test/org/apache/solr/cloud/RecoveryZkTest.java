@@ -93,6 +93,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
         .setMaxShardsPerNode(3)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     cluster.getSolrClient().setDefaultCollection(collection);
@@ -143,6 +144,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
     
     // bring shard replica up
+    log.info("bring jetty up");
     jetty.start();
 
     // stop indexing threads
@@ -156,6 +158,8 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .commit(cluster.getSolrClient(), collection);
+
+    cluster.waitForActiveCollection(collection, 1, 2);
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);

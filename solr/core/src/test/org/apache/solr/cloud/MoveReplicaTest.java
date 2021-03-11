@@ -102,7 +102,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // random create tlog or pull type replicas with nrt
     boolean isTlog = false; // MRM TODO: random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, isTlog ? 2 : 1, isTlog ? 1 : 0, 0);
-
+    create.setWaitForFinalState(true);
     cloudClient.request(create);
 
     addDocs(coll, 100);

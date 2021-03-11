@@ -53,6 +53,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, 1, 4)
         .setMaxShardsPerNode(1000)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
   }
 
@@ -74,15 +75,17 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
         DocCollection dc = getCollectionState(COLLECTION);
         Replica replica = getRandomReplica(dc.getSlice("s1"), (r) -> r.getState() == Replica.State.ACTIVE);
-        CollectionAdminRequest.deleteReplica(COLLECTION, "s1", replica.getName()).process(cluster.getSolrClient());
+        CollectionAdminRequest.DeleteReplica req = CollectionAdminRequest.deleteReplica(COLLECTION, "s1", replica.getName());
+        req.setWaitForFinalState(true);
+        req.process(cluster.getSolrClient());
         coreNames.remove(replica.getName());
         numLiveReplicas--;
       } else {
-        CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(COLLECTION, "s1")
-            .process(cluster.getSolrClient());
+        CollectionAdminRequest.AddReplica req = CollectionAdminRequest.addReplicaToShard(COLLECTION, "s1");
+        req.setWaitForFinalState(true);
+        CollectionAdminResponse response = req.process(cluster.getSolrClient());
         assertTrue(response.isSuccess());
-        String coreName = response.getCollectionCoresStatus()
-            .keySet().iterator().next();
+        String coreName = response.getCollectionCoresStatus().keySet().iterator().next();
         assertFalse("Core name is not unique coreName=" + coreName + " " + coreNames, coreNames.contains(coreName));
         coreNames.add(coreName);
         numLiveReplicas++;

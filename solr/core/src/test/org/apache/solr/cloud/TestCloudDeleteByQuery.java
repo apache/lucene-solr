@@ -126,6 +126,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     collectionProperties.put("schema", "schema15.xml"); // string id for doc routing prefix
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, NUM_SHARDS, REPLICATION_FACTOR)
+        .waitForFinalState(true)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 

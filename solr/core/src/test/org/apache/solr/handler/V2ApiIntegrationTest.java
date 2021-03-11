@@ -55,7 +55,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2).waitForFinalState(true)
         .process(cluster.getSolrClient());
   }
 

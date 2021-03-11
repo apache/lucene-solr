@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 //@LuceneTestCase.Nightly
@@ -80,15 +81,19 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 0, 1, 0); // MRM-TEST TODO: 1 pull replica each
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 0, 1, 0).waitForFinalState(true); // MRM-TEST TODO: 1 pull replica each
       } else {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 1, 0, 0);
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 1, 0, 0).waitForFinalState(true);
       }
       setV2(req);
       client.request(req);
       assertV2CallsCount();
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "_default");
     }
+
+    // list needs to see it
+    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+    cluster.waitForActiveCollection(COLLECTION_NAME1, 1, 1);
 
     listCollection();
     clusterStatusNoCollection();
@@ -340,9 +345,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       NamedList<Object> rsp = client.request(request);
       List<String> collections = (List<String>) rsp.get("collections");
-      assertTrue(COLLECTION + " was not found in list", collections.contains(COLLECTION));
-      assertTrue(COLLECTION_NAME + " was not found in list", collections.contains(COLLECTION_NAME));
-      assertTrue(COLLECTION_NAME1 + " was not found in list", collections.contains(COLLECTION_NAME1));
+      assertTrue(COLLECTION + " was not found in list " + collections, collections.contains(COLLECTION));
+      assertTrue(COLLECTION_NAME + " was not found in list " + collections, collections.contains(COLLECTION_NAME));
+      assertTrue(COLLECTION_NAME1 + " was not found in list " + collections, collections.contains(COLLECTION_NAME1));
     }
 
   }
@@ -966,7 +971,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         fail();
       } catch (BaseHttpSolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
-        assertTrue(errorMessage.contains("Invalid shard"));
+        assertTrue(errorMessage, errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
         assertTrue(errorMessage.contains("shard names must consist entirely of"));
       }
@@ -1020,8 +1025,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     try (CloudHttp2SolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
+      // MRM TODO: this should fail with the wait for final state
       BaseHttpSolrClient.RemoteSolrException rse = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-        CollectionAdminResponse rsp = CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2).process(client);
+        CollectionAdminResponse rsp = CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2).waitForFinalState(true).process(client);
       });
       assertNotNull(rse.getMessage());
       assertNotSame(0, rse.code());

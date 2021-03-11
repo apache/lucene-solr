@@ -63,14 +63,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numPullReplicas;
   private final Integer maxShardsPerNode;
   private final Boolean readOnly;
-  private final boolean withStateUpdates;
+  private final Map stateUpdates;
   private final Long id;
 
   private AtomicInteger sliceAssignCnt = new AtomicInteger();
   private volatile boolean createdLazy;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, -1, false);
+    this(name, slices, props, router, -1, null);
   }
 
   /**
@@ -79,11 +79,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, boolean withStateUpdates) {
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, Map stateUpdates) {
     super(props==null ? props = new HashMap<>() : props);
     this.znodeVersion = zkVersion;
     this.name = name;
-    this.withStateUpdates = withStateUpdates;
+    this.stateUpdates = stateUpdates;
     this.slices = slices;
     this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
     this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
@@ -129,11 +129,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @return the resulting DocCollection
    */
   public DocCollection copyWithSlices(Map<String, Slice> slices){
-    return new DocCollection(getName(), slices, propMap, router, znodeVersion, withStateUpdates);
+    return new DocCollection(getName(), slices, propMap, router, znodeVersion, stateUpdates);
   }
 
   public DocCollection copy(){
-    return new DocCollection(getName(), slices, propMap, router, znodeVersion, withStateUpdates);
+    return new DocCollection(getName(), slices, propMap, router, znodeVersion, stateUpdates);
   }
 
 
@@ -265,7 +265,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+":" + ":v=" + znodeVersion + " u=" + hasStateUpdates() + " l=" + createdLazy + ")=" + toJSONString(this);
+    return "DocCollection("+name+":" + ":v=" + znodeVersion + " u=" + stateUpdates + " l=" + createdLazy + ")=" + toJSONString(this);
   }
   
   public void setCreatedLazy() {
@@ -448,7 +448,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   public boolean hasStateUpdates() {
-    return withStateUpdates;
+    return stateUpdates != null;
   }
 
   public void setSliceAssignCnt(int i) {
@@ -457,5 +457,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public int getSliceAssignCnt() {
     return sliceAssignCnt.incrementAndGet();
+  }
+
+  public Map getStateUpdates() {
+    return stateUpdates;
   }
 }

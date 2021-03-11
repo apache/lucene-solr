@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestUtil;
@@ -65,6 +66,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     final String collection = "deleteShard";
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     DocCollection state = getCollectionState(collection);
@@ -78,11 +80,34 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     setSliceState(collection, "s1", Slice.State.INACTIVE);
 
+    cluster.getSolrClient().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, coll) -> {
+      if (coll == null) {
+        return false;
+      }
+      Slice slice = coll.getSlice("s1");
+      if (slice.getState() == State.INACTIVE) {
+        return true;
+      }
+      return false;
+    });
+
     // Can delete an INATIVE shard
-    CollectionAdminRequest.deleteShard(collection, "s1").process(cluster.getSolrClient());
+    CollectionAdminRequest.DeleteShard req = CollectionAdminRequest.deleteShard(collection, "s1");
+    req.process(cluster.getSolrClient());
 
     // Can delete a shard under construction
     setSliceState(collection, "s2", Slice.State.CONSTRUCTION);
+
+    cluster.getSolrClient().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, coll) -> {
+      if (coll == null) {
+        return false;
+      }
+      Slice slice = coll.getSlice("s2");
+      if (slice.getState() == State.CONSTRUCTION) {
+        return true;
+      }
+      return false;
+    });
 
     CollectionAdminRequest.deleteShard(collection, "s2").process(cluster.getSolrClient());
   }
@@ -107,6 +132,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     final String collection = "deleteshard_test";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", 1)
         .setMaxShardsPerNode(3)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     // Get replica details
@@ -119,7 +145,9 @@ public class DeleteShardTest extends SolrCloudTestCase {
     assertEquals(3, getCollectionState(collection).getActiveSlices().size());
 
     // Delete shard 'a'
-    CollectionAdminRequest.deleteShard(collection, "a").process(cluster.getSolrClient());
+    CollectionAdminRequest.DeleteShard req = CollectionAdminRequest.deleteShard(collection, "a").waitForFinalState(true);
+
+    req.process(cluster.getSolrClient());
 
     coreStatus = getCoreStatus(leader);
     assertEquals(2, getCollectionState(collection).getActiveSlices().size());
@@ -134,8 +162,9 @@ public class DeleteShardTest extends SolrCloudTestCase {
     coreStatus = getCoreStatus(leader);
 
     // Delete shard 'b'
-    CollectionAdminRequest.deleteShard(collection, "b")
-        .process(cluster.getSolrClient());
+    req = CollectionAdminRequest.deleteShard(collection, "b");
+    req.setWaitForFinalState(true);
+    req.process(cluster.getSolrClient());
     
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
     assertFalse("Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));

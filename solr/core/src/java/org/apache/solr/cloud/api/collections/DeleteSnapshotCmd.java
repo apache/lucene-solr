@@ -65,7 +65,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -170,7 +170,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       log.info("Deleted Zookeeper snapshot metdata for collection={} with commitName={}", collectionName, commitName);
       log.info("Successfully deleted snapshot for collection={} with commitName={}", collectionName, commitName);
     }
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     response.clusterState = null;
 

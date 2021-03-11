@@ -59,6 +59,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   @Override
   protected void cancelElection() throws InterruptedException, KeeperException {
+    log.debug("cancel election for {}", leaderProps);
     if (!zkClient.isAlive()) return;
     if (log.isTraceEnabled()) log.trace("cancelElection");
     //    if (!zkClient.isConnected()) {
@@ -141,8 +142,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           }
         } else {
           try {
+            if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
             if (leaderSeqPath != null) {
-              if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
               zkClient.delete(leaderSeqPath, -1, true, false);
             }
           } catch (NoNodeException e) {

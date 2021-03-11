@@ -80,7 +80,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     final String shardId = "s1";
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 3)
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 3).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     final ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();

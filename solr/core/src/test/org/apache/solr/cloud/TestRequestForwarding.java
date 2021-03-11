@@ -82,6 +82,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     CollectionAdminResponse response;
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
     create.setMaxShardsPerNode(1);
+    create.setWaitForFinalState(true);
     response = create.process(solrCluster.getSolrClient());
     
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {

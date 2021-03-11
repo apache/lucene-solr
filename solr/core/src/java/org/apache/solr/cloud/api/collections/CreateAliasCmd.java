@@ -52,7 +52,7 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @Override
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -80,7 +80,7 @@ public class CreateAliasCmd extends AliasCmd {
     // just kicking the can down the road.  Perhaps ideally at this juncture here we could somehow wait until all
     // Solr nodes in the cluster have the latest aliases?
     // Thread.sleep(100);
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     response.clusterState = null;
 

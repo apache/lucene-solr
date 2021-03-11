@@ -52,7 +52,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   public void test() throws Exception {
     String collection = "testschemaapi";
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 2)
-        .process(cluster.getSolrClient());
+        .waitForFinalState(true).process(cluster.getSolrClient());
     testModifyField(collection);
     testReloadAndAddSimple(collection);
     testAddFieldAndDocument(collection);

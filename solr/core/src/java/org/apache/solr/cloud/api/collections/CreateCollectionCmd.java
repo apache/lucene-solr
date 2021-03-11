@@ -73,6 +73,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import java.io.IOException;
@@ -89,6 +90,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -139,7 +141,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.info("CreateCollectionCmd {}", message);
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update(); // MRM TODO: - check into this
@@ -150,7 +152,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     List<ReplicaPosition> replicaPositions = null;
     final Aliases aliases = ocmh.zkStateReader.getAliases();
     final String collectionName = message.getStr(NAME);
-    final boolean waitForFinalState = false;
+    final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     if (log.isDebugEnabled()) log.debug("Create collection {}", collectionName);
     CountDownLatch latch = new CountDownLatch(1);
@@ -199,6 +201,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     List<String> shardNames = BaseCloudSolrClient.populateShardNames(message, router);
     checkReplicaTypes(message);
 
+    Future writeFuture = null;
     try {
 
       Map<String,String> collectionParams = new HashMap<>();
@@ -253,7 +256,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toString(), ZkStateReader.COLLECTION_PROP, withCollection, ZkStateReader.SHARD_ID_PROP, withCollectionShard,
                 "node", nodeName, ZkStateReader.NODE_NAME_PROP, nodeName, CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
 
-            new AddReplicaCmd(ocmh, true).call(clusterState, props, results);
+            new CollectionCmdResponse(ocmh, true).call(clusterState, props, results);
             clusterState = new SliceMutator(cloudManager).addReplica(clusterState, props, ocmh.overseer);
           }
         }
@@ -278,7 +281,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         props.getProperties().putAll(addReplicaProps.getProperties());
         if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
 
-        clusterState = new AddReplicaCmd(ocmh, true).call(clusterState, props, results).clusterState;
+        clusterState = new CollectionCmdResponse(ocmh, true).call(clusterState, props, results).clusterState;
         // log.info("CreateCollectionCmd after add replica clusterstate={}", clusterState);
 
         //clusterState = new SliceMutator(cloudManager).addReplica(clusterState, props);
@@ -316,8 +319,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         coresToCreate.put(coreName, sreq);
       }
 
-      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, null, false);
-      ocmh.overseer.getZkStateWriter().writePendingUpdates();
+      Future future = ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collectionName), null, false);
+      future.get();
+      writeFuture = ocmh.overseer.writePendingUpdates();
 
       if (log.isDebugEnabled()) log.debug("Sending create call for {} replicas for {}", coresToCreate.size(), collectionName);
       for (Map.Entry<String,ShardRequest> e : coresToCreate.entrySet()) {
@@ -350,12 +354,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
 
     if (log.isDebugEnabled()) log.debug("CreateCollectionCmd clusterstate={}", clusterState);
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     List<ReplicaPosition> finalReplicaPositions = replicaPositions;
     response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
       @Override
-      public AddReplicaCmd.Response call() {
+      public CollectionCmdResponse.Response call() {
         try {
           shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
         } catch (KeeperException e) {
@@ -367,7 +371,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
         //  MRM TODO: - put this in finalizer and finalizer after all calls to allow parallel and forward momentum ... MRM later on, huh?
 
-        AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+        CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
         @SuppressWarnings({"rawtypes"}) boolean failure = results.get("failure") != null && ((SimpleOrderedMap) results.get("failure")).size() > 0;
         if (failure) {
@@ -377,7 +381,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           //        // element, which may be interpreted by the user as a positive ack
           //        // MRM TODO: review
           try {
-            AddReplicaCmd.Response rsp = ocmh.cleanupCollection(collectionName, new NamedList<Object>());
+            CollectionCmdResponse.Response rsp = ocmh.cleanupCollection(collectionName, new NamedList<Object>());
 
             response.clusterState = rsp.clusterState;
             if (rsp.asyncFinalRunner != null) {
@@ -391,7 +395,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         } else {
 
           if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
-          if (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
+          if (waitForFinalState && (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY))) {
             try {
               zkStateReader.waitForState(collectionName, CREATE_COLLECTION_TIMEOUT, TimeUnit.SECONDS, (l, c) -> {
                 if (c == null) {
@@ -445,7 +449,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     };
 
     if (log.isDebugEnabled()) log.debug("return cs from create collection cmd {}", clusterState);
-    //response.clusterState = clusterState;
+    response.clusterState = clusterState;
+    response.writeFuture = writeFuture;
     return response;
   }
 
@@ -617,7 +622,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
     }
     DocCollection newCollection = new DocCollection(cName,
-            slices, collectionProps, router, 0, false);
+            slices, collectionProps, router, 0, null);
 
     return newCollection;
   }

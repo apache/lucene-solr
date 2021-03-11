@@ -85,6 +85,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, nrtReplicas, tlogReplicas, 0)
         .setMaxShardsPerNode(2)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     // SOLR-12314 : assert that these values are from the solr.xml file and not UpdateShardHandlerConfig#DEFAULT

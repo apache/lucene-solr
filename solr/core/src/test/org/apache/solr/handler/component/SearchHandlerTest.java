@@ -149,7 +149,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1/conf"), configName);
 
-      CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
+      CollectionAdminRequest.createCollection(collectionName, configName, 2, 2).waitForFinalState(true)
           .process(miniCluster.getSolrClient());
     
       QueryRequest req = new QueryRequest();
@@ -193,7 +193,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       String configName = collectionName + "Config";
       miniCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1/conf"), configName);
 
-      CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
+      CollectionAdminRequest.createCollection(collectionName, configName, 2, 2).waitForFinalState(true)
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -243,7 +243,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       String configName = collectionName + "Config";
       miniCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1").resolve("conf"), configName);
 
-      CollectionAdminRequest.createCollection(collectionName, configName, 2, 1)
+      CollectionAdminRequest.createCollection(collectionName, configName, 2, 1).waitForFinalState(true)
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();

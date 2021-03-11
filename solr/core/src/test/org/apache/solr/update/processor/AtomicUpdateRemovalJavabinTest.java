@@ -60,6 +60,7 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
         .setMaxShardsPerNode(MAX_SHARDS_PER_NODE)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     final SolrInputDocument doc1 = SolrTestCaseJ4.sdoc(

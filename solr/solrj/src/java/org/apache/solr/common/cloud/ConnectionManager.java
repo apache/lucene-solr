@@ -93,7 +93,7 @@ public class ConnectionManager implements Watcher, Closeable {
       throw new IllegalStateException("You must call start on " + SolrZkClient.class.getName() + " before you can use it");
     }
 
-    if (keeper != null && !keeper.getState().isAlive()) {
+    if (keeper != null && isClosed && !keeper.getState().isAlive()) {
       throw new AlreadyClosedException(this + " SolrZkClient is not currently connected state=" + keeper.getState());
     }
 

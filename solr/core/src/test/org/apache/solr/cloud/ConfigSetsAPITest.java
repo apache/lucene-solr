@@ -56,6 +56,7 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
   @Test
   public void testConfigSetDeleteWhenInUse() throws Exception {
     CollectionAdminRequest.createCollection("test_configset_delete", "conf1", 1, 1)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     // TODO - check exception response!

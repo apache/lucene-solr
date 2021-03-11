@@ -55,7 +55,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
     // create an empty collection
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
-        .setMaxShardsPerNode(maxShardsPerNode)
+        .setMaxShardsPerNode(maxShardsPerNode).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     // add a document

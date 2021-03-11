@@ -50,7 +50,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
   @Test
   public void searchingShouldFailWithoutTolerantSearchSetToTrue() throws Exception {
 
-    CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1).waitForFinalState(true).process(cluster.getSolrClient());
 
     UpdateRequest update = new UpdateRequest();
     for (int i = 0; i < 100; i++) {

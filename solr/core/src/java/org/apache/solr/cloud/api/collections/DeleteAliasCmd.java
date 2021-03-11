@@ -33,12 +33,12 @@ public class DeleteAliasCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String aliasName = message.getStr(NAME);
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(aliasName, null));
-    return new AddReplicaCmd.Response();
+    return new CollectionCmdResponse.Response();
   }
 
 }

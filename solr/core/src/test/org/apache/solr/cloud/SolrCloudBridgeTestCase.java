@@ -72,6 +72,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
@@ -197,7 +198,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
 
     if (createCollection1) {
-      CollectionAdminRequest.createCollection(COLLECTION, "_default", sliceCount, replicationFactor).setMaxShardsPerNode(10).process(cluster.getSolrClient());
+      CollectionAdminRequest.createCollection(COLLECTION, "_default", sliceCount, replicationFactor).waitForFinalState(true).setMaxShardsPerNode(10).process(cluster.getSolrClient());
     }
 
     cloudClient = cluster.getSolrClient();
@@ -354,6 +355,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected CollectionAdminResponse createCollection(String collectionName, int numShards, int numReplicas) throws SolrServerException, IOException {
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(collectionName, "_default", numShards, numReplicas)
         .setMaxShardsPerNode(10)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
     return resp;
   }
@@ -363,6 +365,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(routerField)
         .setCreateNodeSet(createNodeSetStr)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
     return resp;
   }
@@ -370,7 +373,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected CollectionAdminResponse createCollection(String collectionName, int numShards, int numReplicas, String createNodeSetStr, String routerField, String conf) throws SolrServerException, IOException {
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(collectionName, conf, numShards, numReplicas)
         .setRouterField(routerField)
-
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
     return resp;
   }
@@ -379,6 +382,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(collectionName, "_default", numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
         .setCreateNodeSet(createNodeSetStr)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
     return resp;
   }
@@ -631,6 +635,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     try {
       assertEquals(0, CollectionAdminRequest.createCollection(collection, "_default", numShards, 1)
           .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY)
+          .waitForFinalState(true)
           .process(client).getStatus());
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
@@ -696,6 +701,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos, String collectionName, Map<String, Object> collectionProps, SolrClient client, String confSetName)  throws SolrServerException, IOException, InterruptedException, TimeoutException{
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+    params.set(CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
     for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
       if(entry.getValue() !=null) params.set(entry.getKey(), String.valueOf(entry.getValue()));
     }
@@ -778,7 +784,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
 
     String coreName = replica.getName();
-    boolean reloadedOk = false;
+    boolean reloadedOk = true;
     try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
@@ -793,17 +799,18 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       client.request(request);
 
       // verify reload is done, waiting up to 30 seconds for slow test environments
-      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
-      while (System.nanoTime() < timeout) {
-        statusResp = CoreAdminRequest.getStatus(coreName, client);
-        long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
-        if (startTimeAfterReload > leaderCoreStartTime) {
-          reloadedOk = true;
-          break;
-        }
-        // else ... still waiting to see the reloaded core report a later start time
-        Thread.sleep(1000);
-      }
+      // MRM TODO: we should do this to check status, but should not be need to wait for reload like it was
+//      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+//      while (System.nanoTime() < timeout) {
+//        statusResp = CoreAdminRequest.getStatus(coreName, client);
+//        long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
+//        if (startTimeAfterReload > leaderCoreStartTime) {
+//          reloadedOk = true;
+//          break;
+//        }
+//        // else ... still waiting to see the reloaded core report a later start time
+//        Thread.sleep(1000);
+//      }
     }
     return reloadedOk;
   }

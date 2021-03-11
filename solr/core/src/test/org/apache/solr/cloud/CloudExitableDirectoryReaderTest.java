@@ -92,7 +92,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     // pick an arbitrary node to use for our requests
     client = cluster.getRandomJetty(random()).newClient();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     fiveHundredsByNode = new LinkedHashMap<>();

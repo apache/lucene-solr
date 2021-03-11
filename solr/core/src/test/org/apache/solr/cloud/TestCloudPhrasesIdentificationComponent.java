@@ -79,6 +79,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     collectionProperties.put("schema", "schema-phrases-identification.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .setProperties(collectionProperties)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CLOUD_CLIENT = cluster.getSolrClient();

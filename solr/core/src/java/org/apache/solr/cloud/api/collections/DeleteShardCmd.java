@@ -43,11 +43,13 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -61,7 +63,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
@@ -73,14 +75,20 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       collectionName = extCollectionName;
     }
 
-    log.info("Delete shard invoked");
+
+    log.info("Delete shard invoked {}", message);
+
+    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
+
     Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);
     if (slice == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-        "No shard with name " + sliceId + " exists for collection " + collectionName);
+        "Invalid shard. No shard with name " + sliceId + " exists for collection " + collectionName);
 
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
     // TODO: Add check for range gaps on Slice deletion
     final Slice.State state = slice.getState();
+
+
 
     boolean force = message.getBool("force", false);
 
@@ -120,7 +128,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         try {
 
           // MRM TODO: - return results from deleteReplica cmd
-          AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, shardHandler, shardRequestTracker, deleteResult);
+          CollectionCmdResponse.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, shardHandler, shardRequestTracker, deleteResult);
           if (resp.asyncFinalRunner != null) {
             finalizers.add(resp.asyncFinalRunner);
           }
@@ -139,6 +147,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       clusterState = new CollectionMutator(ocmh.cloudManager).deleteShard(clusterState, m);
 
+
       log.info("Successfully deleted collection: {} , shard: {}", collectionName, sliceId);
     } catch (SolrException e) {
       throw e;
@@ -148,12 +157,13 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
           "Error executing delete operation for collection: " + collectionName + " shard: " + sliceId, e);
     }
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     response.asyncFinalRunner = () -> {
+      CollectionCmdResponse.Response resp = new CollectionCmdResponse.Response();
+
       for (OverseerCollectionMessageHandler.Finalize finalize : finalizers) {
         finalize.call();
       }
-
       try {
         if (log.isDebugEnabled())  log.debug("Processs responses");
         shardRequestTracker.processResponses(results, shardHandler, true, "Delete shard command failed");
@@ -161,7 +171,21 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-      return new AddReplicaCmd.Response();
+      if (waitForFinalState) {
+        resp.writeFuture = ocmh.overseer.writePendingUpdates();
+        ocmh.overseer.getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, coll) -> {
+          if (coll == null) {
+            return true;
+          }
+          Slice s = coll.getSlice(sliceId);
+          if (s == null) {
+            return true;
+          }
+          return false;
+        });
+      }
+
+      return resp;
     };
     response.clusterState = clusterState;
     return response;

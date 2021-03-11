@@ -189,7 +189,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestUtil.configset("cloud-minimal"), configName);
 
-      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
+      CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR).waitForFinalState(true)
           .process(miniCluster.getSolrClient());
 
       // Send distributed and non-distributed ping query

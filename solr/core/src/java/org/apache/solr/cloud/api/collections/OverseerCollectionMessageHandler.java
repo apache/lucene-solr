@@ -40,6 +40,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
@@ -129,6 +130,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.makeMap;
 import java.io.Closeable;
@@ -146,6 +148,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -269,7 +272,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
             .put(OVERSEERSTATUS, new OverseerStatusCmd(this))
             .put(DELETESHARD, new DeleteShardCmd(this))
             .put(DELETEREPLICA, new DeleteReplicaCmd(this))
-            .put(ADDREPLICA, new AddReplicaCmd(this))
+            .put(ADDREPLICA, new CollectionCmdResponse(this))
             .put(MOVEREPLICA, new MoveReplicaCmd(this))
             .put(REINDEXCOLLECTION, new ReindexCollectionCmd(this))
             .put(RENAME, new RenameCmd(this))
@@ -306,59 +309,77 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
       CollectionAction action = getCollectionAction(operation);
       Cmd command = commandMap.get(action);
+      Future writeFuture = null;
+      Future writeFuture2 = null;
       if (command != null) {
-        AddReplicaCmd.Response responce = command.call(clusterState, message, results);
+        CollectionCmdResponse.Response responce = command.call(clusterState, message, results);
         if (responce == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "CMD did not return a response:" + operation);
         }
 
         if (log.isDebugEnabled()) log.debug("Command returned clusterstate={} results={}", responce.clusterState, results);
 
+        CollectionCmdResponse.Response asyncResp = null;
+        Future future = null;
         if (responce.clusterState != null) {
           DocCollection docColl = responce.clusterState.getCollectionOrNull(collection);
-          Map<String,DocCollection> collectionStates = null;
+
           if (docColl != null) {
-            log.info("create new single collection state for collection {}", docColl.getName());
-            collectionStates = new HashMap<>();
-            collectionStates.put(docColl.getName(), docColl);
+
+            future = zkWriter.enqueueUpdate(docColl, null, false);
+
+            if (responce != null && responce.asyncFinalRunner != null) {
+              asyncResp = responce.asyncFinalRunner.call();
+            }
+            if (asyncResp == null || asyncResp.writeFuture == null) {
+              future.get();
+              writeFuture2 = overseer.writePendingUpdates();
+            }
+
           } else {
-            log.info("collection not found in returned state {} {}", collection, responce.clusterState);
-
+            if (responce != null && responce.asyncFinalRunner != null) {
+              asyncResp = responce.asyncFinalRunner.call();
+            }
           }
-          if (collectionStates != null) {
-            ClusterState cs = ClusterState.getRefCS(collectionStates, -2);
-            zkWriter.enqueueUpdate(cs, null, false);
-          }
-
-          overseer.writePendingUpdates();
         }
 
         // MRM TODO: consider
-        if (responce != null && responce.asyncFinalRunner != null) {
-          AddReplicaCmd.Response resp = responce.asyncFinalRunner.call();
-          if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", resp.clusterState);
-          if (resp.clusterState != null) {
-            DocCollection docColl = resp.clusterState.getCollectionOrNull(collection);
-            Map<String,DocCollection> collectionStates;
-            if (docColl != null) {
-              collectionStates = new HashMap<>();
-              collectionStates.put(docColl.getName(), docColl);
-            } else {
-              collectionStates = new HashMap<>();
-            }
-            ClusterState cs = ClusterState.getRefCS(collectionStates, -2);
 
-            zkWriter.enqueueUpdate(cs, null, false);
-            overseer.writePendingUpdates();
+        if (asyncResp != null) {
+          if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", asyncResp.clusterState);
+          if (asyncResp.clusterState != null) {
+            DocCollection docColl = asyncResp.clusterState.getCollectionOrNull(collection);
+
+            if (docColl != null) {
+
+              zkWriter.enqueueUpdate(docColl, null, false).get();
+              if (future != null) {
+                future.get();
+              }
+              writeFuture = overseer.writePendingUpdates();
+            }
           }
         }
-
-        if (collection != null) {
-          Integer version = zkWriter.lastWrittenVersion(collection);
-          if (version != null && !action.equals(DELETE)) {
-            results.add("csver", version);
-          } else {
-            //deleted
+        if (message.getBool(WAIT_FOR_FINAL_STATE, false) && !action.equals(DELETE)) {
+          if (collection != null) {
+            if (writeFuture != null) {
+              writeFuture.get();
+            }
+            if (writeFuture2 != null) {
+              writeFuture2.get();
+            }
+            if (responce.writeFuture != null) {
+              responce.writeFuture.get();
+            }
+            if (asyncResp != null && asyncResp.writeFuture != null) {
+              asyncResp.writeFuture.get();
+            }
+            Integer version = zkWriter.lastWrittenVersion(collection);
+            if (version != null) {
+              results.add("csver", version);
+            } else {
+              //deleted
+            }
           }
         }
 
@@ -373,7 +394,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         nl.add("rspCode", 500);
         results.add("exception", nl);
       }
-
+    } catch (AlreadyClosedException e) {
+      log.warn("Overseer hit already closed exception", e);
+      throw e;
     } catch (Exception e) {
       String collName = message.getStr("collection");
       if (collName == null) collName = message.getStr(NAME);
@@ -396,7 +419,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
   @SuppressWarnings({"unchecked"})
-  private AddReplicaCmd.Response mockOperation(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws InterruptedException {
+  private CollectionCmdResponse.Response mockOperation(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws InterruptedException {
     //only for test purposes
     Thread.sleep(message.getInt("sleep", 1));
     if (log.isInfoEnabled()) {
@@ -415,14 +438,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings({"unchecked"})
-  private AddReplicaCmd.Response reloadCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws KeeperException, InterruptedException {
+  private CollectionCmdResponse.Response reloadCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws KeeperException, InterruptedException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
 
     String asyncId = message.getStr(ASYNC);
     collectionCmd(message, params, results, Replica.State.ACTIVE, asyncId);
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     response.results = results;
     // MRM TODO: - we don't change this for this cmd, we should be able to indicate that to caller
     response.clusterState = null;
@@ -430,7 +453,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  private AddReplicaCmd.Response processRebalanceLeaders(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private CollectionCmdResponse.Response processRebalanceLeaders(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
     checkRequired(message, COLLECTION_PROP, NODE_NAME_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP, REJOIN_AT_HEAD_PROP);
 
@@ -459,7 +482,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  private AddReplicaCmd.Response processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private CollectionCmdResponse.Response processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, ZkStateReader.NUM_SHARDS_PROP, "shards", REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
     Map<String, Object> propMap = new HashMap<>(message.getProperties().size() + 1);
@@ -470,7 +493,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return null;
   }
 
-  private AddReplicaCmd.Response processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private CollectionCmdResponse.Response processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
     Map<String, Object> propMap = new HashMap<>(message.getProperties().size() + 1);
@@ -481,7 +504,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return null;
   }
 
-  private AddReplicaCmd.Response balanceProperty(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  private CollectionCmdResponse.Response balanceProperty(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
               "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
@@ -527,7 +550,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings("unchecked")
-  AddReplicaCmd.Response deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  CollectionCmdResponse.Response deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
     return ((DeleteReplicaCmd) commandMap.get(DELETEREPLICA)).call(clusterState, message, results);
   }
@@ -645,7 +668,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
 
-  private AddReplicaCmd.Response modifyCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  private CollectionCmdResponse.Response modifyCollection(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
 
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -666,17 +689,17 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     response.clusterState = clusterState;
     return response;
   }
 
-  AddReplicaCmd.Response cleanupCollection(String collectionName, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  CollectionCmdResponse.Response cleanupCollection(String collectionName, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
     Map<String, Object> props = makeMap(
             Overseer.QUEUE_OPERATION, DELETE.toLower(),
             NAME, collectionName);
-    AddReplicaCmd.Response response = commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
+    CollectionCmdResponse.Response response = commandMap.get(DELETE).call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
     return response;
   }
 
@@ -728,18 +751,18 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return result.get();
   }
 
-  AddReplicaCmd.Response addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  CollectionCmdResponse.Response addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
 
-    AddReplicaCmd.Response response = commandMap.get(ADDREPLICA).call(clusterState, message, results);
+    CollectionCmdResponse.Response response = commandMap.get(ADDREPLICA).call(clusterState, message, results);
 
     return response;
   }
 
-  AddReplicaCmd.Response addReplicaWithResp(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  CollectionCmdResponse.Response addReplicaWithResp(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
 
-    AddReplicaCmd.Response response = ((AddReplicaCmd) commandMap.get(ADDREPLICA)).call(clusterState, message, results);
+    CollectionCmdResponse.Response response = ((CollectionCmdResponse) commandMap.get(ADDREPLICA)).call(clusterState, message, results);
     return response;
   }
 
@@ -1036,7 +1059,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   protected interface Cmd {
-    AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
+    CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
 
     default boolean cleanup(ZkNodeProps message) {
       return false;
@@ -1044,7 +1067,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   protected interface Finalize {
-    AddReplicaCmd.Response call() throws Exception;
+    CollectionCmdResponse.Response call() throws Exception;
   }
 
   /*

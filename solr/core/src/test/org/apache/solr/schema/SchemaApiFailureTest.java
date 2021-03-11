@@ -42,6 +42,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
+        .waitForFinalState(true)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
   }

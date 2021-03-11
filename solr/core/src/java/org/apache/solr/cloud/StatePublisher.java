@@ -22,13 +22,11 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
@@ -44,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class StatePublisher implements Closeable {
   private static final Logger log = LoggerFactory
@@ -84,10 +83,11 @@ public class StatePublisher implements Closeable {
       while (!terminated && !zkStateReader.getZkClient().isClosed()) {
         if (!zkStateReader.getZkClient().isConnected()) {
           try {
-            Thread.sleep(250);
+            zkStateReader.getZkClient().getConnectionManager().waitForConnected(5000);
+          } catch (TimeoutException e) {
+            continue;
           } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e, true);
-            return;
+            log.error("publisher interrupted", e);
           }
           continue;
         }
@@ -98,7 +98,7 @@ public class StatePublisher implements Closeable {
         bulkMessage.getProperties().put(OPERATION, "state");
         try {
           try {
-            message = workQueue.poll(5, TimeUnit.SECONDS);
+            message = workQueue.poll(1000, TimeUnit.MILLISECONDS);
           } catch (InterruptedException e) {
             ParWork.propagateInterrupt(e, true);
             return;
@@ -114,7 +114,7 @@ public class StatePublisher implements Closeable {
 
             while (message != null && !terminated) {
               try {
-                message = workQueue.poll(15, TimeUnit.MILLISECONDS);
+                message = workQueue.poll(5, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
 
               }

@@ -98,7 +98,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     final String collectionName = "delLiveColl";
 
-    Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
+    Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).waitForFinalState(true);
     req.process(cluster.getSolrClient());
 
     DocCollection state = getCollectionState(collectionName);
@@ -149,7 +149,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   public void deleteReplicaAndVerifyDirectoryCleanup() throws Exception {
 
     final String collectionName = "deletereplica_test";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).waitForFinalState(true).process(cluster.getSolrClient());
 
     Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1");
 
@@ -158,11 +158,20 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     assertTrue("Instance directory doesn't exist", Files.exists(Paths.get(coreStatus.getInstanceDirectory())));
     assertTrue("DataDirectory doesn't exist", Files.exists(Paths.get(coreStatus.getDataDirectory())));
 
-    CollectionAdminRequest.deleteReplica(collectionName, "s1", leader.getName())
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.DeleteReplica req = CollectionAdminRequest.deleteReplica(collectionName, "s1", leader.getName());
+    req.setWaitForFinalState(true);
+    req.process(cluster.getSolrClient());
 
     Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 2000);
 
+
+
+    org.apache.solr.common.util.TimeOut timeOut = new org.apache.solr.common.util.TimeOut(2000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    while (!timeOut.hasTimedOut()) {
+      if (!leader.equals(newLeader)) {
+        break;
+      }
+    }
 
     assertFalse(leader.equals(newLeader));
 
@@ -176,7 +185,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     final String collectionName = "deleteByCount";
 
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3).waitForFinalState(true).process(cluster.getSolrClient());
 
     CollectionAdminRequest.deleteReplicasFromShard(collectionName, "s1", 2).process(cluster.getSolrClient());
 
@@ -196,7 +205,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @LuceneTestCase.Nightly
   public void deleteReplicaByCountForAllShards() throws Exception {
     final String collectionName = "deleteByCountNew";
-    Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
+    Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).waitForFinalState(true);
     req.process(cluster.getSolrClient());
     CollectionAdminRequest.deleteReplicasFromAllShards(collectionName, 1).process(cluster.getSolrClient());
   }
@@ -205,7 +214,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @LuceneTestCase.AwaitsFix(bugUrl = "Currently disabled due to negative behavior of UnloadCoreOnDeletedWatcher and it's semi disable")
   public void deleteReplicaFromClusterState() throws Exception {
     final String collectionName = "deleteFromClusterStateCollection";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3).waitForFinalState(true)
         .process(cluster.getSolrClient());
     
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1"));
@@ -379,7 +388,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Test
   public void deleteReplicaOnIndexing() throws Exception {
     final String collectionName = "deleteReplicaOnIndexing";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     AtomicBoolean closed = new AtomicBoolean(false);
@@ -407,7 +416,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     Slice shard1 = getCollectionState(collectionName).getSlice("s1");
     Replica nonLeader = shard1.getReplicas(rep -> !rep.getName().equals(shard1.getLeader().getName())).get(0);
-    CollectionAdminRequest.deleteReplica(collectionName, "s1", nonLeader.getName()).process(cluster.getSolrClient());
+    CollectionAdminRequest.DeleteReplica req = CollectionAdminRequest.deleteReplica(collectionName, "s1", nonLeader.getName());
+    req.setWaitForFinalState(true);
+    req.process(cluster.getSolrClient());
     closed.set(true);
     for (Future future : futures) {
       future.get();

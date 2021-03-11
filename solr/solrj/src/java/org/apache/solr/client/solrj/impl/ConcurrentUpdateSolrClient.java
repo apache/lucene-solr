@@ -370,7 +370,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             // parse out the metadata from the SolrException
             try {
               String encoding = "UTF-8"; // default
-              if (response.getEntity().getContentType().getElements().length > 0) {
+              if (response.getEntity() != null && response.getEntity().getContentType().getElements().length > 0) {
                 NameValuePair param = response.getEntity().getContentType().getElements()[0].getParameterByName("charset");
                 if (param != null)  {
                   encoding = param.getValue();

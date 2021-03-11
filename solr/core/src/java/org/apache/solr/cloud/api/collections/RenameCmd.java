@@ -44,7 +44,7 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(CoreAdminParams.NAME);
     String target = message.getStr(CollectionAdminParams.TARGET);
 
@@ -73,6 +73,6 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithRename(extCollectionName, target));
-    return new AddReplicaCmd.Response();
+    return new CollectionCmdResponse.Response();
   }
 }

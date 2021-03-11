@@ -189,7 +189,7 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
     commit();
 
     // MRM TODO: make test fail on compare fail
-    cluster.getSolrClient().getZkStateReader().checkShardConsistency(COLLECTION, batchSize == 1, true);
+    cluster.getSolrClient().getZkStateReader().checkShardConsistency(COLLECTION);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     

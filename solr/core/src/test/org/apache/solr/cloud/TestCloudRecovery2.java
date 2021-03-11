@@ -53,6 +53,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 1,2)
         .setMaxShardsPerNode(100)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
   }
 

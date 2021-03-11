@@ -37,7 +37,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -54,7 +53,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 
 public class DeleteReplicaCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -75,7 +74,7 @@ public class DeleteReplicaCmd implements Cmd {
   @Override
   @SuppressWarnings("unchecked")
 
-  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public CollectionCmdResponse.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ShardHandler shardHandler = null;
     ShardRequestTracker shardRequestTracker = null;
     if (!onlyUpdateState) {
@@ -85,31 +84,31 @@ public class DeleteReplicaCmd implements Cmd {
       createdShardHandler = true;
     }
 
-    AddReplicaCmd.Response response = deleteReplica(clusterState, message, shardHandler, shardRequestTracker, results);
+    CollectionCmdResponse.Response response = deleteReplica(clusterState, message, shardHandler, shardRequestTracker, results);
     return response;
   }
 
 
   @SuppressWarnings("unchecked")
-  AddReplicaCmd.Response deleteReplica(ClusterState clusterState, ZkNodeProps message, ShardHandler shardHandler,
+  CollectionCmdResponse.Response deleteReplica(ClusterState clusterState, ZkNodeProps message, ShardHandler shardHandler,
       ShardRequestTracker shardRequestTracker, @SuppressWarnings({"rawtypes"})NamedList results)
           throws KeeperException, InterruptedException {
 
     log.info("deleteReplica() : {}", Utils.toJSONString(message));
-
+    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     //If a count is specified the strategy needs be different
     if (message.getStr(COUNT_PROP) != null) {
 
-      AddReplicaCmd.Response resp = deleteReplicaBasedOnCount(clusterState, message, results, shardHandler, shardRequestTracker);
+      CollectionCmdResponse.Response resp = deleteReplicaBasedOnCount(clusterState, message, results, shardHandler, shardRequestTracker);
       clusterState = resp.clusterState;
-      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+      CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
       if (results.get("failure") == null && results.get("exception") == null) {
         ShardRequestTracker finalShardRequestTracker = shardRequestTracker;
         ShardHandler finalShardHandler = shardHandler;
         response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
           @Override
-          public AddReplicaCmd.Response call() {
+          public CollectionCmdResponse.Response call() {
             if (resp.asyncFinalRunner != null) {
               try {
                 resp.asyncFinalRunner.call();
@@ -130,7 +129,7 @@ public class DeleteReplicaCmd implements Cmd {
             //          } catch (Exception e) {
             //            log.error("", e);
             //          }
-            AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+            CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
             return response;
           }
         };
@@ -158,34 +157,35 @@ public class DeleteReplicaCmd implements Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid shard name : " + shard + " in collection : " + collectionName);
     }
 
-    AddReplicaCmd.Response resp = deleteCore(clusterState, slice, collectionName, replicaName, message, shard, results, shardRequestTracker, shardHandler);
+    CollectionCmdResponse.Response resp = deleteCore(clusterState, slice, collectionName, replicaName, message, shard, results, shardRequestTracker, shardHandler);
     clusterState = resp.clusterState;
 
 //    if (clusterState.getCollectionOrNull(collectionName).getReplica(replicaName) != null) {
 //      throw new IllegalStateException("Failed to remove replica from state " + replicaName);
 //    }
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
     if (!onlyUpdateState && createdShardHandler) {
       ShardRequestTracker finalShardRequestTracker = shardRequestTracker;
       ShardHandler finalShardHandler = shardHandler;
       response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
         @Override
-        public AddReplicaCmd.Response call() {
+        public CollectionCmdResponse.Response call() {
 
           try {
             finalShardRequestTracker.processResponses(results, finalShardHandler, false, null);
           } catch (Exception e) {
             log.error("Exception waiting for delete replica response");
           }
-
-          try {
-            waitForCoreNodeGone(collectionName, shard, replicaName, 5000); // MRM TODO: timeout
-          } catch (Exception e) {
-            log.error("", e);
+          if (waitForFinalState) {
+            try {
+              waitForCoreNodeGone(collectionName, shard, replicaName, 5000); // MRM TODO: timeout
+            } catch (Exception e) {
+              log.error("", e);
+            }
           }
-          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+          CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
           return response;
         }
       };
@@ -201,7 +201,7 @@ public class DeleteReplicaCmd implements Cmd {
    * @return
    */
   @SuppressWarnings({"unchecked"})
-  AddReplicaCmd.Response deleteReplicaBasedOnCount(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results, ShardHandler shardHandler,
+  CollectionCmdResponse.Response deleteReplicaBasedOnCount(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results, ShardHandler shardHandler,
       ShardRequestTracker shardRequestTracker)
           throws KeeperException, InterruptedException {
     ocmh.checkRequired(message, COLLECTION_PROP, COUNT_PROP);
@@ -241,7 +241,7 @@ public class DeleteReplicaCmd implements Cmd {
         if (log.isDebugEnabled()) log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
         // MRM TODO: - DONT DO THIS ONE AT TIME
 
-        AddReplicaCmd.Response resp = deleteCore(clusterState, shardSlice, collectionName, replica, message, shard, results, shardRequestTracker, shardHandler);
+        CollectionCmdResponse.Response resp = deleteCore(clusterState, shardSlice, collectionName, replica, message, shard, results, shardRequestTracker, shardHandler);
         clusterState = resp.clusterState;
         if (resp.asyncFinalRunner != null) {
           finalizers.add(resp.asyncFinalRunner);
@@ -252,15 +252,15 @@ public class DeleteReplicaCmd implements Cmd {
       results.add("replicas_deleted", replicas);
     }
 
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     response.clusterState = clusterState;
     response.asyncFinalRunner = () -> {
-      AddReplicaCmd.Response resp = new AddReplicaCmd.Response();
+      CollectionCmdResponse.Response resp = new CollectionCmdResponse.Response();
       resp.asyncFinalRunner = () -> {
         for (OverseerCollectionMessageHandler.Finalize finalize : finalizers) {
           finalize.call();
         }
-        return new AddReplicaCmd.Response();
+        return new CollectionCmdResponse.Response();
       };
       return resp;
     };
@@ -318,7 +318,7 @@ public class DeleteReplicaCmd implements Cmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  AddReplicaCmd.Response deleteCore(ClusterState clusterState, Slice slice, String collectionName, String replicaName,
+  CollectionCmdResponse.Response deleteCore(ClusterState clusterState, Slice slice, String collectionName, String replicaName,
       ZkNodeProps message, String shard, @SuppressWarnings({"rawtypes"})NamedList results, ShardRequestTracker shardRequestTracker, ShardHandler shardHandler) throws KeeperException, InterruptedException {
     log.info("delete core {}", replicaName);
     Replica replica = slice.getReplica(replicaName);
@@ -337,7 +337,7 @@ public class DeleteReplicaCmd implements Cmd {
 //              "Attempted to remove replica : " + collectionName + "/"  + shard + "/" + replicaName +
 //              " with onlyIfDown='true', but state is '" + replica.getStr(ZkStateReader.STATE_PROP) + "'");
 //    }
-    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
     ZkNodeProps rep = new ZkNodeProps();
     rep.getProperties().put("replica", replicaName);
     rep.getProperties().put("collection", replica.getCollection());
@@ -380,6 +380,7 @@ public class DeleteReplicaCmd implements Cmd {
 
 
     }
+
     response.clusterState = clusterState;
 
     return response;

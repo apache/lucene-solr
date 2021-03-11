@@ -69,6 +69,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("collection1", configName, shards, replicas)
         .withProperty("config", "solrconfig-tlog.xml")
         .withProperty("schema", "schema.xml")
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     client = cluster.getSolrClient();

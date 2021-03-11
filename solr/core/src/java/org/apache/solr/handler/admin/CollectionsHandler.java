@@ -280,19 +280,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
 
-      String collection = req.getParams().get("collection");
-      if (collection == null) {
-        collection = req.getParams().get("name");
-      }
-      if (collection != null) {
-        DocCollection coll = coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
-        if (coll != null && !action.equals(DELETE)) {
-          //rsp.add("csver", coll.getZNodeVersion()); // MRM TODO: - find out which version was written by overseer and return it in response for this
-        } else {
-          // deleted
-        }
-      }
-
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
     }
@@ -816,6 +803,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           COLLECTION_PROP,
           SHARD_ID_PROP);
       copy(req.getParams(), map,
+          WAIT_FOR_FINAL_STATE,
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
@@ -831,6 +819,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
           SHARD_ID_PROP);
+      copy(req.getParams(), map,
+          WAIT_FOR_FINAL_STATE);
+
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       final String newShardName = SolrIdentifierValidator.validateShardName(req.getParams().get(SHARD_ID_PROP));
       boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
@@ -860,6 +851,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_METRICS_HISTORY,
           COUNT_PROP, REPLICA_PROP,
           SHARD_ID_PROP,
+          WAIT_FOR_FINAL_STATE,
           ONLY_IF_DOWN,
           FOLLOW_ALIASES);
     }),

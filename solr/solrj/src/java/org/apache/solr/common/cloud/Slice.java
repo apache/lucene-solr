@@ -111,8 +111,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     }
 //  /  propMap.remove("state");
    // currentSlice.propMap.putAll(propMap);
-    Slice newSlice = new Slice(currentSlice.name, replicas, currentSlice.propMap, currentSlice.collection, currentSlice.collectionId, nodeNameToBaseUrl);
-
+    Slice newSlice = new Slice(currentSlice.name, replicas, currentSlice.propMap, currentSlice.collection, collectionId, nodeNameToBaseUrl);
+    newSlice.setLeader(currentSlice.getLeader());
     return newSlice;
   }
 

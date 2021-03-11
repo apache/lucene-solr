@@ -161,7 +161,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   @Test
   @LuceneTestCase.Nightly // needs 4 nodes
   public void testCoresAreDistributedAcrossNodes() throws Exception {
-    CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
+    CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2).waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getLiveNodes();
@@ -207,6 +207,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("nodeset_collection", "conf", 2, 1)
         .setCreateNodeSet(baseUrls.get(0) + "," + baseUrls.get(1))
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     DocCollection collectionState = getCollectionState("nodeset_collection");
@@ -421,15 +422,16 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .setMaxShardsPerNode(6)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     ArrayList<String> nodeList
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
-    CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
-        .setNode(nodeList.get(0))
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.AddReplica req = CollectionAdminRequest.addReplicaToShard(collectionName, "s1").setNode(nodeList.get(0));
+    req.setWaitForFinalState(true);
+    CollectionAdminResponse response = req.process(cluster.getSolrClient());
     Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
 
     assertEquals("Replica should be created on the right node",
@@ -437,9 +439,9 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         newReplica.getBaseUrl());
 
     Path instancePath = SolrTestUtil.createTempDir();
-    response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
-        .withProperty(CoreAdminParams.INSTANCE_DIR, instancePath.toString())
-        .process(cluster.getSolrClient());
+     req = CollectionAdminRequest.addReplicaToShard(collectionName, "s1").withProperty(CoreAdminParams.INSTANCE_DIR, instancePath.toString());
+    req.setWaitForFinalState(true);
+    response = req.process(cluster.getSolrClient());
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
 
@@ -452,9 +454,10 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
     // Check that specifying property.name works. DO NOT remove this when the "name" property is deprecated
     // for ADDREPLICA, this is "property.name". See SOLR-7132
-    response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
-        .withProperty(CoreAdminParams.NAME, "propertyDotName")
-        .process(cluster.getSolrClient());
+    req = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
+        .withProperty(CoreAdminParams.NAME, "propertyDotName");
+    req.setWaitForFinalState(true);
+    response =  req.process(cluster.getSolrClient());
 
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     // MRM TODO: do we really want to support this anymore?

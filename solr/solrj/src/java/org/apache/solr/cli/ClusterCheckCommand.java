@@ -72,7 +72,7 @@ public class ClusterCheckCommand extends CliCommand {
    if (args.length == 2) {
      try {
        String collection = args[1];
-       zkStateReader.checkShardConsistency(collection, false, true);
+       zkStateReader.checkShardConsistency(collection);
 
      } catch (IllegalArgumentException ex) {
        throw new MalformedPathException(ex.getMessage());
