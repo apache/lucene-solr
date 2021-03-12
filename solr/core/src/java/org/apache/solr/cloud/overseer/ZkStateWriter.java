@@ -350,34 +350,18 @@ public class ZkStateWriter {
 
             collState.collLock.lock();
             try {
-              //                if (collection == null) {
-              //                  Collection<ClusterState.CollectionRef> colls = cs.getCollectionStates().values();
-              //                  log.info("look for collection for id={} in {}}", id, cs.getCollectionStates().keySet());
-              //
-              //                  for (ClusterState.CollectionRef docCollectionRef : colls) {
-              //                    DocCollection docCollection = docCollectionRef.get();
-              //                    if (docCollection == null) {
-              //                      log.info("docCollection={}", docCollection);
-              //                    }
-              //                    if (docCollection.getId() == collectionId) {
-              //                      collection = docCollection.getName();
-              //                      break;
-              //                    }
-              //                  }
-              //                  if (collection == null) {
-              //                    continue;
-              //                  }
-              //                }
               String collection = entry.getKey();
+              ZkNodeProps updates = stateUpdates.get(collection);
+              if (updates == null) {
+                updates = new ZkNodeProps();
+                stateUpdates.put(collection, updates);
+              }
+
               for (StateUpdate state : entry.getValue()) {
 
                 String setState = Replica.State.shortStateToState(state.state).toString();
 
-                ZkNodeProps updates = stateUpdates.get(collection);
-                if (updates == null) {
-                  updates = new ZkNodeProps();
-                  stateUpdates.put(collection, updates);
-                }
+
                 Integer ver = trackVersions.get(collection);
                 if (ver == null) {
                   ver = 0;
@@ -446,6 +430,7 @@ public class ZkStateWriter {
           for (Map.Entry<String,List<StateUpdate>> update : collStateUpdates.entrySet()) {
 
             String coll = update.getKey();
+            dirtyState.add(coll);
             Integer ver = trackVersions.get(coll);
             if (ver == null) {
               ver = 0;

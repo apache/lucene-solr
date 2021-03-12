@@ -1016,7 +1016,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout, boolean mustBeLive) throws InterruptedException, TimeoutException {
-    DocCollection coll = clusterState.get(collection).get();
+    DocCollection coll = getCollectionOrNull(collection);
     if (coll != null) {
       Slice slice = coll.getSlice(shard);
       if (slice  != null) {
@@ -1055,7 +1055,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         return false;
       });
     } catch (TimeoutException e) {
-      coll = clusterState.get(collection).get();
+      coll = getCollectionOrNull(collection);
       throw new TimeoutException("No registered leader was found after waiting for "
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.get(collection)
           + " with live_nodes=" + liveNodes + " zkLeaderNode=" + (coll == null ? "null collection" : getLeaderProps(collection, coll.getId(), shard)));
@@ -1064,7 +1064,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     Replica leader = returnLeader.get();
 
     if (leader == null) {
-      coll = clusterState.get(collection).get();
+      coll = getCollectionOrNull(collection);
       throw new SolrException(ErrorCode.SERVER_ERROR, "No registered leader was found "
           + "collection: " + collection + " slice: " + shard + " saw state=" + clusterState.get(collection)
           + " with live_nodes=" + liveNodes + " zkLeaderNode=" + getLeaderProps(collection, coll.getId(), shard));
@@ -2143,7 +2143,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     registerDocCollectionWatcher(collection, wrapper);
     registerLiveNodesListener(wrapper);
 
-    DocCollection state = clusterState.get(collection).get();
+    DocCollection state = getCollectionOrNull(collection);
     if (stateWatcher.onStateChanged(liveNodes, state) == true) {
       removeCollectionStateWatcher(collection, stateWatcher);
     }
