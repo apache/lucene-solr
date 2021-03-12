@@ -677,11 +677,13 @@ Test args: [${args}]</echo>
       <target name="generate-maven-artifacts"/>
     </antcall>
     <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
+    <!-- disabled as it does not work anymore on jenkins...
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <target name="remove-maven-artifacts"/>
       <target name="run-maven-build"/>
     </antcall>
+    -->
   </target>
   
   <target name="jenkins-clover" depends="-print-java-info">
