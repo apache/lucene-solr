@@ -214,6 +214,10 @@ public class Replica extends ZkNodeProps {
     return collectionId + "-" + (id == null ? null : id.toString());
   }
 
+  public String getInternalId() {
+    return id.toString();
+  }
+
   public Long getCollectionId() {
     return collectionId;
   }

@@ -1325,7 +1325,7 @@ public class ZkController implements Closeable, Runnable {
           break;
         }
         try {
-          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 1500, true);
+          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 10000, true);
           leaderName = leader.getName();
 
         } catch (TimeoutException timeoutException) {

@@ -858,12 +858,12 @@ public class MiniSolrCloudCluster {
 
   public void waitForActiveCollection(String collection, int shards, int totalReplicas) {
     if (collection == null) throw new IllegalArgumentException("null collection");
-    waitForActiveCollection(collection,  10, TimeUnit.SECONDS, shards, totalReplicas);
+    waitForActiveCollection(collection,  120, TimeUnit.SECONDS, shards, totalReplicas);
   }
 
   public void waitForActiveCollection(String collection, int shards, int totalReplicas, boolean exact) {
 
-    waitForActiveCollection(collection,  10, TimeUnit.SECONDS, shards, totalReplicas, exact);
+    waitForActiveCollection(collection,  120, TimeUnit.SECONDS, shards, totalReplicas, exact);
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {

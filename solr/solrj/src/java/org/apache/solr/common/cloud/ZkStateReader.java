@@ -391,13 +391,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           log.error("problem fetching update collection state", e);
           return;
         }
-        String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(name);
-        try {
-          newState = getAndProcessStateUpdates(name, stateUpdatesPath, false, newState, null);
-        } catch (Exception e) {
-          log.error("", e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
+
         if (updateWatchedCollection(name, newState, false)) {
           constructState(newState);
         }
@@ -426,14 +420,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
       if (newState == null) {
         return;
-      }
-
-      String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(name);
-      try {
-        newState = getAndProcessStateUpdates(name, stateUpdatesPath, false, newState, null);
-      } catch (Exception e) {
-        log.error("", e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
 
       if (updateWatchedCollection(name, newState, false)) {
@@ -823,8 +809,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           try {
             DocCollection cdc = getCollectionLive(ZkStateReader.this, collName);
             if (cdc != null) {
-              String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collName);
-              cdc = getAndProcessStateUpdates(collName, stateUpdatesPath, true, cdc, null);
               cdc.setCreatedLazy();
               lastUpdateTime = System.nanoTime();
               cachedDocCollection = cdc;
@@ -1828,8 +1812,28 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     DocCollection result = null;
     try {
       log.debug("get and process state updates for {}", coll);
+
+      Stat stat;
+      try {
+        stat = getZkClient().exists(stateUpdatesPath, null,true);
+        if (stat == null) {
+          return docCollection;
+        }
+      } catch (NoNodeException e) {
+        log.info("No node found for {}", stateUpdatesPath);
+        return docCollection;
+      }
+
+      if (docCollection != null && docCollection.hasStateUpdates()) {
+        int oldVersion = (int) docCollection.getStateUpdates().get("_ver_");
+        if (stat.getVersion() < oldVersion) {
+          if (log.isDebugEnabled()) log.debug("Will not apply state updates, they are for an older set of updates {}, ours is now {}", stat.getVersion(), oldVersion);
+          return docCollection;
+        }
+      }
+
       byte[] data = null;
-      Stat stat = new Stat();
+      stat = new Stat();
       try {
         data = getZkClient().getData(stateUpdatesPath, null, stat, true, false);
       } catch (NoNodeException e) {
@@ -1879,7 +1883,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
               state = Replica.State.shortStateToState((String) entry.getValue());
             }
 
-            Replica replica = docCollection.getReplicaById(id);
+            Replica replica = docCollection.getReplicaById(docCollection.getId() + "-" + id);
             if (log.isDebugEnabled()) log.debug("Got additional state update {} replica={} id={} ids={} {}", state == null ? "leader" : state, replica, id, docCollection.getReplicaByIds());
 
             if (replica != null) {
@@ -2013,6 +2017,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         }
 
       }
+
     } else {
       return null;
     }
@@ -2028,6 +2033,17 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     ClusterState state = ClusterState.createFromJson(this, stat.getVersion(), data);
     ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
     DocCollection docCollection = collectionRef == null ? null : collectionRef.get();
+
+    if (docCollection != null) {
+      String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(coll);
+      try {
+        docCollection = getAndProcessStateUpdates(coll, stateUpdatesPath, true, docCollection, null);
+      } catch (Exception e) {
+        log.error("", e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
+
     return docCollection;
   }
 

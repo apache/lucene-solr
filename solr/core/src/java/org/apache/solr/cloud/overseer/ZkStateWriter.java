@@ -215,14 +215,15 @@ public class ZkStateWriter {
                     continue;
                   } else {
                     if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
-                    String id = entry.getKey();
+                    String fullId = entry.getKey();
+                    String id = fullId.substring(fullId.indexOf("-") + 1);
 
                     String stateString = (String) entry.getValue();
                     if (log.isDebugEnabled()) {
                       log.debug("stateString={}", stateString);
                     }
 
-                    long collectionId = Long.parseLong(id.split("-")[0]);
+                    long collectionId = Long.parseLong(fullId.split("-")[0]);
                     String collection = idToCollection.get(collectionId);
                     if (collection == null) {
                       log.info("collection for id={} is null", collectionId);
@@ -265,7 +266,7 @@ public class ZkStateWriter {
                           dirtyState.add(docColl.getName());
                           blockedNodes.add((String) entry.getValue());
                           StateUpdate update = new StateUpdate();
-                          update.id = replica.getId();
+                          update.id = replica.getInternalId();
                           update.state = Replica.State.getShortState(Replica.State.DOWN);
                           updates.add(update);
 
@@ -287,7 +288,7 @@ public class ZkStateWriter {
                           dirtyState.add(docColl.getName());
                           //   blockedNodes.add((String) entry.getValue());
                           StateUpdate update = new StateUpdate();
-                          update.id = replica.getId();
+                          update.id = replica.getInternalId();
                           update.state = Replica.State.getShortState(Replica.State.RECOVERING);
                           updates.add(update);
                         }
@@ -393,7 +394,7 @@ public class ZkStateWriter {
                           r.getProperties().remove("leader");
                         }
                       }
-                      updates.getProperties().put(replica.getId(), "l");
+                      updates.getProperties().put(replica.getInternalId(), "l");
                       dirtyState.add(collection);
                     } else {
                       Replica.State s = Replica.State.getState(setState);
@@ -401,7 +402,7 @@ public class ZkStateWriter {
                       if (existingLeader != null && existingLeader.getName().equals(replica.getName())) {
                         docColl.getSlice(replica).setLeader(null);
                       }
-                      updates.getProperties().put(replica.getId(), Replica.State.getShortState(s));
+                      updates.getProperties().put(replica.getInternalId(), Replica.State.getShortState(s));
                       log.debug("set state {} {}", state, replica);
                       replica.setState(s);
                       dirtyState.add(collection);
@@ -422,27 +423,24 @@ public class ZkStateWriter {
                 }
               }
 
+              String coll = entry.getKey();
+              dirtyState.add(coll);
+              Integer ver = trackVersions.get(coll);
+              if (ver == null) {
+                ver = 0;
+              }
+              ZkNodeProps updateMap = stateUpdates.get(coll);
+              if (updateMap == null) {
+                updateMap = new ZkNodeProps();
+                stateUpdates.put(coll, updateMap);
+              }
+              updateMap.getProperties().put("_cs_ver_", ver.toString());
+              for (StateUpdate theUpdate : entry.getValue()) {
+                updateMap.getProperties().put(theUpdate.id, theUpdate.state);
+              }
 
             } finally {
               collState.collLock.unlock();
-            }
-          }
-          for (Map.Entry<String,List<StateUpdate>> update : collStateUpdates.entrySet()) {
-
-            String coll = update.getKey();
-            dirtyState.add(coll);
-            Integer ver = trackVersions.get(coll);
-            if (ver == null) {
-              ver = 0;
-            }
-            ZkNodeProps updateMap = stateUpdates.get(coll);
-            if (updateMap == null) {
-              updateMap = new ZkNodeProps();
-              stateUpdates.put(coll, updateMap);
-            }
-            updateMap.getProperties().put("_cs_ver_", ver.toString());
-            for (StateUpdate theUpdate : update.getValue()) {
-              updateMap.getProperties().put(theUpdate.id, theUpdate.state);
             }
           }
         }
