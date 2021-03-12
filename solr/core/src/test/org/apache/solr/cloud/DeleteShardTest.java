@@ -80,6 +80,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     setSliceState(collection, "s1", Slice.State.INACTIVE);
 
+
     cluster.getSolrClient().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, coll) -> {
       if (coll == null) {
         return false;
@@ -93,6 +94,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     // Can delete an INATIVE shard
     CollectionAdminRequest.DeleteShard req = CollectionAdminRequest.deleteShard(collection, "s1");
+    req.waitForFinalState(true);
     req.process(cluster.getSolrClient());
 
     // Can delete a shard under construction

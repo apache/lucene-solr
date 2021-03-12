@@ -19,7 +19,6 @@ package org.apache.solr.cloud.overseer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +33,11 @@ import java.util.regex.Matcher;
 
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.StatePublisher;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -99,7 +98,7 @@ public class ZkStateWriter {
 
   }
 
-  public Future enqueueUpdate(DocCollection docCollection, List<Overseer.WorkQueueWatcher.StateEntry> shardStateCollections, boolean stateUpdate) throws Exception {
+  public Future enqueueUpdate(DocCollection docCollection, Map<String,List<ZkStateWriter.StateUpdate>> collStateUpdates, boolean stateUpdate) throws Exception {
     return ParWork.getRootSharedExecutor().submit(() -> {
 
       try {
@@ -194,150 +193,7 @@ public class ZkStateWriter {
             collState.collLock.unlock();
           }
         } else {
-          Map<String,List<StateUpdate>> collStateUpdates = new HashMap<>();
-          for (Overseer.WorkQueueWatcher.StateEntry sentry : shardStateCollections) {
-            ZkNodeProps message = sentry.message;
-            final String operation = message.getStr(StatePublisher.OPERATION);
-            OverseerAction overseerAction = OverseerAction.get(operation);
-            if (overseerAction == null) {
-              throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
-            }
 
-            switch (overseerAction) {
-              case STATE:
-                if (log.isDebugEnabled()) log.debug("state cmd {}", message);
-                message.getProperties().remove(StatePublisher.OPERATION);
-
-                for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
-                  if (OverseerAction.DOWNNODE.equals(OverseerAction.get(entry.getKey()))) {
-                    continue;
-                  } else if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(entry.getKey()))) {
-                    continue;
-                  } else {
-                    if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
-                    String id = entry.getKey();
-
-                    String stateString = (String) entry.getValue();
-                    if (log.isDebugEnabled()) {
-                      log.debug("stateString={}", stateString);
-                    }
-
-                    long collectionId = Long.parseLong(id.split("-")[0]);
-                    String collection = idToCollection.get(collectionId);
-                    if (collection == null) {
-                      log.info("collection for id={} is null", collectionId);
-                      continue;
-                    }
-
-                    List<StateUpdate> updates = collStateUpdates.get(collection);
-                    if (updates == null) {
-                      updates = new ArrayList<>();
-                      collStateUpdates.put(collection, updates);
-                    }
-
-                    StateUpdate update = new StateUpdate();
-                    update.id = id;
-                    update.state = stateString;
-                    updates.add(update);
-
-                  }
-                }
-                Set<String> blockedNodes = new HashSet<>();
-                for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
-                  if (OverseerAction.DOWNNODE.equals(OverseerAction.get(entry.getKey()))) {
-                    cs.values().forEach(docColl -> {
-                      List<StateUpdate> updates = collStateUpdates.get(docColl.getName());
-                      if (updates == null) {
-                        updates = new ArrayList<>();
-                        collStateUpdates.put(docColl.getName(), updates);
-                      }
-                      List<Replica> replicas = docColl.getReplicas();
-                      for (Replica replica : replicas) {
-                        if (replica.getNodeName().equals(entry.getValue())) {
-                          if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", operation, replica);
-                          // MRM TODO:
-                          //   Slice slice = docColl.getSlice(replica.getSlice());
-                          //          Replica leaderReplica = slice.getLeader();
-                          //          if (leaderReplica != null && replica == leaderReplica) {
-                          //            leaderReplica.getProperties().remove("leader");
-                          //            slice.setLeader(null);
-                          //          }
-                          dirtyState.add(docColl.getName());
-                          blockedNodes.add((String) entry.getValue());
-                          StateUpdate update = new StateUpdate();
-                          update.id = replica.getId();
-                          update.state = Replica.State.getShortState(Replica.State.DOWN);
-                          updates.add(update);
-
-                        }
-                      }
-                    });
-                  }
-                  if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(entry.getKey()))) {
-                    cs.values().forEach(docColl -> {
-                      List<StateUpdate> updates = collStateUpdates.get(docColl.getName());
-                      if (updates == null) {
-                        updates = new ArrayList<>();
-                        collStateUpdates.put(docColl.getName(), updates);
-                      }
-                      List<Replica> replicas = docColl.getReplicas();
-                      for (Replica replica : replicas) {
-                        if (replica.getNodeName().equals(entry.getValue())) {
-                          if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", operation, replica);
-                          dirtyState.add(docColl.getName());
-                          //   blockedNodes.add((String) entry.getValue());
-                          StateUpdate update = new StateUpdate();
-                          update.id = replica.getId();
-                          update.state = Replica.State.getShortState(Replica.State.RECOVERING);
-                          updates.add(update);
-                        }
-                      }
-                    });
-                  }
-                }
-
-                break;
-              // MRM TODO:
-              //          case ADDROUTINGRULE:
-              //            return new SliceMutator(cloudManager).addRoutingRule(clusterState, message);
-              //          case REMOVEROUTINGRULE:
-              //            return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
-              case UPDATESHARDSTATE:  // MRM TODO: look at how we handle this and make it so it can use StatePublisher
-                String collection = message.getStr("collection");
-                message.getProperties().remove("collection");
-                message.getProperties().remove(StatePublisher.OPERATION);
-
-                ColState collState = collLocks.compute(collection, (s, reentrantLock) -> {
-                  if (reentrantLock == null) {
-                    ColState colState = new ColState();
-                    return colState;
-                  }
-                  return reentrantLock;
-                });
-
-                collState.collLock.lock();
-                try {
-                  DocCollection docColl = cs.get(collection);
-                  if (docColl != null) {
-                    for (Map.Entry<String,Object> e : message.getProperties().entrySet()) {
-                      Slice slice = docColl.getSlice(e.getKey());
-                      if (slice != null) {
-                        Slice.State state = Slice.State.getState((String) e.getValue());
-                        slice.setState(state);
-                        dirtyStructure.add(collection);
-                      }
-                    }
-                  }
-                } finally {
-                  collState.collLock.unlock();
-                }
-                break;
-
-              default:
-                throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
-
-            }
-          }
           for (Map.Entry<String,List<StateUpdate>> entry : collStateUpdates.entrySet()) {
 
             ColState collState = collLocks.compute(entry.getKey(), (s, reentrantLock) -> {
@@ -350,7 +206,13 @@ public class ZkStateWriter {
 
             collState.collLock.lock();
             try {
-              String collection = entry.getKey();
+              String collectionId = entry.getKey();
+              String collection = idToCollection.get(Long.parseLong(collectionId));
+              if (collection == null) {
+                log.error("Collection not found by id={} collections={}", collectionId, idToCollection);
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Collection not found by id=" + collectionId);
+              }
+
               ZkNodeProps updates = stateUpdates.get(collection);
               if (updates == null) {
                 updates = new ZkNodeProps();
@@ -358,9 +220,6 @@ public class ZkStateWriter {
               }
 
               for (StateUpdate state : entry.getValue()) {
-
-                String setState = Replica.State.shortStateToState(state.state).toString();
-
 
                 Integer ver = trackVersions.get(collection);
                 if (ver == null) {
@@ -372,9 +231,20 @@ public class ZkStateWriter {
 
                 DocCollection docColl = cs.get(collection);
                 if (docColl != null) {
+
+                  if (state.sliceState != null) {
+                    Slice slice = docColl.getSlice(state.sliceName);
+                    if (slice != null) {
+                      slice.setState(Slice.State.getState(state.sliceState));
+                    }
+                    dirtyStructure.add(docColl.getName());
+                    continue;
+                  }
+
                   Replica replica = docColl.getReplicaById(state.id);
                   log.debug("found existing collection name={}, look for replica={} found={}", collection, state.id, replica);
                   if (replica != null) {
+                    String setState = Replica.State.shortStateToState(state.state).toString();
                     //                        if (blockedNodes.contains(replica.getNodeName())) {
                     //                          continue;
                     //                        }
@@ -393,7 +263,7 @@ public class ZkStateWriter {
                           r.getProperties().remove("leader");
                         }
                       }
-                      updates.getProperties().put(replica.getId(), "l");
+                      updates.getProperties().put(replica.getInternalId(), "l");
                       dirtyState.add(collection);
                     } else {
                       Replica.State s = Replica.State.getState(setState);
@@ -401,7 +271,7 @@ public class ZkStateWriter {
                       if (existingLeader != null && existingLeader.getName().equals(replica.getName())) {
                         docColl.getSlice(replica).setLeader(null);
                       }
-                      updates.getProperties().put(replica.getId(), Replica.State.getShortState(s));
+                      updates.getProperties().put(replica.getInternalId(), Replica.State.getShortState(s));
                       log.debug("set state {} {}", state, replica);
                       replica.setState(s);
                       dirtyState.add(collection);
@@ -411,12 +281,13 @@ public class ZkStateWriter {
                   }
                 } else {
                   log.debug("Could not find existing collection name={}", collection);
+                  String setState = Replica.State.shortStateToState(state.state).toString();
                   if (setState.equals("leader")) {
-                    updates.getProperties().put(state.id, "l");
+                    updates.getProperties().put(state.id.substring(state.id.indexOf('-') + 1), "l");
                     dirtyState.add(collection);
                   } else {
                     Replica.State s = Replica.State.getState(setState);
-                    updates.getProperties().put(state.id, Replica.State.getShortState(s));
+                    updates.getProperties().put(state.id.substring(state.id.indexOf('-') + 1), Replica.State.getShortState(s));
                     dirtyState.add(collection);
                   }
                 }
@@ -428,14 +299,9 @@ public class ZkStateWriter {
               if (ver == null) {
                 ver = 0;
               }
-              ZkNodeProps updateMap = stateUpdates.get(coll);
-              if (updateMap == null) {
-                updateMap = new ZkNodeProps();
-                stateUpdates.put(coll, updateMap);
-              }
-              updateMap.getProperties().put("_cs_ver_", ver.toString());
+              updates.getProperties().put("_cs_ver_", ver.toString());
               for (StateUpdate theUpdate : entry.getValue()) {
-                updateMap.getProperties().put(theUpdate.id.substring(theUpdate.id.indexOf("-") + 1), theUpdate.state);
+                updates.getProperties().put(theUpdate.id.substring(theUpdate.id.indexOf("-") + 1), theUpdate.state);
               }
 
             } finally {
@@ -497,7 +363,7 @@ public class ZkStateWriter {
     Integer version = null;
     if (dirtyStructure.contains(collection.getName())) {
       log.info("process collection {}", collection);
-      ColState collState = collLocks.compute(collection.getName(), (s, reentrantLock) -> {
+      ColState collState = collLocks.compute(Long.toString(collection.getId()), (s, reentrantLock) -> {
         if (reentrantLock == null) {
           ColState colState = new ColState();
           return colState;
@@ -633,6 +499,10 @@ public class ZkStateWriter {
     return ClusterState.getRefCS(cs, -2);
   }
 
+  public Map<String,DocCollection>  getCS() {
+    return cs;
+  }
+
   public Set<String> getDirtyStateCollections() {
     return dirtyState;
   }
@@ -742,9 +612,11 @@ public class ZkStateWriter {
     private AtomicInteger replicaAssignCnt = new AtomicInteger();
   }
 
-  private static class StateUpdate {
-    String id;
-    String state;
+  public static class StateUpdate {
+    public String id;
+    public String state;
+    public String sliceState;
+    public String sliceName;
   }
 
 }

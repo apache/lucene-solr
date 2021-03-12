@@ -328,6 +328,8 @@ public class SolrTestCase extends Assert {
     System.setProperty("useCompoundFile", "true");
     System.setProperty("solr.tests.maxBufferedDocs", "1000");
 
+    System.setProperty("solr.getleader.looptimeout", "500");
+
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
     System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
 

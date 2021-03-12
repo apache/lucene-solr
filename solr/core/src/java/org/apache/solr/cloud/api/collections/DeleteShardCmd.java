@@ -105,7 +105,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
       propMap.put(sliceId, Slice.State.CONSTRUCTION.toString());
       propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
-      ZkNodeProps m = new ZkNodeProps(propMap);
+     // ZkNodeProps m = new ZkNodeProps(propMap);
       clusterState = new SliceMutator(ocmh.cloudManager).updateShardState(clusterState, message);
     }
 

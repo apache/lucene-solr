@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -34,18 +35,18 @@ public class OverseerTaskExecutorTask {
   private final ZkController zkController;
   private final SolrCloudManager cloudManager;
   private final SolrZkClient zkClient;
-  private final List<Overseer.WorkQueueWatcher.StateEntry> shardStateCollections;
+  private final Map<String,List<ZkStateWriter.StateUpdate>> collStateUpdates;
 
-  public OverseerTaskExecutorTask(CoreContainer cc, List<Overseer.WorkQueueWatcher.StateEntry> shardStateCollections) {
+  public OverseerTaskExecutorTask(CoreContainer cc, Map<String,List<ZkStateWriter.StateUpdate>> collStateUpdates) {
     this.zkController = cc.getZkController();
     this.zkClient = zkController.getZkClient();
     this.cloudManager = zkController.getSolrCloudManager();
-    this.shardStateCollections = shardStateCollections;
+    this.collStateUpdates = collStateUpdates;
   }
 
 
-  private Future processQueueItem(List<Overseer.WorkQueueWatcher.StateEntry> shardStateCollections) throws Exception {
-    if (log.isDebugEnabled()) log.debug("Consume state update from queue {} {}", shardStateCollections);
+  private Future processQueueItem(Map<String,List<ZkStateWriter.StateUpdate>> collStateUpdates) throws Exception {
+    if (log.isDebugEnabled()) log.debug("Consume state update from queue {} {}", collStateUpdates);
 
     // assert clusterState != null;
 
@@ -58,7 +59,7 @@ public class OverseerTaskExecutorTask {
 //
 //    if (log.isDebugEnabled()) log.debug("Enqueue message {}", operation);
     try {
-      return zkController.getOverseer().getZkStateWriter().enqueueUpdate(null, shardStateCollections, true);
+      return zkController.getOverseer().getZkStateWriter().enqueueUpdate(null, collStateUpdates, true);
     } catch (NullPointerException e) {
       log.info("Overseer is stopped, won't process message " + zkController.getOverseer());
       return null;
@@ -68,12 +69,12 @@ public class OverseerTaskExecutorTask {
 
 
   public Future run() {
-    if (log.isDebugEnabled()) log.debug("OverseerTaskExecutorTask, going to process message {}", shardStateCollections);
+    if (log.isDebugEnabled()) log.debug("OverseerTaskExecutorTask, going to process message {}", collStateUpdates);
 
     try {
-      return processQueueItem(shardStateCollections);
+      return processQueueItem(collStateUpdates);
     } catch (Exception e) {
-      log.error("Failed to process message " + shardStateCollections, e);
+      log.error("Failed to process message " + collStateUpdates, e);
     }
     return null;
   }
