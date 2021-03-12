@@ -153,11 +153,11 @@ public class ZkController implements Closeable, Runnable {
 
   @Override
   public void run() {
-//    try {
-//      publishNodeAs(getNodeName(), OverseerAction.DOWNNODE);
-//    } catch (Exception e) {
-//      log.warn("Problem publish node as DOWN", e);
-//    }
+    try {
+      publishNodeAs(getNodeName(), OverseerAction.DOWNNODE);
+    } catch (Exception e) {
+      log.warn("Problem publish node as DOWN", e);
+    }
     disconnect(true);
     log.info("Continuing to Solr shutdown");
   }

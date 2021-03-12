@@ -172,7 +172,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   /**
    * A view of the current state of all collections.
    */
-  protected final Map<String,ClusterState.CollectionRef> clusterState = new ConcurrentHashMap(32, 0.75f, 5);
+  protected final Map<String,ClusterState.CollectionRef> clusterState = new ConcurrentHashMap<>(128, 0.75f, 16);
 
 
   private final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "1000"));
@@ -185,12 +185,12 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   /**
    * "Interesting" and actively watched Collections.
    */
-  private final ConcurrentHashMap<String, DocCollection> watchedCollectionStates = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, DocCollection> watchedCollectionStates = new ConcurrentHashMap<>(128, 0.75f, 16);
 
   /**
    * "Interesting" but not actively watched Collections.
    */
-  private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates = new ConcurrentHashMap<>(32, 0.75f, 16);
 
   /**
    * Collection properties being actively watched
@@ -216,11 +216,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   private final Runnable securityNodeListener;
 
-  private final ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(32, 0.75f, 3);
+  private final ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(64, 0.75f, 16);
 
   private Set<String> registeredCores = ConcurrentHashMap.newKeySet();
 
-  private final Map<String,CollectionStateWatcher> stateWatchersMap = new ConcurrentHashMap<>(32, 0.75f, 3);
+  private final Map<String,CollectionStateWatcher> stateWatchersMap = new ConcurrentHashMap<>(64, 0.75f, 16);
 
   // named this observers so there's less confusion between CollectionPropsWatcher map and the PropsWatcher map.
   private final ConcurrentHashMap<String, CollectionWatch<CollectionPropsWatcher>> collectionPropsObservers = new ConcurrentHashMap<>();
@@ -391,6 +391,13 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           log.error("problem fetching update collection state", e);
           return;
         }
+        String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(name);
+        try {
+          newState = getAndProcessStateUpdates(name, stateUpdatesPath, false, newState, null);
+        } catch (Exception e) {
+          log.error("", e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
         if (updateWatchedCollection(name, newState, false)) {
           constructState(newState);
         }
@@ -419,6 +426,14 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
       if (newState == null) {
         return;
+      }
+
+      String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(name);
+      try {
+        newState = getAndProcessStateUpdates(name, stateUpdatesPath, false, newState, null);
+      } catch (Exception e) {
+        log.error("", e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
 
       if (updateWatchedCollection(name, newState, false)) {

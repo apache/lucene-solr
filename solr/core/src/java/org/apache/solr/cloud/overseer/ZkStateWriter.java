@@ -67,19 +67,19 @@ public class ZkStateWriter {
 
   protected volatile Stats stats;
 
-  private final Map<String,Integer> trackVersions = new ConcurrentHashMap<>();
+  private final Map<String,Integer> trackVersions = new ConcurrentHashMap<>(128, 0.75f, 16);
 
   private final Map<String, ZkNodeProps> stateUpdates = new ConcurrentHashMap<>();
 
   Map<String,DocCollection> failedUpdates = new ConcurrentHashMap<>();
 
-  Map<Long,String> idToCollection = new ConcurrentHashMap<>();
+  Map<Long,String> idToCollection = new ConcurrentHashMap<>(128, 0.75f, 16);
 
-  private Map<String,DocAssign> assignMap = new ConcurrentHashMap<>();
+  private Map<String,DocAssign> assignMap = new ConcurrentHashMap<>(128, 0.75f, 16);
 
-  private Map<String,ColState> collLocks = new ConcurrentHashMap<>();
+  private Map<String,ColState> collLocks = new ConcurrentHashMap<>(128, 0.75f, 16);
 
-  private final Map<String,DocCollection> cs = new ConcurrentHashMap<>();
+  private final Map<String,DocCollection> cs = new ConcurrentHashMap<>(128, 0.75f, 16);
 
   private static class ColState {
     ReentrantLock collLock = new ReentrantLock(true);
