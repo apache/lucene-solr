@@ -407,6 +407,7 @@ class RenderJavadocTask extends DefaultTask {
       // Pipe the output to console. Intentionally skips any encoding conversion 
       // and pumps raw bytes.
       System.out.write(outputFile.bytes)
+      System.out.flush()
 
       def cause
       try {
