@@ -21,7 +21,7 @@
 ====
 This feature (in its current form) is deprecated and will be removed in 9.0.
 
-See <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>> for more details.
+See <<cross-data-center-replication-cdcr.adoc#,Cross Data Center Replication>> for more details.
 ====
 
 == Monitoring

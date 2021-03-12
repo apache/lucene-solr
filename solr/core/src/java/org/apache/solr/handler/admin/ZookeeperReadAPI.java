@@ -45,7 +45,6 @@ import org.apache.zookeeper.data.Stat;
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.ZK_READ_PERM;
 
 /**
@@ -65,7 +64,7 @@ public class ZookeeperReadAPI {
   }
   @EndPoint(path = "/cluster/zk/data/*",
       method = SolrRequest.METHOD.GET,
-      permission = COLL_READ_PERM)
+      permission = ZK_READ_PERM)
   public void readNode(SolrQueryRequest req, SolrQueryResponse rsp) {
     String path = req.getPathTemplateValues().get("*");
     if (path == null || path.isEmpty()) path = "/";

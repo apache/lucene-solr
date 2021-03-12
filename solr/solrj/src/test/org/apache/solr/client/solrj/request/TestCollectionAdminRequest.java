@@ -16,9 +16,15 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateShard;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
@@ -86,5 +92,42 @@ public class TestCollectionAdminRequest extends SolrTestCase {
     assertTrue(exceptionMessage.contains("Invalid shard"));
     assertTrue(exceptionMessage.contains("invalid$shard@name"));
     assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
+  }
+
+  @Test
+  public void testDeleteBackupsV2Mapping() {
+    final V2Request deleteBackupRequest = getV2Request(CollectionAdminRequest.deleteBackupById("someBackupName", 1));
+
+    assertEquals(SolrRequest.METHOD.POST, deleteBackupRequest.getMethod());
+    assertEquals("/collections/backups", deleteBackupRequest.getPath());
+    assertEquals("{\"delete-backups\":{\"name\":\"someBackupName\",\"backupId\":1}}",
+        getRequestBody(deleteBackupRequest, ClientUtils.TEXT_JSON));
+  }
+
+  @Test
+  public void testListBackupsV2Mapping() {
+    final V2Request listBackupRequest = getV2Request(CollectionAdminRequest.listBackup("backupName"));
+
+    assertEquals(SolrRequest.METHOD.POST, listBackupRequest.getMethod());
+    assertEquals("/collections/backups", listBackupRequest.getPath());
+    assertEquals("{\"list-backups\":{\"name\":\"backupName\"}}",
+        getRequestBody(listBackupRequest, ClientUtils.TEXT_JSON));
+  }
+
+  private V2Request getV2Request(CollectionAdminRequest request) {
+    request.setUseV2(true);
+    return (V2Request) request.getV2Request();
+  }
+
+  private String getRequestBody(V2Request request, String contentType) {
+    final ByteArrayOutputStream os = new ByteArrayOutputStream();
+    try {
+      request.getContentWriter(contentType).write(os);
+      return new String(os.toByteArray(), StandardCharsets.UTF_8);
+
+    } catch (IOException e) {
+      /* Unreachable in practice, since we're not doing any I/O here */
+      throw new RuntimeException(e);
+    }
   }
 }

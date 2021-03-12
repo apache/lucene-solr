@@ -161,7 +161,7 @@ The supported fields are listed in the <<analytics-expression-sources.adoc#suppo
 
 Mapping Functions::
 Mapping functions map values for each Solr Document or Reduction.
-The provided mapping functions are detailed in the <<analytics-mapping-functions.adoc#analytics-mapping-functions,Analytics Mapping Function Reference>>.
+The provided mapping functions are detailed in the <<analytics-mapping-functions.adoc#,Analytics Mapping Function Reference>>.
 
 * Unreduced Mapping: Mapping a Field with another Field or Constant returns a value for every Solr Document.
 Unreduced mapping functions can take fields, constants as well as other unreduced mapping functions as input.
@@ -170,7 +170,7 @@ Unreduced mapping functions can take fields, constants as well as other unreduce
 
 Reduction Functions::
 Functions that reduce the values of sources and/or unreduced mapping functions for every Solr Document to a single value.
-The provided reduction functions are detailed in the <<analytics-reduction-functions.adoc#analytics-reduction-functions,Analytics Reduction Function Reference>>.
+The provided reduction functions are detailed in the <<analytics-reduction-functions.adoc#,Analytics Reduction Function Reference>>.
 
 ==== Component Ordering
 

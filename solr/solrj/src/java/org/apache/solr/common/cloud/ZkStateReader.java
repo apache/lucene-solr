@@ -1620,7 +1620,7 @@ public class ZkStateReader implements SolrCloseable {
       ClusterState.initReplicaStateProvider(() -> {
         try {
           PerReplicaStates replicaStates = PerReplicaStates.fetch(collectionPath, zkClient, null);
-          log.info("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
+          log.debug("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
           return replicaStates;
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error fetching per-replica-states");
@@ -1764,7 +1764,7 @@ public class ZkStateReader implements SolrCloseable {
         v = new CollectionWatch<>();
         watchSet.set(true);
       }
-      log.info("already watching , added to stateWatchers");
+      log.debug("already watching , added to stateWatchers");
       v.stateWatchers.add(stateWatcher);
       return v;
     });

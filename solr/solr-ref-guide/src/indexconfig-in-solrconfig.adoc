@@ -168,7 +168,7 @@ The defaults for the above attributes are dynamically set based on whether the u
 
 === mergedSegmentWarmer
 
-When using Solr in for <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>> a merged segment warmer can be configured to warm the reader on the newly merged segment, before the merge commits. This is not required for near real-time search, but will reduce search latency on opening a new near real-time reader after a merge completes.
+When using Solr in for <<near-real-time-searching.adoc#,Near Real Time Searching>> a merged segment warmer can be configured to warm the reader on the newly merged segment, before the merge commits. This is not required for near real-time search, but will reduce search latency on opening a new near real-time reader after a merge completes.
 
 [source,xml]
 ----
@@ -198,14 +198,14 @@ Many <<Merging Index Segments,Merge Policy>> implementations support `noCFSRatio
 
 The LockFactory options specify the locking implementation to use.
 
-The set of valid lock type options depends on the <<datadir-and-directoryfactory-in-solrconfig.adoc#datadir-and-directoryfactory-in-solrconfig,DirectoryFactory>> you have configured.
+The set of valid lock type options depends on the <<datadir-and-directoryfactory-in-solrconfig.adoc#,DirectoryFactory>> you have configured.
 
 The values listed below are are supported by `StandardDirectoryFactory` (the default):
 
 * `native` (default) uses NativeFSLockFactory to specify native OS file locking. If a second Solr process attempts to access the directory, it will fail. Do not use when multiple Solr web applications are attempting to share a single index. See also the {lucene-javadocs}core/org/apache/lucene/store/NativeFSLockFactory.html[Javadocs].
 * `simple` uses SimpleFSLockFactory to specify a plain file for locking. See also the {lucene-javadocs}core/org/apache/lucene/store/SimpleFSLockFactory.html[Javadocs].
 * `single` (expert) uses SingleInstanceLockFactory. Use for special situations of a read-only index directory, or when there is no possibility of more than one process trying to modify the index (even sequentially). This type will protect against multiple cores within the _same_ JVM attempting to access the same index. WARNING! If multiple Solr instances in different JVMs modify an index, this type will _not_ protect against index corruption. See also the {lucene-javadocs}core/org/apache/lucene/store/SingleInstanceLockFactory.html[Javadocs].
-* `hdfs` uses HdfsLockFactory to support reading and writing index and transaction log files to a HDFS filesystem. See the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>> for more details on using this feature.
+* `hdfs` uses HdfsLockFactory to support reading and writing index and transaction log files to a HDFS filesystem. See the section <<running-solr-on-hdfs.adoc#,Running Solr on HDFS>> for more details on using this feature.
 
 [source,xml]
 ----

@@ -475,7 +475,7 @@ This time you get 13 results.
 
 ==== More Information on Searching
 
-We have only scratched the surface of the search options available in Solr. For more Solr search options, see the section on <<searching.adoc#searching,Searching>>.
+We have only scratched the surface of the search options available in Solr. For more Solr search options, see the section on <<searching.adoc#,Searching>>.
 
 === Exercise 1 Wrap Up
 
@@ -493,7 +493,7 @@ To stop both of the Solr nodes we started, issue the command:
 
 `bin/solr stop -all`
 
-For more information on start/stop and collection options with `bin/solr`, see <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>>.
+For more information on start/stop and collection options with `bin/solr`, see <<solr-control-script-reference.adoc#,Solr Control Script Reference>>.
 
 [[exercise-2]]
 == Exercise 2: Modify the Schema and Index Films Data
@@ -747,7 +747,7 @@ If you wanted to control the number of items in a bucket, you could do something
 
 You should only see 4 facets returned.
 
-There are a great deal of other parameters available to help you control how Solr constructs the facets and facet lists. We'll cover some of them in this exercise, but you can also see the section <<faceting.adoc#faceting,Faceting>> for more detail.
+There are a great deal of other parameters available to help you control how Solr constructs the facets and facet lists. We'll cover some of them in this exercise, but you can also see the section <<faceting.adoc#,Faceting>> for more detail.
 
 ==== Range Facets
 
@@ -913,15 +913,15 @@ In this example, assume there is a directory named "Documents" locally. To index
 You may get errors as it works through your documents. These might be caused by the field guessing, or the file type may not be supported. Indexing content such as this demonstrates the need to plan Solr for your data, which requires understanding it and perhaps also some trial and error.
 
 DataImportHandler::
-Solr includes a tool called the <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Data Import Handler (DIH)>> which can connect to databases (if you have a jdbc driver), mail servers, or other structured data sources. There are several examples included for feeds, GMail, and a small HSQL database.
+Solr includes a tool called the <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#,Data Import Handler (DIH)>> which can connect to databases (if you have a jdbc driver), mail servers, or other structured data sources. There are several examples included for feeds, GMail, and a small HSQL database.
 +
 The `README.txt` file in `example/example-DIH` will give you details on how to start working with this tool.
 
 SolrJ::
-SolrJ is a Java-based client for interacting with Solr. Use <<using-solrj.adoc#using-solrj,SolrJ>> for JVM-based languages or other <<client-apis.adoc#client-apis,Solr clients>> to programmatically create documents to send to Solr.
+SolrJ is a Java-based client for interacting with Solr. Use <<using-solrj.adoc#,SolrJ>> for JVM-based languages or other <<client-apis.adoc#,Solr clients>> to programmatically create documents to send to Solr.
 
 Documents Screen::
-Use the Admin UI <<documents-screen.adoc#documents-screen,Documents tab>> (at http://localhost:8983/solr/#/localDocs/documents) to paste in a document to be indexed, or select `Document Builder` from the `Document Type` dropdown to build a document one field at a time. Click on the btn:[Submit Document] button below the form to index your document.
+Use the Admin UI <<documents-screen.adoc#,Documents tab>> (at http://localhost:8983/solr/#/localDocs/documents) to paste in a document to be indexed, or select `Document Builder` from the `Document Type` dropdown to build a document one field at a time. Click on the btn:[Submit Document] button below the form to index your document.
 
 === Updating Data
 
@@ -968,7 +968,7 @@ image::images/solr-tutorial/tutorial-spatial.png[Solr Quick Start: spatial searc
 
 This is from Solr's example search UI (called `/browse`), which has a nice feature to show a map for each item and allow easy selection of the location to search near. You can see this yourself by going to <http://localhost:8983/solr/techproducts/browse?q=ipod&pt=37.7752%2C-122.4232&d=10&sfield=store&fq=%7B%21bbox%7D&queryOpts=spatial&queryOpts=spatial> in a browser.
 
-To learn more about Solr's spatial capabilities, see the section <<spatial-search.adoc#spatial-search,Spatial Search>>.
+To learn more about Solr's spatial capabilities, see the section <<spatial-search.adoc#,Spatial Search>>.
 
 == Wrapping Up
 

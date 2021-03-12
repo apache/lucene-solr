@@ -37,7 +37,6 @@ import org.apache.solr.common.util.Utils;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_ALIASES;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS_COMMANDS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTION_STATE;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION;
@@ -56,7 +55,6 @@ public class CollectionApiMapping {
 
   public enum Meta implements CommandMeta {
     GET_A_COLLECTION(COLLECTION_STATE, GET, CLUSTERSTATUS),
-    LIST_ALIASES(CLUSTER_ALIASES, GET, LISTALIASES),
     CREATE_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
         CREATE,
@@ -303,7 +301,6 @@ public class CollectionApiMapping {
   }
 
   public enum EndPoint implements V2EndPoint {
-    CLUSTER_ALIASES("cluster.aliases"),
     COLLECTIONS_COMMANDS("collections.Commands"),
     COLLECTION_STATE("collections.collection"),
     PER_COLLECTION("collections.collection.Commands"),

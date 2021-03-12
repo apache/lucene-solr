@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,6 +36,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
+import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
+import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -53,6 +56,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.V2ApiParams;
 import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
@@ -111,6 +115,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     this.action = checkNotNull(CoreAdminParams.ACTION, action);
   }
 
+  /**
+   *
+   * @deprecated because several "collection-admin" APIs have been reimplemented and no longer use the "JSON-spec"
+   * driven approach that this method relies on.  Use {@link V2Request} directly instead if V2 admin functionality is
+   * desired.
+   */
+  @Deprecated
   @Override
   @SuppressWarnings({"rawtypes"})
   public SolrRequest getV2Request() {
@@ -1038,6 +1049,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String location;
     protected Optional<String> commitName = Optional.empty();
     protected Optional<String> indexBackupStrategy = Optional.empty();
+    protected boolean incremental = true;
+    protected Optional<Integer> maxNumBackupPoints = Optional.empty();
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1081,6 +1094,38 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    /**
+     * Specifies the backup method to use: the deprecated 'full-snapshot' format, or the current 'incremental' format.
+     *
+     * Defaults to 'true' if unspecified.
+     *
+     * Incremental backups are almost always preferable to the deprecated 'full-snapshot' format, as incremental backups
+     * can take advantage of previously backed-up files and will only upload those that aren't already stored in the
+     * repository - saving lots of time and network bandwidth.  The older 'full-snapshot' format should only be used by
+     * experts with a particular reason to do so.
+     *
+     * @param incremental true to use incremental backups, false otherwise.
+     */
+    @Deprecated
+    public Backup setIncremental(boolean incremental) {
+      this.incremental = incremental;
+      return this;
+    }
+
+    /**
+     * Specifies the maximum number of backup points to keep at the backup location.
+     *
+     * If the current backup causes the number of stored backup points to exceed this value, the oldest backup points
+     * are cleaned up so that only {@code #maxNumBackupPoints} are retained.
+     *
+     * This parameter is ignored if the request uses a non-incremental backup.
+     * @param maxNumBackupPoints the number of backup points to retain after the current backup
+     */
+    public Backup setMaxNumberBackupPoints(int maxNumBackupPoints) {
+      this.maxNumBackupPoints = Optional.of(maxNumBackupPoints);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1096,6 +1141,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (indexBackupStrategy.isPresent()) {
         params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
+      if (maxNumBackupPoints.isPresent()) {
+        params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
+      }
+      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       return params;
     }
 
@@ -1122,6 +1171,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
+    protected Integer backupId;
 
     public Restore(String collection, String backupName) {
       super(CollectionAction.RESTORE, collection);
@@ -1189,6 +1239,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
     public Restore setProperties(Properties properties) { this.properties = properties; return this;}
 
+    /**
+     * Specify the ID of the backup-point to restore from.
+     *
+     * '-1' is used by default to have Solr restore from the most recent backup-point.
+     *
+     * Solr can store multiple backup points for a given collection - each identified by a unique backup ID.  Users who
+     * want to restore a particular backup-point can specify it using this method.
+     *
+     * @param backupId the ID of the backup-point to restore from
+     */
+    public Restore setBackupId(int backupId) {
+      this.backupId = backupId;
+      return this;
+    }
+
     // TODO support rule, snitch
 
     @Override
@@ -1231,6 +1296,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (createNodeSetShuffle.isPresent()) {
         params.set(CREATE_NODE_SET_SHUFFLE_PARAM, createNodeSetShuffle.get());
+      }
+      if (backupId != null) {
+        params.set(CoreAdminParams.BACKUP_ID, backupId);
       }
 
       return params;
@@ -2719,6 +2787,228 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class List extends CollectionAdminRequest<CollectionAdminResponse> {
     public List () {
       super(CollectionAction.LIST);
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+  }
+
+  /**
+   * Configure a {@link SolrRequest} object to delete a single backup-point by it's Backup ID.
+   *
+   * The created request object is only valid on backup locations that use the new "incremental" backup file-format
+   * introduced in Solr 8.9.  It should not be used on locations holding "non-incremental" backups (those created prior
+   * to 8.9, or after 8.9 using the advanced "incremental=false" flag).
+   *
+   * @param backupName the name of the backup that this request should delete a single backup-point from.
+   * @param backupId the ID of the backup-point for this request to delete
+   */
+  public static DeleteBackup deleteBackupById(String backupName, int backupId) {
+    return new DeleteBackup(backupName).setBackupId(backupId);
+  }
+
+  /**
+   * Create a {@link SolrRequest} object to delete all backup-points after the most recent 'N'
+   *
+   * The created request object is only valid on backup locations that use the new "incremental" backup file-format
+   * introduced in Solr 8.9.  It should not be used on locations holding "non-incremental" backups (those created prior
+   * to 8.9, or after 8.9 using the advanced "incremental=false" flag).
+   *
+   * @param backupName the name of the backup that this request should delete backup-points from.
+   * @param numRecentBackupPointsToRetain the number of "most-recent" backup-points to retain.
+   */
+  public static DeleteBackup deleteBackupByRecency(String backupName, int numRecentBackupPointsToRetain) {
+    return new DeleteBackup(backupName).setMaxNumBackupPoints(numRecentBackupPointsToRetain);
+  }
+
+  /**
+   * Create a {@link SolrRequest} object to delete all unused-files at the backup location.
+   *
+   * The created request object is only valid on backup locations that use the new "incremental" backup file-format
+   * introduced in Solr 8.9.  It should not be used on locations holding "non-incremental" backups (those created prior
+   * to 8.9, or after 8.9 using the advanced "incremental=false" flag).
+   *
+   * @param backupName the name of the backup that this request should delete unused files from.
+   */
+  public static DeleteBackup deleteBackupPurgeUnusedFiles(String backupName) {
+    return new DeleteBackup(backupName).setPurgeUnused();
+  }
+
+  /**
+   * {@link SolrRequest} class for the "Backup Deletion" API.
+   *
+   * Currently the API represented by this class only supports deletion of the new "incremental" backup file-format
+   * introduced in Solr 8.9.  It should not be used on locations holding "non-incremental" backups (those created prior
+   * to 8.9, or after 8.9 using the advanced "incremental=false" flag).
+   */
+  public static class DeleteBackup extends CollectionAdminRequest<CollectionAdminResponse> {
+    private final DeleteBackupPayload deleteBackupPayload;
+
+    private DeleteBackup (String backupName) {
+      super(CollectionAction.DELETEBACKUP);
+
+      deleteBackupPayload = new DeleteBackupPayload();
+      deleteBackupPayload.name = backupName;
+    }
+
+    /**
+     *
+     * @param backupRepository the name of the repository implementation to use for accessing backup information.
+     *                         Defaults to 'LocalFileSystemRepository' if not specified.
+     */
+    public DeleteBackup setRepositoryName(String backupRepository) {
+      deleteBackupPayload.repository = backupRepository;
+      return this;
+    }
+
+    /**
+     *
+     * @param backupLocation the location this request will use when accessing backup information.  This parameter is not
+     *                       required - if not specified on the request, Solr will attempt to read a default location
+     *                       from BackupRepository configuration (solr.xml) and from cluster properties.  If none of these
+     *                       places provide 'location' information an error will be thrown.
+     */
+    public DeleteBackup setLocation(String backupLocation) {
+      deleteBackupPayload.location = backupLocation;
+      return this;
+    }
+
+    /**
+     *
+     * @param backupId the ID of a single backup-point for this request to delete.  Mutually exclusive with the
+     *                 parameters controlled by {@link #setMaxNumBackupPoints(int)} and {@link #setPurgeUnused()}.
+     *
+     * @see #deleteBackupById(String, int)
+     */
+    protected DeleteBackup setBackupId(int backupId) {
+      deleteBackupPayload.backupId = backupId;
+      return this;
+    }
+
+    /**
+     *
+     * @param backupPointsToRetain the number of backup-points to retain, deleting the reset.  Mutually exclusive with
+     *                             the parameters controlled by {@link #setBackupId(int)} and {@link #setPurgeUnused()}.
+     *
+     * @see #deleteBackupByRecency(String, int)
+     */
+    protected DeleteBackup setMaxNumBackupPoints(int backupPointsToRetain) {
+      deleteBackupPayload.maxNumBackupPoints = backupPointsToRetain;
+      return this;
+    }
+
+    /**
+     * Configures the request to delete all unused files.
+     *
+     * Mutually exclusive with the parameters controlled by {@link #setBackupId(int)} and {@link #setMaxNumBackupPoints(int)}
+     *
+     * @see #deleteBackupPurgeUnusedFiles(String)
+     */
+    protected DeleteBackup setPurgeUnused() {
+      deleteBackupPayload.purgeUnused = true;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.NAME, deleteBackupPayload.name);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, deleteBackupPayload.location);
+      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, deleteBackupPayload.repository);
+      params.setNonNull(CoreAdminParams.BACKUP_ID, deleteBackupPayload.backupId);
+      params.setNonNull(CoreAdminParams.MAX_NUM_BACKUP_POINTS, deleteBackupPayload.maxNumBackupPoints);
+      params.setNonNull(CoreAdminParams.BACKUP_PURGE_UNUSED, deleteBackupPayload.purgeUnused);
+      return params;
+    }
+
+    @Override
+    public SolrRequest getV2Request() {
+      if (usev2) {
+        return new V2Request.Builder(V2ApiParams.BACKUPS_API_PATH)
+            .useBinary(useBinaryV2)
+            .withMethod(METHOD.POST)
+            .withPayload(Collections.singletonMap(V2ApiParams.DELETE_BACKUPS_CMD, deleteBackupPayload))
+            .build();
+      }
+      return this;
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+  }
+
+  /**
+   * Create a {@link SolrRequest} object to list information about all backup points with the specified name.
+   *
+   * @param backupName the name of the backup that this request should list information about
+   */
+  public static ListBackup listBackup(String backupName) {
+    return new ListBackup(backupName);
+  }
+
+  /**
+   * {@link SolrRequest} class for the "Backup List" API.
+   *
+   * Currently the API represented by this class only supports listing of the new "incremental" backup file-format
+   * introduced in Solr 8.9.  It should not be used on locations holding "non-incremental" backups (those created prior
+   * to 8.9, or after 8.9 using the advanced "incremental=false" flag).
+   */
+  public static class ListBackup extends CollectionAdminRequest<CollectionAdminResponse> {
+    private final ListBackupPayload listPayload;
+
+    private ListBackup(String backupName) {
+      super(CollectionAction.LISTBACKUP);
+
+      this.listPayload = new ListBackupPayload();
+      this.listPayload.name = backupName;
+    }
+
+    /**
+     *
+     * @param backupRepository the name of the repository implementation to use for accessing backup information.
+     *                         Defaults to 'LocalFileSystemRepository' if not specified.
+     */
+    public ListBackup setBackupRepository(String backupRepository) {
+      listPayload.repository = backupRepository;
+      return this;
+    }
+
+    /**
+     *
+     * @param backupLocation the location this request will use when accessing backup information.  This parameter is not
+     *                       required - if not specified on the request, Solr will attempt to read a default location
+     *                       from BackupRepository configuration (solr.xml) and from cluster properties.  If none of these
+     *                       places provide 'location' information an error will be thrown.
+     */
+    public ListBackup setBackupLocation(String backupLocation) {
+      listPayload.location = backupLocation;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.NAME, listPayload.name);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, listPayload.location);
+      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, listPayload.repository);
+
+      return params;
+    }
+
+    @Override
+    public SolrRequest getV2Request() {
+      if (usev2) {
+        return new V2Request.Builder(V2ApiParams.BACKUPS_API_PATH)
+            .useBinary(useBinaryV2)
+            .withMethod(METHOD.POST)
+            .withPayload(Collections.singletonMap(V2ApiParams.LIST_BACKUPS_CMD, listPayload))
+            .build();
+      }
+      return this;
     }
 
     @Override

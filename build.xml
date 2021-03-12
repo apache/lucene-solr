@@ -25,7 +25,6 @@
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
   <property name="maven-build-dir" value="maven-build"/>
-  <property name="maven-version" value="2.2.1"/>
   <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
 
   <property name="smokeTestRelease.dir" location="lucene/build/smokeTestRelease/dist"/>
@@ -237,10 +236,6 @@
       <fileset dir="solr" includes="build.xml"/>
       <propertyset refid="uptodate.and.compiled.properties"/>
     </subant>
-  </target>
-  
-  <target name="run-maven-build" depends="get-maven-poms,install-maven-tasks,resolve-groovy" description="Runs the Maven build using automatically generated POMs">
-    <groovy src="${common.dir}/tools/src/groovy/run-maven-build.groovy"/>
   </target>
   
   <target name="remove-maven-artifacts" description="Removes all Lucene/Solr Maven artifacts from the local repository">
@@ -669,18 +664,12 @@ Test args: [${args}]</echo>
   </target>
 
   <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-markdown,install-maven-tasks">
-    <!-- step 1: build, install, validate and publish ANT-generated maven artifacts: -->
+    <!-- build, install, validate and publish ANT-generated maven artifacts: -->
     <antcall>
       <param name="is.jenkins.build" value="true"/>
       <target name="remove-maven-artifacts"/>
       <target name="validate-maven-dependencies"/>
       <target name="generate-maven-artifacts"/>
-    </antcall>
-    <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="remove-maven-artifacts"/>
-      <target name="run-maven-build"/>
     </antcall>
   </target>
   

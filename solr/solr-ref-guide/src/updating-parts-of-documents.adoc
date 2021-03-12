@@ -211,9 +211,9 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
 
 == In-Place Updates
 
-In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is reindexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences, there is no functional difference between atomic updates and in-place updates.
+In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is reindexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences in efficiency, there is no functional difference between atomic updates and in-place updates.
 
-An atomic update operation is performed using this approach only when the fields to be updated meet these three conditions:
+An atomic update operation is performed using this In-Place approach only when the fields to be updated meet these three conditions:
 
 * are non-indexed (`indexed="false"`), non-stored (`stored="false"`), single valued (`multiValued="false"`) numeric docValues (`docValues="true"`) fields;
 * the `\_version_` field is also a non-indexed, non-stored single valued docValues field; and,
@@ -226,6 +226,14 @@ Set or replace the field value(s) with the specified value(s). May be specified 
 
 `inc`::
 Increments a numeric value by a specific amount. Must be specified as a single numeric value.
+
+[TIP]
+====
+.Preventing Atomic Updates that can't be done In-Place
+
+Since it can be tricky to ensure that all of the neccessary conditions are satisfied to ensure that an udpate can be don In-Place, Solr supports a request parameter option named `update.partial.requireInPlace`.  When set to `true`, and Atomic Update that can not be don In-Place will fail.  Users can specify this option when they would prefer that an update request "fail fast" if it can't be done In-Place.
+
+====
 
 === In-Place Update Example
 
@@ -296,7 +304,7 @@ When documents are added/updated in batches even a single version conflict may l
 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
-When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
+When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#,`/get` request>>.
 
 Following are some examples using `versions=true` in queries:
 

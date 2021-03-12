@@ -1099,6 +1099,14 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     PerReplicaStates prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
+
+    // Now let's do an add replica
+    CollectionAdminRequest
+        .addReplicaToShard(testCollection, "shard1")
+        .process(cluster.getSolrClient());
+    prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+    assertEquals(5, prs.states.size());
+
     testCollection = "perReplicaState_testv2";
     new V2Request.Builder("/collections")
         .withMethod(POST)

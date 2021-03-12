@@ -42,7 +42,7 @@ Three rank queries are currently included in the Solr distribution. You can also
 The `rerank` parser wraps a query specified by an local parameter, along with additional parameters indicating how many documents should be re-ranked, and how the final scores should be computed:
 
 `reRankQuery`::
-The query string for your complex ranking query - in most cases <<local-parameters-in-queries.adoc#local-parameters-in-queries,a variable>> will be used to refer to another request parameter. This parameter is required.
+The query string for your complex ranking query - in most cases <<local-parameters-in-queries.adoc#,a variable>> will be used to refer to another request parameter. This parameter is required.
 
 `reRankDocs`::
 The number of top N documents from the original query that should be re-ranked. This number will be treated as a minimum, and may be increased internally automatically in order to rank enough documents to satisfy the query (i.e., start+rows). The default is `200`.
@@ -61,8 +61,8 @@ If a document matches the original query, but does not match the re-ranking quer
 
 === LTR Query Parser
 
-The `ltr` stands for Learning To Rank, please see <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>> for more detailed information.
+The `ltr` stands for Learning To Rank, please see <<learning-to-rank.adoc#,Learning To Rank>> for more detailed information.
 
 == Combining Ranking Queries with Other Solr Features
 
-The `rq` parameter and the re-ranking feature in general works well with other Solr features. For example, it can be used in conjunction with the <<collapse-and-expand-results.adoc#collapse-and-expand-results,collapse parser>> to re-rank the group heads after they've been collapsed. It also preserves the order of documents elevated by the <<the-query-elevation-component.adoc#the-query-elevation-component,elevation component>>. And it even has its own custom explain so you can see how the re-ranking scores were derived when looking at <<common-query-parameters.adoc#debug-parameter,debug information>>.
+The `rq` parameter and the re-ranking feature in general works well with other Solr features. For example, it can be used in conjunction with the <<collapse-and-expand-results.adoc#,collapse parser>> to re-rank the group heads after they've been collapsed. It also preserves the order of documents elevated by the <<the-query-elevation-component.adoc#,elevation component>>. And it even has its own custom explain so you can see how the re-ranking scores were derived when looking at <<common-query-parameters.adoc#debug-parameter,debug information>>.

@@ -50,7 +50,7 @@ We have an easy way to enable this behavior without needing to understand the au
 
 A collection created with `autoAddReplicas=true` will be monitored by Solr such that if a node containing a replica of this collection goes down, Solr will add new replicas on other nodes after waiting for up to thirty seconds for the node to come back.
 
-You can see the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas, Autoscaling Automatically Adding Replicas>> to learn more about how to enable or disable this feature as well as other details.
+You can see the section <<solrcloud-autoscaling-auto-add-replicas.adoc#, Autoscaling Automatically Adding Replicas>> to learn more about how to enable or disable this feature as well as other details.
 
 The selection of the node that will host the new replica is made according to the default cluster preferences that we will learn more about in the next sections.
 
@@ -82,22 +82,22 @@ Triggers are used to watch for events such as a node joining or leaving the clus
 
 The `autoAddReplicas` parameter passed with the CREATE Collection API command in the <<Quick Start: Automatically Adding Replicas,Quick Start>> section above automatically creates a trigger that watches for a node going away. When the trigger fires, it executes a set of actions that compute and execute a plan to move all replicas hosted by the lost node to new nodes in the cluster. The target nodes are chosen based on the policy and preferences.
 
-You can learn more about Triggers in the section <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Autoscaling Triggers>>.
+You can learn more about Triggers in the section <<solrcloud-autoscaling-triggers.adoc#,Autoscaling Triggers>>.
 
 == Trigger Actions
 
 A trigger executes *actions* that tell Solr what to do in response to the trigger. Solr ships with two actions that are added to every trigger by default. The first is called the *ComputePlanAction* and the other is *ExecutePlanAction*. The former computes the cluster management operations necessary to stabilize the cluster and the latter executes them on the cluster.
 
-You can learn more about Trigger Actions in the section <<solrcloud-autoscaling-trigger-actions.adoc#solrcloud-autoscaling-trigger-actions,Autoscaling Trigger Actions>>.
+You can learn more about Trigger Actions in the section <<solrcloud-autoscaling-trigger-actions.adoc#,Autoscaling Trigger Actions>>.
 
 == Listeners
 
 An Autoscaling *listener* can be attached to a trigger. Solr calls the listener each time the trigger fires as well as before and after the actions performed by the trigger. Listeners are useful as a call back mechanism to perform tasks such as logging or informing external systems about events. For example, a listener is automatically added by Solr to each trigger to log details of the trigger fire and actions to the `.system` collection.
 
-You can learn more about Listeners in the section <<solrcloud-autoscaling-listeners.adoc#solrcloud-autoscaling-listeners,Autoscaling Listeners>>.
+You can learn more about Listeners in the section <<solrcloud-autoscaling-listeners.adoc#,Autoscaling Listeners>>.
 
 == Autoscaling APIs
 
 The autoscaling APIs available at `/admin/autoscaling` can be used to read and modify each of the components discussed above.
 
-You can learn more about these APIs in the section <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>.
+You can learn more about these APIs in the section <<solrcloud-autoscaling-api.adoc#,Autoscaling API>>.

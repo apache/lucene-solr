@@ -23,7 +23,7 @@ The Data Import Handler is deprecated and will be removed in 9.0.
 
 This functionality is being migrated to a new 3rd party plugin available at https://github.com/rohitbemax/dataimporthandler.
 
-See the section <<package-manager.adoc#package-manager,Package Manager>> for information about Solr's plugin framework.
+See the section <<package-manager.adoc#,Package Manager>> for information about Solr's plugin framework.
 ====
 
 Many search applications store the content to be indexed in a structured data store, such as a relational database. The Data Import Handler (DIH) provides a mechanism for importing content from a data store and indexing it.
@@ -48,7 +48,7 @@ Each set of fields fetched by the entity may optionally be transformed. This pro
 
 == Solr's DIH Examples
 
-The `example/example-DIH` directory contains several collections to demonstrate many of the features of the data import handler. These are available with the `dih` example from the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>>:
+The `example/example-DIH` directory contains several collections to demonstrate many of the features of the data import handler. These are available with the `dih` example from the <<solr-control-script-reference.adoc#,Solr Control Script>>:
 
 [source,bash]
 ----
@@ -129,7 +129,7 @@ The entire configuration itself can be passed as a request parameter using the `
 
 A `reload-config` command is also supported, which is useful for validating a new configuration file, or if you want to specify a file, load it, and not have it reloaded again on import. If there is an `xml` mistake in the configuration a user-friendly message is returned in `xml` format. You can then fix the problem and do a `reload-config`.
 
-TIP: You can also view the DIH configuration in the Solr Admin UI from the <<dataimport-screen.adoc#dataimport-screen,Dataimport Screen>>. It includes an interface to import content.
+TIP: You can also view the DIH configuration in the Solr Admin UI from the <<dataimport-screen.adoc#,Dataimport Screen>>. It includes an interface to import content.
 
 ==== DIH Request Parameters
 
@@ -417,7 +417,7 @@ An alternative way to specify `cacheKey` and `cacheLookup` concatenated with '='
 For example, `where="CODE=People.COUNTRY_CODE"` is equivalent to `cacheKey="CODE" cacheLookup="People.COUNTRY_CODE"`
 
 child="true"::
-Enables indexing document blocks aka <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Nested Child Documents>> for searching with <<other-parsers.adoc#other-parsers,Block Join Query Parsers>>. It can be only specified on the `<entity>` element under another root entity. It switches from default behavior (merging field values) to nesting documents as children documents.
+Enables indexing document blocks aka <<uploading-data-with-index-handlers.adoc#,Nested Child Documents>> for searching with <<other-parsers.adoc#,Block Join Query Parsers>>. It can be only specified on the `<entity>` element under another root entity. It switches from default behavior (merging field values) to nesting documents as children documents.
 +
 Note: parent `<entity>` should add a field which is used as a parent filter in query time.
 
@@ -619,7 +619,7 @@ This allows the processor to send the `fetchMailsSince` filter to the GMail serv
 
 === The TikaEntityProcessor
 
-The TikaEntityProcessor uses Apache Tika to process incoming documents. This is similar to <<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>, but using DataImportHandler options instead.
+The TikaEntityProcessor uses Apache Tika to process incoming documents. This is similar to <<uploading-data-with-solr-cell-using-apache-tika.adoc#,Uploading Data with Solr Cell using Apache Tika>>, but using DataImportHandler options instead.
 
 The parameters for this processor are described in the table below. These are in addition to the attributes common to all entity processors described above.
 
@@ -834,7 +834,7 @@ cursorMark="true"::
 Use this to enable cursor for efficient result set scrolling.
 
 sort="id asc"::
-This should be used to specify a sort parameter referencing the uniqueKey field of the source Solr instance. See <<pagination-of-results.adoc#pagination-of-results,Pagination of Results>> for details.
+This should be used to specify a sort parameter referencing the uniqueKey field of the source Solr instance. See <<pagination-of-results.adoc#,Pagination of Results>> for details.
 
 Here is a simple example of a SolrEntityProcessor:
 

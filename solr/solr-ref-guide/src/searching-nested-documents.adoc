@@ -19,7 +19,7 @@
 This section exposes potential techniques which can be used for searching deeply nested documents,
 show casing how more complex queries can be constructed using some of Solr's query parsers and Doc Transformers.
 These features require `\_root_` and `\_nest_path_` to be declared in the schema. +
-Please refer to the <<indexing-nested-documents.adoc#indexing-nested-documents, Indexing Nested Documents>>
+Please refer to the <<indexing-nested-documents.adoc#, Indexing Nested Documents>>
 section for more details about schema and index configuration.
 
 [NOTE]

@@ -16,9 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -3484,6 +3483,28 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testCatStreamSingleGzipFile() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt.gz\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(4, tuples.size());
+
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("topLevel1.txt.gz line " + String.valueOf(i+1), t.get("line"));
+      assertEquals("topLevel1.txt.gz", t.get("file"));
+    }
+  }
+
+  @Test
   public void testCatStreamEmptyFile() throws Exception {
     final String catStream = "cat(\"topLevel-empty.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -3648,6 +3669,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Files.createDirectories(dataDir);
     Files.createDirectories(dataDir.resolve("directory1"));
 
+    populateFileWithGzipData(dataDir.resolve("topLevel1.txt.gz"));
     populateFileWithData(dataDir.resolve("topLevel1.txt"));
     populateFileWithData(dataDir.resolve("topLevel2.txt"));
     Files.createFile(dataDir.resolve("topLevel-empty.txt"));
@@ -3658,6 +3680,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   private static void populateFileWithData(Path dataFile) throws Exception {
     Files.createFile(dataFile);
     try (final BufferedWriter writer = Files.newBufferedWriter(dataFile, StandardCharsets.UTF_8)) {
+      for (int i = 1; i <=4; i++) {
+        writer.write(dataFile.getFileName() + " line " + i);
+        writer.newLine();
+      }
+    }
+  }
+
+  private static void populateFileWithGzipData(Path dataFile) throws Exception {
+    Files.createFile(dataFile);
+    try (final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(dataFile.toFile())), StandardCharsets.UTF_8))) {
       for (int i = 1; i <=4; i++) {
         writer.write(dataFile.getFileName() + " line " + i);
         writer.newLine();

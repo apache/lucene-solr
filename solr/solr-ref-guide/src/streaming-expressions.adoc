@@ -37,13 +37,13 @@ Streaming expressions are comprised of streaming functions which work with a Sol
 They emit a stream of tuples (key/value Maps).
 
 Some of the provided streaming functions are designed to work with entire result sets rather than the top N results like normal search.
-This is supported by the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>.
+This is supported by the <<exporting-result-sets.adoc#,/export handler>>.
 
 Some streaming functions act as stream sources to originate the stream flow. Other streaming functions act as stream decorators to wrap other stream functions and perform operations on the stream of tuples. Many streams functions can be parallelized across a worker collection. This can be particularly powerful for relational algebra functions.
 
 === Streaming Requests and Responses
 
-Solr has a `/stream` request handler that takes streaming expression requests and returns the tuples as a JSON stream. This request handler is implicitly defined, meaning there is nothing that has to be defined in `solrconfig.xml` - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
+Solr has a `/stream` request handler that takes streaming expression requests and returns the tuples as a JSON stream. This request handler is implicitly defined, meaning there is nothing that has to be defined in `solrconfig.xml` - see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>.
 
 The `/stream` request handler takes one parameter, `expr`, which is used to specify the streaming expression. For example, this curl command encodes and POSTs a simple `search()` expression to the `/stream` handler:
 
@@ -92,14 +92,14 @@ Timeouts for Streaming Expressions can be configured with the `socketTimeout` an
 
 Stream sources originate streams. There are rich set of searching, sampling and aggregation stream sources to choose from.
 
-A full reference to all available source expressions is available in <<stream-source-reference.adoc#stream-source-reference,Stream Source Reference>>.
+A full reference to all available source expressions is available in <<stream-source-reference.adoc#,Stream Source Reference>>.
 
 
 === Stream Decorators
 
 Stream decorators wrap stream sources and other stream decorators to transform a stream.
 
-A full reference to all available decorator expressions is available in <<stream-decorator-reference.adoc#stream-decorator-reference,Stream Decorator Reference>>.
+A full reference to all available decorator expressions is available in <<stream-decorator-reference.adoc#,Stream Decorator Reference>>.
 
 === Math Expressions
 
@@ -114,7 +114,7 @@ The math expressions user guide is available in <<>>
 
 From a language standpoint math expressions are referred to as *stream evaluators*.
 
-A full reference to all available evaluator expressions is available in <<stream-evaluator-reference.adoc#stream-evaluator-reference,Stream Evaluator Reference>>.
+A full reference to all available evaluator expressions is available in <<stream-evaluator-reference.adoc#,Stream Evaluator Reference>>.
 
 === Visualization
 
@@ -123,4 +123,4 @@ Visualization of both streaming expressions and math expressions is done using A
 
 Visualizing Streaming expressions and setting up of Apache Zeppelin is documented in <<math-start.adoc#zeppelin-solr-interpreter,Zeppelin-Solr Interpreter>>.
 
-The <<math-expressions.adoc#math-expressions,Math Expressions User Guide>> has in depth coverage of visualization techniques.
+The <<math-expressions.adoc#,Math Expressions User Guide>> has in depth coverage of visualization techniques.

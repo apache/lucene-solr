@@ -179,7 +179,7 @@ Collation allows sorting of text in a language-sensitive way. It is usually used
 
 == Daitch-Mokotoff Soundex Filter
 
-Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
+Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.DaitchMokotoffSoundexFilterFactory`
 
@@ -199,7 +199,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 == Double Metaphone Filter
 
-This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
+This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#,Phonetic Matching>> section.
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
 
@@ -899,7 +899,7 @@ Converts any uppercase letters in a token to the equivalent lowercase token. All
 
 == Managed Stop Filter
 
-This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#,managed from a REST API.>>
 
 *Arguments:*
 
@@ -921,7 +921,7 @@ See <<Stop Filter>> for example input/output.
 
 == Managed Synonym Filter
 
-This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
 
 .Managed Synonym Filter has been Deprecated
 [WARNING]
@@ -935,7 +935,7 @@ For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
-This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#,managed from a REST API.>>
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
@@ -1148,7 +1148,7 @@ More complex pattern with capture group reference in the replacement. Tokens tha
 
 == Phonetic Filter
 
-This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
+This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#,Phonetic Matching>>.
 
 *Factory class:* `solr.PhoneticFilterFactory`
 
@@ -1605,7 +1605,7 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#resource-loading,Resource Loading>> for more information.
+`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#,Resource Loading>> for more information.
 +
 There are two ways to specify synonym mappings:
 +

@@ -216,32 +216,32 @@ public class ExportTool extends SolrCLI.ToolBase {
       Option.builder("url")
           .hasArg()
           .required()
-          .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted")
+          .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
           .build(),
       Option.builder("out")
           .hasArg()
           .required(false)
-          .desc("file name . defaults to collection-name.<format>")
+          .desc("File name, defaults to 'collection-name.<format>'.")
           .build(),
       Option.builder("format")
           .hasArg()
           .required(false)
-          .desc("format  json/javabin, default to json. file extension would be .json")
+          .desc("Output format for exported docs (json or javabin), defaulting to json. File extension would be .json.")
           .build(),
       Option.builder("limit")
           .hasArg()
           .required(false)
-          .desc("Max number of docs to download. default = 100, use -1 for all docs")
+          .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
           .build(),
       Option.builder("query")
           .hasArg()
           .required(false)
-          .desc("A custom query, default is *:*")
+          .desc("A custom query, default is '*:*'.")
           .build(),
       Option.builder("fields")
           .hasArg()
           .required(false)
-          .desc("Comma separated fields. By default all fields are fetched")
+          .desc("Comma separated list of fields to export. By default all fields are fetched.")
           .build()
   };
 

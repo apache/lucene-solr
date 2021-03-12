@@ -71,7 +71,7 @@ To activate the SSL settings, uncomment and update the set of properties beginni
 ====
 [.tab-label]**nix (solr.in.sh)*
 
-NOTE: If you setup Solr as a service on Linux using the steps outlined in <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>, then make these changes in `/var/solr/solr.in.sh`.
+NOTE: If you setup Solr as a service on Linux using the steps outlined in <<taking-solr-to-production.adoc#,Taking Solr to Production>>, then make these changes in `/var/solr/solr.in.sh`.
 
 [source,bash]
 ----
@@ -195,7 +195,7 @@ NOTE: ZooKeeper does not support encrypted communication with clients like Solr.
 After creating the keystore described above and before you start any SolrCloud nodes, you must configure your Solr cluster properties in ZooKeeper so that Solr nodes know to communicate via SSL.
 
 This section assumes you have created and started an external ZooKeeper.
-See <<setting-up-an-external-zookeeper-ensemble.adoc#setting-up-an-external-zookeeper-ensemble,Setting Up an External ZooKeeper Ensemble>> for more information.
+See <<setting-up-an-external-zookeeper-ensemble.adoc#,Setting Up an External ZooKeeper Ensemble>> for more information.
 
 The `urlScheme` cluster-wide property needs to be set to `https` before any Solr node starts up.
 The examples below use the `zkcli` tool that comes with Solr to do this.

@@ -39,7 +39,7 @@ If you have another request handler defined, you would send your request with th
 
 Request handlers can also process requests for nested paths of their names, for example, a request using `/myhandler/extrapath` may be processed by a request handler registered with the name `/myhandler`. If a request handler is explicitly defined by the name `/myhandler/extrapath`, that would take precedence over the nested path. This assumes you are using the request handler classes included with Solr; if you create your own request handler, you should make sure it includes the ability to handle nested paths if you want to use them with your custom request handler.
 
-It is also possible to configure defaults for request handlers with a section called `initParams`. These defaults can be used when you want to have common properties that will be used by each separate handler. For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields. For more information about `initParams`, see the section <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams in SolrConfig>>.
+It is also possible to configure defaults for request handlers with a section called `initParams`. These defaults can be used when you want to have common properties that will be used by each separate handler. For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields. For more information about `initParams`, see the section <<initparams-in-solrconfig.adoc#,InitParams in SolrConfig>>.
 
 === SearchHandlers
 
@@ -59,7 +59,7 @@ For example, in the default `solrconfig.xml`, the first request handler defined 
 
 This example defines the `rows` parameter, which defines how many search results to return, to "10". The `echoParams` parameter defines that the parameters defined in the query should be returned when debug information is returned. Note also that the way the defaults are defined in the list varies if the parameter is a string, an integer, or another type.
 
-All of the parameters described in the section  <<searching.adoc#searching,Searching>> can be defined as defaults for any of the SearchHandlers.
+All of the parameters described in the section  <<searching.adoc#,Searching>> can be defined as defaults for any of the SearchHandlers.
 
 Besides `defaults`, there are other options for the SearchHandler, which are:
 
@@ -95,15 +95,15 @@ The `solrconfig.xml` file includes many other examples of SearchHandlers that ca
 
 The UpdateRequestHandlers are request handlers which process updates to the index.
 
-In this guide, we've covered these handlers in detail in the section <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.
+In this guide, we've covered these handlers in detail in the section <<uploading-data-with-index-handlers.adoc#,Uploading Data with Index Handlers>>.
 
 === ShardHandlers
 
-It is possible to configure a request handler to search across shards of a cluster, used with distributed search. More information about distributed search and how to configure the shardHandler is in the section <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
+It is possible to configure a request handler to search across shards of a cluster, used with distributed search. More information about distributed search and how to configure the shardHandler is in the section <<distributed-search-with-index-sharding.adoc#,Distributed Search with Index Sharding>>.
 
 === Implicit Request Handlers
 
-Solr includes many out-of-the-box request handlers that are not configured in `solrconfig.xml`, and so are referred to as "implicit" - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
+Solr includes many out-of-the-box request handlers that are not configured in `solrconfig.xml`, and so are referred to as "implicit" - see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>.
 
 == Search Components
 
@@ -118,13 +118,13 @@ There are several default search components that work with all SearchHandlers wi
 [cols="20,40,40",options="header"]
 |===
 |Component Name |Class Name |More Information
-|query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>>.
-|facet |`solr.FacetComponent` |Described in the section <<faceting.adoc#faceting,Faceting>>.
-|mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
-|highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
-|stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
+|query |`solr.QueryComponent` |Described in the section <<query-syntax-and-parsing.adoc#,Query Syntax and Parsing>>.
+|facet |`solr.FacetComponent` |Described in the section <<faceting.adoc#,Faceting>>.
+|mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#,MoreLikeThis>>.
+|highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#,Highlighting>>.
+|stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#,The Stats Component>>.
 |debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
-|expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
+|expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>.
 |===
 
 If you register a new search component with one of these default names, the newly defined component will be used instead of the default.
@@ -165,13 +165,13 @@ If you define `components`, the default components (see above) will not be execu
 
 Many of the other useful components are described in sections of this Guide for the features they support. These are:
 
-* `SpellCheckComponent`, described in the section <<spell-checking.adoc#spell-checking,Spell Checking>>.
-* `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>.
-* `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
-* `TermsComponent`, described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
-* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
-* `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
-* `AnalyticsComponent`, described in the section <<analytics.adoc#analytics,Analytics>>.
+* `SpellCheckComponent`, described in the section <<spell-checking.adoc#,Spell Checking>>.
+* `TermVectorComponent`, described in the section <<the-term-vector-component.adoc#,The Term Vector Component>>.
+* `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#,The Query Elevation Component>>.
+* `TermsComponent`, described in the section <<the-terms-component.adoc#,The Terms Component>>.
+* `RealTimeGetComponent`, described in the section <<realtime-get.adoc#,RealTime Get>>.
+* `SuggestComponent`, described in the section <<suggester.adoc#,Suggester>>.
+* `AnalyticsComponent`, described in the section <<analytics.adoc#,Analytics>>.
 
 Other components that ship with Solr include:
 

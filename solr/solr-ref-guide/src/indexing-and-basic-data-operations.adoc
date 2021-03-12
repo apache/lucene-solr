@@ -30,30 +30,30 @@
 
 This section describes how Solr adds data to its index. It covers the following topics:
 
-* *<<introduction-to-solr-indexing.adoc#introduction-to-solr-indexing,Introduction to Solr Indexing>>*: An overview of Solr's indexing process.
+* *<<introduction-to-solr-indexing.adoc#,Introduction to Solr Indexing>>*: An overview of Solr's indexing process.
 
-* *<<post-tool.adoc#post-tool,Post Tool>>*: Information about using `post.jar` to quickly upload some content to your system.
+* *<<post-tool.adoc#,Post Tool>>*: Information about using `post.jar` to quickly upload some content to your system.
 
-* *<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>*: Information about using Solr's Index Handlers to upload XML/XSLT, JSON and CSV data.
+* *<<uploading-data-with-index-handlers.adoc#,Uploading Data with Index Handlers>>*: Information about using Solr's Index Handlers to upload XML/XSLT, JSON and CSV data.
 
-* *<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>*: Index any JSON of your choice
+* *<<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>*: Index any JSON of your choice
 
-* *<<indexing-nested-documents.adoc#indexing-nested-documents,Indexing Nested Documents>>*: Detailed information about indexing and schema configuration for nested documents.
+* *<<indexing-nested-documents.adoc#,Indexing Nested Documents>>*: Detailed information about indexing and schema configuration for nested documents.
 
-* *<<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>*: Information about using the Solr Cell framework to upload data for indexing.
+* *<<uploading-data-with-solr-cell-using-apache-tika.adoc#,Uploading Data with Solr Cell using Apache Tika>>*: Information about using the Solr Cell framework to upload data for indexing.
 
-* *<<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>*: Information about uploading and indexing data from a structured data store.
+* *<<uploading-structured-data-store-data-with-the-data-import-handler.adoc#,Uploading Structured Data Store Data with the Data Import Handler>>*: Information about uploading and indexing data from a structured data store.
 
-* *<<updating-parts-of-documents.adoc#updating-parts-of-documents,Updating Parts of Documents>>*: Information about how to use atomic updates and optimistic concurrency with Solr.
+* *<<updating-parts-of-documents.adoc#,Updating Parts of Documents>>*: Information about how to use atomic updates and optimistic concurrency with Solr.
 
-* *<<detecting-languages-during-indexing.adoc#detecting-languages-during-indexing,Detecting Languages During Indexing>>*: Information about using language identification during the indexing process.
+* *<<detecting-languages-during-indexing.adoc#,Detecting Languages During Indexing>>*: Information about using language identification during the indexing process.
 
-* *<<de-duplication.adoc#de-duplication,De-Duplication>>*: Information about configuring Solr to mark duplicate documents as they are indexed.
+* *<<de-duplication.adoc#,De-Duplication>>*: Information about configuring Solr to mark duplicate documents as they are indexed.
 
-* *<<content-streams.adoc#content-streams,Content Streams>>*: Information about streaming content to Solr Request Handlers.
+* *<<content-streams.adoc#,Content Streams>>*: Information about streaming content to Solr Request Handlers.
 
-* *<<reindexing.adoc#reindexing,Reindexing>>*: Details about when reindexing is required or recommended, and some strategies for completely reindexing your documents.
+* *<<reindexing.adoc#,Reindexing>>*: Details about when reindexing is required or recommended, and some strategies for completely reindexing your documents.
 
 == Indexing Using Client APIs
 
-Using client APIs, such as <<using-solrj.adoc#using-solrj,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#client-apis,Client APIs>> section for more information.
+Using client APIs, such as <<using-solrj.adoc#,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#,Client APIs>> section for more information.

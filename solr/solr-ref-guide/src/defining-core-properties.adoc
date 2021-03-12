@@ -70,11 +70,11 @@ The following properties are available:
 
 `config`:: The configuration file name for a given core. The default is `solrconfig.xml`.
 
-`schema`:: The schema file name for a given core. The default is `schema.xml` but please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for more details.
+`schema`:: The schema file name for a given core. The default is `schema.xml` but please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>> for more details.
 
 `dataDir`:: The core's data directory (where indexes are stored) as either an absolute pathname, or a path relative to the value of `instanceDir`. This is `data` by default.
 
-`configSet`:: The name of a defined configset, if desired, to use to configure the core (see the section  <<config-sets.adoc#config-sets,Configsets>> for more details).
+`configSet`:: The name of a defined configset, if desired, to use to configure the core (see the section  <<config-sets.adoc#,Configsets>> for more details).
 
 `properties`:: The name of the properties file for this core. The value can be an absolute pathname or a path relative to the value of `instanceDir`.
 

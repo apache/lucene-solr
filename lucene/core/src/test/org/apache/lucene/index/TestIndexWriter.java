@@ -3635,6 +3635,41 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(writer, dir);
   }
 
+  public void testAbortFullyDeletedSegment() throws Exception {
+    AtomicBoolean abortMergeBeforeCommit = new AtomicBoolean();
+    OneMergeWrappingMergePolicy mergePolicy =
+        new OneMergeWrappingMergePolicy(
+            newMergePolicy(),
+            toWrap ->
+                new MergePolicy.OneMerge(toWrap.segments) {
+                  @Override
+                  void onMergeComplete() throws IOException {
+                    super.onMergeComplete();
+                    if (abortMergeBeforeCommit.get()) {
+                      setAborted();
+                    }
+                  }
+                }) {
+          @Override
+          public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+            return true;
+          }
+        };
+
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig =
+        newIndexWriterConfig().setMergePolicy(mergePolicy).setCommitOnClose(false);
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+    writer.addDocument(Collections.singletonList(new StringField("id", "1", Field.Store.YES)));
+    writer.flush();
+
+    writer.deleteDocuments(new Term("id", "1"));
+    abortMergeBeforeCommit.set(true);
+    writer.flush();
+    writer.forceMerge(1);
+    IOUtils.close(writer, dir);
+  }
+
   private void assertHardLiveDocs(IndexWriter writer, Set<Integer> uniqueDocs) throws IOException {
     try (DirectoryReader reader = DirectoryReader.open(writer)) {
       assertEquals(uniqueDocs.size(), reader.numDocs());

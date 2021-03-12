@@ -16,9 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Creating rules for replica placement in a Solr cluster is now done with the <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,autoscaling framework>>.
+Creating rules for replica placement in a Solr cluster is now done with the <<solrcloud-autoscaling.adoc#,autoscaling framework>>.
 
-This document outlines how to migrate from the legacy <<rule-based-replica-placement.adoc#rule-based-replica-placement,rule-based replica placement>> to an <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,autoscaling policy>>.
+This document outlines how to migrate from the legacy <<rule-based-replica-placement.adoc#,rule-based replica placement>> to an <<solrcloud-autoscaling-policy-preferences.adoc#,autoscaling policy>>.
 
 The autoscaling framework is designed to fully automate your cluster management.
 However, if you do not want actions taken on your cluster in an automatic way, you can still use the framework to set rules and preferences.
@@ -34,7 +34,7 @@ One key difference between the frameworks is the way rules are defined.
 
 With the rule-based replica placement framework, rules are defined with the Collections API at the time of collection creation.
 
-The autoscaling framework, however, has its own <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,API>>.
+The autoscaling framework, however, has its own <<solrcloud-autoscaling-api.adoc#,API>>.
 Policies can be configured for the entire cluster or for individual collections depending on your needs.
 
 The following is the legacy syntax for a rule that limits the cluster to one replica for each shard in any Solr node:
@@ -111,7 +111,7 @@ There is no equivalent for a snitch in the autoscaling policy framework.
 == Porting Existing Replica Placement Rules
 
 There is no automatic way to move from using rule-based replica placement rules to an autoscaling policy.
-Instead you will need to remove your replica rules from each collection and institute a policy using the <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,autoscaling API>>.
+Instead you will need to remove your replica rules from each collection and institute a policy using the <<solrcloud-autoscaling-api.adoc#,autoscaling API>>.
 
 The following examples are intended to help you translate your existing rules into new rules that fit the autoscaling framework.
 

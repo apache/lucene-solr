@@ -35,14 +35,14 @@ There are other alternatives, and the Solr community is working to identify the 
 
 == What is CDCR?
 
-The <<solrcloud.adoc#solrcloud,SolrCloud>> architecture is designed to support <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time (NRT)>> searches on a Solr collection that usual consists of multiple nodes in a single data center. CDCR augments this model by forwarding updates from a Solr collection in one data center to a parallel Solr collection in another data center where the network latencies are greater than the SolrCloud model was designed to accommodate.
+The <<solrcloud.adoc#,SolrCloud>> architecture is designed to support <<near-real-time-searching.adoc#,Near Real Time (NRT)>> searches on a Solr collection that usual consists of multiple nodes in a single data center. CDCR augments this model by forwarding updates from a Solr collection in one data center to a parallel Solr collection in another data center where the network latencies are greater than the SolrCloud model was designed to accommodate.
 
 For more information about CDCR, see the following sections:
 
-* *<<cdcr-architecture.adoc#cdcr-architecture,CDCR Architecture>>*: A detailed overview of how CDCR works.
-* *<<cdcr-config.adoc#cdcr-config,CDCR Configuration>>*: How to set up and initialize CDCR for your cluster.
-* *<<cdcr-operations.adoc#cdcr-operations,CDCR Operations>>*: Information on monitoring CDCR and upgrading your cluster when using CDCR.
-* *<<cdcr-api.adoc#cdcr-api,CDCR API>>*: Reference for the CDCR API.
+* *<<cdcr-architecture.adoc#,CDCR Architecture>>*: A detailed overview of how CDCR works.
+* *<<cdcr-config.adoc#,CDCR Configuration>>*: How to set up and initialize CDCR for your cluster.
+* *<<cdcr-operations.adoc#,CDCR Operations>>*: Information on monitoring CDCR and upgrading your cluster when using CDCR.
+* *<<cdcr-api.adoc#,CDCR API>>*: Reference for the CDCR API.
 
 
 // Are there any terms here that are new? If not, I think we should remove this.

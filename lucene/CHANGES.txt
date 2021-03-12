@@ -1,4 +1,4 @@
-Lucene Change Log
+KLucene Change Log
 
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
@@ -7,11 +7,11 @@ http://s.apache.org/luceneversions
 
 API Changes
 ---------------------
-(No changes)
+
+* LUCENE-9680: Removed deprecation warning from IndexWriter#getFieldNames(). (Oren Ovadia)
 
 New Features
 ---------------------
-(No changes)
 
 * LUCENE-9537:  Added smoothingScore method and default implementation to 
   Scorable abstract class.  The smoothing score allows scorers to calculate a 
@@ -29,7 +29,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9725: BM25FQuery was extended to handle similarities beyond BM25Similarity. It
+  was renamed to CombinedFieldQuery to reflect its more general scope. (Julie Tibshirani)
 
 Optimizations
 ---------------------
@@ -37,9 +39,25 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9744: NPE on a degenerate query in MinimumShouldMatchIntervalsSource
+  $MinimumMatchesIterator.getSubMatches(). (Alan Woodward)
+
+* LUCENE-9762: DoubleValuesSource.fromQuery (also used by FunctionScoreQuery.boostByQuery) could
+  throw an exception when the query implements TwoPhaseIterator and when the score is requested
+  repeatedly. (David Smiley, hossman)
+
+* LUCENE-9791: BytesRefHash.equals/find is now thread safe, fixing a
+  Luwak/Monitor bug causing registered queries to sometimes fail to
+  match. (Paweł Bugalski)
 
 Other
+---------------------
+(No changes)
+
+======================= Lucene 8.8.1 =======================
+
+Bug Fixes
 ---------------------
 (No changes)
 

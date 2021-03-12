@@ -132,7 +132,7 @@ Add, edit or delete a cluster-wide property.
 
 `name`::
 The name of the property. Supported properties names are `autoAddReplicas`, `legacyCloud`, `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
-If the <<solr-tracing.adoc#solr-tracing,Jaeger tracing contrib>> has been enabled, the property `samplePercentage` is also available.
+If the <<solr-tracing.adoc#,Jaeger tracing contrib>> has been enabled, the property `samplePercentage` is also available.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
@@ -305,7 +305,7 @@ This command recreates replicas in one node (the source) to another node(s) (the
 
 For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#,Autoscaling Policy and Preferences>> section for more details.
 
 `/admin/collections?action=REPLACENODE&sourceNode=_source-node_&targetNode=_target-node_`
 

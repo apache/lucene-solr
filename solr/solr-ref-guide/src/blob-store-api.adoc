@@ -111,7 +111,7 @@ curl -X POST -H 'Content-Type: application/octet-stream' --data-binary @test1.ja
 
 Note that by default, the blob store has a limit of 5Mb for any blob. This can be increased if necessary
 by changing the value for the `maxSize` setting in `solrconfig.xml` for the `.system` collection.
-See the section <<configuring-solrconfig-xml.adoc#configuring-solrconfig-xml,Configuring solrconfig.xml>> for information about how to modify `solrconfig.xml` for any collection.
+See the section <<configuring-solrconfig-xml.adoc#,Configuring solrconfig.xml>> for information about how to modify `solrconfig.xml` for any collection.
 
 A GET request will return the list of blobs and other details:
 

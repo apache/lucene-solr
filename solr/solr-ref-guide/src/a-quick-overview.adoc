@@ -27,17 +27,17 @@ In the scenario above, Solr runs alongside other server applications. For exampl
 
 Solr makes it easy to add the capability to search through the online store through the following steps:
 
-. Define a _schema_. The schema tells Solr about the contents of documents it will be indexing. In the online store example, the schema would define fields for the product name, description, price, manufacturer, and so on. Solr's schema is powerful and flexible and allows you to tailor Solr's behavior to your application. See <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>> for all the details.
+. Define a _schema_. The schema tells Solr about the contents of documents it will be indexing. In the online store example, the schema would define fields for the product name, description, price, manufacturer, and so on. Solr's schema is powerful and flexible and allows you to tailor Solr's behavior to your application. See <<documents-fields-and-schema-design.adoc#,Documents, Fields, and Schema Design>> for all the details.
 . Feed Solr documents for which your users will search.
 . Expose search functionality in your application.
 
-Because Solr is based on open standards, it is highly extensible. Solr queries are simple HTTP request URLs and the response is a structured document: mainly JSON, but it could also be XML, CSV, or other formats. This means that a wide variety of clients will be able to use Solr, from other web applications to browser clients, rich client applications, and mobile devices. Any platform capable of HTTP can talk to Solr. See <<client-apis.adoc#client-apis,Client APIs>> for details on client APIs.
+Because Solr is based on open standards, it is highly extensible. Solr queries are simple HTTP request URLs and the response is a structured document: mainly JSON, but it could also be XML, CSV, or other formats. This means that a wide variety of clients will be able to use Solr, from other web applications to browser clients, rich client applications, and mobile devices. Any platform capable of HTTP can talk to Solr. See <<client-apis.adoc#,Client APIs>> for details on client APIs.
 
-Solr offers support for the simplest keyword searching through to complex queries on multiple fields and faceted search results. <<searching.adoc#searching,Searching>> has more information about searching and queries.
+Solr offers support for the simplest keyword searching through to complex queries on multiple fields and faceted search results. <<searching.adoc#,Searching>> has more information about searching and queries.
 
 If Solr's capabilities are not impressive enough, its ability to handle very high-volume applications should do the trick.
 
-A relatively common scenario is that you have so much data, or so many queries, that a single Solr server is unable to handle your entire workload. In this case, you can scale up the capabilities of your application using <<solrcloud.adoc#solrcloud,SolrCloud>> to better distribute the data, and the processing of requests, across many servers. Multiple options can be mixed and matched depending on the scalability you need.
+A relatively common scenario is that you have so much data, or so many queries, that a single Solr server is unable to handle your entire workload. In this case, you can scale up the capabilities of your application using <<solrcloud.adoc#,SolrCloud>> to better distribute the data, and the processing of requests, across many servers. Multiple options can be mixed and matched depending on the scalability you need.
 
 For example: "Sharding" is a scaling technique in which a collection is split into multiple logical pieces called "shards" in order to scale up the number of documents in a collection beyond what could physically fit on a single server. Incoming queries are distributed to every shard in the collection, which respond with merged results. Another technique available is to increase the "Replication Factor" of your collection, which allows you to add servers with additional copies of your collection to handle higher concurrent query load by spreading the requests around to multiple machines. Sharding and replication are not mutually exclusive, and together make Solr an extremely powerful and scalable platform.
 

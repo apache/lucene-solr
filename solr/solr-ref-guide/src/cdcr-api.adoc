@@ -23,7 +23,7 @@ The CDCR API is used to control and monitor the replication process. Control act
 ====
 This feature (in its current form) is deprecated and will be removed in 9.0.
 
-See <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>> for more details.
+See <<cross-data-center-replication-cdcr.adoc#,Cross Data Center Replication>> for more details.
 ====
 
 Monitor actions are performed at a core level, i.e., by using the following base URL for API calls: `\http://localhost:8983/solr/<core>/cdcr`.

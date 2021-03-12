@@ -10,13 +10,39 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+* SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
+
+* SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
+
+* SOLR-15087: SolrCloud backups can now be restored to compatible existing collections, instead of requiring a new collection
+  for each restore. (Jason Gerlowski, shalin, Cao Manh Dat)
+
+* SOLR-15132: Add temporal graph query to the nodes Streaming Expression (Joel Bernstein)
 
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
 
 * SOLR-15085: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was passed to it. (Tim Owen via Mike Drob)
+
+* SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
+
+* SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consistency and clarity. (Eric Pugh)
+
+* SOLR-13608: Solr backups now support an incremental mode; repeated backups of the same collection at the same
+  location will now only upload those files that have changed since the last backup (shalin, Cao Manh Dat, Jason Gerlowski)
+
+* SOLR-15101: Add "list" and "delete" APIs for managing incremental backups (Jason Gerlowski, shalin, Cao Manh Dat)
+
+* SOLR-15038: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters to query elevation.
+  (Dennis Berger, Tobias Kässmann via Bruno Roustant)
+
+* SOLR-15191: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some other/custom field types
+  too. (Thomas Wöckinger, David Smiley)
+
+* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)
+
+* SOLR-15154: Let Http2SolrClient pass Basic Auth credentials to all requests (Tomás Fernández Löbbe)
 
 * SOLR-11233: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr. (Pranav Murugappan, Christine Poerschke)
 
@@ -31,9 +57,38 @@ Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
 
+* SOLR-15149: Better exception handling for LTR model creation errors (Alessandro Benedetti, Christine Poerschke)
+
+* SOLR-13034: Partial (AKA Atomic) updates could encounter "LazyField" instances in the document
+  cache and not know hot to deal with them when writing the updated doc to the update log.
+  (David Smiley)
+
+* SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
+  (Thomas Wöckinger, David Smiley)
+
+* SOLR-15216: Fix for Invalid Reference to data.followers in Admin UI. (Dean Pearce)
+
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
+
+==================  8.8.1 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-15145: System property to control whether base_url is stored in state.json to enable back-compat with older SolrJ versions.
+  (Timothy Potter)
+
+* SOLR-15114: Fix bug that caused WAND optimization to be disabled in cases where the max score is requested (such as
+  multi-shard requests in SolrCloud) (Naoto Minami via Tomás Fernández Löbbe)
+
+* SOLR-15136: Reduce excessive logging introduced with Per Replica States feature (Ishan Chattopadhyaya)
+
+* SOLR-15138: Collection creation for PerReplicaStates does not scale to large collections as well as regular collections
+  (Mike Drob, Ilan Ginzburg, noble, Ishan Chattopadhyaya)
+
+* SOLR-15135: Admin UI display collections with perReplicaState=true in graph view (Timothy Potter)
 
 ==================  8.8.0 ==================
 

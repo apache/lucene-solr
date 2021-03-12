@@ -89,6 +89,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
+import org.apache.solr.handler.CollectionBackupsAPI;
 import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
@@ -315,9 +316,8 @@ public class CoreContainer {
   }
 
   /**
-   * Create a new CoreContainer using the given SolrResourceLoader,
-   * configuration and CoresLocator.  The container's cores are
-   * not loaded.
+   * Create a new CoreContainer using the given configuration.
+   * The container's cores are not loaded.
    *
    * @param config a ConfigSolr representation of this container's configuration
    * @see #load()
@@ -330,6 +330,14 @@ public class CoreContainer {
     this(config, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
   }
 
+  /**
+   * Create a new CoreContainer using the given configuration and locator.
+   * The container's cores are not loaded.
+   *
+   * @param config a ConfigSolr representation of this container's configuration
+   * @param locator a CoresLocator
+   * @see #load()
+   */
   public CoreContainer(NodeConfig config, CoresLocator locator) {
     this(config, locator, false);
   }
@@ -726,7 +734,10 @@ public class CoreContainer {
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
-    containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
+    final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
+    containerHandlers.getApiBag().registerObject(collectionsAPI);
+    final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
+    containerHandlers.getApiBag().registerObject(collectionBackupsAPI);
     configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     containerHandlers.getApiBag().registerObject(clusterAPI);

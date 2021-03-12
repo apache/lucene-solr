@@ -23,10 +23,10 @@ The Source and Target configurations differ in the case of the data centers bein
 ====
 This feature (in its current form) is deprecated and will be removed in 9.0.
 
-See <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>> for more details.
+See <<cross-data-center-replication-cdcr.adoc#,Cross Data Center Replication>> for more details.
 ====
 
-As described in the section <<cdcr-architecture.adoc#cdcr-architecture,CDCR Architecture>>, two approaches are supported: uni-directional updates and bi-directional updates.
+As described in the section <<cdcr-architecture.adoc#,CDCR Architecture>>, two approaches are supported: uni-directional updates and bi-directional updates.
 
 All CDCR configuration is done in the `solrconfig.xml` file. Because this is a per-collection configuration file, all CDCR configuration is done for each collection.
 

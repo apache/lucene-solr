@@ -25,7 +25,7 @@ It is a common requirement that if a parent document has several children docume
  This functionality is considered deprecated and will be removed at 9.0.
  Users are encouraged to use `uniqueBlock(\_root_)` aggregation under a `terms` facet in the <<json-faceting-domain-changes.adoc#block-join-domain-changes,JSON Facet API>>.
 
-If this component is used, it must be explicitly enabled for a request handler in `solrconfig.xml`, in the same way as any other <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,search component>>.
+If this component is used, it must be explicitly enabled for a request handler in `solrconfig.xml`, in the same way as any other <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,search component>>.
 ====
 
 This example shows how you could add this search components to `solrconfig.xml` and define it in request handler:
@@ -46,7 +46,7 @@ This example shows how you could add this search components to `solrconfig.xml` 
 
 This component can be added into any search request handler. This component work with distributed search in SolrCloud mode.
 
-Documents should be added in children-parent blocks as described in <<indexing-nested-documents.adoc#indexing-nested-documents,indexing nested child documents>>. Examples:
+Documents should be added in children-parent blocks as described in <<indexing-nested-documents.adoc#,indexing nested child documents>>. Examples:
 
 .Sample document
 [source,xml]

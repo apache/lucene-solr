@@ -210,7 +210,7 @@ When a collection has the parameter `autoAddReplicas` set to true then a trigger
 which are then processed by configured actions (usually resulting in computing and executing a plan
 to add replicas on the live nodes to maintain the expected replication factor).
 
-Refer to the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas, Autoscaling Automatically Adding Replicas>> to learn more about how the `.autoAddReplicas` trigger works.
+Refer to the section <<solrcloud-autoscaling-auto-add-replicas.adoc#, Autoscaling Automatically Adding Replicas>> to learn more about how the `.autoAddReplicas` trigger works.
 
 In addition to the parameters described at <<Trigger Configuration>>, this trigger supports one parameter, which is defined in the `<solrcloud>` section of `solr.xml`:
 
@@ -221,7 +221,7 @@ TIP: See <<format-of-solr-xml.adoc#the-solrcloud-element,The <solrcloud> Element
 
 === Metric Trigger
 
-The metric trigger can be used to monitor any metric exposed by the <<metrics-reporting.adoc#metrics-reporting,Metrics API>>. It supports lower and upper threshold configurations as well as optional filters to limit operation to specific collection, shards, and nodes.
+The metric trigger can be used to monitor any metric exposed by the <<metrics-reporting.adoc#,Metrics API>>. It supports lower and upper threshold configurations as well as optional filters to limit operation to specific collection, shards, and nodes.
 
 In addition to the parameters described at <<Trigger Configuration>>, this trigger supports the following parameters:
 
@@ -579,7 +579,7 @@ suspended if their functionality somehow interferes with other configuration but
 
 === Auto-add Replicas Trigger
 The default configuration and functionality of this trigger is described in detail in the
-section titled <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,Automatically Adding Replicas>>.
+section titled <<solrcloud-autoscaling-auto-add-replicas.adoc#,Automatically Adding Replicas>>.
 
 === Scheduled Maintenance Trigger
 This is a <<scheduledtrigger>> named `.scheduled_maintenance` and it's configured to run once per day.
