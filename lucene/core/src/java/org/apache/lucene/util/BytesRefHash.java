@@ -199,7 +199,7 @@ public final class BytesRefHash implements Accountable {
       length = (bytes[pos] & 0x7f) + ((bytes[pos + 1] & 0xff) << 7);
       offset = pos + 2;
     }
-    return Arrays.equals(bytes, offset, offset + length, b.bytes, b.offset, b.offset + b.length);
+    return FutureArrays.equals(bytes, offset, offset + length, b.bytes, b.offset, b.offset + b.length);
   }
 
   private boolean shrink(int targetSize) {
