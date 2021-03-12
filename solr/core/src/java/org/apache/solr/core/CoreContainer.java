@@ -870,7 +870,7 @@ public class CoreContainer implements Closeable {
           getZkController().getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (n, c) -> {
             if (c == null) {
               if (log.isDebugEnabled()) log.debug("Found  incorrect state c={}", c);
-              return true;
+              return false;
             }
 
             String nodeName = getZkController().getNodeName();

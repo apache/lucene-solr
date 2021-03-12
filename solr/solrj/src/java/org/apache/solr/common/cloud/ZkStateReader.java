@@ -1814,9 +1814,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     try {
       log.debug("get and process state updates for {}", coll);
       byte[] data = null;
-
+      Stat stat = new Stat();
       try {
-        data = getZkClient().getData(stateUpdatesPath, null, null, true, false);
+        data = getZkClient().getData(stateUpdatesPath, null, stat, true, false);
       } catch (NoNodeException e) {
         log.info("No node found for {}", stateUpdatesPath);
         return docCollection;
@@ -1837,18 +1837,28 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (log.isDebugEnabled()) log.debug("Got additional state updates with version {} {} cs={}", version, m, clusterState);
 
       m.remove("_cs_ver_");
-
+      m.put("_ver_", stat.getVersion());
       try {
         Set<Entry<String,Object>> entrySet = m.entrySet();
 
         if (docCollection != null) {
           // || (version > docCollection.getZNodeVersion() && clusterState.getZkClusterStateVersion() == -1)) {
-          if (version < docCollection.getZNodeVersion()) {
+          if (!docCollection.hasStateUpdates() && version < docCollection.getZNodeVersion()) {
             if (log.isDebugEnabled()) log.debug("Will not apply state updates, they are for an older state.json {}, ours is now {}", version, docCollection.getZNodeVersion());
             return docCollection;
           }
+
+          if (docCollection.hasStateUpdates()) {
+            int oldVersion = (int) docCollection.getStateUpdates().get("_ver_");
+            if (stat.getVersion() < oldVersion) {
+              if (log.isDebugEnabled()) log.debug("Will not apply state updates, they are for an older set of updates {}, ours is now {}", stat.getVersion(), oldVersion);
+              return docCollection;
+            }
+          }
+
           for (Entry<String,Object> entry : entrySet) {
             String id = entry.getKey();
+            if (id.equals("_ver_")) continue;
             Replica.State state = null;
             if (!entry.getValue().equals("l")) {
               state = Replica.State.shortStateToState((String) entry.getValue());
@@ -1948,49 +1958,49 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     String collectionPath = getCollectionPath(coll);
     if (log.isDebugEnabled()) log.debug("Looking at fetching full clusterstate collection={}", coll);
 
-//    int version = 0;
-//
-//    Stat stateStat = zkClient.exists(collectionPath, null, true, false);
-//    if (stateStat != null) {
-//      version = stateStat.getVersion();
-//      if (log.isDebugEnabled()) log.debug("version for cs is {}", version);
-//      // version we would get
-//      DocCollection docCollection = watchedCollectionStates.get(coll);
-//      if (docCollection != null) {
-//        int localVersion = docCollection.getZNodeVersion();
-//        if (log.isDebugEnabled())
-//          log.debug("found version {}, our local version is {}, has updates {}", version, localVersion, docCollection.hasStateUpdates());
-//        if (docCollection.hasStateUpdates()) {
-//          if (localVersion > version) {
-//            return docCollection;
-//          }
-//        } else {
-//          if (localVersion >= version) {
-//            return docCollection;
-//          }
-//        }
-//      }
-//
-//      if (lazyCollectionStates.containsKey(coll)) {
-//        LazyCollectionRef lazyColl = lazyCollectionStates.get(coll);
-//        DocCollection cachedCollection = lazyColl.getCachedDocCollection();
-//        if (cachedCollection != null) {
-//          int localVersion = cachedCollection.getZNodeVersion();
-//          if (cachedCollection.hasStateUpdates()) {
-//            if (localVersion > version) {
-//              return cachedCollection;
-//            }
-//          } else {
-//            if (localVersion >= version) {
-//              return cachedCollection;
-//            }
-//          }
-//        }
-//
-//      }
-//    } else {
-//      return null;
-//    }
+    int version = 0;
+
+    Stat stateStat = zkClient.exists(collectionPath, null, true, false);
+    if (stateStat != null) {
+      version = stateStat.getVersion();
+      if (log.isDebugEnabled()) log.debug("version for cs is {}", version);
+      // version we would get
+      DocCollection docCollection = watchedCollectionStates.get(coll);
+      if (docCollection != null) {
+        int localVersion = docCollection.getZNodeVersion();
+        if (log.isDebugEnabled())
+          log.debug("found version {}, our local version is {}, has updates {}", version, localVersion, docCollection.hasStateUpdates());
+        if (docCollection.hasStateUpdates()) {
+          if (localVersion == version) {
+            return docCollection;
+          }
+        } else {
+          if (localVersion == version) {
+            return docCollection;
+          }
+        }
+      }
+
+      if (lazyCollectionStates.containsKey(coll)) {
+        LazyCollectionRef lazyColl = lazyCollectionStates.get(coll);
+        DocCollection cachedCollection = lazyColl.getCachedDocCollection();
+        if (cachedCollection != null) {
+          int localVersion = cachedCollection.getZNodeVersion();
+          if (cachedCollection.hasStateUpdates()) {
+            if (localVersion == version) {
+              return cachedCollection;
+            }
+          } else {
+            if (localVersion == version) {
+              return cachedCollection;
+            }
+          }
+        }
+
+      }
+    } else {
+      return null;
+    }
     if (log.isDebugEnabled()) log.debug("getting latest state.json");
     Stat stat = new Stat();
     byte[] data;
@@ -2002,8 +2012,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     if (data == null) return null;
     ClusterState state = ClusterState.createFromJson(this, stat.getVersion(), data);
     ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
-    return collectionRef == null ? null : collectionRef.get();
-
+    DocCollection docCollection = collectionRef == null ? null : collectionRef.get();
+    return docCollection;
   }
 
   public static String getCollectionPathRoot(String coll) {
@@ -2210,7 +2220,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    */
   public void waitForState(final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
-    
+
+//    DocCollection coll = getCollectionOrNull(collection);
+//    if (predicate.matches(liveNodes, coll)) {
+//      return;
+//    }
     final CountDownLatch latch = new CountDownLatch(1);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     org.apache.solr.common.cloud.CollectionStateWatcher watcher = new PredicateMatcher(predicate, latch, docCollection).invoke();
@@ -2395,55 +2409,17 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (newState == null) {
         if (log.isDebugEnabled()) log.debug("Removing cached collection state for [{}]", coll);
         watchedCollectionStates.remove(coll);
-//        CollectionStateWatcher sw = stateWatchersMap.remove(coll);
-//        if (sw != null) sw.removeWatch();
-//        IOUtils.closeQuietly(sw);
-//        lazyCollectionStates.remove(coll);
-//        if (collectionRemoved != null) {
-//          collectionRemoved.removed(coll);
-//        }
-//
-//        clusterState.remove(coll);
         return true;
       }
 
       if (live) {
         return true;
       }
-//      boolean updated = false;
-//      // CAS update loop
-//      while (true) {
-//        if (!collectionWatches.containsKey(coll)) {
-//          break;
-//        }
-//        DocCollection oldState = watchedCollectionStates.get(coll);
-//        if (oldState == null) {
-//          if (watchedCollectionStates.putIfAbsent(coll, newState) == null) {
-//            if (log.isDebugEnabled()) {
-//              log.debug("Add data for [{}] ver [{}]", coll, newState.getZNodeVersion());
-//            }
-//            updated = true;
-//            break;
-//          }
-//        } else {
-//          if (oldState.getZNodeVersion() >= newState.getZNodeVersion()) {
-//            // no change to state, but we might have been triggered by the addition of a
-//            // state watcher, so run notifications
-//            updated = true;
-//            break;
-//          }
-//        }
-//      DocCollection old = watchedCollectionStates.put(coll, newState);
-//      while (old != null && old.getZNodeVersion() > newState.getZNodeVersion()) {
-//        newState = old;
-       watchedCollectionStates.put(coll, newState);
-     //  clusterState.put(coll, new ClusterState.CollectionRef(newState));
-      // Resolve race with unregisterCore.
+
+      watchedCollectionStates.put(coll, newState);
       if (!collectionWatches.containsKey(coll)) {
-        watchedCollectionStates.remove(coll);
-        log.debug("Removing uninteresting collection [{}]", coll);
+        lazyCollectionStates.remove(coll);
       }
-  //    }
 
 
       return true;

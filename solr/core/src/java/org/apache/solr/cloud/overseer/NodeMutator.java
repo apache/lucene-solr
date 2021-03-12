@@ -60,9 +60,9 @@ public class NodeMutator {
             throw new RuntimeException("Replica without node name! " + replica);
           }
           if (rNodeName.equals(nodeName)) {
-            log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
+            log.debug("Update replica state for {} to {}", replica, Replica.State.RECOVERING);
             Map<String, Object> props = replica.shallowCopy();
-            props.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
+            props.put(ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
             Replica newReplica = new Replica(replica.getName(), props, collection, replica.getCollectionId(), slice.getName(), nodeNameToBaseUrl);
             newReplicas.put(replica.getName(), newReplica);
             needToUpdateCollection = true;

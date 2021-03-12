@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -212,6 +213,8 @@ public class StatePublisher implements Closeable {
           String core = stateMessage.getStr(ZkStateReader.CORE_NAME_PROP);
           String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
           String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
+
+          log.debug("submit state for publishing core={} state={}", core, state);
 
           if (core == null || state == null) {
             log.error("Nulls in published state");

@@ -71,6 +71,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -703,10 +704,10 @@ public class Overseer implements SolrCloseable {
     getStateUpdateQueue().offer(data, false);
   }
 
-  public Future processQueueItem(ZkNodeProps message) throws InterruptedException {
-    if (log.isDebugEnabled()) log.debug("processQueueItem {}", message);
+  public Future processQueueItem(List<WorkQueueWatcher.StateEntry> shardStateCollections) throws InterruptedException {
+    if (log.isDebugEnabled()) log.debug("processQueueItem {}", shardStateCollections);
 
-    Future future = new OverseerTaskExecutorTask(getCoreContainer(), message).run();
+    Future future = new OverseerTaskExecutorTask(getCoreContainer(), shardStateCollections).run();
 
     return future;
   }
@@ -802,7 +803,7 @@ public class Overseer implements SolrCloseable {
     }
   }
 
-  private static class WorkQueueWatcher extends QueueWatcher {
+  public static class WorkQueueWatcher extends QueueWatcher {
 
     public WorkQueueWatcher(CoreContainer cc, Overseer overseer) throws KeeperException {
       super(cc, overseer, Overseer.OVERSEER_QUEUE);
@@ -835,7 +836,8 @@ public class Overseer implements SolrCloseable {
         }
 
         Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
-        Set<String> shardStateCollections = null;
+        List<StateEntry> shardStateCollections = null;
+        Set<String> scollections = null;
         List<Future> futures = new ArrayList<>();
         for (byte[] item : data.values()) {
           final ZkNodeProps message = ZkNodeProps.load(item);
@@ -852,43 +854,52 @@ public class Overseer implements SolrCloseable {
 
             // hack
             if (operation.equals("updateshardstate")) {
-              if (shardStateCollections == null) {
-                shardStateCollections = new HashSet<>();
+              if (scollections == null) {
+                scollections = new HashSet<>();
               }
-              shardStateCollections.add(message.getStr("collection"));
+              scollections.add(message.getStr("collection"));
             }
 
-            Future future = overseer.processQueueItem(message);
-            if (future != null) {
-              futures.add(future);
+            if (shardStateCollections == null) {
+              shardStateCollections = new ArrayList<>();
             }
+            StateEntry entry = new StateEntry();
+            entry.message = message;
+            shardStateCollections.add(entry);
+
           } catch (Exception e) {
             log.error("Overseer state update queue processing failed", e);
           }
         }
-        for (Future future : futures) {
+        Future future = null;
+        try {
+          future = overseer.processQueueItem(shardStateCollections);
+        } catch (Exception e) {
+          log.error("Overseer state update queue processing failed", e);
+        }
+
           try {
             future.get();
           } catch (Exception e) {
             log.error("failed waiting for enqueued updates", e);
           }
-        }
+
         futures.clear();
         Set<String> collections = overseer.zkStateWriter.getDirtyStateCollections();
         for (String collection : collections) {
           futures.add(overseer.writePendingUpdates(collection));
         }
 
-        for (Future future : futures) {
+        for (Future f : futures) {
           try {
-            future.get();
+            f.get();
           } catch (Exception e) {
             log.error("failed waiting for enqueued updates", e);
           }
         }
         futures.clear();
-        if (shardStateCollections != null) {
-          for (String collection : shardStateCollections) {
+        if (scollections != null) {
+          for (String collection : scollections) {
             futures.add(overseer.writePendingUpdates(collection));
           }
         }
@@ -912,6 +923,11 @@ public class Overseer implements SolrCloseable {
           ourLock.unlock();
         }
       }
+    }
+
+    public static class StateEntry {
+      public ZkNodeProps message;
+      public String znodeName;
     }
 
     private static class CollectionWorkQueueWatcher extends QueueWatcher {

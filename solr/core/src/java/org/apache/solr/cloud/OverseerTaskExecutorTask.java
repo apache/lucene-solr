@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 public class OverseerTaskExecutorTask {
@@ -32,36 +34,31 @@ public class OverseerTaskExecutorTask {
   private final ZkController zkController;
   private final SolrCloudManager cloudManager;
   private final SolrZkClient zkClient;
-  private final ZkNodeProps message;
+  private final List<Overseer.WorkQueueWatcher.StateEntry> shardStateCollections;
 
-  public OverseerTaskExecutorTask(CoreContainer cc,  ZkNodeProps message) {
+  public OverseerTaskExecutorTask(CoreContainer cc, List<Overseer.WorkQueueWatcher.StateEntry> shardStateCollections) {
     this.zkController = cc.getZkController();
     this.zkClient = zkController.getZkClient();
     this.cloudManager = zkController.getSolrCloudManager();
-    this.message = message;
+    this.shardStateCollections = shardStateCollections;
   }
 
 
-  private Future processQueueItem(ZkNodeProps message) throws Exception {
-    if (log.isDebugEnabled()) log.debug("Consume state update from queue {} {}", message);
+  private Future processQueueItem(List<Overseer.WorkQueueWatcher.StateEntry> shardStateCollections) throws Exception {
+    if (log.isDebugEnabled()) log.debug("Consume state update from queue {} {}", shardStateCollections);
 
     // assert clusterState != null;
 
     //  if (clusterState.getZNodeVersion() == 0 || clusterState.getZNodeVersion() > lastVersion) {
 
-    final String operation = message.getStr(Overseer.QUEUE_OPERATION);
-    if (operation == null) {
-      log.error("Message missing " + Overseer.QUEUE_OPERATION + ":" + message);
-      return null;
-    }
 
-    if (log.isDebugEnabled()) log.debug("Queue operation is {}", operation);
-
-    if (log.isDebugEnabled()) log.debug("Process message {} {}", message, operation);
-
-    if (log.isDebugEnabled()) log.debug("Enqueue message {}", operation);
+//    if (log.isDebugEnabled()) log.debug("Queue operation is {}", operation);
+//
+//    if (log.isDebugEnabled()) log.debug("Process message {} {}", message, operation);
+//
+//    if (log.isDebugEnabled()) log.debug("Enqueue message {}", operation);
     try {
-      return zkController.getOverseer().getZkStateWriter().enqueueUpdate(null, message, true);
+      return zkController.getOverseer().getZkStateWriter().enqueueUpdate(null, shardStateCollections, true);
     } catch (NullPointerException e) {
       log.info("Overseer is stopped, won't process message " + zkController.getOverseer());
       return null;
@@ -71,12 +68,12 @@ public class OverseerTaskExecutorTask {
 
 
   public Future run() {
-    if (log.isDebugEnabled()) log.debug("OverseerTaskExecutorTask, going to process message {}", message);
+    if (log.isDebugEnabled()) log.debug("OverseerTaskExecutorTask, going to process message {}", shardStateCollections);
 
     try {
-      return processQueueItem(message);
+      return processQueueItem(shardStateCollections);
     } catch (Exception e) {
-      log.error("Failed to process message " + message, e);
+      log.error("Failed to process message " + shardStateCollections, e);
     }
     return null;
   }
