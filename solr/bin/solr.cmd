@@ -1224,14 +1224,10 @@ if !JAVA_MAJOR_VERSION! GEQ 9  (
      -XX:+PrintTenuringDistribution ^
      -XX:+PrintGCApplicationStoppedTime
   )
-  IF "%JAVA8_GC_LOG_FILE_OPTS%"=="" (
-    if "%JAVA_VENDOR%" == "IBM J9" (
-      set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-    ) else (
-      set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-    )
+  if "%JAVA_VENDOR%" == "IBM J9" (
+    set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
   ) else (
-    set GC_LOG_OPTS=!GC_LOG_OPTS! !JAVA8_GC_LOG_FILE_OPTS!
+    set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
   )
 )
 
