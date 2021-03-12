@@ -46,9 +46,9 @@ public class MockZkStateReader extends ZkStateReader {
   }
 
   @Override
-  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
+  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher docCollectionWatcher) {
     // the doc collection will never be changed by this mock
     // so we just call onStateChanged once with the existing DocCollection object an return
-    stateWatcher.onStateChanged(clusterState.get(collection).get());
+    docCollectionWatcher.onStateChanged(clusterState.get(collection).get());
   }
 }

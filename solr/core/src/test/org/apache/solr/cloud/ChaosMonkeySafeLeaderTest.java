@@ -171,7 +171,7 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
       assertTrue(String.valueOf(indexThread.getFailCount()), indexThread.getFailCount() < 10);
     }
 
-    cluster.getSolrClient().getZkStateReader().waitForState(COLLECTION, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+    cluster.getSolrClient().getZkStateReader().waitForState(COLLECTION, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
       Collection<Slice> slices = collectionState.getSlices();
       for (Slice slice : slices) {

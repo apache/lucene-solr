@@ -940,7 +940,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         IOUtils.closeQuietly(stateWatcher);
         stateWatcher.removeWatch();
       });
-      stateWatchersMap.clear();
 
       IOUtils.closeQuietly(this.liveNodesWatcher);
       IOUtils.closeQuietly(this.collectionsChildWatcher);
@@ -948,17 +947,10 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         IOUtils.closeQuietly(zkClient);
       }
 
-      //      if (notifications != null) {
-      //        notifications.shutdownNow();
-      //      }
-
-      //      waitLatches.forEach(c -> { for (int i = 0; i < c.getCount(); i++) c.countDown(); });
-      //      waitLatches.clear();
-
+      stateWatchersMap.clear();
     } finally {
       assert ObjectReleaseTracker.release(this);
     }
-
   }
 
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException, TimeoutException {
@@ -2084,16 +2076,15 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       return;
     }
 
-    AtomicBoolean reconstructState = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
-        reconstructState.set(true);
         v = new CollectionWatch<>(collection);
         CollectionStateWatcher sw = new CollectionStateWatcher(collection);
         stateWatchersMap.put(collection, sw);
         sw.createWatch();
         sw.refresh();
         sw.refreshStateUpdates();
+        return v;
       }
       v.coreRefCount.incrementAndGet();
       return v;
@@ -2187,8 +2178,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * <code>onStateChanged</code> returns <code>true</code>
    * </p>
    */
-  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
-    if (log.isDebugEnabled()) log.debug("registerDocCollectionWatcher {}", collection);
+  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher docCollectionWatcher) {
+    log.debug("registerDocCollectionWatcher {}", collection);
 
     if (collection == null) {
       throw new IllegalArgumentException("Collection cannot be null");
@@ -2196,14 +2187,17 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
+        log.debug("creating new Collection State watcher for {}", collection);
         v = new CollectionWatch<>(collection);
         CollectionStateWatcher sw = new CollectionStateWatcher(collection);
         stateWatchersMap.put(collection, sw);
+        log.debug("creating watches and refreshing state watcher for {}", collection);
         sw.createWatch();
         sw.refresh();
         sw.refreshStateUpdates();
       }
-      v.stateWatchers.add(stateWatcher);
+      log.debug("Adding a DocCollectionWatcher for collection={} currentCount={}", collection, v.stateWatchers.size());
+      v.stateWatchers.add(docCollectionWatcher);
       return v;
     });
 
@@ -2214,8 +2208,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 //      state = clusterState.getCollectionOrNull(collection);
 //    }
 
-    if (stateWatcher.onStateChanged(state) == true) {
-      removeDocCollectionWatcher(collection, stateWatcher);
+    if (docCollectionWatcher.onStateChanged(state) == true) {
+      removeDocCollectionWatcher(collection, docCollectionWatcher);
     }
 
   }
@@ -2396,16 +2390,16 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (v == null) return null;
       v.stateWatchers.remove(watcher);
       if (v.canBeRemoved()) {
-        log.info("no longer watch collection {}", collection);
+        log.debug("no longer watch collection {}", collection);
         watchedCollectionStates.remove(collection);
         LazyCollectionRef docRef = new LazyCollectionRef(collection);
         lazyCollectionStates.put(collection, docRef);
         clusterState.put(collection, docRef);
-        CollectionStateWatcher stateWatcher = stateWatchersMap.remove(collection);
-        if (stateWatcher != null) {
-          IOUtils.closeQuietly(stateWatcher);
-          stateWatcher.removeWatch();
-        }
+//        CollectionStateWatcher stateWatcher = stateWatchersMap.remove(collection);
+//        if (stateWatcher != null) {
+//          IOUtils.closeQuietly(stateWatcher);
+//          stateWatcher.removeWatch();
+//        }
         reconstructState.set(true);
         return null;
       }
@@ -2442,15 +2436,41 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         return true;
       }
 
-      if (live) {
-        return true;
-      }
+//      if (live) {
+//        return true;
+//      }
 
-      watchedCollectionStates.put(coll, newState);
-      if (!collectionWatches.containsKey(coll)) {
-        lazyCollectionStates.remove(coll);
+      boolean updated = false;
+      // CAS update loop
+      while (true) {
+        if (!collectionWatches.containsKey(coll)) {
+          break;
+        }
+        DocCollection oldState = watchedCollectionStates.get(coll);
+        if (oldState == null) {
+          if (watchedCollectionStates.putIfAbsent(coll, newState) == null) {
+            if (log.isDebugEnabled()) {
+              log.debug("Add data for [{}] ver [{}]", coll, newState.getZNodeVersion());
+            }
+            updated = true;
+            break;
+          }
+        } else {
+          if (oldState.getZNodeVersion() >= newState.getZNodeVersion()) {
+            // no change to state, but we might have been triggered by the addition of a
+            // state watcher, so run notifications
+            updated = true;
+            break;
+          }
+          if (watchedCollectionStates.replace(coll, oldState, newState)) {
+            if (log.isDebugEnabled()) {
+              log.debug("Updating data for [{}] from [{}] to [{}]", coll, oldState.getZNodeVersion(), newState.getZNodeVersion());
+            }
+            updated = true;
+            break;
+          }
+        }
       }
-
 
       return true;
     } catch (Exception e) {
