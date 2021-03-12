@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -71,11 +72,8 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
 
   }
   
-  private String getConfigNameFromZk(String collName) throws KeeperException, InterruptedException {
-    byte[] b = zkClient().getData(ZkStateReader.getCollectionPathRoot(collName), null, null, false);
-    @SuppressWarnings({"rawtypes"})
-    Map confData = (Map) Utils.fromJSON(b);
-    return (String) confData.get(ZkController.CONFIGNAME_PROP); 
+  private String getConfigNameFromZk(String collName) throws IOException {
+    return cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(collName).getConfigName();
   }
 
 }

@@ -128,7 +128,6 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP = "configName";
-  public final static String COLLECTION_CONFIG_PROP = "collection.configName";
 
   public static final String SAMPLE_PERCENTAGE = "samplePercentage";
 

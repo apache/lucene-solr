@@ -31,6 +31,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_CONFIG_PROP;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -134,13 +134,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   private static Map<String, Object> initProps(Map<String, Object> props) {
     if (props == null) {
-      props = new HashMap<>();
+      props = new HashMap<>(); // for tests, in prod props shouldn't be null
     }
-    if (props.isEmpty()) {
-      props.put(CONFIGNAME_PROP, "_default");
-    } else if (props.containsKey(COLLECTION_CONFIG_PROP)) {
-      props.put(CONFIGNAME_PROP, props.get(COLLECTION_CONFIG_PROP));
-      props.remove(COLLECTION_CONFIG_PROP);
+    if (props.isEmpty()) { //TODO check if it is for testing
+      props.put(CONFIGNAME_PROP, "_default"); // for tests, props shouldn't be empty
     }
     return props;
   }
@@ -313,7 +310,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * Return non-null configName.
+   * Return non-null config name.
    */
   public String getConfigName() { return configName; }
 

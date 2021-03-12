@@ -106,6 +106,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -558,7 +559,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     if(configName != null) {
       validateConfigOrThrowSolrException(configName);
-
+      message.getProperties().put(ZkStateReader.CONFIGNAME_PROP, configName);
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
 
