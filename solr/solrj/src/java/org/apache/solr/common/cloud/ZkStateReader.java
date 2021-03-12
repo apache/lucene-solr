@@ -86,7 +86,7 @@ import static java.util.Collections.emptySortedSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
-  public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 500);  // delay between cloud state updates
+  public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
   public static final String STRUCTURE_CHANGE_NOTIFIER = "_scn";
   public static final String STATE_UPDATES = "_statupdates";
 
