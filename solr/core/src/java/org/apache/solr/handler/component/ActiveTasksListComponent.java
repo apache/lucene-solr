@@ -26,13 +26,13 @@ import java.util.Map;
 
 /** List the active tasks that can be cancelled */
 public class ActiveTasksListComponent extends SearchComponent {
-    public static final String COMPONENT_NAME = "activetaskslistcomponent";
+    public static final String COMPONENT_NAME = "activetaskslist";
 
     private boolean shouldProcess;
 
     @Override
     public void prepare(ResponseBuilder rb) throws IOException {
-        if (rb.isTaskListRequest()) {
+        if (rb.getTaskStatusCheckUUID() != null) {
             shouldProcess = true;
         }
     }
@@ -72,10 +72,10 @@ public class ActiveTasksListComponent extends SearchComponent {
         for (ShardResponse r : sreq.responses) {
 
             if (rb.getTaskStatusCheckUUID() != null) {
-                boolean isTaskActiveOnShard = (boolean) r.getSolrResponse().getResponse().get("taskStatus");
+                boolean isTaskActiveOnShard = r.getSolrResponse().getResponse().getBooleanArg("taskStatus");
 
-                if (isTaskActiveOnShard == true) {
-                    rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + isTaskActiveOnShard);
+                if (isTaskActiveOnShard) {
+                    rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + "active");
                     return;
                 } else {
                     continue;
@@ -97,7 +97,7 @@ public class ActiveTasksListComponent extends SearchComponent {
         if (rb.getTaskStatusCheckUUID() != null) {
             // We got here with the specific taskID check being specified -- this means that the taskID was not
             // found in active tasks on any shard
-            rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + false);
+            rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + "inactive");
             return;
         }
 
@@ -106,7 +106,8 @@ public class ActiveTasksListComponent extends SearchComponent {
 
     @Override
     public String getDescription() {
-        return "activetaskslist";
+        return "Responsible for listing all active cancellable tasks and also supports checking the status of " +
+                "a particular task";
     }
 
     @Override

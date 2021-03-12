@@ -40,10 +40,7 @@ To list all the active cancellable tasks currently running, please use the follo
 == Cancelling An Active Cancellable Task
 To cancel an active task, please use the following syntax:
 
-`\http://localhost:8983/solr/tasks/cancel?cancelUUID=foobar`
-
-==== cancelUUID Parameter
-This parameter is used to specify the UUID of the task to be cancelled.
+`\http://localhost:8983/solr/tasks/cancel?queryUUID=foobar`
 
 ==== Sample Response
 ===== If the task UUID was found and successfully cancelled:
@@ -53,10 +50,6 @@ This parameter is used to specify the UUID of the task to be cancelled.
 ===== If the task UUID was not found
 
 `{responseHeader={status=0, QTime=39}, status=Query with queryID 85 not found}`
-
-===== If the cancellation failed
-
-`{responseHeader={status=0, QTime=39}, status=Query with queryID 85 could not be cancelled successfully}`
 
 == Check Status of a Specific Task
 To check the status of a specific task, please use the following syntax:

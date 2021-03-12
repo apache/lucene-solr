@@ -45,6 +45,7 @@ public class CancellableQueryTracker {
         if (customQueryUUID != null) {
             queryID = customQueryUUID;
         } else {
+            //TODO: Use a different generator
             queryID = UUID.randomUUID().toString();
         }
 

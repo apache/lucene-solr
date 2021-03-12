@@ -92,11 +92,7 @@ public abstract class TaskManagementHandler extends RequestHandlerBase implement
                 params.set(CommonParams.OMIT_HEADER, false);
 
                 if (extraParams != null) {
-                    Iterator<Map.Entry<String, String>> iterator = extraParams.entrySet().iterator();
-
-                    while (iterator.hasNext()) {
-                        Map.Entry<String, String> entry = iterator.next();
-
+                    for(Map.Entry<String, String> entry : extraParams.entrySet()) {
                         params.set(entry.getKey(), entry.getValue());
                     }
                 }

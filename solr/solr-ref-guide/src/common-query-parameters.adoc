@@ -96,6 +96,7 @@ For cancellable queries, this allows specifying a custom UUID to identify the qu
 If `queryUUID` is specified, this UUID will be used for identifying the query. Note that if using `queryUUID`, the responsibility of ensuring uniqueness of the UUID lies with the caller. If a query UUID
 is reused while the original query UUID is still active, it will cause an exception to be throws for the second query.
 
+It is recommended that the user either uses all custom UUIDs or depends completely on the system to generate UUID. Mixing the two can lead to conflict of UUIDs.
 
 == fq (Filter Query) Parameter
 

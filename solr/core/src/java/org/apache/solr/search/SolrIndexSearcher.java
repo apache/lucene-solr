@@ -228,13 +228,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (earlyTerminatingSortingCollector != null) {
         qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
       }
+
+      if (cmd.isQueryCancellable()) {
+        core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
+      }
     }
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
-    }
-
-    if (cmd.isQueryCancellable()) {
-      core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
     }
 
     return collector;

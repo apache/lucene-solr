@@ -25,7 +25,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -39,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 public class TestTaskManagement extends SolrCloudTestCase {
@@ -114,8 +114,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     @Test
     public void testCancellationQuery() {
-        ConcurrentHashSet<Integer> queryIdsSet = new ConcurrentHashSet<>();
-        ConcurrentHashSet<Integer> notFoundIdsSet = new ConcurrentHashSet<>();
+        Set<Integer> queryIdsSet = ConcurrentHashMap.newKeySet();
+        Set<Integer> notFoundIdsSet = ConcurrentHashMap.newKeySet();
 
         List<CompletableFuture<Void>> queryFutures = new ArrayList<>();
 
@@ -137,7 +137,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
         queryFutures.forEach(CompletableFuture::join);
 
-        assertTrue(queryIdsSet.size() + notFoundIdsSet.size() == 90);
+        assertEquals("Total query count did not match the expected value",
+                queryIdsSet.size() + notFoundIdsSet.size(), 90);
     }
 
     @Test
@@ -216,10 +217,11 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
                     queryResponse = cluster.getSolrClient().request(request);
 
-                    String cancellationResult = (String) queryResponse.get("status");
-                    if (cancellationResult.contains("cancelled successfully")) {
+                    int responseCode = (int) queryResponse.get("responseCode");
+
+                    if (responseCode == 200 /* HTTP OK */) {
                         cancelledQueryIdsSet.add(Integer.parseInt(queryID));
-                    } else if (cancellationResult.contains("not found")) {
+                    } else if (responseCode == 401 /* HTTP NOT FOUND */) {
                         notFoundQueryIdSet.add(Integer.parseInt(queryID));
                     }
                 } catch (Exception e) {

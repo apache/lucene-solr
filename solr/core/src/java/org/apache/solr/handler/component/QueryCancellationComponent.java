@@ -84,15 +84,17 @@ public class QueryCancellationComponent extends SearchComponent {
         if(queryFound) {
             rb.rsp.getValues().add("status", "Query with queryID " + rb.getCancellationUUID() +
                     " cancelled successfully");
+            rb.rsp.getValues().add("responseCode", 200 /* HTTP OK */);
         } else {
             rb.rsp.getValues().add("status", "Query with queryID " + rb.getCancellationUUID() +
                     " not found");
+            rb.rsp.getValues().add("responseCode", 401 /* HTTP NOT FOUND */);
         }
     }
 
     @Override
     public String getDescription() {
-        return "querycancellation";
+        return "Supports cancellation of queries which are cancellable";
     }
 
     @Override

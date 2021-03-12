@@ -437,7 +437,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               params.set(CommonParams.OMIT_HEADER, false);
 
               // Distributed request -- need to send queryID as a part of the distributed request
-              params.set(ShardParams.QUERY_ID, rb.queryID);
+              params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));

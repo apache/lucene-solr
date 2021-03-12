@@ -56,9 +56,6 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
             rb.setTaskStatusCheckUUID(taskStatusCheckUUID);
         }
 
-        // Let this be visible to handleResponses in the handling component
-        rb.setTaskListRequest(true);
-
         processRequest(req, rb, extraParams);
     }
 
