@@ -718,6 +718,7 @@
       <artifact:dependencies filesetId="maven.fileset" useScope="test" type="jar">
         <artifact:pom file="@{pom.xml}"/>
         <!-- disable completely, so this has no chance to download any updates from anywhere: -->
+        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
         <remoteRepository id="apache.snapshots" url="foobar://disabled/">
           <snapshots enabled="false"/>
           <releases enabled="false"/>
