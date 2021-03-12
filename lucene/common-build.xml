@@ -701,7 +701,9 @@
     <attribute name="jar.file" default="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar"/>
     <sequential>
       <parent-poms/>
-      <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:pom id="maven.project" file="@{pom.xml}">
+        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
+      </artifact:pom>
       <artifact:install file="@{jar.file}">
         <pom refid="maven.project"/>
       </artifact:install>
@@ -717,8 +719,8 @@
     <sequential>
       <artifact:dependencies filesetId="maven.fileset" useScope="test" type="jar">
         <artifact:pom file="@{pom.xml}"/>
-        <!-- disable completely, so this has no chance to download any updates from anywhere: -->
         <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
+        <!-- disable completely, so this has no chance to download any updates from anywhere: -->
         <remoteRepository id="apache.snapshots" url="foobar://disabled/">
           <snapshots enabled="false"/>
           <releases enabled="false"/>
@@ -1774,7 +1776,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         </mapper>
         <path location="${ant.file}"/>
       </pathconvert>
-      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:pom id="maven.project" file="${pom.xml}">
+        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
+      </artifact:pom>
       <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
         <pom refid="maven.project"/>
       </artifact:install>
@@ -1793,7 +1797,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         </mapper>
         <path location="${ant.file}"/>
       </pathconvert>
-      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:pom id="maven.project" file="${pom.xml}">
+        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
+      </artifact:pom>
       <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
         <pom refid="maven.project"/>
       </artifact:install>
