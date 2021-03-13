@@ -17,7 +17,8 @@
     limitations under the License.
  -->
 
-<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
+<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant"
+                       xmlns:resolver="antlib:org.apache.maven.resolver.ant"
                        xmlns:ivy="antlib:org.apache.ivy.ant"
                        xmlns:junit4="antlib:com.carrotsearch.junit4"
                        xmlns:jacoco="antlib:org.jacoco.ant"
@@ -717,18 +718,22 @@
       <element name="excludes" optional="true"/>
       <element name="additional-filters" optional="true"/>
     <sequential>
-      <artifact:dependencies filesetId="maven.fileset" useScope="test" type="jar">
-        <artifact:pom file="@{pom.xml}"/>
-        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
-        <!-- disable completely, so this has no chance to download any updates from anywhere: -->
-        <remoteRepository id="apache.snapshots" url="foobar://disabled/">
-          <snapshots enabled="false"/>
-          <releases enabled="false"/>
-        </remoteRepository>
-      </artifact:dependencies>
+      <echo taskname="m2-validate-dependencies" message="POM file: @{pom.xml}"/>
+      <resources id="maven.jars"/><!-- initialize empty -->
+      <resolver:pom id="maven.project" file="@{pom.xml}">
+        <remoterepo id="apache.snapshots" url="foobar://disabled/" releases="false" snapshots="false"/>
+      </resolver:pom>
+      <resolver:resolve>
+        <dependencies>
+          <pom refid="maven.project"/>
+          <exclusion groupId="org.apache.lucene"/>
+          <exclusion groupId="org.apache.solr"/>
+        </dependencies>
+        <files refid="maven.jars" scopes="compile,runtime,test"/>
+      </resolver:resolve>
       <licenses licenseDirectory="@{licenseDirectory}">
         <restrict>
-          <fileset refid="maven.fileset"/>
+          <resources refid="maven.jars"/>
           <rsel:not>
             <excludes/>
           </rsel:not>
@@ -1739,6 +1744,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
              uri="antlib:org.apache.maven.artifact.ant" 
              classpathref="maven-ant-tasks.classpath"/>
+    <ivy:cachepath organisation="org.apache.maven.resolver" module="maven-resolver-ant-tasks" revision="1.3.0"
+             inline="true" conf="default" pathid="maven-resolver-tasks.classpath"/>
+    <taskdef resource="org/apache/maven/resolver/ant/antlib.xml"
+             uri="antlib:org.apache.maven.resolver.ant"
+             classpathref="maven-resolver-tasks.classpath"/>
   </target>
 
   <target name="-dist-maven" depends="install-maven-tasks, jar-src, javadocs">

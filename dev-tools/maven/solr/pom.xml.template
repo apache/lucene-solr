@@ -79,6 +79,9 @@
       <id>releases.cloudera.com</id>
       <name>Cloudera Releases</name>
       <url>https://repository.cloudera.com/artifactory/libs-release-local/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
     </repository>
   </repositories>
   <build>
