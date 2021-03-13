@@ -77,7 +77,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
             // We do this by using a multi and ensuring the parent znode of the leader registration node
             // matches the version we expect - there is a setData call that increments the parent's znode
             // version whenever a leader registers.
-            log.info("Removing leader registration node on cancel, parent node: {} {}", Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion);
+            log.debug("Removing leader registration node on cancel, parent node: {} {}", Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion);
             List<Op> ops = new ArrayList<>(3);
             ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
             ops.add(Op.delete(leaderSeqPath, -1));

@@ -250,7 +250,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       } else {
         // drop it
-        log.info("drop docid={}", cmd.getPrintableId());
+        log.debug("drop docid={}", cmd.getPrintableId());
         if (SkyHook.skyHookDoc != null) {
           SkyHook.skyHookDoc.register(cmd.getPrintableId(), "final notice of dropping update, returning from processAdd cmd=" + cmd);
         }

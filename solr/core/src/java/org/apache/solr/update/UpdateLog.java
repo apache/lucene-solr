@@ -391,7 +391,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Number of version buckets must be greater than 0!");
 
-    log.info("Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} numVersionBuckets={}",
+    log.debug("Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} numVersionBuckets={}",
         dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep, numVersionBuckets);
   }
 
@@ -2386,7 +2386,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       long maxVersion = Math.max(maxVersionFromIndex, maxVersionFromRecent);
       if (maxVersion == 0L) {
         maxVersion = versions.getNewClock();
-        log.info("Could not find max version in index or recent updates, using new clock {}", maxVersion);
+        log.debug("Could not find max version in index or recent updates, using new clock {}", maxVersion);
       }
 
       // seed all version buckets with the highest value from recent and index

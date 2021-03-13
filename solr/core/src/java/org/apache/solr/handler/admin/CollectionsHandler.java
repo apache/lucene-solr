@@ -1077,7 +1077,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copyPropertiesWithPrefix(req.getParams(), m, COLL_PROP_PREFIX);
       if (m.isEmpty()) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            formatString("no supported values provided {0}", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
+            formatString("no supported values provided {0} {1}", req.getParams(), CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
       }
       copy(req.getParams().required(), m, COLLECTION_PROP);
       for (Map.Entry<String, Object> entry : m.entrySet()) {

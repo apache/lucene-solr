@@ -279,7 +279,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(), ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP), "shards", message.getStr("shards"),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         props.getProperties().putAll(addReplicaProps.getProperties());
-        if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
+        log.debug("Sending state update to populate clusterstate with new replica {}", props);
 
         clusterState = new CollectionCmdResponse(ocmh, true).call(clusterState, props, results).clusterState;
         // log.info("CreateCollectionCmd after add replica clusterstate={}", clusterState);
@@ -319,8 +319,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         coresToCreate.put(coreName, sreq);
       }
 
-      Future future = ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collectionName), null, false);
-      future.get();
+      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collectionName), null, false);
+
       writeFuture = ocmh.overseer.writePendingUpdates(collectionName);
 
       if (log.isDebugEnabled()) log.debug("Sending create call for {} replicas for {}", coresToCreate.size(), collectionName);

@@ -51,7 +51,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
 
-  private final int znodeVersion;
+  private int znodeVersion;
 
   private final String name;
   private final Map<String, Slice> slices;
@@ -461,5 +461,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public Map getStateUpdates() {
     return stateUpdates;
+  }
+
+  public void setZnodeVersion(int version) {
+    this.znodeVersion = version;
   }
 }

@@ -144,9 +144,8 @@ UpdateHandler implements SolrInfoBean, Closeable {
         ulog.clearLog(core, ulogPluginInfo);
       }
 
-      if (log.isInfoEnabled()) {
-        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
-      }
+      log.debug("Using UpdateLog implementation: {}", ulog.getClass().getName());
+
       ulog.init(ulogPluginInfo);
       ulog.init(this, core);
     } else {

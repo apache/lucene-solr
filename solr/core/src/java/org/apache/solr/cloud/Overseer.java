@@ -74,6 +74,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -705,16 +706,8 @@ public class Overseer implements SolrCloseable {
     getStateUpdateQueue().offer(data, false);
   }
 
-  public Future processQueueItem(Map<String,List<ZkStateWriter.StateUpdate>> collStateUpdates) throws InterruptedException {
-    if (log.isDebugEnabled()) log.debug("processQueueItem {}", collStateUpdates);
-
-    Future future = new OverseerTaskExecutorTask(getCoreContainer(), collStateUpdates).run();
-
-    return future;
-  }
-
   public Future writePendingUpdates(String collection) {
-    return ParWork.getRootSharedExecutor().submit(new OverseerTaskExecutorTask.WriteTask(getCoreContainer(), collection));
+    return zkStateWriter.writePendingUpdates(collection);
   }
 
   private static abstract class QueueWatcher implements Watcher, Closeable {
@@ -812,15 +805,12 @@ public class Overseer implements SolrCloseable {
 
     public void start() throws KeeperException, InterruptedException {
       if (closed) return;
-      ourLock.lock();
-      try {
-        if (closed) return;
-        zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
-        startItems = super.getItems();
-        log.info("Overseer found entries on start {}", startItems);
+
+      zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
+      startItems = super.getItems();
+      log.info("Overseer found entries on start {}", startItems);
+      if (startItems.size() > 0) {
         processQueueItems(startItems, true);
-      } finally {
-        ourLock.unlock();
       }
     }
 
@@ -828,7 +818,9 @@ public class Overseer implements SolrCloseable {
     protected void processQueueItems(List<String> items, boolean onStart) {
       if (closed) return;
       List<String> fullPaths = new ArrayList<>(items.size());
+      CountDownLatch delCountDownLatch = null;
       ourLock.lock();
+      String forceWrite = null;
       try {
         if (log.isDebugEnabled()) log.debug("Found state update queue items {}", items);
         for (String item : items) {
@@ -836,33 +828,22 @@ public class Overseer implements SolrCloseable {
         }
 
         Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
-        List<StateEntry> shardStateCollections = null;
-        Set<String> scollections = null;
-        List<Future> futures = new ArrayList<>();
+
+        if (fullPaths.size() > 0) {
+          if (!zkController.getZkClient().isClosed()) {
+            try {
+              delCountDownLatch = zkController.getZkClient().delete(fullPaths, false);
+            } catch (Exception e) {
+              log.warn("Failed deleting processed items", e);
+            }
+          }
+        }
+
+        final List<StateEntry> shardStateCollections = new ArrayList<>();
+
         for (byte[] item : data.values()) {
           final ZkNodeProps message = ZkNodeProps.load(item);
           try {
-            String operation = message.getStr(Overseer.QUEUE_OPERATION);
-            if (onStart) {
-              if (operation.equals("state")) {
-                message.getProperties().remove(OverseerAction.DOWNNODE);
-                if (message.getProperties().size() == 1) {
-                  continue;
-                }
-              }
-            }
-
-            // hack
-            if (operation.equals("updateshardstate")) {
-              if (scollections == null) {
-                scollections = new HashSet<>();
-              }
-              scollections.add(message.getStr("collection"));
-            }
-
-            if (shardStateCollections == null) {
-              shardStateCollections = new ArrayList<>();
-            }
             StateEntry entry = new StateEntry();
             entry.message = message;
             shardStateCollections.add(entry);
@@ -872,8 +853,9 @@ public class Overseer implements SolrCloseable {
           }
         }
         Map<String,List<ZkStateWriter.StateUpdate>> collStateUpdates = new HashMap<>();
-        try {
-          for (Overseer.StateEntry sentry : shardStateCollections) {
+
+        for (Overseer.StateEntry sentry : shardStateCollections) {
+          try {
             ZkNodeProps stateUpdateMessage = sentry.message;
             final String op = stateUpdateMessage.getStr(StatePublisher.OPERATION);
             OverseerAction overseerAction = OverseerAction.get(op);
@@ -888,9 +870,46 @@ public class Overseer implements SolrCloseable {
 
                 for (Map.Entry<String,Object> stateUpdateEntry : stateUpdateMessage.getProperties().entrySet()) {
                   if (OverseerAction.DOWNNODE.equals(OverseerAction.get(stateUpdateEntry.getKey()))) {
-                    continue;
+                    if (onStart) {
+                      continue;
+                    }
+                    Overseer.this.zkStateWriter.getCS().forEach((coll, docColl) -> {
+                      String collId = Long.toString(docColl.getId());
+                      List<ZkStateWriter.StateUpdate> updates = collStateUpdates.get(collId);
+                      if (updates == null) {
+                        updates = new ArrayList<>();
+                        collStateUpdates.put(collId, updates);
+                      }
+                      List<Replica> replicas = docColl.getReplicas();
+                      for (Replica replica : replicas) {
+                        if (replica.getNodeName().equals(stateUpdateEntry.getValue())) {
+                          if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", op, replica);
+                          ZkStateWriter.StateUpdate update = new ZkStateWriter.StateUpdate();
+                          update.id = replica.getId();
+                          update.state = Replica.State.getShortState(Replica.State.DOWN);
+                          updates.add(update);
+                        }
+                      }
+                    });
                   } else if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(stateUpdateEntry.getKey()))) {
-                    continue;
+                    Overseer.this.zkStateWriter.getCS().forEach((coll, docColl) -> {
+                      String collId = Long.toString(docColl.getId());
+                      List<ZkStateWriter.StateUpdate> updates = collStateUpdates.get(collId);
+                      if (updates == null) {
+                        updates = new ArrayList<>();
+                        collStateUpdates.put(collId, updates);
+                      }
+                      List<Replica> replicas = docColl.getReplicas();
+                      for (Replica replica : replicas) {
+                        if (replica.getNodeName().equals(stateUpdateEntry.getValue())) {
+                          if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", op, replica);
+                          ZkStateWriter.StateUpdate update = new ZkStateWriter.StateUpdate();
+                          update.id = replica.getId();
+                          update.state = Replica.State.getShortState(Replica.State.RECOVERING);
+                          updates.add(update);
+                        }
+                      }
+                    });
                   } else {
                     //  if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(stateUpdateEntry.getKey()));
                     String id = stateUpdateEntry.getKey();
@@ -910,50 +929,6 @@ public class Overseer implements SolrCloseable {
                     update.id = id;
                     update.state = stateString;
                     updates.add(update);
-
-                  }
-                }
-
-                for (Map.Entry<String,Object> m : stateUpdateMessage.getProperties().entrySet()) {
-                  if (OverseerAction.DOWNNODE.equals(OverseerAction.get(m.getKey()))) {
-                    Overseer.this.zkStateWriter.getCS().forEach((coll, docColl) -> {
-                      String collId = Long.toString(docColl.getId());
-                      List<ZkStateWriter.StateUpdate> updates = collStateUpdates.get(collId);
-                      if (updates == null) {
-                        updates = new ArrayList<>();
-                        collStateUpdates.put(collId, updates);
-                      }
-                      List<Replica> replicas = docColl.getReplicas();
-                      for (Replica replica : replicas) {
-                        if (replica.getNodeName().equals(m.getValue())) {
-                          if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", op, replica);
-                          ZkStateWriter.StateUpdate update = new ZkStateWriter.StateUpdate();
-                          update.id = replica.getId();
-                          update.state = Replica.State.getShortState(Replica.State.DOWN);
-                          updates.add(update);
-                        }
-                      }
-                    });
-                  }
-                  if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(m.getKey()))) {
-                    Overseer.this.zkStateWriter.getCS().forEach((coll, docColl) -> {
-                      String collId = Long.toString(docColl.getId());
-                      List<ZkStateWriter.StateUpdate> updates = collStateUpdates.get(collId);
-                      if (updates == null) {
-                        updates = new ArrayList<>();
-                        collStateUpdates.put(collId, updates);
-                      }
-                      List<Replica> replicas = docColl.getReplicas();
-                      for (Replica replica : replicas) {
-                        if (replica.getNodeName().equals(m.getValue())) {
-                          if (log.isDebugEnabled()) log.debug("set node operation {} for replica {}", op, replica);
-                          ZkStateWriter.StateUpdate update = new ZkStateWriter.StateUpdate();
-                          update.id = replica.getId();
-                          update.state = Replica.State.getShortState(Replica.State.RECOVERING);
-                          updates.add(update);
-                        }
-                      }
-                    });
                   }
                 }
 
@@ -964,27 +939,29 @@ public class Overseer implements SolrCloseable {
               //          case REMOVEROUTINGRULE:
               //            return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
               case UPDATESHARDSTATE:  // MRM TODO: look at how we handle this and make it so it can use StatePublisher
-                  String collection = stateUpdateMessage.getStr("collection");
-                  stateUpdateMessage.getProperties().remove("collection");
-                  stateUpdateMessage.getProperties().remove(StatePublisher.OPERATION);
-                  Long collIdLong = zkStateWriter.getCS().get(collection).getId();
-                  if (collIdLong != null) {
-                    String collId = Long.toString(collIdLong);
-                    List<ZkStateWriter.StateUpdate> updates = collStateUpdates.get(collId);
-                    if (updates == null) {
-                      updates = new ArrayList<>();
-                      collStateUpdates.put(collId, updates);
-                    }
+                String collection = stateUpdateMessage.getStr("collection");
+                stateUpdateMessage.getProperties().remove("collection");
+                stateUpdateMessage.getProperties().remove(StatePublisher.OPERATION);
+                Long collIdLong = zkStateWriter.getCS().get(collection).getId();
+                if (collIdLong != null) {
+                  String collId = Long.toString(collIdLong);
+                  List<ZkStateWriter.StateUpdate> updates = collStateUpdates.get(collId);
+                  if (updates == null) {
+                    updates = new ArrayList<>();
+                    collStateUpdates.put(collId, updates);
+                  }
 
-                    if (collIdLong != null) {
-                      for (Map.Entry<String,Object> stateUpdateEntry : stateUpdateMessage.getProperties().entrySet()) {
-                        ZkStateWriter.StateUpdate update = new ZkStateWriter.StateUpdate();
-                        update.sliceState = (String) stateUpdateEntry.getValue();
-                        update.sliceName = stateUpdateEntry.getKey();
-                        updates.add(update);
-                      }
+                  if (collIdLong != null) {
+                    for (Map.Entry<String,Object> stateUpdateEntry : stateUpdateMessage.getProperties().entrySet()) {
+                      // MRM TODO: slice state should be done like replica state, this is a hack
+                      forceWrite = collection;
+                      ZkStateWriter.StateUpdate update = new ZkStateWriter.StateUpdate();
+                      update.sliceState = (String) stateUpdateEntry.getValue();
+                      update.sliceName = stateUpdateEntry.getKey();
+                      updates.add(update);
                     }
                   }
+                }
 
                 break;
 
@@ -992,61 +969,40 @@ public class Overseer implements SolrCloseable {
                 throw new RuntimeException("unknown operation:" + op + " contents:" + stateUpdateMessage.getProperties());
 
             }
+          } catch (Exception e) {
+            log.error("Overseer state update queue processing failed", e);
+            continue;
           }
+        }
 
+        try {
+          getZkStateWriter().enqueueUpdate(null, collStateUpdates, true);
         } catch (Exception e) {
           log.error("Overseer state update queue processing failed", e);
         }
 
-        Future future = null;
-        try {
-          future = overseer.processQueueItem(collStateUpdates);
-        } catch (Exception e) {
-          log.error("Overseer state update queue processing failed", e);
-        }
-
-        try {
-          future.get();
-        } catch (Exception e) {
-          log.error("failed waiting for enqueued updates", e);
-        }
-
-        futures.clear();
         Set<String> collections = overseer.zkStateWriter.getDirtyStateCollections();
         for (String collection : collections) {
-          futures.add(overseer.writePendingUpdates(collection));
+          overseer.writePendingUpdates(collection);
         }
 
-        for (Future f : futures) {
-          try {
-            f.get();
-          } catch (Exception e) {
-            log.error("failed waiting for enqueued updates", e);
-          }
+        if (collections.size() == 0 && forceWrite != null) {
+          overseer.writePendingUpdates(forceWrite);
         }
-        futures.clear();
-        if (scollections != null) {
-          for (String collection : scollections) {
-            futures.add(overseer.writePendingUpdates(collection));
-          }
-        }
-        //        for (Future future : futures) {
-        //          try {
-        //            future.get();
-        //          } catch (Exception e) {
-        //            log.error("failed waiting for enqueued updates", e);
-        //          }
-        //        }
+
       } finally {
-
-        if (overseer.zkStateWriter != null) {
-          if (zkController.getZkClient().isAlive()) {
+        try {
+          if (delCountDownLatch != null) {
             try {
-              zkController.getZkClient().delete(fullPaths, true);
-            } catch (Exception e) {
-              log.warn("Failed deleting processed items", e);
+              boolean success = delCountDownLatch.await(10, TimeUnit.SECONDS);
+
+              if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
+
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
             }
           }
+        } finally {
           ourLock.unlock();
         }
       }
@@ -1085,17 +1041,14 @@ public class Overseer implements SolrCloseable {
     @Override
     public void start() throws KeeperException, InterruptedException {
       if (closed) return;
-      ourLock.lock();
-      try {
-        if (closed) return;
-        zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
 
-        startItems = super.getItems();
+      zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
 
-        log.info("Overseer found entries on start {}", startItems);
+      startItems = super.getItems();
+
+      log.info("Overseer found entries on start {}", startItems);
+      if (startItems.size() > 0) {
         processQueueItems(startItems, true);
-      } finally {
-        ourLock.unlock();
       }
     }
 
@@ -1105,7 +1058,7 @@ public class Overseer implements SolrCloseable {
       ourLock.lock();
       List<String> fullPaths = new ArrayList<>(items.size());
       try {
-        log.info("Found collection queue items {} onStart={}", items, onStart);
+        log.debug("Found collection queue items {} onStart={}", items, onStart);
         for (String item : items) {
           fullPaths.add(path + "/" + item);
         }
@@ -1216,7 +1169,7 @@ public class Overseer implements SolrCloseable {
           } else {
             byte[] sdata = OverseerSolrResponseSerializer.serialize(response);
             completedMap.update(entry.getKey().substring(entry.getKey().lastIndexOf("-") + 1), sdata);
-            log.info("Completed task:[{}] {} {}", message, response.getResponse(), responsePath);
+            log.debug("Completed task:[{}] {} {}", message, response.getResponse(), responsePath);
           }
 
         } catch (Exception e) {

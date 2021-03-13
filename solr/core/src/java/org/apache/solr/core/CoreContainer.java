@@ -156,6 +156,7 @@ public class CoreContainer implements Closeable {
   final SolrCores solrCores = new SolrCores(this);
   private volatile boolean startedLoadingCores;
   private volatile boolean loaded;
+  private volatile SolrClient metricsHistoryHandlerCloudClient;
 
   public static class CoreLoadFailure {
 
@@ -877,7 +878,7 @@ public class CoreContainer implements Closeable {
 
             List<Replica> replicas = c.getReplicas();
             for (Replica replica : replicas) {
-              log.debug("startup replica on node={} replica={}", zkSys.getZkController().getNodeName(), replica);
+              log.trace("startup replica on node={} replica={}", zkSys.getZkController().getNodeName(), replica);
               if (replica.getNodeName().equals(nodeName)) {
                 if (replica.getState().equals(State.ACTIVE)) {
                   if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={} replica={}", replica.getState(), replica.getNodeName(), nodeName, replica);
@@ -998,20 +999,20 @@ public class CoreContainer implements Closeable {
     }
     String name;
     SolrCloudManager cloudManager;
-    SolrClient client;
+
     if (isZooKeeperAware()) {
       name = getZkController().getNodeName();
       cloudManager = getZkController().getSolrCloudManager();
-      client = new CloudHttp2SolrClient.Builder(getZkController().getZkStateReader())
+      metricsHistoryHandlerCloudClient = new CloudHttp2SolrClient.Builder(getZkController().getZkStateReader())
           .withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().build();
-      ((CloudHttp2SolrClient)client).connect();
+      ((CloudHttp2SolrClient) metricsHistoryHandlerCloudClient).connect();
     } else {
       name = getNodeConfig().getNodeName();
       if (name == null || name.isEmpty()) {
         name = "127.0.0.1";
       }
       cloudManager = null;
-      client = new EmbeddedSolrServer();
+      metricsHistoryHandlerCloudClient = new EmbeddedSolrServer();
       // enable local metrics unless specifically set otherwise
       if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_NODES_PROP)) {
         initArgs.put(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
@@ -1020,8 +1021,7 @@ public class CoreContainer implements Closeable {
         initArgs.put(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);
       }
     }
-    metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler,
-        client, cloudManager, initArgs, isZooKeeperAware() ? zkSys.getZkController().getOverseer() : null);
+    metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler, metricsHistoryHandlerCloudClient, cloudManager, initArgs, isZooKeeperAware() ? zkSys.getZkController().getOverseer() : null);
     containerHandlers.put(METRICS_HISTORY_PATH, metricsHistoryHandler);
     metricsHistoryHandler.initializeMetrics(solrMetricsContext, METRICS_HISTORY_PATH);
   }
@@ -1169,7 +1169,7 @@ public class CoreContainer implements Closeable {
       if (auditloggerPlugin != null) {
         auditPlugin = auditloggerPlugin.plugin;
       }
-
+      closer.collect(metricsHistoryHandlerCloudClient);
       closer.collect(authPlugin);
       closer.collect(authenPlugin);
       closer.collect(auditPlugin);
@@ -1410,7 +1410,7 @@ public class CoreContainer implements Closeable {
   @SuppressWarnings("resource")
   private SolrCore createFromDescriptor(CoreDescriptor dcore, boolean newCollection) {
 
-    log.info("createFromDescriptor {} {}", dcore, newCollection);
+    log.debug("createFromDescriptor {} {}", dcore, newCollection);
 
     if (isShutDown()) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has been shutdown.");
@@ -1421,9 +1421,14 @@ public class CoreContainer implements Closeable {
     boolean registered = false;
     try {
       MDCLoggingContext.setCoreName(dcore.getName());
+
       StopWatch timeValidateCoreNameLoadConfigSet = new StopWatch(dcore.getName() + "-validateCoreNameLoadConfigSet");
 
       SolrIdentifierValidator.validateCoreName(dcore.getName());
+
+      if (isZooKeeperAware()) {
+        getZkController().getZkStateReader().registerCore(dcore.getCollectionName(), dcore.getName());
+      }
 
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());

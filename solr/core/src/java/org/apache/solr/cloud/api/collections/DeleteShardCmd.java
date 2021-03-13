@@ -177,7 +177,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       if (waitForFinalState) {
-        ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(collectionName), null, false).get();
+        ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(collectionName), null, false);
         ocmh.overseer.writePendingUpdates(collectionName).get();
         ocmh.overseer.getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, coll) -> {
           if (coll == null) {

@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -197,7 +196,7 @@ public class DeleteReplicaCmd implements Cmd {
 
           if (waitForFinalState) {
             try {
-              ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(finalCollectionName1), null, false).get();
+              ocmh.overseer.getZkStateWriter().enqueueUpdate(finalClusterState.getCollection(finalCollectionName1), null, false);
               ocmh.overseer.writePendingUpdates(finalCollectionName1);
               waitForCoreNodeGone(finalCollectionName1, shard, replicaName, 5000); // MRM TODO: timeout
             } catch (Exception e) {
@@ -251,8 +250,8 @@ public class DeleteReplicaCmd implements Cmd {
         shardToReplicasMapping.put(individualSlice, replicasToBeDeleted);
       }
     }
-    List<OverseerCollectionMessageHandler.Finalize> finalizers = new ArrayList<>();
-    List<Future> futures = new ArrayList<>();
+    List<CollectionCmdResponse.Response> finalizers = new ArrayList<>();
+
     for (Map.Entry<Slice,Set<String>> entry : shardToReplicasMapping.entrySet()) {
       Slice shardSlice = entry.getKey();
       String shardId = shardSlice.getName();
@@ -265,26 +264,16 @@ public class DeleteReplicaCmd implements Cmd {
         clusterState = resp.clusterState;
         if (clusterState != null) {
           try {
-            futures.add(ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collectionName), null, false));
+            ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collectionName), null, false);
           } catch (Exception e) {
             log.error("failed sending update to zkstatewriter", e);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }
         }
-        if (resp.asyncFinalRunner != null) {
-          finalizers.add(resp.asyncFinalRunner);
-        }
+
+        finalizers.add(resp);
       }
 
-      try {
-        for (Future future : futures) {
-          future.get();
-        }
-        ocmh.overseer.writePendingUpdates(collectionName);
-      } catch (Exception e) {
-        log.error("failed writing update to zkstatewriter", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
       results.add("shard_id", shardId);
       results.add("replicas_deleted", replicas);
     }
@@ -294,8 +283,8 @@ public class DeleteReplicaCmd implements Cmd {
     response.asyncFinalRunner = () -> {
       CollectionCmdResponse.Response resp = new CollectionCmdResponse.Response();
       resp.asyncFinalRunner = () -> {
-        for (OverseerCollectionMessageHandler.Finalize finalize : finalizers) {
-          finalize.call();
+        for (CollectionCmdResponse.Response finalize : finalizers) {
+          finalize.asyncFinalRunner.call();
         }
         return new CollectionCmdResponse.Response();
       };

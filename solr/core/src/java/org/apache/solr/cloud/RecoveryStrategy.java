@@ -309,7 +309,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   @Override
   final public void run() {
     // set request info for logging
-    log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
+    log.debug("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
     try {
       try (SolrCore core = cc.getCore(coreName)) {
         if (core == null) {
@@ -508,7 +508,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
   public final boolean doSyncOrReplicateRecovery(SolrCore core, Replica leader) throws Exception {
-    log.info("Do peersync or replication recovery core={} collection={}", coreName, core.getCoreDescriptor().getCollectionName());
+    log.debug("Do peersync or replication recovery core={} collection={}", coreName, core.getCoreDescriptor().getCollectionName());
 
     boolean successfulRecovery = false;
     boolean publishedActive = false;
@@ -555,10 +555,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
         if (startingVersions.isEmpty()) {
-          log.info("startupVersions is empty");
+          log.debug("startupVersions is empty");
         } else {
-          if (log.isInfoEnabled()) {
-            log.info("startupVersions size={} range=[{} to {}]", startingVersions.size(), startingVersions.get(0),
+          if (log.isDebugEnabled()) {
+            log.debug("startupVersions size={} range=[{} to {}]", startingVersions.size(), startingVersions.get(0),
                 startingVersions.get(startingVersions.size() - 1));
           }
         }
@@ -588,11 +588,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     if (replicaType == Replica.Type.TLOG) {
-      log.info("Stopping replication from leader for {}", coreName);
+      log.debug("Stopping replication from leader for {}", coreName);
       zkController.stopReplicationFromLeader(coreName);
     }
 
-    log.info("Publishing state of core [{}] as buffering {}", coreName, "doSyncOrReplicateRecovery");
+    log.debug("Publishing state of core [{}] as buffering {}", coreName, "doSyncOrReplicateRecovery");
 
     zkController.publish(core.getCoreDescriptor(), Replica.State.BUFFERING);
 
@@ -612,7 +612,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           return false;
         }
 
-        log.info("Begin buffering updates. core=[{}]", coreName);
+        log.debug("Begin buffering updates. core=[{}]", coreName);
         // recalling buffer updates will drop the old buffer tlog
         ulog.bufferUpdates();
 
@@ -644,16 +644,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
             }
             if (syncSuccess) {
               SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-              log.info("PeerSync was successful, commit to force open a new searcher");
+              log.debug("PeerSync was successful, commit to force open a new searcher");
               // force open a new searcher
               core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
               req.close();
-              log.info("PeerSync stage of recovery was successful.");
+              log.debug("PeerSync stage of recovery was successful.");
 
               // solrcloud_debug
               // cloudDebugLog(core, "synced");
 
-              log.info("Replaying updates buffered during PeerSync.");
+              log.debug("Replaying updates buffered during PeerSync.");
               replay(core);
 
               // sync success

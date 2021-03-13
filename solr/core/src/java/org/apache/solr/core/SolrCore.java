@@ -1769,8 +1769,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     }
 
-    void doClose () {
-
+    synchronized void doClose () {
+      if (refCount.get() == -1) {
+        log.warn("SolrCore is already closed {}", name);
+        return;
+      }
       try {
         if (closing) {
           this.closing = true;

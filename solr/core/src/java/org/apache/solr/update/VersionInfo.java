@@ -277,7 +277,7 @@ public class VersionInfo {
 
     final String versionFieldName = versionField.getName();
 
-    log.info("Refreshing highest value of {} for {} version buckets from index", versionFieldName, buckets.length);
+    log.debug("Refreshing highest value of {} for {} version buckets from index", versionFieldName, buckets.length);
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
       if (versionField.getType().isPointField()) {

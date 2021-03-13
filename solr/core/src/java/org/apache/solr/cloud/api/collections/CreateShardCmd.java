@@ -183,7 +183,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       //  MRM TODO: - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
       try {
-        overseer.getZkStateWriter().enqueueUpdate(resp.clusterState.getCollection(collection), null, false).get();
+        overseer.getZkStateWriter().enqueueUpdate(resp.clusterState.getCollection(collection), null, false);
       } catch (Exception e) {
         log.error("failure", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

@@ -320,19 +320,18 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (log.isDebugEnabled()) log.debug("Command returned clusterstate={} results={}", responce.clusterState, results);
 
         CollectionCmdResponse.Response asyncResp = null;
-        Future future = null;
+
         if (responce.clusterState != null) {
           DocCollection docColl = responce.clusterState.getCollectionOrNull(collection);
 
           if (docColl != null) {
 
-            future = zkWriter.enqueueUpdate(docColl, null, false);
+            zkWriter.enqueueUpdate(docColl, null, false);
 
             if (responce != null && responce.asyncFinalRunner != null) {
               asyncResp = responce.asyncFinalRunner.call();
             }
             if (asyncResp == null || asyncResp.writeFuture == null) {
-              future.get();
               writeFuture2 = overseer.writePendingUpdates(collection);
             }
 
@@ -349,13 +348,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", asyncResp.clusterState);
           if (asyncResp.clusterState != null) {
             DocCollection docColl = asyncResp.clusterState.getCollectionOrNull(collection);
-
             if (docColl != null) {
-
-              zkWriter.enqueueUpdate(docColl, null, false).get();
-              if (future != null) {
-                future.get();
-              }
+              zkWriter.enqueueUpdate(docColl, null, false);
               writeFuture = overseer.writePendingUpdates(collection);
             }
           }

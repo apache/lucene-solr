@@ -426,9 +426,11 @@ public class SolrZkClient implements Closeable {
     return setData(path, data, version, retryOnConnLoss, false);
   }
 
-  /**
-   * Returns node's state
-   */
+  public void setData(final String path, final byte data[], final int version, AsyncCallback.StatCallback cb, Object ctx)
+      throws KeeperException, InterruptedException {
+    connManager.getKeeper().setData(path, data, version, cb, ctx);
+  }
+
   public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss, boolean retryOnSessionExpiration)
       throws KeeperException, InterruptedException {
 
@@ -823,21 +825,13 @@ public class SolrZkClient implements Closeable {
     return dataMap;
   }
 
-  public void delete(Collection<String> paths, boolean wait) throws KeeperException {
+  public CountDownLatch delete(Collection<String> paths, boolean wait) throws KeeperException {
     if (log.isDebugEnabled()) log.debug("delete paths {} wait={}", paths, wait);
-    if (paths.size() == 0) {
-      return;
-    }
-    CountDownLatch latch = null;
-    if (wait) {
-      latch = new CountDownLatch(paths.size());
-    }
+    CountDownLatch latch = new CountDownLatch(paths.size());
+
     KeeperException[] ke = new KeeperException[1];
     for (String path : paths) {
       if (log.isDebugEnabled()) log.debug("process path={} connManager={}", path, connManager);
-  
-
-      CountDownLatch finalLatch = latch;
 
       connManager.getKeeper().delete(path, -1, (rc, path1, ctx) -> {
         try {
@@ -855,9 +849,7 @@ public class SolrZkClient implements Closeable {
             }
           }
         } finally {
-          if (wait) {
-            finalLatch.countDown();
-          }
+          latch.countDown();
         }
       }, null);
 
@@ -867,43 +859,26 @@ public class SolrZkClient implements Closeable {
       log.debug("done with all paths, see if wait ... wait={}", wait);
     }
     if (wait) {
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      boolean success = false;
-      while (!timeout.hasTimedOut() && !isClosed) {
-        if (!connManager.getKeeper().getState().isConnected()) {
-          try {
-            connManager.waitForConnected(30000);
-          } catch (TimeoutException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
-        }
+      try {
+        boolean success = latch.await(10, TimeUnit.SECONDS);
 
-        if (ke[0] != null) {
-          throw ke[0];
-        }
-        try {
-          success = latch.await(10, TimeUnit.SECONDS);
-          if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
-          if (success) {
-            break;
+        if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
+        if (success) {
+          if (ke[0] != null) {
+            throw ke[0];
           }
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          log.error("", e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
 
-    if (ke[0] != null) {
-      throw ke[0];
-    }
     if (log.isDebugEnabled()) {
       log.debug("done with delete {} {}", paths, wait);
     }
+
+    return latch;
   }
 
   // Calls setData for a list of existing paths in parallel

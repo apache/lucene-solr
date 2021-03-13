@@ -379,7 +379,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
       try {
-        GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
+        GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params); // params too long for GET
         try (Http2SolrClient client = new Http2SolrClient.Builder().withHttpClient(httpClient).withBaseUrl(url).markInternalRequest().build()) {
           NamedList<Object> rsp = client.request(request);
           request.response.nl = rsp;

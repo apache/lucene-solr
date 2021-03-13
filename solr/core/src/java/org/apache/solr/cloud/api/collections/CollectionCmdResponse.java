@@ -111,7 +111,7 @@ public class CollectionCmdResponse implements OverseerCollectionMessageHandler.C
       ShardRequestTracker shardRequestTracker, @SuppressWarnings({"rawtypes"})NamedList results)
       throws IOException, InterruptedException, KeeperException {
 
-    log.info("addReplica() : {}", Utils.toJSONString(message));
+    log.debug("addReplica() : {}", Utils.toJSONString(message));
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -194,7 +194,7 @@ public class CollectionCmdResponse implements OverseerCollectionMessageHandler.C
 
       ModifiableSolrParams params = getReplicaParams(collection, message, results, skipCreateReplicaInClusterState, shardHandler, createReplica);
 
-      log.info("create replica {} params={}", createReplica, params);
+      log.debug("create replica {} params={}", createReplica, params);
       if (!onlyUpdateState) {
         shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
       }
@@ -220,7 +220,6 @@ public class CollectionCmdResponse implements OverseerCollectionMessageHandler.C
           public Response call() {
             if (!onlyUpdateState && createdShardHandler) {
               try {
-                 log.info("Processs responses");
                 shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
               } catch (Exception e) {
                 ParWork.propagateInterrupt(e);
@@ -357,7 +356,7 @@ public class CollectionCmdResponse implements OverseerCollectionMessageHandler.C
   public static CreateReplica assignReplicaDetails(DocCollection coll,
                                                  ZkNodeProps message, ReplicaPosition replicaPosition, Overseer overseer) {
 
-    log.info("assignReplicaDetails {} {}", message, replicaPosition);
+    log.debug("assignReplicaDetails {} {}", message, replicaPosition);
 
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 

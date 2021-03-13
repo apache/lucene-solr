@@ -206,7 +206,7 @@ public class LeaderElector implements Closeable {
           try {
             String watchedNode = holdElectionPath + "/" + toWatch;
 
-            log.info("I am not the leader (our path is ={}) - watch the node below me {} seqs={}", leaderSeqNodeName, watchedNode, seqs);
+            log.debug("I am not the leader (our path is ={}) - watch the node below me {} seqs={}", leaderSeqNodeName, watchedNode, seqs);
 
             ElectionWatcher oldWatcher = watcher;
             if (oldWatcher != null) {
@@ -405,7 +405,7 @@ public class LeaderElector implements Closeable {
           leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", (byte[]) null, CreateMode.EPHEMERAL_SEQUENTIAL, false);
         }
 
-        log.info("Joined leadership election with path: {}", leaderSeqPath);
+        log.debug("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         state = JOIN;
         break;

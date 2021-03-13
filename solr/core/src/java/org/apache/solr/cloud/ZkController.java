@@ -325,8 +325,7 @@ public class ZkController implements Closeable, Runnable {
           try {
             zkController.register(descriptor.getName(), descriptor, afterExpiration);
           } catch (Exception e) {
-            log.error("Error registering core name={} afterExpireation={}", descriptor.getName(), afterExpiration);
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            log.error("Error registering core name={} afterExpireation={}", descriptor.getName(), afterExpiration, e);
           }
         }
         return descriptor;
@@ -1263,7 +1262,7 @@ public class ZkController implements Closeable, Runnable {
       final String collection = cloudDesc.getCollectionName();
       final String shardId = cloudDesc.getShardId();
 
-      log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
+      log.debug("Register SolrCore, core={} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
 
       DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
       if (docCollection != null) {
@@ -1274,14 +1273,9 @@ public class ZkController implements Closeable, Runnable {
         }
       }
 
-      // multiple calls of this method will left only one watcher
+      log.debug("Register replica - core={} id={} address={} collection={} shard={} type={}", coreName, desc.getCoreProperties().get("id"), baseUrl, collection, shardId, cloudDesc.getReplicaType());
 
-      getZkStateReader().registerCore(cloudDesc.getCollectionName(), coreName);
-
-
-      log.info("Register replica - core={} id={} address={} collection={} shard={} type={}", coreName, desc.getCoreProperties().get("id"), baseUrl, collection, shardId, cloudDesc.getReplicaType());
-
-      log.info("Register terms for replica {}", coreName);
+      log.debug("Register terms for replica {}", coreName);
 
       registerShardTerms(collection, cloudDesc.getShardId(), coreName);
 
@@ -1333,7 +1327,7 @@ public class ZkController implements Closeable, Runnable {
             throw new AlreadyClosedException();
           }
 
-          log.info("Timeout waiting to see leader, retry collection={} shard={}", collection, shardId);
+          log.debug("Timeout waiting to see leader, retry collection={} shard={}", collection, shardId);
         }
       }
 
@@ -1345,9 +1339,9 @@ public class ZkController implements Closeable, Runnable {
 
       boolean isLeader = leaderName.equals(coreName);
 
-      log.info("We are {} and leader is {} isLeader={}", coreName, leaderName, isLeader);
+      log.debug("We are {} and leader is {} isLeader={}", coreName, leaderName, isLeader);
 
-      log.info("Check if we should recover isLeader={}", isLeader);
+      log.debug("Check if we should recover isLeader={}", isLeader);
       //assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
 
       // recover from local transaction log and wait for it to complete before
@@ -1415,7 +1409,7 @@ public class ZkController implements Closeable, Runnable {
       // MRM TODO:
      // registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), desc.getName());
 
-      log.info("SolrCore Registered, core{} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
+      log.debug("SolrCore Registered, core{} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
 
       desc.getCloudDescriptor().setHasRegistered(true);
 
@@ -1581,7 +1575,7 @@ public class ZkController implements Closeable, Runnable {
    */
   public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState) throws Exception {
     MDCLoggingContext.setCoreName(cd.getName());
-    log.info("publishing state={}", state);
+    log.debug("publishing state={}", state);
     String collection = cd.getCloudDescriptor().getCollectionName();
     String shardId = cd.getCloudDescriptor().getShardId();
     Map<String,Object> props = new HashMap<>();

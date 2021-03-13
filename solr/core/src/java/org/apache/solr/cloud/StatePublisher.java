@@ -79,7 +79,6 @@ public class StatePublisher implements Closeable {
 
     @Override
     public void run() {
-      ActionThrottle throttle = new ActionThrottle("StatePublisherWorker", 0);
 
       while (!terminated && !zkStateReader.getZkClient().isClosed()) {
         if (!zkStateReader.getZkClient().isConnected()) {
@@ -92,8 +91,7 @@ public class StatePublisher implements Closeable {
           }
           continue;
         }
-        throttle.minimumWaitBetweenActions();
-        throttle.markAttemptingAction();
+
         ZkNodeProps message = null;
         ZkNodeProps bulkMessage = new ZkNodeProps();
         bulkMessage.getProperties().put(OPERATION, "state");
@@ -101,33 +99,39 @@ public class StatePublisher implements Closeable {
           try {
             message = workQueue.poll(1000, TimeUnit.MILLISECONDS);
           } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e, true);
-            return;
+
           }
           if (message != null) {
-            if (log.isDebugEnabled()) log.debug("Got state message " + message);
+            log.debug("Got state message " + message);
             if (message == TERMINATE_OP) {
+              log.debug("State publish is terminated");
               terminated = true;
-              message = null;
+              return;
             } else {
               bulkMessage(message, bulkMessage);
             }
 
-            while (message != null && !terminated) {
+            while (!terminated) {
               try {
-                message = workQueue.poll(5, TimeUnit.MILLISECONDS);
+                message = workQueue.poll(100, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
-
+                log.warn("state publisher interrupted", e);
+                return;
               }
-              if (log.isDebugEnabled()) log.debug("Got state message " + message);
               if (message != null) {
+                if (log.isDebugEnabled()) log.debug("Got state message " + message);
                 if (message == TERMINATE_OP) {
                   terminated = true;
                 } else {
                   bulkMessage(message, bulkMessage);
                 }
+              } else {
+                break;
               }
             }
+          }
+
+          if (bulkMessage.getProperties().size() > 1) {
             processMessage(bulkMessage);
           }
 
@@ -141,25 +145,28 @@ public class StatePublisher implements Closeable {
       }
     }
 
-    private void bulkMessage(ZkNodeProps zkNodeProps, ZkNodeProps bulkMessage) throws KeeperException, InterruptedException {
+    private void bulkMessage(ZkNodeProps zkNodeProps, ZkNodeProps bulkMessage) {
+      if (log.isDebugEnabled()) log.debug("Bulk state zkNodeProps={} bulkMessage={}", zkNodeProps, bulkMessage);
       if (OverseerAction.get(zkNodeProps.getStr(OPERATION)) == OverseerAction.DOWNNODE) {
         String nodeName = zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+        //clearStatesForNode(bulkMessage, nodeName);
         bulkMessage.getProperties().put(OverseerAction.DOWNNODE.toLower(), nodeName);
+        log.debug("bulk state publish down node, props={} result={}", zkNodeProps, bulkMessage);
 
-        clearStatesForNode(bulkMessage, nodeName);
       } else if (OverseerAction.get(zkNodeProps.getStr(OPERATION)) == OverseerAction.RECOVERYNODE) {
+        log.debug("bulk state publish recovery node, props={} result={}", zkNodeProps, bulkMessage);
         String nodeName = zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+       // clearStatesForNode(bulkMessage, nodeName);
         bulkMessage.getProperties().put(OverseerAction.RECOVERYNODE.toLower(), nodeName);
-
-        clearStatesForNode(bulkMessage, nodeName);
+        log.debug("bulk state publish recovery node, props={} result={}" , zkNodeProps, bulkMessage);
       } else {
-        String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
+        //String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
         String core = zkNodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
         String id = zkNodeProps.getStr("id");
         String state = zkNodeProps.getStr(ZkStateReader.STATE_PROP);
 
         String line = Replica.State.getShortState(Replica.State.valueOf(state.toUpperCase(Locale.ROOT)));
-        if (log.isDebugEnabled()) log.debug("Bulk publish core={} id={} line={}", core, id, line);
+        if (log.isDebugEnabled()) log.debug("bulk publish core={} id={} state={} line={}", core, id, state, line);
         bulkMessage.getProperties().put(id, line);
       }
     }
@@ -188,11 +195,8 @@ public class StatePublisher implements Closeable {
     }
 
     private void processMessage(ZkNodeProps message) throws KeeperException, InterruptedException {
-      if (message.getProperties().size() <= 1) {
-        return;
-      }
+      log.debug("Send state updates to Overseer {}", message);
       byte[] updates = Utils.toJSON(message);
-      if (log.isDebugEnabled()) log.debug("Send state updates to Overseer {}", message);
       overseerJobQueue.offer(updates);
     }
   }

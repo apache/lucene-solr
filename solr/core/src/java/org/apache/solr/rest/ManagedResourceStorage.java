@@ -222,7 +222,7 @@ public abstract class ManagedResourceStorage {
         throw new SolrException(ErrorCode.SERVER_ERROR, errMsg, exc);
       }
       
-      log.info("Configured ZooKeeperStorageIO with znodeBase: {}", znodeBase);
+      log.debug("Configured ZooKeeperStorageIO with znodeBase: {}", znodeBase);
     }    
     
     @Override

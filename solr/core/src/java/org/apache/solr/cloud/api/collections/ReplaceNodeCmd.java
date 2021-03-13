@@ -100,9 +100,9 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       @SuppressWarnings({"rawtypes"}) NamedList nl = new NamedList();
       String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
-      if (log.isInfoEnabled()) {
-        log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-      }
+
+      log.debug("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
+
       String targetNode = target;
       if (targetNode == null) {
         Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
@@ -146,7 +146,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       runners.add(runner);
     }
     String collection = clusterState.getCollectionStates().keySet().iterator().next();
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collection), null, false).get();
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState.getCollection(collection), null, false);
     ocmh.overseer.writePendingUpdates(collection);
 
     CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();

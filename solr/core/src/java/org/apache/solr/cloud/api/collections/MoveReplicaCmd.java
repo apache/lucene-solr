@@ -278,7 +278,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
 
     CollectionCmdResponse.Response response = ocmh.addReplicaWithResp(clusterState, addReplicasProps, addResult);
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState.getCollection(coll.getName()), null,false).get();
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState.getCollection(coll.getName()), null,false);
 
     // wait for the other replica to be active if the source replica was a leader
 
@@ -309,7 +309,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         try {
           response1.clusterState = ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult).clusterState;
           String collection = response1.clusterState.getCollectionsMap().keySet().iterator().next();
-          ocmh.overseer.getZkStateWriter().enqueueUpdate( response1.clusterState.getCollection(collection), null,false).get();
+          ocmh.overseer.getZkStateWriter().enqueueUpdate( response1.clusterState.getCollection(collection), null,false);
           asyncResp.writeFuture = ocmh.overseer.writePendingUpdates(collection);
         } catch (SolrException e) {
           deleteResult.add("failure", e.toString());

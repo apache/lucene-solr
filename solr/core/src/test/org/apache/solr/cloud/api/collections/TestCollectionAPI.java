@@ -51,8 +51,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 
 //@LuceneTestCase.Nightly
 public class TestCollectionAPI extends ReplicaPropertiesBase {
@@ -909,6 +910,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("router.name", "implicit");
       params.set("numShards", "1");
       params.set("shards", "invalid@name#with$weird%characters");
+      params.set(WAIT_FOR_FINAL_STATE, "true");
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
 

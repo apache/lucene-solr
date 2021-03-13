@@ -105,7 +105,7 @@ public class Assign {
     int cnt = overseer.getZkStateWriter().getReplicaAssignCnt(collection.getName(), shard);
 
     String corename = String.format(Locale.ROOT, "%s%s", namePrefix, cnt);
-    log.info("Assigned SolrCore name={} id={}", corename, cnt);
+    log.debug("Assigned SolrCore name={} id={}", corename, cnt);
     ReplicaName replicaName = new ReplicaName();
     replicaName.coreName = corename;
     replicaName.id = cnt;

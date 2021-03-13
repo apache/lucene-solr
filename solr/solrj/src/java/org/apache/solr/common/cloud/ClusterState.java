@@ -215,6 +215,20 @@ public class ClusterState implements JSONWriter.Writable {
     return createFromCollectionMap(nodeNameToBaseUrl, version, stateMap);
   }
 
+  public static DocCollection createDocCollectionFromJson(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, int version, byte[] bytes) {
+    if (bytes == null || bytes.length == 0) {
+      return null;
+    }
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    ClusterState cs = createFromCollectionMap(nodeNameToBaseUrl, version, stateMap);
+    if (cs.getCollectionsMap().size() == 0) {
+      return null;
+    }
+    DocCollection docCollection = cs.getCollectionsMap().values().iterator().next();
+    docCollection.setZnodeVersion(version);
+    return docCollection;
+  }
+
   public static ClusterState createFromCollectionMap(Replica.NodeNameToBaseUrl zkStateReader, int version, Map<String, Object> stateMap) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
