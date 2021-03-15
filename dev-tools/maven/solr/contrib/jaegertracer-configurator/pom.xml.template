@@ -35,8 +35,6 @@
   </description>
   <properties>
     <module-directory>solr/contrib/jaegertracer-configurator</module-directory>
-    <relative-top-level>../../../..</relative-top-level>
-    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:git:${vc-anonymous-base-url}</connection>
@@ -62,19 +60,4 @@
     @solr-jaegertracer-configurator.internal.test.dependencies@
     @solr-jaegertracer-configurator.external.test.dependencies@
   </dependencies>
-  <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <testResources>
-      <testResource>
-        <directory>${module-path}/src/test-files</directory>
-      </testResource>
-      <testResource>
-        <directory>${top-level}/dev-tools/maven/solr</directory>
-        <includes>
-          <include>maven.testlogging.properties</include>
-        </includes>
-      </testResource>
-    </testResources>
-  </build>
 </project>

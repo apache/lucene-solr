@@ -33,8 +33,6 @@
   <description>Lucene Suggest Module</description>
   <properties>
     <module-directory>lucene/suggest</module-directory>
-    <relative-top-level>../../..</relative-top-level>
-    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:git:${vc-anonymous-base-url}</connection>
@@ -53,21 +51,4 @@
 @lucene-suggest.internal.test.dependencies@
 @lucene-suggest.external.test.dependencies@
   </dependencies>
-  <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <resources>
-      <resource>
-        <directory>${module-path}/src/resources</directory>
-      </resource>
-    </resources>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <testResources>
-      <testResource>
-        <directory>${project.build.testSourceDirectory}</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
-  </build>
 </project>

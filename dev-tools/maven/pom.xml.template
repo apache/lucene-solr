@@ -41,32 +41,6 @@
     <vc-anonymous-base-url>https://gitbox.apache.org/repos/asf/lucene-solr.git</vc-anonymous-base-url>
     <vc-dev-base-url>https://gitbox.apache.org/repos/asf/lucene-solr.git</vc-dev-base-url>
     <vc-browse-base-url>https://gitbox.apache.org/repos/asf?p=lucene-solr.git</vc-browse-base-url>
-    <specification.version>@spec.version@</specification.version>
-    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>8</java.compat.version>
-    <!-- HACK: the enforce plugin does not like new versioning: -->
-    <java.legacy-compat.version>1.${java.compat.version}</java.legacy-compat.version>
-    <jetty.version>9.3.8.v20160314</jetty.version>
-
-    <!-- RandomizedTesting library system properties -->
-    <tests.iters>1</tests.iters>
-    <tests.seed/>
-    <tests.nightly/>
-    <tests.weekly/>
-    <tests.awaitsfix/>
-    <tests.slow/>
-
-    <!-- Lucene/Solr-specific test system properties -->
-    <tests.codec>random</tests.codec>
-    <tests.directory>random</tests.directory>
-    <tests.locale>random</tests.locale>
-    <tests.luceneMatchVersion>@version.base@</tests.luceneMatchVersion>
-    <tests.multiplier>1</tests.multiplier>
-    <tests.nightly>false</tests.nightly>
-    <tests.postingsformat>random</tests.postingsformat>
-    <tests.timezone>random</tests.timezone>
-    <tests.verbose>false</tests.verbose>
-    <tests.infostream>${tests.verbose}</tests.infostream>
   </properties>
   <issueManagement>
     <system>JIRA</system>
@@ -156,317 +130,28 @@
     </dependency>
   </dependencies>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>de.thetaphi</groupId>
-          <artifactId>forbiddenapis</artifactId>
-          <version>3.1</version>
-          <configuration>
-            <!--
-              This is the default setting, we don't support too new Java versions.
-              The checker simply passes by default and only prints a warning.
-             -->
-            <failOnUnsupportedJava>false</failOnUnsupportedJava>
-            <targetVersion>${java.compat.version}</targetVersion>
-            <suppressAnnotations>
-              <suppressAnnotation>**.SuppressForbidden</suppressAnnotation>
-            </suppressAnnotations>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.7</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-clean-plugin</artifactId>
-          <version>2.5</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.1</version>
-          <configuration>
-            <source>${java.compat.version}</source>
-            <target>${java.compat.version}</target>
-            <compilerArgs>
-              <!-- -proc:none was added because of LOG4J2-1925, JDK-8186647, https://github.com/apache/zookeeper/pull/317, JDK-8055048 -->
-              <arg>-proc:none</arg>
-            </compilerArgs>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.8</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.7</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.3</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>2.4</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>2.4</version>
-          <configuration>
-            <archive>
-              <manifest>
-                <addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
-                <addDefaultImplementationEntries>false</addDefaultImplementationEntries>
-              </manifest>
-            </archive>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.9.1</version>
-          <configuration>
-            <quiet>true</quiet>
-            <additionalparam>-Xdoclint:all</additionalparam>
-            <additionalparam>-Xdoclint:-missing</additionalparam>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>2.6</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>3.3</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.17</version>
-          <configuration>
-            <runOrder>random</runOrder>
-            <reportFormat>plain</reportFormat>
-            <workingDirectory>${project.build.directory}/test</workingDirectory>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <argLine>-Xmx512M</argLine>
-            <systemPropertyVariables>
-              <tempDir>.</tempDir>
-              <java.awt.headless>true</java.awt.headless>
-
-              <!-- See <https://cwiki.apache.org/confluence/display/lucene/RunningTests>
-                   for a description of the tests.* system properties. -->
-
-              <!-- RandomizedTesting library system properties -->
-              <tests.iters>${tests.iters}</tests.iters>
-              <tests.seed>${tests.seed}</tests.seed>
-              <tests.nightly>${tests.nightly}</tests.nightly>
-              <tests.weekly>${tests.weekly}</tests.weekly>
-              <tests.awaitsfix>${tests.awaitsfix}</tests.awaitsfix>
-              <tests.slow>${tests.slow}</tests.slow>
-
-              <!-- Lucene/Solr-specific test system properties -->
-              <jetty.testMode>1</jetty.testMode>
-              <tests.codec>${tests.codec}</tests.codec>
-              <tests.directory>${tests.directory}</tests.directory>
-              <tests.infostream>${tests.infostream}</tests.infostream>
-              <tests.locale>${tests.locale}</tests.locale>
-              <tests.luceneMatchVersion>${tests.luceneMatchVersion}</tests.luceneMatchVersion>
-              <tests.multiplier>${tests.multiplier}</tests.multiplier>
-              <tests.postingsformat>${tests.postingsformat}</tests.postingsformat>
-              <tests.timezone>${tests.timezone}</tests.timezone>
-              <tests.verbose>${tests.verbose}</tests.verbose>
-              <java.security.egd>file:/dev/./urandom</java.security.egd>
-            </systemPropertyVariables>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-war-plugin</artifactId>
-          <version>2.3</version>
-          <configuration>
-            <archive>
-              <!-- This section should be *exactly* the same under -->
-              <!-- maven-bundle-plugin and maven-war-plugin.          -->
-              <!-- If you make changes here, make the same changes -->
-              <!-- in the other location as well.                  -->
-              <manifestEntries>
-                <Extension-Name>${project.groupId}</Extension-Name>
-                <Implementation-Title>${project.groupId}</Implementation-Title>
-                <Specification-Title>${project.name}</Specification-Title>
-                <Specification-Version>${specification.version}</Specification-Version>
-                <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
-                <!-- impl version can be any string -->
-                <Implementation-Version>${project.version} ${checkoutid} - ${user.name} - ${now.timestamp}</Implementation-Version>
-                <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
-                <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
-                <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
-                <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
-              </manifestEntries>
-            </archive>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.8</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.2</version>
-        </plugin>
-        <plugin>
-          <groupId>org.mortbay.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
-          <version>${jetty.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.gmaven</groupId>
-          <artifactId>gmaven-plugin</artifactId>
-          <version>1.5</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.gmaven</groupId>
-        <artifactId>gmaven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-timestamps-and-get-top-level-basedir</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>execute</goal>
-            </goals>
-            <configuration>
-              <source>
-                project.properties['now.timestamp'] = "${maven.build.timestamp}"
-                project.properties['now.version'] = ("${maven.build.timestamp}" =~ /[- :]/).replaceAll(".")
-                project.properties['now.year'] = "${maven.build.timestamp}".substring(0, 4)
-                project.properties['top-level'] = (project.basedir.getAbsolutePath() =~ /[\\\\\/]maven-build.*/).replaceAll("")
-              </source>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>buildnumber-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>validate</phase>
-            <goals>
-              <goal>create</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <doCheck>false</doCheck>
-          <doUpdate>false</doUpdate>
-          <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
-          <revisionOnScmFailure>NO-REVISION-AVAILABLE</revisionOnScmFailure>
-          <buildNumberPropertyName>checkoutid</buildNumberPropertyName>
-          <scmDirectory>${top-level}</scmDirectory>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M3</version>
         <executions>
           <execution>
-            <id>enforce-java-compat-version-and-maven-2.2.1</id>
+            <id>enforce</id>
             <goals>
               <goal>enforce</goal>
             </goals>
             <configuration>
               <rules>
-                <requireJavaVersion>
-                  <message>Java ${java.compat.version}+ is required.</message>
-                  <version>[${java.legacy-compat.version},)</version>
-                </requireJavaVersion>
-                <requireMavenVersion>
-                  <message>Maven 2.2.1+ is required.</message>
-                  <version>[2.2.1,)</version>
-                </requireMavenVersion>
-                <requirePluginVersions/>
+                <AlwaysFail>
+                  <message>Apache Lucene/Solr cannot be built from source using Maven. The POM files are only for deployment to Maven Central.</message>
+                </AlwaysFail>
               </rules>
+              <fail>true</fail>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      
-      <!-- Adding OSGI metadata to the JAR without changing the packaging type. -->
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <version>2.5.3</version>
-        <configuration>
-          <instructions>
-            <Export-Package>*;-split-package:=merge-first</Export-Package>
-            
-            <!-- This section should be *exactly* the same under -->
-            <!-- maven-bundle-plugin and maven-war-plugin.          -->
-            <!-- If you make changes here, make the same changes -->
-            <!-- in the other location as well.                  -->
-            <Extension-Name>${project.groupId}</Extension-Name>
-            <Implementation-Title>${project.groupId}</Implementation-Title>
-            <Specification-Title>${project.name}</Specification-Title>
-            <Specification-Version>${specification.version}</Specification-Version>
-            <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
-            <!-- impl version can be any string -->
-            <Implementation-Version>${project.version} ${checkoutid} - ${user.name} - ${now.timestamp}</Implementation-Version>
-            <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
-            <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
-            <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
-            <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
-          </instructions>
-        </configuration>
-        <executions>
-          <execution>
-            <id>bundle-manifest</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <!-- Although currently a no-op, this profile remains here to reserve
-           the ability to perform Maven build initialization tasks. -->
-      <id>bootstrap</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-install-plugin</artifactId>
-            <executions>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

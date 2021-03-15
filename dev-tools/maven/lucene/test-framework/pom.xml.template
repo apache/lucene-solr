@@ -33,8 +33,6 @@
   <description>Apache Lucene Java Test Framework</description>
   <properties>
     <module-directory>lucene/test-framework</module-directory>
-    <relative-top-level>../../..</relative-top-level>
-    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:git:${vc-anonymous-base-url}</connection>
@@ -47,52 +45,6 @@
 @lucene-test-framework.internal.test.dependencies@
 @lucene-test-framework.external.test.dependencies@
   </dependencies>
-  <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <resources>
-      <resource>
-        <directory>${module-path}/src/resources</directory>
-      </resource>
-      <resource>
-        <directory>${project.build.sourceDirectory}</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </resource>
-    </resources>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <testResources>
-      <testResource>
-        <directory>${project.build.testSourceDirectory}</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
-    <plugins>
-      <plugin>
-        <groupId>de.thetaphi</groupId>
-        <artifactId>forbiddenapis</artifactId>
-        <executions>
-          <execution>
-            <id>lucene-shared-check-forbidden-apis</id>
-            <phase>none</phase> <!-- Block inherited execution -->
-          </execution>
-          <execution>
-            <id>lucene-shared-test-check-forbidden-apis</id>
-            <goals>
-              <goal>check</goal>
-              <goal>testCheck</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>lucene-shared-check-sysout-forbidden-apis</id>
-            <phase>none</phase>  <!-- Block inherited execution -->
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
   <repositories>
     <repository>
       <id>sonatype.releases</id>

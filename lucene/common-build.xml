@@ -728,6 +728,8 @@
           <pom refid="maven.project"/>
           <exclusion groupId="org.apache.lucene"/>
           <exclusion groupId="org.apache.solr"/>
+          <!-- those dependencies are included by jetty using profiles - depending on the JDK version -->
+          <exclusion groupId="org.eclipse.jetty" artifactId="jetty-alpn-openjdk8-client"/>
         </dependencies>
         <files refid="maven.jars" scopes="compile,runtime,test"/>
       </resolver:resolve>
@@ -1795,50 +1797,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
 
-  <target name="-install-src-java-to-maven-local-repo" depends="install-maven-tasks">
-    <sequential>
-      <property name="top.level.dir" location="${common.dir}/.."/>
-      <pathconvert property="pom.xml">
-        <mapper>
-          <chainedmapper>
-            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
-            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
-          </chainedmapper>
-        </mapper>
-        <path location="${ant.file}"/>
-      </pathconvert>
-      <artifact:pom id="maven.project" file="${pom.xml}">
-        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
-      </artifact:pom>
-      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
-        <pom refid="maven.project"/>
-      </artifact:install>
-    </sequential>
-  </target>
-
-  <target name="-dist-maven-src-java" depends="install-maven-tasks, jar-src, javadocs">
-    <sequential>
-      <property name="top.level.dir" location="${common.dir}/.."/>
-      <pathconvert property="pom.xml">
-        <mapper>
-          <chainedmapper>
-            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
-            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
-          </chainedmapper>
-        </mapper>
-        <path location="${ant.file}"/>
-      </pathconvert>
-      <m2-deploy pom.xml="${pom.xml}">
-        <artifact-attachments>
-          <attach file="${build.dir}/${final.name}-src.jar"
-                  classifier="sources"/>
-          <attach file="${build.dir}/${final.name}-javadoc.jar"
-                  classifier="javadoc"/>
-        </artifact-attachments>
-      </m2-deploy>
-    </sequential>
-  </target>
-  
   <target name="-validate-maven-dependencies.init">
     <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
@@ -1906,22 +1864,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         centralized.versions.file="${common.dir}/ivy-versions.properties"
         module.dependencies.properties.file="${module.dependencies.properties.file}"
         maven.dependencies.filters.file="${maven.dependencies.filters.file}"/>
-  </target>
-
-  <target name="-get-maven-poms" depends="-get-maven-dependencies">
-    <property name="maven-build-dir" location="${common.dir}/../maven-build"/>
-    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
-      <fileset dir="${common.dir}/../dev-tools/maven"/>
-      <filterset begintoken="@" endtoken="@">
-        <filter token="version" value="${version}"/>
-        <filter token="version.base" value="${version.base}"/>
-        <filter token="spec.version" value="${spec.version}"/>
-      </filterset>
-      <filterset>
-        <filtersfile file="${maven.dependencies.filters.file}"/>
-      </filterset>
-      <globmapper from="*.template" to="*"/>
-    </copy>
   </target>
 
   <target name="-filter-pom-templates" depends="-get-maven-dependencies">

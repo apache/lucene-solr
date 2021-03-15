@@ -35,8 +35,6 @@
   </description>
   <properties>
     <module-directory>lucene/expressions</module-directory>
-    <relative-top-level>../../..</relative-top-level>
-    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <dependencies>
     <dependency> 
@@ -50,13 +48,4 @@
 @lucene-expressions.internal.test.dependencies@
 @lucene-expressions.external.test.dependencies@
   </dependencies>
-  <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <resources>
-      <resource>
-        <directory>${module-path}/src/resources</directory>
-      </resource>
-    </resources>
-  </build>
 </project>

@@ -33,8 +33,6 @@
   <description>Apache Solr DataImportHandler</description>
   <properties>
     <module-directory>solr/contrib/dataimporthandler</module-directory>
-    <relative-top-level>../../../..</relative-top-level>
-    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:git:${vc-anonymous-base-url}</connection>
@@ -60,32 +58,4 @@
 @solr-dataimporthandler.internal.test.dependencies@
 @solr-dataimporthandler.external.test.dependencies@
   </dependencies>
-  <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <testResources>
-      <testResource>
-        <directory>${module-path}/src/test-files</directory>
-      </testResource>
-      <testResource>
-        <directory>${top-level}/dev-tools/maven/solr</directory>
-        <includes>
-          <include>maven.testlogging.properties</include>
-        </includes>
-      </testResource>
-    </testResources>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>

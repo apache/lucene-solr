@@ -183,16 +183,6 @@
     </subant>
   </target>
 
-  <target name="get-maven-poms" depends="resolve" 
-          description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
-    <ant dir="lucene" target="-get-maven-poms" inheritall="false"/>
-  </target>
-
-  <target name="clean-maven-build"
-          description="Clean up Maven POMs in working copy">
-    <delete failonerror="true" dir="${maven-build-dir}/"/>
-  </target>
-
   <target name="generate-maven-artifacts" depends="resolve,resolve-groovy,resolve-markdown,install-maven-tasks"
           description="Generate Maven Artifacts for Lucene and Solr">
     <property name="maven.dist.dir"  location="dist/maven" />
@@ -663,7 +653,7 @@ Test args: [${args}]</echo>
     </antcall>
   </target>
 
-  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-markdown,install-maven-tasks">
+  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,resolve-groovy,resolve-markdown,install-maven-tasks">
     <!-- build, install, validate and publish ANT-generated maven artifacts: -->
     <antcall>
       <param name="is.jenkins.build" value="true"/>
