@@ -22,7 +22,7 @@ import org.apache.zookeeper.data.ACL;
 
 /**
  * {@link ZkACLProvider} capable of returning a different set of
- * {@link ACL}s for security-related znodes (default: subtree under /security)
+ * {@link ACL}s for security-related znodes (default: subtree under /security and security.json)
  * vs non-security-related znodes.
  */
 public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
@@ -42,11 +42,8 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   }
 
   protected boolean isSecurityZNodePath(String zNodePath) {
-    if (zNodePath != null
-        && (zNodePath.equals(SECURITY_ZNODE_PATH) || zNodePath.startsWith(SECURITY_ZNODE_PATH + "/"))) {
-      return true;
-    }
-    return false;
+    return zNodePath != null
+        && (zNodePath.equals(ZkStateReader.SOLR_SECURITY_CONF_PATH) || zNodePath.equals(SECURITY_ZNODE_PATH) || zNodePath.startsWith(SECURITY_ZNODE_PATH + "/"));
   }
 
   /**

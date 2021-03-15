@@ -88,6 +88,8 @@ Then use the `bin/solr zk` command to upload the file:
 >bin/solr zk cp ./security.json zk:security.json -z localhost:2181
 ----
 
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+
 [WARNING]
 ====
 Whenever you use any security plugins and store `security.json` in ZooKeeper, we highly recommend that you implement access control in your ZooKeeper nodes. Information about how to enable this is available in the section <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.

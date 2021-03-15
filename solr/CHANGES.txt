@@ -68,6 +68,8 @@ Bug Fixes
 
 * SOLR-15216: Fix for Invalid Reference to data.followers in Admin UI. (Dean Pearce)
 
+* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)

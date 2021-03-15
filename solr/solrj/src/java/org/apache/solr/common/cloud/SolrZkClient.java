@@ -798,11 +798,23 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
+   * @return the ACLs on a single node in ZooKeeper.
+   */
+  public List<ACL> getACL(String path, Stat stat, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.getACL(path, stat));
+    } else {
+      return keeper.getACL(path, stat);
+    }
+  }
+
+  /**
    * Set the ACL on a single node in ZooKeeper. This will replace all existing ACL on that node.
    *
    * @param path path to set ACL on e.g. /solr/conf/solrconfig.xml
    * @param acls a list of {@link ACL}s to be applied
    * @param retryOnConnLoss true if the command should be retried on connection loss
+   * @return the stat of the node
    */
   public Stat setACL(String path, List<ACL> acls, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
     if (retryOnConnLoss) {
@@ -821,9 +833,8 @@ public class SolrZkClient implements Closeable {
       try {
         setACL(path, getZkACLProvider().getACLsToAdd(path), true);
         log.debug("Updated ACL on {}", path);
-      } catch (NoNodeException e) {
+      } catch (NoNodeException ignored) {
         // If a node was deleted, don't bother trying to set ACLs on it.
-        return;
       }
     });
   }
