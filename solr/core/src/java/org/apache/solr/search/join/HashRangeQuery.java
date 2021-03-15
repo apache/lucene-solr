@@ -104,7 +104,8 @@ public class HashRangeQuery extends Query {
       }
 
       private int hash(SortedDocValues docValues) throws IOException {
-        BytesRef bytesRef = docValues.binaryValue();
+        //TODO maybe cache hashCode if same ord as prev doc to save lookupOrd?
+        BytesRef bytesRef = docValues.lookupOrd(docValues.ordValue());
         return Hash.murmurhash3_x86_32(bytesRef.bytes, bytesRef.offset, bytesRef.length, 0);
       }
     };

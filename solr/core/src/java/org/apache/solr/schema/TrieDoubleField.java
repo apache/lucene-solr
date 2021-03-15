@@ -95,7 +95,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
           @Override
           public double doubleVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(bytes));
             } else {
@@ -122,7 +122,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(view.binaryValue()));
+                  mval.value = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(view.lookupOrd(view.ordValue())));
                 } else {
                   mval.exists = false;
                   mval.value = 0D;

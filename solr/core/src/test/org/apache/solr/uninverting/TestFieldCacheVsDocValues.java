@@ -404,7 +404,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       }
       assertEquals(docID, actual.nextDoc());
       assertEquals(expected.ordValue(), actual.ordValue());
-      assertEquals(expected.binaryValue(), actual.binaryValue());
+      assertEquals(expected.lookupOrd(expected.ordValue()), actual.lookupOrd(actual.ordValue()));
     }
     
     // compare ord dictionary

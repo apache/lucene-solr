@@ -188,7 +188,7 @@ public class TestFieldCache extends SolrTestCase {
         termsIndex.advance(i);
       }
       if (i == termsIndex.docID()) {
-        s = termsIndex.binaryValue().utf8ToString();
+        s = termsIndex.lookupOrd(termsIndex.ordValue()).utf8ToString();
       } else {
         s = null;
       }
@@ -449,17 +449,11 @@ public class TestFieldCache extends SolrTestCase {
       new DocTermOrds(ar, null, "sorted");
     });
     
-    binary = FieldCache.DEFAULT.getTerms(ar, "sorted");
-    assertEquals(0, binary.nextDoc());
-
-    BytesRef scratch = binary.binaryValue();
-    assertEquals("sorted value", scratch.utf8ToString());
-    
     SortedDocValues sorted = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
     assertEquals(0, sorted.nextDoc());
     assertEquals(0, sorted.ordValue());
     assertEquals(1, sorted.getValueCount());
-    scratch = sorted.binaryValue();
+    BytesRef scratch = sorted.lookupOrd(sorted.ordValue());
     assertEquals("sorted value", scratch.utf8ToString());
     
     SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted", null);

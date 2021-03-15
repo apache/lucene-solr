@@ -94,7 +94,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
           @Override
           public float floatVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes));
             } else {
@@ -121,7 +121,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(view.binaryValue()));
+                  mval.value = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue())));
                 } else {
                   mval.exists = false;
                   mval.value = 0F;

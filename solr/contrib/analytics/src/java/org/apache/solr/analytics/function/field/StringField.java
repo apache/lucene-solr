@@ -21,16 +21,20 @@ import java.util.function.Consumer;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.value.StringValue.CastingStringValue;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.StrField;
 
 /**
  * An analytics wrapper for a single-valued {@link StrField} with DocValues enabled.
  */
 public class StringField extends AnalyticsField implements CastingStringValue {
-  private BinaryDocValues docValues;
+  private BinaryDocValues binaryDocValues;
+  private SortedDocValues sortedDocValues;
   String value;
   boolean exists;
 
@@ -41,14 +45,38 @@ public class StringField extends AnalyticsField implements CastingStringValue {
 
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
-    docValues = DocValues.getBinary(context.reader(), fieldName);
+    FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(fieldName);
+    if (fieldInfo == null) {
+      binaryDocValues = DocValues.emptyBinary();
+      sortedDocValues = null;
+    } else {
+      switch (fieldInfo.getDocValuesType()) {
+        case BINARY:
+          binaryDocValues = DocValues.getBinary(context.reader(), fieldName);
+          sortedDocValues = null;
+          break;
+        case SORTED:
+          binaryDocValues = null;
+          sortedDocValues = DocValues.getSorted(context.reader(), fieldName);
+          break;
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid doc values type " + fieldInfo.getDocValuesType());
+      }
+    }
   }
 
   @Override
   public void collect(int doc) throws IOException {
-    exists = docValues.advanceExact(doc);
-    if (exists) {
-      value = docValues.binaryValue().utf8ToString();
+    if (binaryDocValues == null) {
+      exists = sortedDocValues.advanceExact(doc);
+      if (exists) {
+        value = sortedDocValues.lookupOrd(sortedDocValues.ordValue()).utf8ToString();
+      }
+    } else {
+      exists = binaryDocValues.advanceExact(doc);
+      if (exists) {
+        value = binaryDocValues.binaryValue().utf8ToString();
+      }
     }
   }
 

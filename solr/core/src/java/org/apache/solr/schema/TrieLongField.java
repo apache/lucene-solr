@@ -93,7 +93,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
           @Override
           public long longVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return LegacyNumericUtils.prefixCodedToLong(bytes);
             } else {
@@ -120,7 +120,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = LegacyNumericUtils.prefixCodedToLong(view.binaryValue());
+                  mval.value = LegacyNumericUtils.prefixCodedToLong(view.lookupOrd(view.ordValue()));
                 } else {
                   mval.exists = false;
                   mval.value = 0L;

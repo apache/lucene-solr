@@ -123,7 +123,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
                 assertEquals(binary.get(docID), bdv.binaryValue());
                 SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
                 assertEquals(docID, sdv.advance(docID));
-                assertEquals(sorted.get(docID), sdv.binaryValue());
+                assertEquals(sorted.get(docID), sdv.lookupOrd(sdv.ordValue()));
               }
             } catch (Exception e) {
               throw new RuntimeException(e);
@@ -234,7 +234,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
                 try {
                   SortedDocValues dvs = sr.getSortedDocValues("stringdv");
                   assertEquals(docID, dvs.advance(docID));
-                  assertEquals(docValues.get(docIDToIDArray[docID]), dvs.binaryValue());
+                  assertEquals(docValues.get(docIDToIDArray[docID]), dvs.lookupOrd(dvs.ordValue()));
                 } catch (IOException ioe) {
                   throw new RuntimeException(ioe);
                 }

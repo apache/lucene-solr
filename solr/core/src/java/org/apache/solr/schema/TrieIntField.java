@@ -93,7 +93,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
           @Override
           public int intVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return LegacyNumericUtils.prefixCodedToInt(bytes);
             } else {
@@ -120,7 +120,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.binaryValue());
+                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue()));
                 } else {
                   mval.exists = false;
                   mval.value = 0;

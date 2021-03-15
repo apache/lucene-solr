@@ -1076,10 +1076,6 @@ public class FieldCacheImpl implements FieldCache {
 
   public BinaryDocValues getTerms(LeafReader reader, String field, float acceptableOverheadRatio) throws IOException {
     BinaryDocValues valuesIn = reader.getBinaryDocValues(field);
-    if (valuesIn == null) {
-      valuesIn = reader.getSortedDocValues(field);
-    }
-
     if (valuesIn != null) {
       // Not cached here by FieldCacheImpl (cached instead
       // per-thread by SegmentReader):

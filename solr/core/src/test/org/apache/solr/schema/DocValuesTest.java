@@ -100,10 +100,10 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(4L, dvs.longValue());
         SortedDocValues sdv = reader.getSortedDocValues("stringdv");
         assertEquals(0, sdv.nextDoc());
-        assertEquals("solr", sdv.binaryValue().utf8ToString());
+        assertEquals("solr", sdv.lookupOrd(sdv.ordValue()).utf8ToString());
         sdv = reader.getSortedDocValues("booldv");
         assertEquals(0, sdv.nextDoc());
-        assertEquals("T", sdv.binaryValue().utf8ToString());
+        assertEquals("T", sdv.lookupOrd(sdv.ordValue()).utf8ToString());
 
         final IndexSchema schema = core.getLatestSchema();
         final SchemaField floatDv = schema.getField("floatdv");
