@@ -121,6 +121,7 @@ ext {
          desc: 'HTML Site for publishing to the Solr website',
          props: [
             htmlSolrJavadocs: "https://lucene.apache.org/solr/${solrGuideVersionPath}_0/",
+            // TODO: This isn't viable long term - see SOLR-15262 / SOLR-15264
             htmlLuceneJavadocs: "https://lucene.apache.org/core/${solrGuideVersionPath}_0/"
         ]
     ]
@@ -132,8 +133,8 @@ ext {
          // NOTE: extra '../' because we'll in a sub-dir of buildDir that will be built later...
          props: [
             htmlSolrJavadocs : 'link:../' + buildDir.toPath().relativize(project(':solr:documentation').docroot.toPath()).toString().replace(File.separator, '/'),
-            // TODO: decide what to do with lucene javadocs
-            htmlLuceneJavadocs : 'link:../'
+            // TODO: This isn't viable long term - see SOLR-15262 / SOLR-15264
+            htmlLuceneJavadocs : "https://lucene.apache.org/core/${solrGuideVersionPath}_0/"
         ]
     ]
 }

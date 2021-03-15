@@ -191,7 +191,6 @@ apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
 
 apply from: file('gradle/solr-tlp-migration/inaccessible-test-sources.gradle')
-apply from: file('gradle/solr-tlp-migration/disable-links-checking.gradle')
 
 apply from: file('gradle/solr/packaging.gradle') // SOLR ONLY
 apply from: file('gradle/solr/solr-forbidden-apis.gradle') // SOLR ONLY
