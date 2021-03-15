@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ZkTestServer {
 
@@ -389,11 +390,17 @@ public class ZkTestServer {
           zkDb.close();
         }
 
-        if (cnxnFactory != null && cnxnFactory.getLocalPort() != 0) {
-          waitForServerDown(getZkHost(), 30000);
+        if (cnxnFactory != null) {
+          try {
+            int port = cnxnFactory.getLocalPort();
+            if (port > 0) {
+              waitForServerDown(getZkHost(), 30000);
+            }
+          } catch (NullPointerException ignored) {
+            // server never successfully started
+          }
         }
       } finally {
-
         ObjectReleaseTracker.release(this);
       }
     }
@@ -533,10 +540,12 @@ public class ZkTestServer {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER");
+    AtomicReference<Throwable> zooError = new AtomicReference<>();
     try {
       if (zooThread != null) {
         throw new IllegalStateException("ZK TEST SERVER IS ALREADY RUNNING");
       }
+      Thread parentThread = Thread.currentThread();
       // we don't call super.distribSetUp
       zooThread = new Thread("ZkTestServer Run Thread") {
 
@@ -570,7 +579,8 @@ public class ZkTestServer {
           try {
             zkServer.runFromConfig(config);
           } catch (Throwable t) {
-            log.error("zkServer error", t);
+            zooError.set(t);
+            parentThread.interrupt();
           }
         }
       };
@@ -582,15 +592,15 @@ public class ZkTestServer {
       int port = -1;
       try {
         port = getPort();
-      } catch (IllegalStateException e) {
-
+      } catch (IllegalStateException ignored) {
+        // Possibly fix this API to return null instead of throwing
       }
       while (port < 1) {
         Thread.sleep(100);
         try {
           port = getPort();
-        } catch (IllegalStateException e) {
-
+        } catch (IllegalStateException ignored) {
+          // Possibly fix this API to return null instead of throwing
         }
         if (cnt == 500) {
           throw new RuntimeException("Could not get the port for ZooKeeper server");
@@ -603,8 +613,15 @@ public class ZkTestServer {
 
       init(solrFormat);
     } catch (Exception e) {
-      log.error("Error trying to run ZK Test Server", e);
-      throw new RuntimeException(e);
+      RuntimeException toThrow = new RuntimeException("Could not get ZK port");
+      Throwable t = zooError.get();
+      if (t != null) {
+        toThrow.initCause(t);
+        toThrow.addSuppressed(e);
+      } else {
+        toThrow.initCause(e);
+      }
+      throw toThrow;
     }
   }
 

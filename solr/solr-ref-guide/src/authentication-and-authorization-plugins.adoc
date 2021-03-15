@@ -82,6 +82,8 @@ Note that this example defines the `KerberosPlugin` for authentication. You will
 
 This example also defines `security.json` on the command line, but you can also define a file locally and upload it to ZooKeeper.
 
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+
 [WARNING]
 ====
 Whenever you use any security plugins and store `security.json` in ZooKeeper, we highly recommend that you implement access control in your ZooKeeper nodes. Information about how to enable this is available in the section <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.

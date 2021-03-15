@@ -64,14 +64,7 @@ If `blockUnknown` does not appear in the `security.json` file, it will default t
 
 If `realm` is not defined, it will default to `solr`.
 
-If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You can use this example command, ensuring that the ZooKeeper port is correct:
-
-[source,bash]
-----
-$ bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
-----
-
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+If you are using SolrCloud, you must upload `security.json` to ZooKeeper. An example command and more information about securing your setup can be found at <<authentication-and-authorization-plugins#in-solrcloud-mode,Authentication and Authorization Plugins In SolrCloud Mode>>.
 
 === Caveats
 

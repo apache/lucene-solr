@@ -10,7 +10,9 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
+
 
 ==================  8.8.1 ==================
 

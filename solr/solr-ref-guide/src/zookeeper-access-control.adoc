@@ -73,7 +73,7 @@ You control which ACLs will be added by configuring `zkACLProvider` property in 
 You can always make you own implementation, but Solr comes with:
 
 * `org.apache.solr.common.cloud.DefaultZkACLProvider`: It returns a list of length one for all `zNodePath`-s. The single ACL entry in the list is "open-unsafe". This is the default.
-* `org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider`: This lets you define your ACLs using system properties. Its `getACLsToAdd()` implementation does not use `zNodePath` for anything, so all znodes will get the same set of ACLs. It supports adding one or both of these options:
+* `org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider`: This lets you define your ACLs using system properties. Its `getACLsToAdd()` implementation will apply only admin ACLs to pre-defined sensitive paths as defined by `SecurityAwareZkACLProvider` (`/security.json` and `/security/*`) and both admin and user ACLs to the rest of the contents. The two sets of roles will be defined as:
 ** A user that is allowed to do everything.
 *** The permission is `ALL` (corresponding to all of `CREATE`, `READ`, `WRITE`, `DELETE`, and `ADMIN`), and the schema is "digest".
 *** The username and password are defined by system properties `zkDigestUsername` and `zkDigestPassword`, respectively.
@@ -97,7 +97,16 @@ There are two scripts that impact ZooKeeper ACLs:
 * For *nix systems: `bin/solr` & `server/scripts/cloud-scripts/zkcli.sh`
 * For Windows systems: `bin/solr.cmd` & `server/scripts/cloud-scripts/zkcli.bat`
 
+[IMPORTANT]
+Both the solr.in.* and the zkcli.* files will need to be updated with the same password for everything to work. The contents may appear redundant, but the scripts will not consult each other during operations.
+
 These Solr scripts can enable use of ZooKeeper ACLs by setting the appropriate system properties: uncomment the following and replace the passwords with ones you choose to enable the above-described VM parameters ACL and credentials providers in the following files:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#nix]
+====
+[.tab-label]**nix*
 
 .solr.in.sh
 [source,bash]
@@ -110,6 +119,21 @@ These Solr scripts can enable use of ZooKeeper ACLs by setting the appropriate s
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 ----
 
+.zkcli.sh
+[source,bash]
+----
+# Settings for ZK ACL
+#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \
+#  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider \
+#  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
+#  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
+----
+====
+
+[example.tab-pane#windows]
+====
+[.tab-label]*Windows*
+
 .solr.in.cmd
 [source,powershell]
 ----
@@ -121,16 +145,6 @@ REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEM
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 ----
 
-.zkcli.sh
-[source,bash]
-----
-# Settings for ZK ACL
-#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \
-#  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider \
-#  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
-#  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
-----
-
 .zkcli.bat
 [source,powershell]
 ----
@@ -140,6 +154,8 @@ REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCrede
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 ----
+====
+--
 
 == Changing ACL Schemes
 
