@@ -39,4 +39,8 @@
     <developerConnection>scm:git:${vc-dev-base-url}</developerConnection>
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
+  <dependencies>
+@lucene-core.internal.test.dependencies@
+@lucene-core.external.test.dependencies@
+  </dependencies>
 </project>

@@ -42,5 +42,7 @@
   <dependencies>
 @solr-solrj.internal.dependencies@
 @solr-solrj.external.dependencies@
+@solr-solrj.internal.test.dependencies@
+@solr-solrj.external.test.dependencies@
   </dependencies>
 </project>
