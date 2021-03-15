@@ -183,17 +183,9 @@ allprojects {
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
-          if (project.path == ":lucene:replicator") {
-            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', file("${resources}/policies/replicator-tests.policy")
-          } else if (project.path.startsWith(":lucene")) {
-            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', file("${resources}/policies/tests.policy")
-          } else {
-            systemProperty 'common-solr.dir', commonSolrDir
-            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
-          }
+          systemProperty 'common-solr.dir', commonSolrDir
+          systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+          systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()
           systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')
