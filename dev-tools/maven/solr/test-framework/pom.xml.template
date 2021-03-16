@@ -40,12 +40,6 @@
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <dependencies>
-    <!-- These dependencies are compile scope because this is a test framework. -->
-    <dependency>
-      <!-- lucene-test-framework dependency must come before lucene-core -->
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-    </dependency>
 @solr-test-framework.internal.dependencies@
 @solr-test-framework.external.dependencies@
   </dependencies>
