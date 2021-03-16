@@ -726,8 +726,9 @@
       <resolver:resolve>
         <dependencies>
           <pom refid="maven.project"/>
-          <exclusion groupId="org.apache.lucene"/>
-          <exclusion groupId="org.apache.solr"/>
+          <!-- those dependencies are included by jetty using dynamic profiles -
+           depending on the JDK version, not sure what's going on: -->
+          <exclusion groupId="org.eclipse.jetty" artifactId="jetty-alpn-openjdk8-client"/>
         </dependencies>
         <files refid="maven.jars" scopes="compile,runtime,test"/>
       </resolver:resolve>
