@@ -77,6 +77,7 @@ public class ResponseBuilder
   private String cancellationUUID;
 
   private String taskStatusCheckUUID;
+  private boolean isTaskListRequest;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -523,6 +524,14 @@ public class ResponseBuilder
 
   public boolean isCancellation() {
     return isCancellation;
+  }
+
+  public void setIsTaskListRequest(boolean isTaskListRequest) {
+    this.isTaskListRequest = isTaskListRequest;
+  }
+
+  public boolean isTaskListRequest() {
+    return isTaskListRequest;
   }
 
   public void setCancellationUUID(String queryID) {

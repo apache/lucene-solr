@@ -88,7 +88,7 @@ public class QueryCancellationComponent extends SearchComponent {
         } else {
             rb.rsp.getValues().add("status", "Query with queryID " + rb.getCancellationUUID() +
                     " not found");
-            rb.rsp.getValues().add("responseCode", 401 /* HTTP NOT FOUND */);
+            rb.rsp.getValues().add("responseCode", 404 /* HTTP NOT FOUND */);
         }
     }
 

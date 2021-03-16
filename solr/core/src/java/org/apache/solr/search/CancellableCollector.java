@@ -45,7 +45,7 @@ public class CancellableCollector implements Collector, Cancellable {
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
 
-    if (isQueryCancelled.compareAndSet(true, true)) {
+    if (isQueryCancelled.get()) {
       throw new QueryCancelledException();
     }
 
@@ -53,7 +53,7 @@ public class CancellableCollector implements Collector, Cancellable {
 
       @Override
       public void collect(int doc) throws IOException {
-        if (isQueryCancelled.compareAndSet(true, true)) {
+        if (isQueryCancelled.get()) {
           throw new QueryCancelledException();
         }
         in.collect(doc);

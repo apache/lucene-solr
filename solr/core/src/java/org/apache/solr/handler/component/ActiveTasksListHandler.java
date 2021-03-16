@@ -44,6 +44,8 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
         Map<String, String> extraParams = null;
         ResponseBuilder rb = buildResponseBuilder(req, rsp, getComponentsList());
 
+        rb.setIsTaskListRequest(true);
+
         String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
 
         if (taskStatusCheckUUID != null) {

@@ -32,7 +32,7 @@ public class ActiveTasksListComponent extends SearchComponent {
 
     @Override
     public void prepare(ResponseBuilder rb) throws IOException {
-        if (rb.getTaskStatusCheckUUID() != null) {
+        if (rb.isTaskListRequest()) {
             shouldProcess = true;
         }
     }
@@ -75,7 +75,7 @@ public class ActiveTasksListComponent extends SearchComponent {
                 boolean isTaskActiveOnShard = r.getSolrResponse().getResponse().getBooleanArg("taskStatus");
 
                 if (isTaskActiveOnShard) {
-                    rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + "active");
+                    rb.rsp.getValues().add("taskStatus", "id:" + rb.getTaskStatusCheckUUID() + ", status: active");
                     return;
                 } else {
                     continue;
@@ -97,7 +97,7 @@ public class ActiveTasksListComponent extends SearchComponent {
         if (rb.getTaskStatusCheckUUID() != null) {
             // We got here with the specific taskID check being specified -- this means that the taskID was not
             // found in active tasks on any shard
-            rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + "inactive");
+            rb.rsp.getValues().add("taskStatus", "id:" + rb.getTaskStatusCheckUUID() + ", status: inactive");
             return;
         }
 

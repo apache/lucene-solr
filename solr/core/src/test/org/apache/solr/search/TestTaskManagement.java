@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -69,8 +70,6 @@ public class TestTaskManagement extends SolrCloudTestCase {
                 .process(cluster.getSolrClient());
         cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
         cluster.getSolrClient().setDefaultCollection(COLLECTION_NAME);
-
-        cluster.getSolrClient().setDefaultCollection("collection1");
 
         executorService = ExecutorUtil.newMDCAwareCachedThreadPool("TestTaskManagement");
 
@@ -110,6 +109,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
         queryResponse = cluster.getSolrClient().request(request);
 
         assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
+        assertEquals(404, queryResponse.get("responseCode"));
     }
 
     @Test
@@ -127,7 +127,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-        for (int i = 0; i < 90; i++) {
+        for (int i = 0; i < 100; i++) {
             CompletableFuture<Void> future = cancelQuery(Integer.toString(i), 4000, queryIdsSet, notFoundIdsSet);
 
             futures.add(future);
@@ -138,7 +138,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
         queryFutures.forEach(CompletableFuture::join);
 
         assertEquals("Total query count did not match the expected value",
-                queryIdsSet.size() + notFoundIdsSet.size(), 90);
+                queryIdsSet.size() + notFoundIdsSet.size(), 100);
     }
 
     @Test
@@ -193,7 +193,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
         @SuppressWarnings({"unchecked"})
         String result = (String) queryResponse.get("taskStatus");
 
-        assertFalse(result.contains("true"));
+        assertTrue(result.contains("inactive"));
     }
 
     private CompletableFuture<Void> cancelQuery(final String queryID, final int sleepTime, Set<Integer> cancelledQueryIdsSet,
@@ -221,13 +221,14 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
                     if (responseCode == 200 /* HTTP OK */) {
                         cancelledQueryIdsSet.add(Integer.parseInt(queryID));
-                    } else if (responseCode == 401 /* HTTP NOT FOUND */) {
+                    } else if (responseCode == 404 /* HTTP NOT FOUND */) {
                         notFoundQueryIdSet.add(Integer.parseInt(queryID));
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException(e.getMessage());
+                    throw new CompletionException(e);
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new RuntimeException(e.getMessage());
             }
         }, executorService);
