@@ -40,22 +40,7 @@
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <dependencies>
-    <dependency>
-      <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <!-- This dependency cannot be put into solr-parent, because local        -->
-      <!-- dependencies are always ordered before inherited dependencies.       -->
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
 @solr-analysis-extras.internal.dependencies@
 @solr-analysis-extras.external.dependencies@
-@solr-analysis-extras.internal.test.dependencies@
-@solr-analysis-extras.external.test.dependencies@
   </dependencies>
 </project>

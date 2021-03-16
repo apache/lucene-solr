@@ -42,8 +42,6 @@
   <dependencies>
 @lucene-test-framework.internal.dependencies@
 @lucene-test-framework.external.dependencies@
-@lucene-test-framework.internal.test.dependencies@
-@lucene-test-framework.external.test.dependencies@
   </dependencies>
   <repositories>
     <repository>

@@ -42,15 +42,7 @@
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <dependencies>
-    <dependency> 
-      <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
 @lucene-analyzers-kuromoji.internal.dependencies@
 @lucene-analyzers-kuromoji.external.dependencies@
-@lucene-analyzers-kuromoji.internal.test.dependencies@
-@lucene-analyzers-kuromoji.external.test.dependencies@
   </dependencies>
 </project>

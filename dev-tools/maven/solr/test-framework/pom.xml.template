@@ -48,7 +48,5 @@
     </dependency>
 @solr-test-framework.internal.dependencies@
 @solr-test-framework.external.dependencies@
-@solr-test-framework.internal.test.dependencies@
-@solr-test-framework.external.test.dependencies@
   </dependencies>
 </project>

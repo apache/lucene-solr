@@ -44,7 +44,5 @@
   <dependencies>
 @lucene-codecs.internal.dependencies@
 @lucene-codecs.external.dependencies@
-@lucene-codecs.internal.test.dependencies@
-@lucene-codecs.external.test.dependencies@
   </dependencies>
 </project>

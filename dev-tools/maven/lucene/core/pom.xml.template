@@ -40,7 +40,7 @@
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <dependencies>
-@lucene-core.internal.test.dependencies@
-@lucene-core.external.test.dependencies@
+@lucene-core.internal.dependencies@
+@lucene-core.external.dependencies@
   </dependencies>
 </project>

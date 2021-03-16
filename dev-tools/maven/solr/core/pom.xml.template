@@ -42,7 +42,5 @@
   <dependencies>
 @solr-core.internal.dependencies@
 @solr-core.external.dependencies@
-@solr-core.internal.test.dependencies@
-@solr-core.external.test.dependencies@
   </dependencies>
 </project>

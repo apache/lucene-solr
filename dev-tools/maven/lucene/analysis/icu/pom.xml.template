@@ -43,15 +43,7 @@
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <dependencies>
-    <dependency> 
-      <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
 @lucene-analyzers-icu.internal.dependencies@
 @lucene-analyzers-icu.external.dependencies@
-@lucene-analyzers-icu.internal.test.dependencies@
-@lucene-analyzers-icu.external.test.dependencies@
   </dependencies>
 </project>

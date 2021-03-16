@@ -37,15 +37,7 @@
     <module-directory>lucene/expressions</module-directory>
   </properties>
   <dependencies>
-    <dependency> 
-      <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
 @lucene-expressions.internal.dependencies@
 @lucene-expressions.external.dependencies@
-@lucene-expressions.internal.test.dependencies@
-@lucene-expressions.external.test.dependencies@
   </dependencies>
 </project>

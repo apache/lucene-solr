@@ -37,15 +37,7 @@
     <module-directory>lucene/spatial3d</module-directory>
   </properties>
   <dependencies>
-    <dependency>
-      <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
 @lucene-spatial3d.internal.dependencies@
 @lucene-spatial3d.external.dependencies@
-@lucene-spatial3d.internal.test.dependencies@
-@lucene-spatial3d.external.test.dependencies@
   </dependencies>
 </project>

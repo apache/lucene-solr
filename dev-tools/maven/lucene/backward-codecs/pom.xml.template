@@ -42,15 +42,7 @@
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <dependencies>
-    <dependency> 
-      <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
 @lucene-backward-codecs.internal.dependencies@
 @lucene-backward-codecs.external.dependencies@
-@lucene-backward-codecs.internal.test.dependencies@
-@lucene-backward-codecs.external.test.dependencies@
   </dependencies>
 </project>
