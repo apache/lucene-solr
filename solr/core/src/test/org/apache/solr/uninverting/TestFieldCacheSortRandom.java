@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
@@ -110,7 +111,12 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
           System.out.println("  " + numDocs + ": s=" + s);
         }
 
-        doc.add(new StringField("stringdv", s, Field.Store.NO));
+        if (type == SortField.Type.STRING) {
+          doc.add(new StringField("stringdv", s, Field.Store.NO));
+        } else {
+          assert type == SortField.Type.STRING_VAL;
+          doc.add(new BinaryDocValuesField("stringdv", new BytesRef(s)));
+        }
         docValues.add(new BytesRef(s));
 
       } else {
