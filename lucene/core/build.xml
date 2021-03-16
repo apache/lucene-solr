@@ -70,10 +70,6 @@
     </sequential>
   </target>
 
-  <target name="-dist-maven" depends="-dist-maven-src-java"/>
-
-  <target name="-install-to-maven-local-repo" depends="-install-src-java-to-maven-local-repo"/>
-
   <macrodef name="createLevAutomaton">
       <attribute name="n"/>
       <sequential>

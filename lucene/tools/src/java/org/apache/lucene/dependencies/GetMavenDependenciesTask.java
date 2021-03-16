@@ -90,17 +90,11 @@ public class GetMavenDependenciesTask extends Task {
   private static final String DEPENDENCY_MANAGEMENT_PROPERTY = "lucene.solr.dependency.management";
   private static final String IVY_USER_DIR_PROPERTY = "ivy.default.ivy.user.dir";
   private static final Properties allProperties = new Properties();
-  private static final Set<String> modulesWithSeparateCompileAndTestPOMs = new HashSet<>();
 
   private static final Set<String> globalOptionalExternalDependencies = new HashSet<>();
   private static final Map<String,Set<String>> perModuleOptionalExternalDependencies = new HashMap<>();
   private static final Set<String> modulesWithTransitiveDependencies = new HashSet<>();
   static {
-    // Add modules here that have split compile and test POMs
-    // - they need compile-scope deps to also be test-scope deps.
-    modulesWithSeparateCompileAndTestPOMs.addAll
-        (Arrays.asList("lucene-core", "lucene-codecs", "solr-core", "solr-solrj"));
-
     // Add external dependencies here that should be optional for all modules
     // (i.e., not invoke Maven's transitive dependency mechanism).
     // Format is "groupId:artifactId"
@@ -398,13 +392,6 @@ public class GetMavenDependenciesTask extends Task {
           StringBuilder builder = dep.isTestDependency ? testScopeBuilder : compileScopeBuilder;
           appendDependencyXml(builder, dep.groupId, dep.artifactId, "    ", null, 
                               dep.isTestDependency, dep.isOptional, dep.classifier, null);
-          // Test POMs for solrj, solr-core, lucene-codecs and lucene-core modules
-          // need to include all compile-scope dependencies as test-scope dependencies
-          // since we've turned off transitive dependency resolution.
-          if ( ! dep.isTestDependency && modulesWithSeparateCompileAndTestPOMs.contains(module)) {
-            appendDependencyXml(testScopeBuilder, dep.groupId, dep.artifactId, "    ", null,
-                                true, dep.isOptional, dep.classifier, null);
-          }
         }
       }
       if (compileScopeBuilder.length() > 0) {
@@ -669,9 +656,7 @@ public class GetMavenDependenciesTask extends Task {
       }
       StringBuilder newPropertyValue = new StringBuilder();
       for (String dependency : testDeps) {
-        // modules with separate compile-scope and test-scope POMs need their compile-scope deps
-        // included in their test-scope deps.
-        if (modulesWithSeparateCompileAndTestPOMs.contains(module) || ! compileDeps.contains(dependency)) {
+        if ( ! compileDeps.contains(dependency)) {
           int splitPos = dependency.indexOf(':');
           String groupId = dependency.substring(0, splitPos);
           String artifactId = dependency.substring(splitPos + 1);

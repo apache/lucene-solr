@@ -17,7 +17,8 @@
     limitations under the License.
  -->
 
-<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
+<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant"
+                       xmlns:resolver="antlib:org.apache.maven.resolver.ant"
                        xmlns:ivy="antlib:org.apache.ivy.ant"
                        xmlns:junit4="antlib:com.carrotsearch.junit4"
                        xmlns:jacoco="antlib:org.jacoco.ant"
@@ -717,18 +718,23 @@
       <element name="excludes" optional="true"/>
       <element name="additional-filters" optional="true"/>
     <sequential>
-      <artifact:dependencies filesetId="maven.fileset" useScope="test" type="jar">
-        <artifact:pom file="@{pom.xml}"/>
-        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
-        <!-- disable completely, so this has no chance to download any updates from anywhere: -->
-        <remoteRepository id="apache.snapshots" url="foobar://disabled/">
-          <snapshots enabled="false"/>
-          <releases enabled="false"/>
-        </remoteRepository>
-      </artifact:dependencies>
+      <echo taskname="m2-validate-dependencies" message="POM file: @{pom.xml}"/>
+      <resources id="maven.jars"/><!-- initialize empty -->
+      <resolver:pom id="maven.project" file="@{pom.xml}">
+        <remoterepo id="apache.snapshots" url="foobar://disabled/" releases="false" snapshots="false"/>
+      </resolver:pom>
+      <resolver:resolve>
+        <dependencies>
+          <pom refid="maven.project"/>
+          <!-- those dependencies are included by jetty using dynamic profiles -
+           depending on the JDK version, not sure what's going on: -->
+          <exclusion groupId="org.eclipse.jetty" artifactId="jetty-alpn-openjdk8-client"/>
+        </dependencies>
+        <files refid="maven.jars" scopes="compile,runtime,test"/>
+      </resolver:resolve>
       <licenses licenseDirectory="@{licenseDirectory}">
         <restrict>
-          <fileset refid="maven.fileset"/>
+          <resources refid="maven.jars"/>
           <rsel:not>
             <excludes/>
           </rsel:not>
@@ -1739,6 +1745,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
              uri="antlib:org.apache.maven.artifact.ant" 
              classpathref="maven-ant-tasks.classpath"/>
+    <ivy:cachepath organisation="org.apache.maven.resolver" module="maven-resolver-ant-tasks" revision="1.3.0"
+             inline="true" conf="default" pathid="maven-resolver-tasks.classpath"/>
+    <taskdef resource="org/apache/maven/resolver/ant/antlib.xml"
+             uri="antlib:org.apache.maven.resolver.ant"
+             classpathref="maven-resolver-tasks.classpath"/>
   </target>
 
   <target name="-dist-maven" depends="install-maven-tasks, jar-src, javadocs">
@@ -1785,50 +1796,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
 
-  <target name="-install-src-java-to-maven-local-repo" depends="install-maven-tasks">
-    <sequential>
-      <property name="top.level.dir" location="${common.dir}/.."/>
-      <pathconvert property="pom.xml">
-        <mapper>
-          <chainedmapper>
-            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
-            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
-          </chainedmapper>
-        </mapper>
-        <path location="${ant.file}"/>
-      </pathconvert>
-      <artifact:pom id="maven.project" file="${pom.xml}">
-        <remoteRepository id="${maven.repository.id}" url="${ivy_bootstrap_url1}" />
-      </artifact:pom>
-      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
-        <pom refid="maven.project"/>
-      </artifact:install>
-    </sequential>
-  </target>
-
-  <target name="-dist-maven-src-java" depends="install-maven-tasks, jar-src, javadocs">
-    <sequential>
-      <property name="top.level.dir" location="${common.dir}/.."/>
-      <pathconvert property="pom.xml">
-        <mapper>
-          <chainedmapper>
-            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
-            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
-          </chainedmapper>
-        </mapper>
-        <path location="${ant.file}"/>
-      </pathconvert>
-      <m2-deploy pom.xml="${pom.xml}">
-        <artifact-attachments>
-          <attach file="${build.dir}/${final.name}-src.jar"
-                  classifier="sources"/>
-          <attach file="${build.dir}/${final.name}-javadoc.jar"
-                  classifier="javadoc"/>
-        </artifact-attachments>
-      </m2-deploy>
-    </sequential>
-  </target>
-  
   <target name="-validate-maven-dependencies.init">
     <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
@@ -1896,22 +1863,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         centralized.versions.file="${common.dir}/ivy-versions.properties"
         module.dependencies.properties.file="${module.dependencies.properties.file}"
         maven.dependencies.filters.file="${maven.dependencies.filters.file}"/>
-  </target>
-
-  <target name="-get-maven-poms" depends="-get-maven-dependencies">
-    <property name="maven-build-dir" location="${common.dir}/../maven-build"/>
-    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
-      <fileset dir="${common.dir}/../dev-tools/maven"/>
-      <filterset begintoken="@" endtoken="@">
-        <filter token="version" value="${version}"/>
-        <filter token="version.base" value="${version.base}"/>
-        <filter token="spec.version" value="${spec.version}"/>
-      </filterset>
-      <filterset>
-        <filtersfile file="${maven.dependencies.filters.file}"/>
-      </filterset>
-      <globmapper from="*.template" to="*"/>
-    </copy>
   </target>
 
   <target name="-filter-pom-templates" depends="-get-maven-dependencies">

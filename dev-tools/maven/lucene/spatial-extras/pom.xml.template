@@ -35,35 +35,9 @@
   </description>
   <properties>
     <module-directory>lucene/spatial-extras</module-directory>
-    <relative-top-level>../../..</relative-top-level>
-    <module-path>${relative-top-level}/${module-directory}</module-path>
   </properties>
   <dependencies>
-    <dependency>
-      <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-test-framework</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-spatial3d</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
 @lucene-spatial-extras.internal.dependencies@
 @lucene-spatial-extras.external.dependencies@
-@lucene-spatial-extras.internal.test.dependencies@
-@lucene-spatial-extras.external.test.dependencies@
   </dependencies>
-  <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <testResources>
-      <testResource>
-        <directory>${module-path}/src/test-files</directory>
-      </testResource>
-    </testResources>
-  </build>
 </project>

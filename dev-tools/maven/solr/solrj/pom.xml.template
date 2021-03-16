@@ -27,22 +27,20 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.solr</groupId>
-  <artifactId>solr-solrj-aggregator</artifactId>
-  <packaging>pom</packaging>
-  <name>Apache Solr Solrj aggregator POM</name>
-  <modules>
-    <module>src/java</module>
-    <module>src/test</module>
-  </modules>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <artifactId>solr-solrj</artifactId>
+  <packaging>jar</packaging>
+  <name>Apache Solr Solrj</name>
+  <description>Apache Solr Solrj</description>
+  <properties>
+    <module-directory>solr/solrj</module-directory>
+  </properties>
+  <scm>
+    <connection>scm:git:${vc-anonymous-base-url}</connection>
+    <developerConnection>scm:git:${vc-dev-base-url}</developerConnection>
+    <url>${vc-browse-base-url};f=${module-directory}</url>
+  </scm>
+  <dependencies>
+@solr-solrj.internal.dependencies@
+@solr-solrj.external.dependencies@
+  </dependencies>
 </project>

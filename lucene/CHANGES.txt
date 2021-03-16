@@ -53,8 +53,17 @@ Bug Fixes
 
 Other
 ---------------------
-(No changes)
 
+* LUCENE-9836: Removed the pure Maven build. It is no longer possible to build
+  artifacts using Maven (this feature was no longer working correctly). Due to
+  migration to Gradle for Lucene/Solr 9.0, the maintenance of the Maven build
+  was no longer reasonable. POM files are generated for deployment to Maven
+  Central only. Please use "ant generate-maven-artifacts" to produce and deploy
+  artifacts to any repository.  (Uwe Schindler, Dawid Weiss)
+
+* LUCENE-9836: Migrate Maven tasks to use "maven-resolver-ant-tasks"
+  instead of the no longer maintained "maven-ant-tasks".  (Uwe Schindler)
+  
 ======================= Lucene 8.8.1 =======================
 
 Bug Fixes

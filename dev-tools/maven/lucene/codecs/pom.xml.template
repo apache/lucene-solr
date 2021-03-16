@@ -27,22 +27,22 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-codecs-aggregator</artifactId>
-  <packaging>pom</packaging>
-  <name>Lucene codecs aggregator POM</name>
-  <modules>
-    <module>src/java</module>
-    <module>src/test</module>
-  </modules>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <artifactId>lucene-codecs</artifactId>
+  <packaging>jar</packaging>
+  <name>Lucene codecs</name>
+  <description>
+    Codecs and postings formats for Apache Lucene.
+  </description>
+  <properties>
+    <module-directory>lucene/codecs</module-directory>
+  </properties>
+  <scm>
+    <connection>scm:git:${vc-anonymous-base-url}</connection>
+    <developerConnection>scm:git:${vc-dev-base-url}</developerConnection>
+    <url>${vc-browse-base-url};f=${module-directory}</url>
+  </scm>
+  <dependencies>
+@lucene-codecs.internal.dependencies@
+@lucene-codecs.external.dependencies@
+  </dependencies>
 </project>
