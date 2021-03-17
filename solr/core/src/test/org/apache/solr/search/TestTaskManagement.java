@@ -229,7 +229,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new RuntimeException(e.getMessage());
+                throw new CompletionException(e);
             }
         }, executorService);
     }
@@ -255,7 +255,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
             try {
                 executeQuery(queryId);
             } catch (Exception e) {
-                throw new RuntimeException(e.getMessage());
+                throw new CompletionException(e);
             }
         });
     }
