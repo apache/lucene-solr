@@ -42,7 +42,7 @@ configure(rootProject) {
           new File(project('solr:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
         } else {
           // release build
-          "https://lucene.apache.org/solr/${urlVersion}"
+          "https://solr.apache.org/docs/${urlVersion}"
         }
       }())
 
