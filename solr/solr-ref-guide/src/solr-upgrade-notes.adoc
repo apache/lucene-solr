@@ -293,7 +293,7 @@ Work to replace DIH with a community-supported plugin is underway and may be ava
 A community-supported version of this may be available as a plugin in the future.
 For more details, please see https://issues.apache.org/jira/browse/SOLR-14021[SOLR-14021^].
 
-Users interested in maintaining a feature as a plugin are encouraged to join the https://lucene.apache.org/solr/community.html#mailing-lists-irc[developer mailing list^] to find out more about how to help.
+Users interested in maintaining a feature as a plugin are encouraged to join the https://solr.apache.org/community.html#mailing-lists-chat[developer mailing list^] to find out more about how to help.
 
 === Solr 8.5
 

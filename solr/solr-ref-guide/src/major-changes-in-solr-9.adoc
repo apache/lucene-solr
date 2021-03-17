@@ -159,7 +159,7 @@ escaping because it's inconsistent with the rest of Solr and was limiting.  This
 older format and no longer supports migrating collections from the older format to the current format (previously known
 as stateFormat=2).
 Upgrade is to be done using Collection API MIGRATESTATEFORMAT action using a previous version of Solr.
-See for example https://lucene.apache.org/solr/guide/8_5/cluster-node-management.html#migratestateforma[Solr 8.5 Ref Guide].
+See for example https://solr.apache.org/guide/8_8/cluster-node-management.html#migratestateforma[Solr 8.8 Ref Guide].
 // Can't link directly to .adoc file, need to link to 8.something ref guide as MIGRATESTATEFORMAT no longer exists in 9.0.
 
 === Rolling Upgrades with Solr 9

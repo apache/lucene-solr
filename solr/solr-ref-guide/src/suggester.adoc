@@ -20,7 +20,7 @@ The SuggestComponent in Solr provides users with automatic suggestions for query
 
 You can use this to implement a powerful auto-suggest feature in your search application.
 
-Although it is possible to use the <<spell-checking.adoc#,Spell Checking>> functionality to power autosuggest behavior, Solr has a dedicated http://lucene.apache.org/solr/api/solr-core/org/apache/solr/handler/component/SuggestComponent.html[SuggestComponent] designed for this functionality.
+Although it is possible to use the <<spell-checking.adoc#,Spell Checking>> functionality to power autosuggest behavior, Solr has a dedicated {solr-javadocs}/core/org/apache/solr/handler/component/SuggestComponent.html[SuggestComponent] designed for this functionality.
 
 This approach utilizes Lucene's Suggester implementation and supports all of the lookup implementations available in Lucene.
 
