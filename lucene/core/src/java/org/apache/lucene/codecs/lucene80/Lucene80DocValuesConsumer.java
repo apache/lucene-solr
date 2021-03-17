@@ -41,9 +41,11 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -68,10 +70,14 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   IndexOutput data, meta;
   final int maxDoc;
   private final SegmentWriteState state;
+  private byte[] termsDictBuffer;
 
   /** expert: Creates a new writer */
   public Lucene80DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension, Lucene80DocValuesFormat.Mode mode) throws IOException {
     this.mode = mode;
+    if (Lucene80DocValuesFormat.Mode.BEST_COMPRESSION == this.mode) {
+      this.termsDictBuffer = new byte[1 << 14];
+    }
     boolean success = false;
     try {
       this.state = state;
@@ -679,21 +685,48 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   private void addTermsDict(SortedSetDocValues values) throws IOException {
     final long size = values.getValueCount();
     meta.writeVLong(size);
-    meta.writeInt(Lucene80DocValuesFormat.TERMS_DICT_BLOCK_SHIFT);
+    boolean compress =
+        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION == mode
+            && values.getValueCount()
+                > Lucene80DocValuesFormat.TERMS_DICT_BLOCK_COMPRESSION_THRESHOLD;
+    int code, blockMask, shift;
+    if (compress) {
+      code = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_CODE;
+      blockMask = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_MASK;
+      shift = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_SHIFT;
+    } else {
+      code = shift = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_SHIFT;
+      blockMask = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_MASK;
+    }
 
+    meta.writeInt(code);
+    meta.writeInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
     ByteBuffersDataOutput addressBuffer = new ByteBuffersDataOutput();
     ByteBuffersIndexOutput addressOutput = new ByteBuffersIndexOutput(addressBuffer, "temp", "temp");
-    meta.writeInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
-    long numBlocks = (size + Lucene80DocValuesFormat.TERMS_DICT_BLOCK_MASK) >>> Lucene80DocValuesFormat.TERMS_DICT_BLOCK_SHIFT;
+    long numBlocks = (size + blockMask) >>> shift;
     DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, addressOutput, numBlocks, DIRECT_MONOTONIC_BLOCK_SHIFT);
 
     BytesRefBuilder previous = new BytesRefBuilder();
     long ord = 0;
     long start = data.getFilePointer();
-    int maxLength = 0;
+    int maxLength = 0, maxBlockLength = 0;
     TermsEnum iterator = values.termsEnum();
+
+    LZ4.FastCompressionHashTable ht = null;
+    ByteArrayDataOutput bufferedOutput = null;
+    if (compress) {
+      ht = new LZ4.FastCompressionHashTable();
+      bufferedOutput = new ByteArrayDataOutput(termsDictBuffer);
+    }
+
     for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-      if ((ord & Lucene80DocValuesFormat.TERMS_DICT_BLOCK_MASK) == 0) {
+      if ((ord & blockMask) == 0) {
+        if (compress && bufferedOutput.getPosition() > 0) {
+          maxBlockLength =
+              Math.max(maxBlockLength, compressAndGetTermsDictBlockLength(bufferedOutput, ht));
+          bufferedOutput.reset(termsDictBuffer);
+        }
+
         writer.add(data.getFilePointer() - start);
         data.writeVInt(term.length);
         data.writeBytes(term.bytes, term.offset, term.length);
@@ -701,22 +734,40 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
         final int prefixLength = StringHelper.bytesDifference(previous.get(), term);
         final int suffixLength = term.length - prefixLength;
         assert suffixLength > 0; // terms are unique
-
-        data.writeByte((byte) (Math.min(prefixLength, 15) | (Math.min(15, suffixLength - 1) << 4)));
+        DataOutput blockOutput;
+        if (compress) {
+          // Will write (suffixLength + 1 byte + 2 vint) bytes. Grow the buffer in need.
+          bufferedOutput = maybeGrowBuffer(bufferedOutput, suffixLength + 11);
+          blockOutput = bufferedOutput;
+        } else {
+          blockOutput = data;
+        }
+        blockOutput.writeByte(
+            (byte) (Math.min(prefixLength, 15) | (Math.min(15, suffixLength - 1) << 4)));
         if (prefixLength >= 15) {
-          data.writeVInt(prefixLength - 15);
+          blockOutput.writeVInt(prefixLength - 15);
         }
         if (suffixLength >= 16) {
-          data.writeVInt(suffixLength - 16);
+          blockOutput.writeVInt(suffixLength - 16);
         }
-        data.writeBytes(term.bytes, term.offset + prefixLength, term.length - prefixLength);
+        blockOutput.writeBytes(term.bytes, term.offset + prefixLength, suffixLength);
       }
       maxLength = Math.max(maxLength, term.length);
       previous.copyBytes(term);
       ++ord;
     }
+    // Compress and write out the last block
+    if (compress && bufferedOutput.getPosition() > 0) {
+      maxBlockLength =
+          Math.max(maxBlockLength, compressAndGetTermsDictBlockLength(bufferedOutput, ht));
+    }
+
     writer.finish();
     meta.writeInt(maxLength);
+    if (compress) {
+      // Write one more int for storing max block length. For compressed terms dict only.
+      meta.writeInt(maxBlockLength);
+    }
     meta.writeLong(start);
     meta.writeLong(data.getFilePointer() - start);
     start = data.getFilePointer();
@@ -726,6 +777,27 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
     // Now write the reverse terms index
     writeTermsIndex(values);
+  }
+
+  private int compressAndGetTermsDictBlockLength(
+      ByteArrayDataOutput bufferedOutput, LZ4.FastCompressionHashTable ht) throws IOException {
+    int uncompressedLength = bufferedOutput.getPosition();
+    data.writeVInt(uncompressedLength);
+    long before = data.getFilePointer();
+    LZ4.compress(termsDictBuffer, 0, uncompressedLength, data, ht);
+    int compressedLength = (int) (data.getFilePointer() - before);
+    // Block length will be used for creating buffer for decompression, one corner case is that
+    // compressed length might be bigger than un-compressed length, so just return the bigger one.
+    return Math.max(uncompressedLength, compressedLength);
+  }
+
+  private ByteArrayDataOutput maybeGrowBuffer(ByteArrayDataOutput bufferedOutput, int termLength) {
+    int pos = bufferedOutput.getPosition(), originalLength = termsDictBuffer.length;
+    if (pos + termLength >= originalLength - 1) {
+      termsDictBuffer = ArrayUtil.grow(termsDictBuffer, originalLength + termLength);
+      bufferedOutput = new ByteArrayDataOutput(termsDictBuffer, pos, termsDictBuffer.length - pos);
+    }
+    return bufferedOutput;
   }
 
   private void writeTermsIndex(SortedSetDocValues values) throws IOException {

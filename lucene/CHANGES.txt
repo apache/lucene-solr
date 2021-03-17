@@ -33,6 +33,10 @@ Improvements
 * LUCENE-9725: BM25FQuery was extended to handle similarities beyond BM25Similarity. It
   was renamed to CombinedFieldQuery to reflect its more general scope. (Julie Tibshirani)
 
+* LUCENE-9663: Add compression to terms dict from SortedSet/Sorted DocValues.
+  (Jaison Bi via Bruno Roustant)
+
+
 Optimizations
 ---------------------
 (No changes)
