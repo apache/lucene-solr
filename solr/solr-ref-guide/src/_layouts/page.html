@@ -18,7 +18,11 @@ layout: default
   </nav>
   {% endif %}
 
-  <section class="content">
+  {% comment %}
+  NOTE: link-check-root is not used in any CSS, but must exist once per page as a wrapper
+        around all content that should have links checked (ie: we don't link check header/footer)
+  {% endcomment %}
+  <section class="content link-check-root">
      {{ content }}
   </section>
 

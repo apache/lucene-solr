@@ -10,7 +10,11 @@ layout: default
 {% comment %}NOTE: page_id is also defined in default.html{% endcomment %}
 {% assign page_id = page.url | split: '/' | last | remove: '.html' %}
 
-<div class="homepage container">
+{% comment %}
+NOTE: link-check-root is not used in any CSS, but must exist once per page as a wrapper
+      around all content that should have links checked (ie: we don't link check header/footer)
+{% endcomment %}
+<div class="homepage container link-check-root">
   {{ content }}
 </div>
 

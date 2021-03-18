@@ -178,11 +178,12 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
 
       // For Jekyll, we only care about class='content' -- we don't want to worry
       // about ids/links duplicated in the header/footer of every page,
-      final String mainContentSelector = bareBones ? "body" : ".content";
-      final Element mainContent = doc.select(mainContentSelector).first();
-      if (mainContent == null) {
-        throw new RuntimeException(file.getName() + " has no main content: " + mainContentSelector);
-      }
+      final String mainContentSelector = bareBones ? "body" : ".link-check-root";
+      final Elements mainContents = doc.select(mainContentSelector);
+      if (1 != mainContents.size()) {
+        throw new RuntimeException(file.getName() + " has " + mainContents.size() + " main content elements: " + mainContentSelector);
+      }        
+      final Element mainContent = mainContents.first();
 
       // All of the ID (nodes) in (the content of) this doc
       final Elements nodesWithIds = mainContent.select("[id]");
