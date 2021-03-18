@@ -64,7 +64,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
    */
   private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
   private final AtomicLong _lastShrink = new AtomicLong();
-  private final Map<Runnable,Future> _threads = new ConcurrentHashMap<>(256);
+  private final Map<Runnable,Future> _threads = new ConcurrentHashMap<>(256, 0.75f, SysStats.PROC_COUNT);
 
   private final Set<Future> _threadFutures = ConcurrentHashMap.newKeySet();
 

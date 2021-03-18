@@ -98,8 +98,6 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     cluster.getSolrClient().setDefaultCollection(collection);
 
-    cluster.waitForActiveCollection(collection, 1, 2);
-
     // start a couple indexing threads
     
     int[] maxDocList = new int[] {25, 55};
@@ -156,15 +154,27 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collection, 1, 2);
 
-    new UpdateRequest()
-        .commit(cluster.getSolrClient(), collection);
-
-    cluster.waitForActiveCollection(collection, 1, 2);
-
     // test that leader and replica have same doc count
-    state = getCollectionState(collection);
-    assertShardConsistency(state.getSlice("s1"), true);
 
+    int cnt = 0;
+    while (true) {
+      try {
+        new UpdateRequest().commit(cluster.getSolrClient(), collection);
+      } catch (Exception e) {
+        log.info("commit fail", e);
+      }
+
+      try {
+        state = getCollectionState(collection);
+        assertShardConsistency(state.getSlice("s1"), true);
+        break;
+      } catch (AssertionError error) {
+        if (cnt++ > 5) {
+          throw error;
+        }
+      }
+      Thread.sleep(500);
+    }
   }
 
   private void assertShardConsistency(Slice shard, boolean expectDocs) throws Exception {

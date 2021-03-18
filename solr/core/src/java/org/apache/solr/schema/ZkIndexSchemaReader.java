@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.IOUtils;
@@ -106,7 +107,7 @@ public class ZkIndexSchemaReader implements OnReconnect, Closeable {
     public void close() throws IOException {
       try {
         schemaReader.zkClient.removeWatches(schemaReader.managedSchemaPath, this, WatcherType.Any, true);
-      } catch (KeeperException.NoWatcherException e) {
+      } catch (KeeperException.NoWatcherException | AlreadyClosedException e) {
 
       } catch (Exception e) {
         if (log.isDebugEnabled()) {

@@ -18,9 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.solr.cloud.LeaderElector;
-import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -53,11 +51,27 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
     String shard = params.get(ZkStateReader.SHARD_ID_PROP);
 
-    Replica.State waitForState = Replica.State.getState(params.get(ZkStateReader.STATE_PROP));
+    String state = params.get(ZkStateReader.STATE_PROP);
+
+    Replica.State waitForState = null;
+    if (state != null) {
+      waitForState = Replica.State.getState(state);
+    }
 
     log.info(
         "Going to wait for core: {}, state: {}: params={}",
         cname, waitForState, params);
+
+    LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(leaderName);
+    if (leaderElector == null || !leaderElector.isLeader()) {
+      throw new IllegalStateException("Not the valid leader (replica=" + leaderName + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) +
+          " coll=" + collection);
+    }
+
+    if (waitForState == null) {
+      log.info("Done checking leader:", cname);
+      return;
+    }
 
     assert TestInjection.injectPrepRecoveryOpPauseForever();
 
@@ -66,6 +80,8 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     AtomicReference<String> errorMessage = new AtomicReference<>();
 
     try {
+      Replica.State finalWaitForState = waitForState;
+      Replica.State finalWaitForState1 = waitForState;
       coreContainer.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
         if (c == null) {
           return false;
@@ -81,9 +97,9 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
         isLive = coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName());
         if (isLive) {
-          if (replica.getState() == waitForState) {
+          if (replica.getState() == finalWaitForState) {
             if (log.isDebugEnabled()) {
-              log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState,
+              log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), finalWaitForState,
                   coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
             }
             return true;
@@ -93,24 +109,15 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         }
 
         errorMessage.set(
-            "Timeout waiting to see " + waitForState + " state replica=" + cname + " state=" + (replica == null ? "(null replica)" : replica.getState())
-                + " waitForState=" + waitForState + " isLive=" + isLive + "\n" + coreContainer.getZkController().getZkStateReader().getClusterState()
-                .getCollectionOrNull(collection));
+            "Timeout waiting to see " + finalWaitForState + " state replica=" + cname + " state=" + (replica == null ? "(null replica)" : replica.getState())
+                + " waitForState=" + finalWaitForState1 + " isLive=" + isLive);
         return false;
       });
 
     } catch (TimeoutException | InterruptedException e) {
       ParWork.propagateInterrupt(e);
       String error = errorMessage.get();
-      if (error == null)
-        error = "Timeout waiting for collection state. \n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
-      throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+      log.error(error);
     }
-
-//    LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(leaderName);
-//    if (leaderElector == null || !leaderElector.isLeader()) {
-//      throw new IllegalStateException("Not the valid leader (replica=" + leaderName + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) +
-//          " coll=" + it.handler.getCoreContainer().getZkController().getClusterState().getCollectionOrNull(collection));
-//    }
   }
 }

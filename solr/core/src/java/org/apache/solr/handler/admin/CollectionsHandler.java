@@ -394,6 +394,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     } else {
       if (log.isDebugEnabled()) log.debug("no data in response, checking for timeout");
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
+        if (log.isDebugEnabled()) {
+          coreContainer.getZkController().getZkClient().printLayout();
+        }
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
             + " the collection time out:" + timeout / 1000 + "s " + m);
       } else if (event.getWatchedEvent() != null) {

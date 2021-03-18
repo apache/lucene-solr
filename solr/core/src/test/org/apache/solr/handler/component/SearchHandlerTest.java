@@ -196,6 +196,8 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2).waitForFinalState(true)
           .process(miniCluster.getSolrClient());
 
+      miniCluster.waitForActiveCollection(collectionName, 2, 4);
+
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(ShardParams.SHARDS_TOLERANT, "requireZkConnected");
       QueryRequest req = new QueryRequest(params);

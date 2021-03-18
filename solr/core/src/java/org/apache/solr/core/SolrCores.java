@@ -86,7 +86,8 @@ class SolrCores implements Closeable {
   }
 
   public void load(SolrResourceLoader loader) {
-    transientCoreCache = TransientSolrCoreCacheFactory.newInstance(loader, container);
+    // TODO
+    // transientCoreCache = TransientSolrCoreCacheFactory.newInstance(loader, container);
   }
 
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
@@ -462,8 +463,8 @@ class SolrCores implements Closeable {
   public TransientSolrCoreCache getTransientCacheHandler() {
 
     if (transientCoreCache == null) {
-      log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom {}"
-          , "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
+//      log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom {}"
+//          , "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
       return null;
     }
     return transientCoreCache.getTransientSolrCoreCache();

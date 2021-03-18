@@ -77,6 +77,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class RecoveryStrategy implements Runnable, Closeable {
 
+  private final String collection;
+  private final String shard;
   private volatile CountDownLatch latch;
   private volatile ReplicationHandler replicationHandler;
   private volatile Http2SolrClient recoveryOnlyClient;
@@ -107,7 +109,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   private volatile int waitForUpdatesWithStaleStatePauseMilliSeconds = Integer
       .getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 0);
-  private volatile int maxRetries = 500;
+  private volatile int maxRetries = Integer.getInteger("solr.recovery.maxretries", 500);
   private volatile int startingRecoveryDelayMilliSeconds = Integer
       .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 0);
 
@@ -134,6 +136,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
+    this.collection = cd.getCloudDescriptor().getCollectionName();
+    this.shard  = cd.getCloudDescriptor().getShardId();
 
     this.recoveryListener = recoveryListener;
     zkController = cc.getZkController();
@@ -353,12 +357,20 @@ public class RecoveryStrategy implements Runnable, Closeable {
           // expected
         }
 
-        Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 3000, false);
+        LeaderElector leaderElector = zkController.getLeaderElector(coreName);
 
-        if (leader != null && leader.getName().equals(coreName)) {
+        if (leaderElector != null && leaderElector.isLeader()) {
           log.info("We are the leader, STOP recovery");
           close = true;
           return;
+        }
+
+        Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), Integer.getInteger("solr.getleader.looptimeout", 8000));
+
+        if (leader != null && leader.getName().equals(coreName)) {
+          log.info("We are the leader in cluster state, REPEAT recovery");
+          Thread.sleep(50);
+          continue;
         }
         if (core.isClosing() || core.getCoreContainer().isShutDown()) {
           log.info("We are closing, STOP recovery");
@@ -408,8 +420,21 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
         try {
 
-          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
+          LeaderElector leaderElector = zkController.getLeaderElector(coreName);
 
+          if (leaderElector != null && leaderElector.isLeader()) {
+            log.info("We are the leader, STOP recovery");
+            close = true;
+            return false;
+          }
+
+          leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), Integer.getInteger("solr.getleader.looptimeout", 8000));
+
+          if (leader != null && leader.getName().equals(coreName)) {
+            log.info("We are the leader in cluster state, REPEAT recovery");
+            Thread.sleep(50);
+            continue;
+          }
 
           if (leader != null && leader.getName().equals(coreName)) {
             log.info("We are the leader, STOP recovery");
@@ -603,13 +628,20 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
 
+        LeaderElector leaderElector = zkController.getLeaderElector(coreName);
 
-        leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
-
-        if (leader != null && leader.getName().equals(coreName)) {
+        if (leaderElector != null && leaderElector.isLeader()) {
           log.info("We are the leader, STOP recovery");
           close = true;
           return false;
+        }
+
+        leader = zkController.getZkStateReader().getLeaderRetry(core.getCoreDescriptor().getCollectionName(), core.getCoreDescriptor().getCloudDescriptor().getShardId(), Integer.getInteger("solr.getleader.looptimeout", 8000));
+
+        if (leader != null && leader.getName().equals(coreName)) {
+          log.info("We are the leader in cluster state, REPEAT recovery");
+          Thread.sleep(50);
+          continue;
         }
 
         log.debug("Begin buffering updates. core=[{}]", coreName);
@@ -676,13 +708,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
           didReplication = true;
           try {
 
-            //        try {
-            //          if (prevSendPreRecoveryHttpUriRequest != null) {
-            //            prevSendPreRecoveryHttpUriRequest.cancel();
-            //          }
-            //        } catch (NullPointerException e) {
-            //          // okay
-            //        }
+            try {
+              if (prevSendPreRecoveryHttpUriRequest != null) {
+                prevSendPreRecoveryHttpUriRequest.cancel();
+              }
+            } catch (NullPointerException e) {
+              // okay
+            }
+            log.debug("Begin buffering updates. core=[{}]", coreName);
+            // recalling buffer updates will drop the old buffer tlog
+            ulog.bufferUpdates();
 
             sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getName(), zkStateReader.getClusterState().
                 getCollection(core.getCoreDescriptor().getCollectionName()).getSlice(cloudDesc.getShardId()), core.getCoreDescriptor());
@@ -906,8 +941,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     return close || cc.isShutDown();
   }
 
-  final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice, CoreDescriptor coreDescriptor)
-      throws SolrServerException, IOException {
+  final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice, CoreDescriptor coreDescriptor) {
 
     if (coreDescriptor.getCollectionName() == null) {
       throw new IllegalStateException("Collection name cannot be null");
@@ -923,7 +957,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.info("Sending prep recovery command to {} for leader={} params={}", leaderBaseUrl, leaderCoreName, prepCmd.getParams());
 
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "1000"));
+    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "7000"));
 
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(cc.getUpdateShardHandler().
         getRecoveryOnlyClient()).idleTimeout(readTimeout).markInternalRequest().build()) {
@@ -931,20 +965,19 @@ public class RecoveryStrategy implements Runnable, Closeable {
       prepCmd.setBasePath(leaderBaseUrl);
 
       latch = new CountDownLatch(1);
-      Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener(latch));
+      Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener(latch, leaderCoreName));
       try {
         prevSendPreRecoveryHttpUriRequest = result;
         try {
-          boolean success = latch.await(15, TimeUnit.SECONDS);
+          boolean success = latch.await(readTimeout, TimeUnit.MILLISECONDS);
           if (!success) {
-            result.cancel();
-            throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout waiting for prep recovery cmd on leader");
+            //result.cancel();
+            log.warn("Timeout waiting for prep recovery cmd on leader {}", leaderCoreName);
           }
         } catch (InterruptedException e) {
           close = true;
           ParWork.propagateInterrupt(e);
         } finally {
-          prevSendPreRecoveryHttpUriRequest = null;
           latch = null;
         }
       } finally {
@@ -953,12 +986,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
   }
 
-  private static class NamedListAsyncListener implements AsyncListener<NamedList<Object>> {
+  private class NamedListAsyncListener implements AsyncListener<NamedList<Object>> {
 
     private final CountDownLatch latch;
+    private final String leaderCoreName;
 
-    public NamedListAsyncListener(CountDownLatch latch) {
+    public NamedListAsyncListener(CountDownLatch latch, String leaderCoreName) {
       this.latch = latch;
+      this.leaderCoreName = leaderCoreName;
     }
 
     @Override
@@ -968,15 +1003,46 @@ public class RecoveryStrategy implements Runnable, Closeable {
       } catch (NullPointerException e) {
 
       }
+      prevSendPreRecoveryHttpUriRequest = null;
     }
 
     @Override
     public void onFailure(Throwable throwable, int code) {
-      try {
-        latch.countDown();
-      } catch (NullPointerException e) {
+      log.info("failed sending prep recovery cmd to leader");
 
+      if (throwable.getMessage().contains("Not the valid leader")) {
+        try {
+          try {
+            Thread.sleep(250);
+            cc.getZkController().getZkStateReader().waitForState(RecoveryStrategy.this.collection, 3, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+              if (collectionState == null) {
+                return false;
+              }
+              Slice slice = collectionState.getSlice(shard);
+              if (slice == null) {
+                return false;
+              }
+              if (slice.getLeader() == null) {
+                return false;
+              }
+              if (slice.getLeader().getName() == leaderCoreName) {
+                return false;
+              }
+              return true;
+            });
+          } catch (Exception e) {
+
+          }
+        } finally {
+          try {
+            latch.countDown();
+          } catch (NullPointerException e) {
+
+          }
+          prevSendPreRecoveryHttpUriRequest = null;
+        }
       }
+
     }
   }
 }

@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import com.codahale.metrics.Timer;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -214,7 +215,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     public void close() {
       try {
         zkClient.removeWatches(path, this, WatcherType.Any, true);
-      }  catch (KeeperException.NoWatcherException e) {
+      }  catch (KeeperException.NoWatcherException | AlreadyClosedException e) {
 
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -73,7 +74,7 @@ public class ColStatus {
   }
 
   @SuppressWarnings({"unchecked"})
-  public void getColStatus(NamedList<Object> results) {
+  public void getColStatus(NamedList<Object> results) throws TimeoutException, InterruptedException {
     Collection<String> collections;
     String col = props.getStr(ZkStateReader.COLLECTION_PROP);
     if (col == null) {
@@ -155,7 +156,7 @@ public class ColStatus {
           sliceMap.add("routingRules", rules);
         }
         sliceMap.add("replicas", replicaMap);
-        Replica leader = zkStateReader.getLeader(collection, s.getName());
+        Replica leader = zkStateReader.getLeaderRetry(collection, s.getName(), 10000);
         if (leader == null) { // pick the first one
           leader = s.getReplicas().size() > 0 ? s.getReplicas().iterator().next() : null;
         }

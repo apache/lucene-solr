@@ -102,7 +102,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   private volatile String defaultCollection;
   //no of times collection state to be reloaded if stale state error is received
-  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "3"));
+  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "10"));
   private Random rand = new Random();
 
   private final boolean updatesToLeaders;
@@ -112,7 +112,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   private final ExecutorService threadPool;
   private String idField = ID;
   public static final String STATE_VERSION = "_stateVer_";
-  private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);//3 seconds or 3 million nanos
+  private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);//3 seconds or 3 million nanos
   private final Set<String> NON_ROUTABLE_PARAMS;
   {
     NON_ROUTABLE_PARAMS = new HashSet<>();
@@ -366,7 +366,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       catch (RuntimeException e) {
         // not ready yet, then...
       }
-      TimeUnit.MILLISECONDS.sleep(250);
+      TimeUnit.MILLISECONDS.sleep(50);
     }
     throw new TimeoutException("Timed out waiting for cluster");
   }
@@ -482,9 +482,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     DocCollection col = getDocCollection(collection, null);
 
-    if (col == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collection);
-    }
+//    if (col == null) {
+//      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collection);
+//    }
 
     DocRouter router = col.getRouter();
 
@@ -838,7 +838,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
-
     return requestWithRetryOnStaleState(request, 0, inputCollections);
   }
 
@@ -878,18 +877,18 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
         }
         int collVer = coll.getZNodeVersion();
-        if (coll.getStateFormat()>1) {
-          if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
-          requestedCollections.add(coll);
 
-          if (stateVerParamBuilder == null) {
-            stateVerParamBuilder = new StringBuilder();
-          } else {
-            stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name
-          }
+        if (requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
+        requestedCollections.add(coll);
 
-          stateVerParamBuilder.append(coll.getName()).append(":").append(collVer);
+        if (stateVerParamBuilder == null) {
+          stateVerParamBuilder = new StringBuilder();
+        } else {
+          stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name
         }
+        Map su = coll.getStateUpdates();
+        stateVerParamBuilder.append(coll.getName()).append(":").append(collVer).append(">").append(su == null ? 0 : su.hashCode());
+
       }
 
       if (stateVerParamBuilder != null) {
@@ -980,7 +979,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       boolean stateWasStale = false;
-      if (retryCount < MAX_STALE_RETRIES  &&
+      if (retryCount <= MAX_STALE_RETRIES  &&
           requestedCollections != null    &&
           !requestedCollections.isEmpty() &&
           (SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE || errorCode == 404))
@@ -997,7 +996,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       // if we experienced a communication error, it's worth checking the state
       // with ZK just to make sure the node we're trying to hit is still part of the collection
-      if (retryCount < MAX_STALE_RETRIES &&
+      if (retryCount <= MAX_STALE_RETRIES &&
           !stateWasStale &&
           requestedCollections != null &&
           !requestedCollections.isEmpty() &&
@@ -1020,7 +1019,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
-        log.warn("Re-trying request to collection(s) {} after stale state error from server. retryCound={}", inputCollections, retryCount);
+        log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
         resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections);
       } else {
         if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {
@@ -1030,62 +1029,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
     }
-    if (resp != null && resp.get("exception") == null) {
-      waitForClusterStateUpdates(request, resp);
-    }
 
     return resp;
   }
 
-  protected void waitForClusterStateUpdates(SolrRequest request, NamedList<Object> resp) {
-
-    // TODO - better check that this is a collections api call
-    if (request.getParams() == null || request.getParams().get(CoreAdminParams.ACTION) == null) {
-      return;
-    }
-
-    String action = request.getParams().get(CoreAdminParams.ACTION);
-
-    String collection = request.getParams().get("collection");
-    if (collection == null) {
-      collection = request.getParams().get("name");
-    }
-    if (collection != null) {
-      Integer ver = (Integer) resp.get("csver");
-      if (ver != null) {
-        try {
-          log.info("Wait for catch up to server state {}", ver);
-          getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-            if (collectionState != null && collectionState.getZNodeVersion() >= ver) {
-              return true;
-            }
-            return false;
-          });
-        } catch (TimeoutException | InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for collection version " + ver, e);
-        }
-      } else if (request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETE.toString())) {
-//        try {
-//          getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (c) -> c == null);
-//        } catch (InterruptedException e) {
-//          ParWork.propagateInterrupt(e);
-//          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
-//        } catch (TimeoutException e) {
-//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//        }
-      }
-
-    }
-  }
-
   protected NamedList<Object> sendRequest(SolrRequest request, List<String> inputCollections)
       throws SolrServerException, IOException {
-
-//    if (request.getParams().get(STATE_VERSION) == null) {
-//      throw new IllegalStateException("State version cannot be null " + request.getParams());
-//    }
-
     connect();
 
     boolean sendToLeaders = false;
@@ -1127,7 +1076,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
-      for (String liveNode : liveNodes) {
+      List<String> liveNodesList = new ArrayList<>(liveNodes);
+      Collections.shuffle(liveNodesList, rand);
+      for (String liveNode : liveNodesList) {
         theUrlList.add(Utils.getBaseUrlForNodeName(liveNode,
             getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
       }
@@ -1143,35 +1094,67 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       //   at every shard when getting leaders if we tweaked some things
 
       // Retrieve slices from the cloud state and, for each collection specified, add it to the Map of slices.
-      Map<String,Slice> slices = new HashMap<>();
-      String shardKeys = reqParams.get(ShardParams._ROUTE_);
-      for (String collectionName : collectionNames) {
-        DocCollection col = getDocCollection(collectionName, null);
-        if (col == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
-        }
-        List<Slice> routeSlices = new ArrayList<>(col.getRouter().getSearchSlices(shardKeys, reqParams , col));
-        Collections.shuffle(routeSlices);
-        ClientUtils.addSlices(slices, collectionName, routeSlices, true);
-      }
-
-      // Gather URLs, grouped by leader or replica
       List<Replica> sortedReplicas = new ArrayList<>();
       List<Replica> replicas = new ArrayList<>();
-      for (Slice slice : slices.values()) {
-        Replica leader = slice.getLeader();
-        ArrayList<Replica> replicaList = new ArrayList<>(slice.getReplicas());
-        Collections.shuffle(replicaList);
-        for (Replica replica : replicaList) {
-          String node = replica.getNodeName();
-          if (!liveNodes.contains(node) // Must be a live node to continue
-              || replica.getState() != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
-            continue;
-          if (sendToLeaders && replica.equals(leader)) {
-            sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
-          } else {
-            replicas.add(replica); // replicas here
+      for (int i = 0; i < 2; i++) {
+        Map<String,Slice> slices = new HashMap<>();
+        String shardKeys = reqParams.get(ShardParams._ROUTE_);
+        for (String collectionName : collectionNames) {
+          DocCollection col = getDocCollection(collectionName, null);
+          if (col == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
           }
+          slices.putAll(col.getSlicesMap());
+          List<Slice> routeSlices = new ArrayList<>(col.getRouter().getSearchSlices(shardKeys, reqParams, col));
+          Collections.shuffle(routeSlices);
+          ClientUtils.addSlices(slices, collectionName, routeSlices, true);
+        }
+
+        // Gather URLs, grouped by leader or replica
+
+        for (Slice slice : slices.values()) {
+          Replica leader = slice.getLeader();
+          ArrayList<Replica> replicaList = new ArrayList<>(slice.getReplicas());
+          Collections.shuffle(replicaList);
+          for (Replica replica : replicaList) {
+            String node = replica.getNodeName();
+            if (!liveNodes.contains(node) // Must be a live node to continue
+                || replica.getState() != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
+              continue;
+            if (sendToLeaders && replica.equals(leader)) {
+              sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
+            } else {
+              replicas.add(replica); // replicas here
+            }
+          }
+        }
+
+        if (sortedReplicas.size() == 0) {
+          if (getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
+            ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) getClusterStateProvider();
+            getClusterStateProvider().connect();
+            for (String collectionName : collectionNames) {
+              try {
+                provider.zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (liveNodes1, collectionState) -> {
+                  if (collectionState == null) {
+                    return false;
+                  }
+                  List<Replica> reps = collectionState.getReplicas();
+                  for (Replica rep : reps) {
+                    if (liveNodes1.contains(rep.getNodeName()) && rep.getState() == Replica.State.ACTIVE) {
+                      return true;
+                    }
+                  } return false;
+                });
+              } catch (InterruptedException e) {
+
+              } catch (TimeoutException e) {
+
+              }
+            }
+          }
+        } else {
+          break;
         }
       }
 

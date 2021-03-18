@@ -83,7 +83,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
               .setProperties(collectionProperties);
 
     assertTrue( cmd.process(cloudSolrClient).isSuccess() );
-
+    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * (TEST_NIGHTLY ? REPLICATION_FACTOR : 1));
     
     cloudSolrClient.setDefaultCollection(collectionName);
   }

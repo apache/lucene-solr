@@ -20,6 +20,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -720,7 +721,7 @@ public class JettySolrRunner implements Closeable {
           ZkStateReader reader = coreContainer.getZkController().getZkStateReader();
 
           try {
-            if (!reader.isClosed() && reader.getZkClient().isConnected()) {
+            if (reader != null && !reader.isClosed() && reader.getZkClient().isConnected()) {
               reader.waitForLiveNodes(10, TimeUnit.SECONDS, (n) -> !n.contains(nodeName));
             }
           } catch (InterruptedException e) {
@@ -966,7 +967,7 @@ public class JettySolrRunner implements Closeable {
     public void close() throws IOException {
       try {
         zkClient.removeWatches(ZkStateReader.COLLECTIONS_ZKNODE, this, WatcherType.Any, true);
-      } catch (KeeperException.NoWatcherException e) {
+      } catch (KeeperException.NoWatcherException | AlreadyClosedException e) {
 
       } catch (Exception e) {
         if (log.isDebugEnabled()) log.debug("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());

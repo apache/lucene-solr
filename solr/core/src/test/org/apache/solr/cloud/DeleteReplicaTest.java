@@ -101,6 +101,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).waitForFinalState(true);
     req.process(cluster.getSolrClient());
 
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+
     DocCollection state = getCollectionState(collectionName);
     Slice shard = getRandomShard(state);
     
@@ -151,7 +153,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     final String collectionName = "deletereplica_test";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).waitForFinalState(true).process(cluster.getSolrClient());
 
-    Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1");
+    Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 5000, true);
 
     //Confirm that the instance and data directory exist
     CoreStatus coreStatus = getCoreStatus(leader);
@@ -162,9 +164,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     req.setWaitForFinalState(true);
     req.process(cluster.getSolrClient());
 
-    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 2000);
+    log.info("leader was {}", leader);
 
-
+    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 5000, true);
 
     org.apache.solr.common.util.TimeOut timeOut = new org.apache.solr.common.util.TimeOut(2000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
@@ -398,7 +400,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       int finalI = i;
       threads[i] = new Thread(() -> {
         int doc = finalI * (TEST_NIGHTLY ? 10000 : 100);
+        int cnt = 0;
         while (!closed.get()) {
+          cnt++;
           try {
             cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(doc++)));
           }  catch (AlreadyClosedException e) {
@@ -407,15 +411,18 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
           } catch (Exception e) {
             log.error("Failed on adding document to {}", collectionName, e);
           }
+          // TODO: why did this not stop anymore? Need to write out state sooner?oip9
+          if (cnt > 10000) {
+            break;
+          }
         }
       });
       futures.add(ParWork.getRootSharedExecutor().submit(threads[i]));
     }
 
-
-
+    Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 5000);
     Slice shard1 = getCollectionState(collectionName).getSlice("s1");
-    Replica nonLeader = shard1.getReplicas(rep -> !rep.getName().equals(shard1.getLeader().getName())).get(0);
+    Replica nonLeader = shard1.getReplicas(rep -> !rep.getName().equals(leader.getName())).get(0);
     CollectionAdminRequest.DeleteReplica req = CollectionAdminRequest.deleteReplica(collectionName, "s1", nonLeader.getName());
     req.setWaitForFinalState(true);
     req.process(cluster.getSolrClient());

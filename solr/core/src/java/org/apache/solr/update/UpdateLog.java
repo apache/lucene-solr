@@ -1913,7 +1913,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
 
 
-  protected RecoveryInfo recoveryInfo;
+  protected volatile RecoveryInfo recoveryInfo;
 
   class LogReplayer implements Runnable {
     private Logger loglog = log;  // set to something different?

@@ -71,6 +71,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       node2.stop();
 
       cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
+      cluster.waitForActiveCollection(COLLECTION, 1, 1, true);
 
       UpdateRequest req = new UpdateRequest();
       for (int i = 0; i < 100; i++) {
@@ -154,7 +155,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());
     }
-    Replica oldLeader = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION).getLeader("s1");
+    Replica oldLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(COLLECTION,"s1");
 
 
     node1.stop();

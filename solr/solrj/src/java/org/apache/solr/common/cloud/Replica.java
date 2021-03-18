@@ -266,7 +266,6 @@ public class Replica extends ZkNodeProps {
   // only to be used by ZkStateWriter currently
   public void setState(State state) {
     this.state = state;
-    propMap.put(ZkStateReader.STATE_PROP, state.toString());
   }
 
   public boolean isActive(Set<String> liveNodes) {

@@ -34,7 +34,7 @@
             <Item>
               <New class="org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory">
                 <Arg name="config"><Ref refid="httpConfig" /></Arg>
-                <Set name="maxConcurrentStreams">1024</Set>
+                <Set name="maxConcurrentStreams">4096</Set>
                 <Set name="inputBufferSize">8192</Set>
                 <Set name="streamIdleTimeout"><Property name="solr.jetty.http.streamIdleTimeout" default="240000"/></Set>
                 <Set name="rateControlFactory">

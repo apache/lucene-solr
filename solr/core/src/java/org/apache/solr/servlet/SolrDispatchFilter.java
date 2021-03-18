@@ -406,27 +406,24 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void close() {
     CoreContainer cc = cores;
-
     try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
+//      if (metricManager != null) {
+//        try {
+//          metricManager.unregisterGauges(registryName, metricTag);
+//        } catch (NullPointerException e) {
+//          // okay
+//        } catch (Exception e) {
+//          log.warn("Exception closing FileCleaningTracker", e);
+//        } finally {
+//          metricManager = null;
+//        }
+//      }
     } finally {
-     // if (!cc.isShutDown()) {
+      if (!cc.isShutDown()) {
         log.info("CoreContainer is not yet shutdown during filter destroy, shutting down now {}", cc);
         GlobalTracer.get().close();
         stopCoreContainer(cc);
-    //  }
-
-
+      }
 
 //      if (SolrLifcycleListener.isRegisteredStopped(stopRunnable)) {
 //        SolrLifcycleListener.removeStopped(stopRunnable);

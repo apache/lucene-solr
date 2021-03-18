@@ -63,11 +63,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numPullReplicas;
   private final Integer maxShardsPerNode;
   private final Boolean readOnly;
-  private final Map stateUpdates;
+  private volatile Map stateUpdates;
   private final Long id;
 
   private AtomicInteger sliceAssignCnt = new AtomicInteger();
-  private volatile boolean createdLazy;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, -1, null);
@@ -265,11 +264,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+":" + ":v=" + znodeVersion + " u=" + stateUpdates + " l=" + createdLazy + ")=" + toJSONString(this);
-  }
-  
-  public void setCreatedLazy() {
-    this.createdLazy = true;
+    return "DocCollection("+name+":" + ":v=" + znodeVersion + " u=" + stateUpdates + ")=" + toJSONString(this);
   }
 
   @Override
@@ -451,6 +446,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return stateUpdates != null;
   }
 
+  public void setStateUpdates(Map stateUpdates) {
+    this.stateUpdates = stateUpdates;
+  }
+
   public void setSliceAssignCnt(int i) {
     sliceAssignCnt.set(i);
   }
@@ -465,5 +464,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public void setZnodeVersion(int version) {
     this.znodeVersion = version;
+  }
+
+  public Map<String, Slice> getSlicesCopy() {
+    return new LinkedHashMap<>(slices);
   }
 }

@@ -56,7 +56,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       (1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
     try {
       log.info("Create our collection");
-      CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
+      CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).waitForFinalState(true).process(cluster.getSolrClient());
                                            
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);

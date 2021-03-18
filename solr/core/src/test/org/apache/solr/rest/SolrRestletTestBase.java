@@ -69,6 +69,8 @@ abstract public class SolrRestletTestBase extends RestTestBase {
 
   @After
   public void tearDown() throws Exception {
+    if (jetty != null) jetty.stop();
+    jetty = null;
     super.tearDown();
   }
 }

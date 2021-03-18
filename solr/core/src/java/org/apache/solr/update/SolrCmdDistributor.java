@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * Used for distributing commands from a shard leader to its replicas.
  */
 public class SolrCmdDistributor implements Closeable {
-  private static final int MAX_RETRIES_ON_FORWARD = 2;
+  private static final int MAX_RETRIES_ON_FORWARD = 10;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ConnectionManager.IsClosed isClosed;
   private final ZkStateReader zkStateReader;
@@ -136,6 +136,11 @@ public class SolrCmdDistributor implements Closeable {
       }
 
       if (err.req.retries < maxRetries && doRetry && !isClosed.isClosed()) {
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+
+        }
         err.req.retries++;
 
         SolrException.log(SolrCmdDistributor.log, "sending update to "
@@ -457,7 +462,7 @@ public class SolrCmdDistributor implements Closeable {
 
   public static class StdNode extends Node {
     protected final ZkStateReader zkStateReader;
-    protected Replica nodeProps;
+    protected volatile Replica nodeProps;
     protected String collection;
     protected String shardId;
     private final boolean retry;
@@ -505,7 +510,7 @@ public class SolrCmdDistributor implements Closeable {
 
     @Override
     public boolean checkRetry() {
-      return true;
+      return false;
     }
 
     @Override
@@ -579,6 +584,7 @@ public class SolrCmdDistributor implements Closeable {
 
     @Override
     public boolean checkRetry() {
+      log.debug("check retry");
       Replica leaderProps;
       try {
         leaderProps = zkStateReader.getLeaderRetry(

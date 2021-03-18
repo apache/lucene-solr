@@ -282,7 +282,7 @@ public class LeaderElector implements Closeable {
       if (success) {
         state = LEADER;
       } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed becoming leader");
+        log.warn("Failed becoming leader {}", context.leaderProps);
       }
     } finally {
       if (!success) {
@@ -451,7 +451,7 @@ public class LeaderElector implements Closeable {
   }
 
   private boolean shouldRejectJoins() {
-    return zkController.getCoreContainer().isShutDown() || zkController.isDcCalled() || isClosed;
+    return zkController.getCoreContainer().isShutDown() || zkController.isDcCalled() || zkClient.isClosed();
   }
 
   @Override
@@ -580,7 +580,7 @@ public class LeaderElector implements Closeable {
       this.closed = true;
       try {
         zkClient.removeWatches(watchedNode, this, WatcherType.Any, true);
-      } catch (KeeperException.NoWatcherException e) {
+      } catch (KeeperException.NoWatcherException | AlreadyClosedException e) {
 
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());

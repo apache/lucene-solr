@@ -149,7 +149,7 @@ public abstract class AbstractPluginLoader<T>
     AtomicReference<T> defaultPlugin = new AtomicReference<>();
     XPath xpath = loader.getXPath();
     if (nodes !=null ) {
-      for (int i=0; i<nodes.size(); i++) {
+      for (int i = 0; i < nodes.size(); i++) {
         try (ParWork parWork = new ParWork(this, false, true)) {
           NodeInfo node = nodes.get(i);
 
@@ -164,40 +164,39 @@ public abstract class AbstractPluginLoader<T>
             }
 
             String finalName = name;
-            parWork.collect(name, ()->{
-              try {
-                T plugin = create(loader, finalName, className, node, xpath);
 
-                if (log.isTraceEnabled()) {
-                  log.trace("created {}: {}", ((finalName != null) ? finalName : ""), plugin.getClass().getName());
-                }
+            try {
+              T plugin = create(loader, finalName, className, node, xpath);
 
-                // Either initialize now or wait till everything has been registered
-                if (preRegister) {
-                  info.add(new PluginInitInfo(plugin, node));
-                } else {
-                  init(plugin, node);
-                }
-
-                T old = register(finalName, plugin);
-                if (old != null && !(finalName == null && !requireName)) {
-                  throw new SolrException(ErrorCode.SERVER_ERROR, "Multiple " + type + " registered to the same name: " + finalName + " ignoring: " + old);
-                }
-
-                if (defaultStr != null && Boolean.parseBoolean(defaultStr)) {
-                  if (defaultPlugin.get() != null) {
-                    throw new SolrException(ErrorCode.SERVER_ERROR, "Multiple default " + type + " plugins: " + defaultPlugin + " AND " + finalName);
-                  }
-                  defaultPlugin.set(plugin);
-                }
-              } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                  throw (RuntimeException) e;
-                } else {
-                  throw new SolrException(ErrorCode.SERVER_ERROR, e);
-                }
+              if (log.isTraceEnabled()) {
+                log.trace("created {}: {}", ((finalName != null) ? finalName : ""), plugin.getClass().getName());
               }
-            });
+
+              // Either initialize now or wait till everything has been registered
+              if (preRegister) {
+                info.add(new PluginInitInfo(plugin, node));
+              } else {
+                init(plugin, node);
+              }
+
+              T old = register(finalName, plugin);
+              if (old != null && !(finalName == null && !requireName)) {
+                throw new SolrException(ErrorCode.SERVER_ERROR, "Multiple " + type + " registered to the same name: " + finalName + " ignoring: " + old);
+              }
+
+              if (defaultStr != null && Boolean.parseBoolean(defaultStr)) {
+                if (defaultPlugin.get() != null) {
+                  throw new SolrException(ErrorCode.SERVER_ERROR, "Multiple default " + type + " plugins: " + defaultPlugin + " AND " + finalName);
+                }
+                defaultPlugin.set(plugin);
+              }
+            } catch (Exception e) {
+              if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+              } else {
+                throw new SolrException(ErrorCode.SERVER_ERROR, e);
+              }
+            }
 
           } catch (Exception ex) {
             ParWork.propagateInterrupt(ex);

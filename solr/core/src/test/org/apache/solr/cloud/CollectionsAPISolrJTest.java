@@ -89,7 +89,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     System.setProperty("solr.zkclienttimeout", "15000");
     System.setProperty("zkClientTimeout", "15000");
 
-
+    System.setProperty("solr.getleader.looptimeout", "10000");
     String timeout = "640000";
     System.setProperty("solr.http2solrclient.default.idletimeout", timeout);
     System.setProperty("distribUpdateSoTimeout", timeout);
@@ -438,6 +438,18 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 //    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
 //    assertEquals(1, coresStatus.size());
 
+    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 5000, TimeUnit.MILLISECONDS, (liveNodes, collectionState) -> {
+      if (collectionState == null) {
+        return false;
+      }
+      for (Replica replica  : collectionState.getReplicas()) {
+        if (replica.getState() != Replica.State.ACTIVE) {
+          return  false;
+        }
+      }
+      return true;
+    });
+
     DocCollection testCollection = getCollectionState(collectionName);
 
     Replica replica1 = testCollection.getReplicas().iterator().next();
@@ -555,6 +567,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @LuceneTestCase.Nightly
   public void testColStatus() throws Exception {
     final String collectionName = "collectionStatusTest";
+
     CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
         .setMaxShardsPerNode(100)
         .waitForFinalState(true)

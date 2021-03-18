@@ -149,7 +149,7 @@ public abstract class ManagedResourceStorage {
         dir.mkdirs();
 
       storageDir = dir.getAbsolutePath();      
-      log.info("File-based storage initialized to use dir: {}", storageDir);
+      log.debug("File-based storage initialized to use dir: {}", storageDir);
     }
     
     @Override
@@ -332,7 +332,7 @@ public abstract class ManagedResourceStorage {
         byte[] znodeData = toByteArray();
         try {
           zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
-          log.info("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
+          log.debug("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
 
         } catch (KeeperException.NodeExistsException e) {
           try {

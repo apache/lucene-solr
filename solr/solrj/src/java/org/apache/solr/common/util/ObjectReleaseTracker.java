@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static Map<Object,ObjectTrackerException> OBJECTS = new ConcurrentHashMap<>(64, 0.75f, 1);
+  public static Map<Object,ObjectTrackerException> OBJECTS = new ConcurrentHashMap<>(128, 0.75f, 5);
 
 
   protected final static ThreadLocal<StringBuilder> THREAD_LOCAL_SB = new ThreadLocal<>();

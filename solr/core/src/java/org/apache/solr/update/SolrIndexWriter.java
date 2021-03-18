@@ -231,7 +231,8 @@ public class SolrIndexWriter extends IndexWriter {
       directoryFactory.release(getDirectory());
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating IndexWriter");
     }
-    assert ObjectReleaseTracker.track(this);
+    // TODO:
+    // assert ObjectReleaseTracker.track(this);
   }
 
   public static Directory getDir(DirectoryFactory directoryFactory, String path, SolrIndexConfig config) {

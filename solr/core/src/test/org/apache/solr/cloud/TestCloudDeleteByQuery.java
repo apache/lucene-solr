@@ -130,6 +130,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
+    cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
+
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
     

@@ -186,7 +186,12 @@ public class ShardTerms implements MapWriter {
    */
   public ShardTerms setTermEqualsToLeader(String coreNodeName) {
     long maxTerm = getMaxTerm();
-    if (values.get(coreNodeName) == maxTerm) return null;
+    Long term = values.get(coreNodeName);
+    if (term == null) {
+      registerTerm(coreNodeName);
+      term = 0l;
+    }
+    if (term == maxTerm) return null;
 
     Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     newValues.put(coreNodeName, maxTerm);

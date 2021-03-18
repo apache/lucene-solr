@@ -279,7 +279,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private Replica findLeader() {
     for (Replica replica : replicas.values()) {
       String leaderStr = replica.getStr(LEADER);
-      if (leaderStr != null && leaderStr.equals("true") && replica.getState() == Replica.State.ACTIVE) {
+      if (leaderStr != null && leaderStr.equals("true")) {
         return replica;
       }
     }
@@ -347,7 +347,6 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   // only to be used by ZkStateWriter currently
   public void setState(State state) {
     this.state = state;
-    propMap.put(ZkStateReader.STATE_PROP, state.toString());
   }
 
   // only to be used by ZkStateWriter currently
@@ -365,7 +364,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   @Override
   public String toString() {
-    return name + ':' + toJSONString(propMap);
+    return name + "[" + leader + "]"  + ':' + toJSONString(propMap);
   }
 
   @Override

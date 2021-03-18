@@ -466,7 +466,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.add(cmd);
-          log.info("docid={} dropped because not active and buffering and not a replay update", cmd.getPrintableId());
+          log.debug("docid={} buffering update", cmd.getPrintableId());
           if (SkyHook.skyHookDoc != null) {
             SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, non logic applied, but we are buffering - added to ulog only");
           }

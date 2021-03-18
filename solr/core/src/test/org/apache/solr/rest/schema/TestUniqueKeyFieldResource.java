@@ -34,10 +34,11 @@ public class TestUniqueKeyFieldResource extends SolrRestletTestBase {
 
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
     if (jetty != null) {
       jetty.stop();
     }
+    jetty = null;
+    super.tearDown();
   }
 
   @Test

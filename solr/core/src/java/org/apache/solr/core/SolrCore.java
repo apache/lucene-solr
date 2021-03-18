@@ -749,13 +749,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             coreContainer.solrCoreExecutor.submit(() -> {
               try {
                 log.warn("Closing failed SolrCore from failed reload");
-                finalCore.closeAndWait();
+                finalCore.close();
               } catch (Exception e) {
                 log.error("Exception waiting for core to close on reload failure", e);
               }
             });
           } catch (RejectedExecutionException e) {
-            finalCore.closeAndWait();
+            finalCore.close();
           }
         }
       }
@@ -2479,6 +2479,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), (realtime ? "realtime" : "main"), newReader, true, !realtime, true,
                 directoryFactory);
           } else {
+            if (coreContainer.isShutDown() || closing) {
+              throw new AlreadyClosedException();
+            }
             RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
             DirectoryReader newReader = null;
             try {

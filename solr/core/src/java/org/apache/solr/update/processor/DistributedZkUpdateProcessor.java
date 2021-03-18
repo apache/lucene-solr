@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -164,7 +165,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     Replica leaderReplica;
     try {
-      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, desc.getCloudDescriptor().getShardId(), 10000);
+      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, desc.getCloudDescriptor().getShardId(), 1000);
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
@@ -682,7 +683,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           + "failed since we're not in cloud mode.");
     }
     try {
-      return zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 3000, true).getCoreUrl();
+      return zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 5000).getCoreUrl();
     } catch (InterruptedException | TimeoutException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception during fetching from leader.", e);
@@ -773,10 +774,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String shardId = slice.getName();
     Replica leaderReplica;
     try {
+
+      doDefensiveChecks(phase);
+
       // Not equivalent to getLeaderProps, which  retries to find a leader.
-      // Replica leader = slice.getLeader();
-      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 5000);
-      isLeader = leaderReplica.getName().equals(desc.getName());
+      leaderReplica = slice.getLeader();
+//      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 10000);
+      isLeader = leaderReplica != null && leaderReplica.getName().equals(desc.getName());
 
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
@@ -784,8 +788,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
         }
       }
-
-      doDefensiveChecks(phase);
 
       // if request is coming from another collection then we want it to be sent to all replicas
       // even if its phase is FROMLEADER
@@ -958,7 +960,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
       Replica myLeader = null;
       try {
-        myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId, 1500, true);
+        myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId, 5000);
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "error getting leader", e);
       }
@@ -1151,6 +1153,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     DocCollection docCollection = clusterState.getCollection(collection);
     Slice mySlice = docCollection.getSlice(cloudDesc.getShardId());
+
+    if (DistribPhase.TOLEADER == phase) {
+      LeaderElector leaderElector = req.getCore().getCoreContainer().getZkController().getLeaderElector(req.getCore().getName());
+      if (leaderElector == null || !leaderElector.isLeader()) {
+        throw new IllegalStateException(
+            "Not the valid leader (replica=" + req.getCore().getName() + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) + " coll=" + req.getCore()
+                .getCoreContainer().getZkController().getClusterState().getCollectionOrNull(req.getCore().getCoreDescriptor().getCollectionName()));
+      }
+    }
 
     if (DistribPhase.FROMLEADER == phase && isLeader && from != null) { // from will be null on log replay
       String fromShard = req.getParams().get(DISTRIB_FROM_PARENT);

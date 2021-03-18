@@ -52,6 +52,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
 
     final String testCollectionName = "c8n_1x1";
     CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1)
+        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());

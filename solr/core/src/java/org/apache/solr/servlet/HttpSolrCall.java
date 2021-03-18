@@ -260,6 +260,7 @@ public class HttpSolrCall {
       core = cores.getCore(origCorename);
 
       if (core == null && cores.isCoreLoading(origCorename)) {
+        log.debug("core is loading, will wait a bit");
         cores.waitForLoadingCore(origCorename, 5000);
         core = cores.getCore(origCorename);
       }
@@ -349,10 +350,10 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
-        invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+
+        invalidStates = checkStateVersionsAreValid(getCollectionsList(), queryParams.get(CloudSolrClient.STATE_VERSION));
 
         ensureStatesAreAtLeastAtClient();
-
         addCollectionParamIfNeeded(getCollectionsList());
 
         action = PROCESS;
@@ -494,17 +495,16 @@ public class HttpSolrCall {
 
   protected void extractRemotePath(String collectionName) throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException, TimeoutException {
 
-    ensureStatesAreAtLeastAtClient();
 
     coreUrl = getRemoteCoreUrl(collectionName);
     // don't proxy for internal update requests
-    Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+//    Map<String,Integer> invalidStates = checkStateVersionsAreValid(getCollectionsList(), queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
         && queryParams.get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
-      if (invalidStates != null) {
-        //it does not make sense to send the request to a remote node
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
-      }
+//      if (invalidStates != null) {
+//        //it does not make sense to send the request to a remote node
+//        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
+//      }
       action = REMOTEQUERY;
     } else {
       if (!retry) {
@@ -1033,8 +1033,20 @@ public class HttpSolrCall {
   }
 
   /** Returns null if the state ({@link CloudSolrClient#STATE_VERSION}) is good; otherwise returns state problems. */
-  private Map<String, Integer> checkStateVersionsAreValid(String stateVer) {
+  private Map<String, Integer> checkStateVersionsAreValid(List<String> collectionsList, String stateVer) {
     // TODO: for collections that are local and watched, we should just wait for the right min state, not eager fetch everything
+//    Set<String> colList = cores.getZkController().getZkStateReader().getClusterState().getCollectionsMap().keySet();
+//    if ((stateVer == null || stateVer.isEmpty()) && cores.isZooKeeperAware()) {
+//      StringBuilder sb = new StringBuilder();
+//      for (String collection : colList) {
+//        if (sb.length() > 0) {
+//          sb.append("|");
+//        }
+//        sb.append(collection + ":0>0");
+//      }
+//      stateVer = sb.toString();
+//    }
+
     Map<String, Integer> result = null;
     String[] pairs;
     if (stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware()) {
@@ -1043,7 +1055,12 @@ public class HttpSolrCall {
       for (String pair : pairs) {
         String[] pcs = StringUtils.split(pair, ':');
         if (pcs.length == 2 && !pcs[0].isEmpty() && !pcs[1].isEmpty()) {
-          Integer status = cores.getZkController().getZkStateReader().compareStateVersions(pcs[0], Integer.parseInt(pcs[1]));
+
+          String[] versionAndUpdatesHash = pcs[1].split(">");
+          int version = Integer.parseInt(versionAndUpdatesHash[0]);
+          int updateHash = Integer.parseInt(versionAndUpdatesHash[1]);
+
+          Integer status = cores.getZkController().getZkStateReader().compareStateVersions(pcs[0], version, updateHash);
           if (status != null) {
             if (result == null) result = new HashMap<>();
             result.put(pcs[0], status);
@@ -1083,8 +1100,6 @@ public class HttpSolrCall {
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) throws TimeoutException, InterruptedException {
     log.debug("get core by collection {} {}", collectionName, isPreferLeader);
 
-    ensureStatesAreAtLeastAtClient();
-
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
 
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -1093,6 +1108,12 @@ public class HttpSolrCall {
     if (collection == null) {
       log.debug("no local core found for collection={}", collectionName);
       return null;
+    }
+
+    try {
+      zkStateReader.waitForActiveCollection(collectionName, 10000, TimeUnit.MILLISECONDS, true, collection.getSlices().size(), collection.getReplicas().size(), false);
+    } catch (Exception e) {
+      log.warn("Did not find leaders for collection:" + collection.getName());
     }
 
     if (isPreferLeader) {
@@ -1114,7 +1135,7 @@ public class HttpSolrCall {
       RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
       while (it.hasNext()) {
         Replica replica = it.next();
-        if (!checkActive || (liveNodes.contains(replica.getNodeName()))) {
+        if (liveNodes.contains(replica.getNodeName())) {
           SolrCore core = checkProps(replica);
           if (core != null && checkActive && replica.getState() != Replica.State.ACTIVE) {
             try {

@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -147,9 +146,9 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
       //   updateMappingsFromZk(this.jettys, this.clients);
       leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 5)));
       if (deadJetty == leaderJetty) {
-        Thread.sleep(100);
+        Thread.sleep(500);
       }
-      if (cnt++ >= 3) {
+      if (cnt++ >= 30) {
         fail("don't expect leader to be on the jetty we stopped deadJetty=" + deadJetty.getNodeName() + " leaderJetty=" + leaderJetty.getNodeName());
       }
     }

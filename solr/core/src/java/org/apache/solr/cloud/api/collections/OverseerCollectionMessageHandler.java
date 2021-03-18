@@ -1245,7 +1245,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       this.closed = true;
       try {
         zkClient.removeWatches(watchPath, this, WatcherType.Any, true);
-      } catch (KeeperException.NoWatcherException e) {
+      } catch (KeeperException.NoWatcherException | AlreadyClosedException e) {
 
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());

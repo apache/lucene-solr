@@ -116,6 +116,7 @@ public class DeleteReplicaCmd implements Cmd {
         ShardRequestTracker finalShardRequestTracker = shardRequestTracker;
         ShardHandler finalShardHandler = shardHandler;
         String finalCollectionName = collectionName;
+        String finalCollectionName2 = collectionName;
         response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
           @Override
           public CollectionCmdResponse.Response call() {
@@ -134,6 +135,7 @@ public class DeleteReplicaCmd implements Cmd {
                 log.error("Exception waiting for delete replica response");
               }
             }
+            ocmh.overseer.getZkStateWriter().writePendingUpdates(finalCollectionName2);
             Set<String> replicas = (Set<String>) resp.results.get("replicas_deleted");
             for (String replica : replicas) {
               try {

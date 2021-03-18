@@ -122,6 +122,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         CollectionAdminRequest
             .createCollection(collectionName, "conf", 2, 1, 0, 3).waitForFinalState(true)
             .process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
       case 1:
         // Sometimes use v1 API
@@ -132,6 +133,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             3);    // pullReplicas);
         url = url + SolrTestCaseUtil.pickRandom("", "&nrtReplicas=1", "&replicationFactor=1"); // These options should all mean the same
         Http2SolrClient.GET(url, cluster.getSolrClient().getHttpClient());
+        cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
       case 2:
         // Sometimes use V2 API
@@ -146,6 +148,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             .POST(url, cluster.getSolrClient().getHttpClient(),
                 requestBody.getBytes("UTF-8"), "application/json");
         assertEquals(200, response.status);
+        cluster.waitForActiveCollection(collectionName, 2, 8);
         break;
     }
     boolean reloaded = false;
@@ -213,7 +216,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas).waitForFinalState(true)
     .process(cluster.getSolrClient());
-    waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas", collectionName, clusterShape(1, numPullReplicas + 1));
+    cluster.waitForActiveCollection(collectionName, 1, numPullReplicas + 1);
     DocCollection docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
     assertEquals(1, docCollection.getSlices().size());
 
@@ -524,7 +527,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query) throws IOException, SolrServerException, InterruptedException {
-    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut t = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : replicas) {
       if (cluster.getSolrClient().getZkStateReader().isNodeLive(r.getNodeName())) {
         try (Http2SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {

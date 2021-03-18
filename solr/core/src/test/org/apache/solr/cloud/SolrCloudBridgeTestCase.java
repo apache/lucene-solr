@@ -440,7 +440,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         leader = tmp;
         break;
       }
-      Thread.sleep(50);
+      Thread.sleep(250);
     }
     assertNotNull("Could not find active leader for " + shardId + " of " +
         testCollectionName + " after "+timeoutSecs+" secs;", leader);

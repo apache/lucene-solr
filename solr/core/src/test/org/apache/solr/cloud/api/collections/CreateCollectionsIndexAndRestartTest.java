@@ -26,6 +26,7 @@ import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.ParWork;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slow
 @LuceneTestCase.Nightly
+@Ignore // tmp using too large for test ram
 public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,7 +58,7 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
 
   @Test
   public void start() throws Exception {
-    int collectionCnt = 5;
+    int collectionCnt = 80;
     List<Future> futures = new ArrayList<>();
     List<Future> indexFutures = new ArrayList<>();
     for (int i = 0; i < collectionCnt; i ++) {
@@ -96,18 +98,22 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(collectionName, 4, 16);
     }
 
-
+    List<JettySolrRunner> stoppedRunners = new ArrayList<>();
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       log.info("Stopping {}", runner);
+      if (random().nextBoolean()) {
+        continue;
+      }
       runner.stop();
+      stoppedRunners.add(runner);
     }
 
-    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+    for (JettySolrRunner runner : stoppedRunners) {
       log.info("Starting {}", runner);
       runner.start();
     }
 
-
+    Thread.sleep(5000);
     for (int r = 0; r < 2; r++) {
       for (int i = 0; i < collectionCnt; i++) {
         final String collectionName = "testCollection" + i;

@@ -398,29 +398,30 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           if (waitForFinalState && (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY))) {
             try {
               zkStateReader.waitForState(collectionName, CREATE_COLLECTION_TIMEOUT, TimeUnit.SECONDS, (l, c) -> {
+                log.debug("notified cmd {}", c);
                 if (c == null) {
                   return false;
                 }
                 for (String name : coresToCreate.keySet()) {
-                  if (log.isTraceEnabled()) log.trace("look for core {}", name);
+                  log.debug("look for core {} {} {} {}", name, c.getReplica(name), c.getReplica(name).getState(),  c.getReplica(name).getState() != Replica.State.ACTIVE);
                   if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
-                    if (log.isTraceEnabled()) log.trace("not the right replica or state {}", c.getReplica(name));
+                    log.debug("not the right replica or state {}", c.getReplica(name));
                     return false;
                   }
                 }
                 Collection<Slice> slices = c.getSlices();
                 if (slices.size() < shardNames.size()) {
-                  if (log.isTraceEnabled()) log.trace("wrong number slices {} vs {}", slices.size(), shardNames.size());
+                  log.debug("wrong number slices {} vs {}", slices.size(), shardNames.size());
                   return false;
                 }
                 for (Slice slice : slices) {
-                  if (log.isTraceEnabled()) log.trace("slice {} leader={}", slice, slice.getLeader());
+                  log.debug("slice {} leader={}", slice, slice.getLeader());
                   if (slice.getLeader() == null || (slice.getLeader() != null && slice.getLeader().getState() != Replica.State.ACTIVE)) {
-                    if (log.isTraceEnabled()) log.trace("no leader found for slice {}", slice.getName());
+                    log.debug("no leader found for slice {}", slice.getName());
                     return false;
                   }
                 }
-                if (log.isTraceEnabled()) log.trace("return true, everything active");
+                log.debug("return true, everything active");
                 return true;
               });
             } catch (InterruptedException e) {

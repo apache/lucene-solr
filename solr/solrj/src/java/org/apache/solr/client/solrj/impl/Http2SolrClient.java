@@ -314,20 +314,23 @@ public class Http2SolrClient extends SolrClient {
     if (log.isTraceEnabled()) log.trace("Closing {} closeClient={}", this.getClass().getSimpleName(), closeClient);
     // assert closeTracker != null ? closeTracker.close() : true;
     try {
-      asyncTracker.close();
-    } catch (Exception e) {
-      log.error("Exception closing httpClient asyncTracker", e);
-    }
-    closed = true;
-    if (closeClient) {
       try {
-        httpClient.stop();
+        asyncTracker.close();
       } catch (Exception e) {
-        log.error("Exception closing httpClient", e);
+        log.error("Exception closing httpClient asyncTracker", e);
       }
+      closed = true;
+      if (closeClient) {
+        try {
+          httpClient.stop();
+        } catch (Exception e) {
+          log.error("Exception closing httpClient", e);
+        }
+      }
+      if (log.isTraceEnabled()) log.trace("Done closing {}", this.getClass().getSimpleName());
+    } finally {
+      assert ObjectReleaseTracker.release(this);
     }
-    if (log.isTraceEnabled()) log.trace("Done closing {}", this.getClass().getSimpleName());
-    assert ObjectReleaseTracker.release(this);
   }
 
   public void waitForOutstandingRequests() {
@@ -1150,7 +1153,7 @@ public class Http2SolrClient extends SolrClient {
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout = DEFAULT_IDLE_TIME;
     private Integer connectionTimeout;
-    private Integer maxConnectionsPerHost = 32;
+    private Integer maxConnectionsPerHost = 64;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     protected Map<String,String> headers = new HashMap<>(12);

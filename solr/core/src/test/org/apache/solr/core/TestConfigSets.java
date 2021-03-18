@@ -136,10 +136,10 @@ public class TestConfigSets extends SolrTestCaseJ4 {
       // Now copy in a config with a /dump handler and reload
       FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/solrconfig-withgethandler.xml"), new File(new File(configSetsDir, "configset-2/conf"), "solrconfig.xml"));
       container.reload("core1");
-      core.close();
+
       core = container.getCore("core1");
       assertThat("A /dump handler should be defined in the reloaded configuration", core.getRequestHandler("/dump"), is(notNullValue()));
-      core.close();
+
     } finally {
       container.shutdown();
     }

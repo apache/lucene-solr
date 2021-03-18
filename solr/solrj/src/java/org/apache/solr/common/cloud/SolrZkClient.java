@@ -490,6 +490,11 @@ public class SolrZkClient implements Closeable {
     }
   }
 
+  public void create(final String path, final byte data[], CreateMode createMode, AsyncCallback.Create2Callback cb) throws KeeperException, InterruptedException {
+    List<ACL> acls = zkACLProvider.getACLsToAdd(path);
+    connManager.getKeeper().create(path, data, acls, createMode, cb, "create", -1);
+  }
+
   public String create(final String path, final byte[] data, final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
     return create(path, data, createMode, retryOnConnLoss, false);
   }

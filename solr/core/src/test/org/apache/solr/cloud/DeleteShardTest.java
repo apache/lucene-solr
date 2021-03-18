@@ -137,6 +137,8 @@ public class DeleteShardTest extends SolrCloudTestCase {
         .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
+    cluster.waitForActiveCollection(collection, 3, 3);
+
     // Get replica details
     Replica leader = getCollectionState(collection).getLeader("a");
 
