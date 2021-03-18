@@ -82,7 +82,7 @@ def javaJavadocPackages = rootProject.file("${resources}/java11/")
 def junitJavadocPackages = rootProject.file("${resources}/junit/")
 allprojects {
   project.tasks.withType(RenderJavadocTask) {
-    title = "${project.path.startsWith(':lucene') ? 'Lucene' : 'Solr'} ${project.version} ${project.name} API"
+    title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
         "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
@@ -260,7 +260,7 @@ class RenderJavadocTask extends DefaultTask {
     def opts = []
     opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
     opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
-    opts << [ '-subpackages', project.path.startsWith(':lucene') ? 'org.apache.lucene' : 'org.apache.solr' ]
+    opts << [ '-subpackages', 'org.apache.solr' ]
     opts << [ '-d', outputDir ]
     opts << '-protected'
     opts << [ '-encoding', 'UTF-8' ]

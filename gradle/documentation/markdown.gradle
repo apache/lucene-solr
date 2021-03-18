@@ -40,7 +40,7 @@ buildscript {
   }
 }
 
-configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path == ':solr:documentation' }) {
+configure(project(':solr:documentation')) {
   task markdownToHtml(type: Copy) {
     dependsOn copyDocumentationAssets
     

@@ -67,8 +67,7 @@ configure(rootProject) {
 }
 
 // docroot will point to Lucene and Solr relative directory for each sub-project.
-configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path == ':solr:documentation' }) {
-
+configure(project(':solr:documentation')) {
   ext {
     docroot = file("${buildDir}/site")
     docrootMinimal = file("${buildDir}/minimalSite")

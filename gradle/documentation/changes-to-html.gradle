@@ -17,7 +17,7 @@
 
 def resources = scriptResources(buildscript)
 
-configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path == ':solr:documentation' }) {
+configure(project(':solr:documentation')) {
   task changesToHtml(type: ChangesToHtmlTask) {
     siteDir = resources
     script = file("${resources}/changes2html.pl")
