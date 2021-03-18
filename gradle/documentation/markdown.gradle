@@ -52,38 +52,35 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
   }
 }
 
-// SOLR ONLY
-if (!skipSolr) {
-  configure(project(':solr:documentation')) {
-    markdownToHtml {
-      from(project.markdownSrc) {
-        include '**/*.md'
-        exclude '**/*.template.md'
-      }
+configure(project(':solr:documentation')) {
+  markdownToHtml {
+    from(project.markdownSrc) {
+      include '**/*.md'
+      exclude '**/*.template.md'
     }
+  }
 
-    task createDocumentationIndex(type: MarkdownTemplateTask) {
-      dependsOn markdownToHtml
+  task createDocumentationIndex(type: MarkdownTemplateTask) {
+    dependsOn markdownToHtml
 
-      outputFile = file("${project.docroot}/index.html")
-      templateFile = file("${project.markdownSrc}/index.template.md")
+    outputFile = file("${project.docroot}/index.html")
+    templateFile = file("${project.markdownSrc}/index.template.md")
 
-      // list all properties used by the template here to allow uptodate checks to be correct:
-      inputs.property('version', project.version)
-      inputs.property('solrRefguideUrl', project.solrRefguideUrl)
-      inputs.property('luceneDocUrl', project.luceneDocUrl)
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
+    inputs.property('solrRefguideUrl', project.solrRefguideUrl)
+    inputs.property('luceneDocUrl', project.luceneDocUrl)
 
-      withProjectList()
-    }
+    withProjectList()
+  }
 
-    task createMiniDocumentationIndex(type: MarkdownTemplateTask) {
-      outputFile = file("${project.docrootMinimal}/index.html")
-      templateFile = file("${project.markdownSrc}/online-link.template.md")
+  task createMiniDocumentationIndex(type: MarkdownTemplateTask) {
+    outputFile = file("${project.docrootMinimal}/index.html")
+    templateFile = file("${project.markdownSrc}/online-link.template.md")
 
-      // list all properties used by the template here to allow uptodate checks to be correct:
-      inputs.property('version', project.version)
-      inputs.property('solrDocUrl', project.solrDocUrl)
-    }
+    // list all properties used by the template here to allow uptodate checks to be correct:
+    inputs.property('version', project.version)
+    inputs.property('solrDocUrl', project.solrDocUrl)
   }
 }
 

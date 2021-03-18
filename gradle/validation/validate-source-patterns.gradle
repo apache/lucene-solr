@@ -88,13 +88,10 @@ subprojects {
   check.dependsOn validateSourcePatterns
 }
 
-// SOLR ONLY
-if (!skipSolr) {
-  configure(project(':solr:core')) {
-    project.tasks.withType(ValidateSourcePatternsTask) {
-      sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
-      sourceFiles.exclude 'src/test/org/apache/hadoop/**'
-    }
+configure(project(':solr:core')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
+    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
   }
 }
 
@@ -118,10 +115,6 @@ configure(rootProject) {
       // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
-      }
-
-      if (skipSolr) {
-        exclude "solr/**"
       }
 
       // default excludes.

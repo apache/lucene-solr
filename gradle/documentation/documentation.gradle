@@ -34,20 +34,17 @@ configure(rootProject) {
     luceneDocVersion = "9_0_0-SNAPSHOT"
     luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/${luceneDocVersion}")
 
-    // SOLR ONLY
-    if (!skipSolr) {
-      solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
-        if (project.version != project.baseVersion) {
-          // non-release build
-          new File(project('solr:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
-        } else {
-          // release build
-          "https://solr.apache.org/docs/${urlVersion}"
-        }
-      }())
+    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
+      if (project.version != project.baseVersion) {
+        // non-release build
+        new File(project('solr:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
+      } else {
+        // release build
+        "https://solr.apache.org/docs/${urlVersion}"
+      }
+    }())
 
-      solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
-    }
+    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://lucene.apache.org/solr/guide/${refguideUrlVersion}")
   }
 
   task documentation() {
@@ -112,40 +109,37 @@ configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path ==
   }
 }
 
-// SOLR ONLY
-if (!skipSolr) {
-  configure(project(':solr:documentation')) {
-    task documentationMinimal() {
-      group = 'documentation'
-      description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
-      dependsOn 'copyMiniDocumentationAssets', 'createMiniDocumentationIndex', 'copyChangesToHtmlForMiniSite'
-    }
+configure(project(':solr:documentation')) {
+  task documentationMinimal() {
+    group = 'documentation'
+    description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
+    dependsOn 'copyMiniDocumentationAssets', 'createMiniDocumentationIndex', 'copyChangesToHtmlForMiniSite'
+  }
 
-    task copyChangesToHtmlForMiniSite(type: Copy) {
-      from project.docroot
-      into project.docrootMinimal
-      include 'changes/**'
-      dependsOn 'changesToHtml'
-    }
+  task copyChangesToHtmlForMiniSite(type: Copy) {
+    from project.docroot
+    into project.docrootMinimal
+    include 'changes/**'
+    dependsOn 'changesToHtml'
+  }
 
-    task copyMiniDocumentationAssets(type: Copy) {
-      includeEmptyDirs = false
-      from('src/assets')
-      into project.docrootMinimal
-    }
+  task copyMiniDocumentationAssets(type: Copy) {
+    includeEmptyDirs = false
+    from('src/assets')
+    into project.docrootMinimal
+  }
 
-    assemble {
-      dependsOn documentationMinimal
-    }
+  assemble {
+    dependsOn documentationMinimal
+  }
 
-    configurations {
-      minimalSite
-    }
+  configurations {
+    minimalSite
+  }
 
-    artifacts {
-      minimalSite project.docrootMinimal, {
-        builtBy documentationMinimal
-      }
+  artifacts {
+    minimalSite project.docrootMinimal, {
+      builtBy documentationMinimal
     }
   }
 }

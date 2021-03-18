@@ -49,26 +49,23 @@ configure(rootProject) {
     }
 }
 
-// SOLR ONLY
-if (!skipSolr) {
-    configure(project(":solr:core")) {
-        rat {
-            srcExcludes += [
-                "**/htmlStripReaderTest.html"
-            ]
-        }
+configure(project(":solr:core")) {
+    rat {
+        srcExcludes += [
+            "**/htmlStripReaderTest.html"
+        ]
     }
+}
 
-    configure(project(":solr:webapp")) {
-        rat {
-            includes = ["**"]
-            excludes += [
-                "web/img/**",
-                "*.iml",
-                "build.gradle",
-                "build/**",
-            ]
-        }
+configure(project(":solr:webapp")) {
+    rat {
+        includes = ["**"]
+        excludes += [
+            "web/img/**",
+            "*.iml",
+            "build.gradle",
+            "build/**",
+        ]
     }
 }
 

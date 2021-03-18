@@ -106,13 +106,10 @@ allprojects {
   }
 }
 
-// SOLR ONLY
-if (!skipSolr) {
 // This excludes solr-ref-guide from the check (excludes are not taken into account
 // and linting of the ant-based task fails.
-  configure(project(":solr:solr-ref-guide")) {
-    afterEvaluate {
-      project.tasks.findByPath("ecjLintMain").enabled = false
-    }
+configure(project(":solr:solr-ref-guide")) {
+  afterEvaluate {
+    project.tasks.findByPath("ecjLintMain").enabled = false
   }
 }

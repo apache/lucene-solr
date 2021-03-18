@@ -100,35 +100,32 @@ def commonCleanups = { FileTree generatedFiles ->
   }
 }
 
-if (!skipSolr) {
-  configure(project(":solr:core")) {
-    task javacc(type: JavaCCTask) {
-      description "Regenerate Solr query parser"
-      group "generation"
+configure(project(":solr:core")) {
+  task javacc(type: JavaCCTask) {
+    description "Regenerate Solr query parser"
+    group "generation"
 
-      javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
+    javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
 
-      afterGenerate << commonCleanups
-      afterGenerate << { FileTree generatedFiles ->
-        generatedFiles.matching { include "QueryParser.java" }.each { file ->
-          modifyFile(file, { text ->
-            text = text.replace(
-                "public QueryParser(CharStream ",
-                "protected QueryParser(CharStream ")
-            text = text.replace(
-                "public QueryParser(QueryParserTokenManager ",
-                "protected QueryParser(QueryParserTokenManager ")
-            text = text.replace(
-                "final private LookaheadSuccess jj_ls =",
-                "static final private LookaheadSuccess jj_ls =")
-            return text
-          })
-        }
+    afterGenerate << commonCleanups
+    afterGenerate << { FileTree generatedFiles ->
+      generatedFiles.matching { include "QueryParser.java" }.each { file ->
+        modifyFile(file, { text ->
+          text = text.replace(
+              "public QueryParser(CharStream ",
+              "protected QueryParser(CharStream ")
+          text = text.replace(
+              "public QueryParser(QueryParserTokenManager ",
+              "protected QueryParser(QueryParserTokenManager ")
+          text = text.replace(
+              "final private LookaheadSuccess jj_ls =",
+              "static final private LookaheadSuccess jj_ls =")
+          return text
+        })
       }
     }
   }
 }
-
 
 // We always regenerate, no need to declare outputs.
 class JavaCCTask extends DefaultTask {

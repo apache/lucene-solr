@@ -39,10 +39,8 @@ buildscript {
 // Configure license checksum folder for top-level projects.
 // (The file("licenses") inside the configure scope resolves
 // relative to the current project so they're not the same).
-if (!skipSolr) {
-  configure(project(":solr")) {
-    ext.licensesDir = file("licenses")
-  }
+configure(project(":solr")) {
+  ext.licensesDir = file("licenses")
 }
 
 // All known license types. If 'noticeOptional' is true then
@@ -273,9 +271,7 @@ subprojects {
 // Add top-project level tasks validating dangling files
 // and regenerating dependency checksums.
 def plist = []
-if (!skipSolr) {
-  plist.add(project(":solr"))
-}
+plist.add(project(":solr"))
 
 configure(plist) {
   def validationTasks = subprojects.collectMany { it.tasks.matching { it.name == "licenses" } }
@@ -367,22 +363,19 @@ configure(plist) {
 // It would be probably better to move non-dependency licenses into the actual project
 // where they're used and only assemble them for the distribution package.
 
-// SOLR ONLY
-if (!skipSolr) {
-  configure(project(":solr")) {
-    checkDanglingLicenseFiles {
-      exclude += [
-          "README.committers.txt"
-      ]
-    }
+configure(project(":solr")) {
+  checkDanglingLicenseFiles {
+    exclude += [
+        "README.committers.txt"
+    ]
   }
+}
 
-  // solr-ref-guide doesn't contribute any JARs to dependency checks.
-  configure(project(":solr:solr-ref-guide")) {
-    configurations {
-      jarValidation {
-        exclude group: "*"
-      }
+// solr-ref-guide doesn't contribute any JARs to dependency checks.
+configure(project(":solr:solr-ref-guide")) {
+  configurations {
+    jarValidation {
+      exclude group: "*"
     }
   }
 }
