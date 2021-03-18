@@ -321,8 +321,7 @@ class RenderJavadocTask extends DefaultTask {
               opts << ['-link', relative]
             } else {
               // For absolute links, we determine the target URL by assembling the full URL.
-              def base = otherProject.path.startsWith(":lucene") ? luceneDocUrl : solrDocUrl
-              allOfflineLinks.put("${base}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              allOfflineLinks.put("${solrDocUrl}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
             }
           }
     }

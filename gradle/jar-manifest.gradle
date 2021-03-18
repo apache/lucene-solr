@@ -20,18 +20,9 @@
 subprojects {
     // Declare these inline for now. Don't know if it makes sense to declare them
     // per-project.
-    def title;
-    def implementationTitle;
-    def legaleseDir;
-    if (project.path.startsWith(":lucene")) {
-        implementationTitle = "org.apache.lucene"
-        title = "Lucene Search Engine: ${project.name}"
-        legaleseDir = project(":lucene").projectDir
-    } else {
-        implementationTitle = "org.apache.solr"
-        title = "Apache Solr Search Server: ${project.name}"
-        legaleseDir = project(":solr").projectDir
-    }
+    def title = "Apache Solr Search Server: ${project.name}"
+    def implementationTitle = "org.apache.solr"
+    def legaleseDir = project(":solr").projectDir
 
     // Apply the manifest to any JAR or WAR file created by any project,
     // excluding those explicitly listed.

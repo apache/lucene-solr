@@ -108,26 +108,12 @@ allprojects { prj ->
 
     // Disable sysout signatures for these projects.
     if (prj.path in [
-        ":lucene:demo",
-        ":lucene:benchmark",
-        ":lucene:test-framework",
         ":solr:solr-ref-guide",
         ":solr:test-framework"
     ]) {
       forbiddenApisMain.bundledSignatures -= [
           'jdk-system-out'
       ]
-    }
-
-    // Configure lucene-specific rules.
-    if (prj.path.startsWith(":lucene")) {
-      forbiddenApisMain {
-        doFirst dynamicSignatures.curry(configurations.compileClasspath, "lucene")
-      }
-
-      forbiddenApisTest {
-        doFirst dynamicSignatures.curry(configurations.testCompileClasspath, "lucene")
-      }
     }
 
     // Configure solr-specific rules.

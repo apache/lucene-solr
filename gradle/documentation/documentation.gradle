@@ -144,7 +144,7 @@ configure(project(':solr:documentation')) {
   }
 }
 
-configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
+configure(project(":solr")) {
   ext {
     docroot = project('documentation').docroot
     docrootMinimal = project('documentation').docrootMinimal

@@ -24,39 +24,6 @@
 configure(rootProject) {
   ext {
     published = [
-        ":lucene:analysis:common",
-        ":lucene:analysis:icu",
-        ":lucene:analysis:kuromoji",
-        ":lucene:analysis:morfologik",
-        ":lucene:analysis:nori",
-        ":lucene:analysis:opennlp",
-        ":lucene:analysis:phonetic",
-        ":lucene:analysis:smartcn",
-        ":lucene:analysis:stempel",
-        ":lucene:backward-codecs",
-        ":lucene:benchmark",
-        ":lucene:classification",
-        ":lucene:codecs",
-        ":lucene:core",
-        ":lucene:demo",
-        ":lucene:expressions",
-        ":lucene:facet",
-        ":lucene:grouping",
-        ":lucene:highlighter",
-        ":lucene:join",
-        ":lucene:luke",
-        ":lucene:memory",
-        ":lucene:misc",
-        ":lucene:monitor",
-        ":lucene:queries",
-        ":lucene:queryparser",
-        ":lucene:replicator",
-        ":lucene:sandbox",
-        ":lucene:spatial-extras",
-        ":lucene:spatial3d",
-        ":lucene:suggest",
-        ":lucene:test-framework",
-
         ":solr:core",
         ":solr:solrj",
         ":solr:contrib:analysis-extras",
@@ -123,121 +90,57 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
     // in gradle or just complex relationships between lazy collection hooks.
     gradle.projectsEvaluated {
       publishing {
-        def configurePom;
-        if (project.path.startsWith(":lucene")) {
-          configurePom = {
-            name = "Apache Lucene (module: ${project.name})"
-            description = name
-            url = 'https://lucene.apache.org/'
+        def configurePom = {
+          name = "Apache Solr (module: ${project.name})"
+          description = name
+          url = 'https://solr.apache.org/'
 
-            licenses {
-              license {
-                name = 'Apache 2'
-                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-              }
-            }
-
-            inceptionYear = "2000"
-
-            issueManagement {
-              system = "JIRA"
-              url = "https://issues.apache.org/jira/browse/LUCENE"
-            }
-
-            ciManagement {
-              system = "Jenkins"
-              url = "https://builds.apache.org/job/Lucene/"
-            }
-
-            mailingLists {
-              mailingList {
-                name = "General List"
-                subscribe = "general-subscribe@lucene.apache.org"
-                unsubscribe = "general-unsubscribe@lucene.apache.org"
-                archive = "https://mail-archives.apache.org/mod_mbox/lucene-general/"
-              }
-
-              mailingList {
-                name = "Java User List"
-                subscribe = "java-user-subscribe@lucene.apache.org"
-                unsubscribe = "java-user-unsubscribe@lucene.apache.org"
-                archive = "https://mail-archives.apache.org/mod_mbox/lucene-java-user/"
-              }
-
-              mailingList {
-                name = "Java Developer List"
-                subscribe = "dev-subscribe@lucene.apache.org"
-                unsubscribe = "dev-unsubscribe@lucene.apache.org"
-                archive = "https://mail-archives.apache.org/mod_mbox/lucene-dev/"
-              }
-
-              mailingList {
-                name = "Java Commits List"
-                subscribe = "commits-subscribe@lucene.apache.org"
-                unsubscribe = "commits-unsubscribe@lucene.apache.org"
-                archive = "https://mail-archives.apache.org/mod_mbox/lucene-java-commits/"
-              }
-            }
-
-            scm {
-              connection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
-              developerConnection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
-              url = 'https://gitbox.apache.org/repos/asf?p=lucene-solr.git'
+          licenses {
+            license {
+              name = 'Apache 2'
+              url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
             }
           }
-        } else {
-          configurePom = {
-            name = "Apache Solr (module: ${project.name})"
-            description = name
-            url = 'https://lucene.apache.org/solr/'
 
-            licenses {
-              license {
-                name = 'Apache 2'
-                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-              }
+          inceptionYear = "2006"
+
+          issueManagement {
+            system = "JIRA"
+            url = "https://issues.apache.org/jira/browse/SOLR"
+          }
+
+          ciManagement {
+            system = "Jenkins"
+            url = "https://builds.apache.org/job/Solr/"
+          }
+
+          mailingLists {
+            mailingList {
+              name = "Solr User List"
+              subscribe = "users-subscribe@solr.apache.org"
+              unsubscribe = "users-unsubscribe@solr.apache.org"
+              archive = "https://lists.apache.org/list.html?users@solr.apache.org"
             }
 
-            inceptionYear = "2006"
-
-            issueManagement {
-              system = "JIRA"
-              url = "https://issues.apache.org/jira/browse/SOLR"
+            mailingList {
+              name = "Solr Developer List"
+              subscribe = "dev-subscribe@solr.apache.org"
+              unsubscribe = "dev-unsubscribe@solr.apache.org"
+              archive = "https://lists.apache.org/list.html?dev@solr.apache.org"
             }
 
-            ciManagement {
-              system = "Jenkins"
-              url = "https://builds.apache.org/job/Lucene/"
+            mailingList {
+              name = "Solr Commits List"
+              subscribe = "commits-subscribe@solr.apache.org"
+              unsubscribe = "commits-unsubscribe@solr.apache.org"
+              archive = "https://lists.apache.org/list.html?commits@solr.apache.org"
             }
+          }
 
-            mailingLists {
-              mailingList {
-                name = "Solr User List"
-                subscribe = "solr-user-subscribe@lucene.apache.org"
-                unsubscribe = "solr-user-unsubscribe@lucene.apache.org"
-                archive = "https://mail-archives.apache.org/mod_mbox/solr-user/"
-              }
-
-              mailingList {
-                name = "Java Developer List"
-                subscribe = "dev-subscribe@lucene.apache.org"
-                unsubscribe = "dev-unsubscribe@lucene.apache.org"
-                archive = "https://mail-archives.apache.org/mod_mbox/lucene-dev/"
-              }
-
-              mailingList {
-                name = "Java Commits List"
-                subscribe = "commits-subscribe@lucene.apache.org"
-                unsubscribe = "commits-unsubscribe@lucene.apache.org"
-                archive = "https://mail-archives.apache.org/mod_mbox/lucene-java-commits/"
-              }
-            }
-
-            scm {
-              connection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
-              developerConnection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
-              url = 'https://gitbox.apache.org/repos/asf?p=lucene-solr.git'
-            }
+          scm {
+            connection = 'scm:git:https://gitbox.apache.org/repos/asf/solr.git'
+            developerConnection = 'scm:git:https://gitbox.apache.org/repos/asf/solr.git'
+            url = 'https://gitbox.apache.org/repos/asf?p=solr.git'
           }
         }
 

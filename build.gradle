@@ -152,9 +152,6 @@ apply from: file('gradle/validation/solr.config-file-sanity.gradle')
 // Source or data regeneration tasks
 apply from: file('gradle/generation/javacc.gradle')
 
-// Shared configuration of subprojects containing native code.
-apply from: file('gradle/native/disable-native.gradle')
-
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
 apply from: file('gradle/testing/per-project-summary.gradle')
