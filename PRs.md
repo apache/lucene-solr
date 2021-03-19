@@ -80,7 +80,7 @@ avoid the need to "re-resolve" related conflicts in multiple rebased commits).
 NOTE: PRs updated in this way, if merged back into the `main` branch, could result
 in an undesirably convoluted (if "correct") commit history. In many cases it may be
 preferable to "squash-merge" such PRs (already a common general practice for merging
-feature branches in this project).
+feature branches in these projects).
 
 ```
 # clone new upstream project (optionally supplying remote name "apache" instead
@@ -96,8 +96,10 @@ git remote add mylegacyfork https://github.com/[user]/lucene-solr.git
 git fetch mylegacyfork
 # get the legacy PR's branch:
 git checkout --no-track mylegacyfork/LUCENE-XXXX -b LUCENE-XXXX
-# merge upstream main branch
-git merge apache/main
+# merge upstream main branch (a higher `merge.renameLimit` allows `git merge` to
+# complete without the warning that it would otherwise print due to the large
+# number of files deleted across the TLP split)
+git -c merge.renameLimit=7000 merge apache/main
 # after resolving any conflicts and committing the merge,
 # push to [user]'s new fork
 git push -u mynewfork LUCENE-XXXX
