@@ -2026,7 +2026,11 @@ if [ "$GC_LOG_OPTS" != "" ]; then
     if [ "$JAVA_VENDOR" == "IBM J9" ]; then
       gc_log_flag="-Xverbosegclog"
     fi
-    GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" '-XX:+UseGCLogFileRotation' '-XX:NumberOfGCLogFiles=9' '-XX:GCLogFileSize=20M')
+    if [ -z ${JAVA8_GC_LOG_FILE_OPTS+x} ]; then
+      GC_LOG_OPTS+=("$gc_log_flag:$SOLR_LOGS_DIR/solr_gc.log" '-XX:+UseGCLogFileRotation' '-XX:NumberOfGCLogFiles=9' '-XX:GCLogFileSize=20M')
+    else
+      GC_LOG_OPTS+=($JAVA8_GC_LOG_FILE_OPTS)
+    fi
   else
     # http://openjdk.java.net/jeps/158
     for i in "${!GC_LOG_OPTS[@]}";

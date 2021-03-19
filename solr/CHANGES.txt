@@ -44,6 +44,8 @@ Improvements
 
 * SOLR-15154: Let Http2SolrClient pass Basic Auth credentials to all requests (Tomás Fernández Löbbe)
 
+* SOLR-11233: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr. (Pranav Murugappan, Christine Poerschke)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
