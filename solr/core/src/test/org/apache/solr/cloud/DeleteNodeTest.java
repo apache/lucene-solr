@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 
-@Ignore // MRM TODO: flakey
 public class DeleteNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -68,14 +66,14 @@ public class DeleteNodeTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 1, 0)
         );
-    create = create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(20);
+    create = create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(20).waitForFinalState(true);
     cloudClient.request(create);
     state = cloudClient.getZkStateReader().getClusterState();
     String node2bdecommissioned = l.get(0);
     // check what replicas are on the node, and whether the call should fail
 
     //new CollectionAdminRequest.DeleteNode(node2bdecommissioned).processAsync("003", cloudClient);
-    new CollectionAdminRequest.DeleteNode(node2bdecommissioned).process(cloudClient);
+    new CollectionAdminRequest.DeleteNode(node2bdecommissioned).waitForFinalState(true).process(cloudClient);
    // CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("003");
     CollectionAdminRequest.RequestStatusResponse rsp = null;
 //    if (shouldFail) {

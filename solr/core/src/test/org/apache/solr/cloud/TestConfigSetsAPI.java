@@ -284,43 +284,28 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   @Test
   public void testUploadErrors() throws Exception {
-    final SolrClient solrClient = getHttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
     // Checking error when no configuration name is specified in request
-    Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
-        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-        + "/admin/configs?action=UPLOAD", emptyData, null, null);
+    Map map = postDataAndGetResponse(solrCluster.getSolrClient(), solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD", emptyData, null, null);
     assertNotNull(map);
-    long statusCode = (long) getObjectByPath(map, false,
-        Arrays.asList("responseHeader", "status"));
+    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
 
     SolrZkClient zkClient = zkClient();
 
     // Create dummy config files in zookeeper
     zkClient.mkdir("/configs/myconf");
-    zkClient.create("/configs/myconf/firstDummyFile",
-        "first dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-    zkClient.create("/configs/myconf/anotherDummyFile",
-        "second dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+    zkClient.create("/configs/myconf/firstDummyFile", "first dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+    zkClient.create("/configs/myconf/anotherDummyFile", "second dummy content".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
 
     // Checking error when configuration name specified already exists
-    map = postDataAndGetResponse(solrCluster.getSolrClient(),
-        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-        + "/admin/configs?action=UPLOAD&name=myconf", emptyData, null, null);
+    map = postDataAndGetResponse(solrCluster.getSolrClient(), solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name=myconf", emptyData, null, null);
     assertNotNull(map);
-    statusCode = (long) getObjectByPath(map, false,
-        Arrays.asList("responseHeader", "status"));
+    statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
     assertEquals(400l, statusCode);
-    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten",
-        zkClient.exists("/configs/myconf/firstDummyFile"));
-    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten",
-        zkClient.exists("/configs/myconf/anotherDummyFile"));
-
-    zkClient.close();
-    solrClient.close();
+    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten", zkClient.exists("/configs/myconf/firstDummyFile"));
+    assertTrue("Expected file doesnt exist in zk. It's possibly overwritten", zkClient.exists("/configs/myconf/anotherDummyFile"));
   }
 
   @Test

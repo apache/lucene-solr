@@ -387,6 +387,9 @@ enum CoreAdminOperation implements CoreAdminOp {
   public void execute(CallInfo it) throws Exception {
     try {
       fun.execute(it);
+    } catch (PrepRecoveryOp.NotValidLeader e) {
+      // No need to re-wrap; throw as-is.
+      throw e;
     } catch (SolrException | InterruptedException e) {
       log.error("Error handling CoreAdmin action", e);
       if (e instanceof InterruptedException) {

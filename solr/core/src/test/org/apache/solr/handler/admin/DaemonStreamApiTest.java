@@ -99,17 +99,14 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     // don't look in all replicas.
     CollectionAdminRequest.createCollection(SOURCE_COLL, CONF_NAME, 1, 1)
         .setMaxShardsPerNode(1)
-        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(TARGET_COLL, CONF_NAME, 1, 1)
         .setMaxShardsPerNode(1)
-        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(CHECKPOINT_COLL, CONF_NAME, 1, 1)
         .setMaxShardsPerNode(1)
-        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     for (int idx = 0; idx < numDaemons; ++idx) {

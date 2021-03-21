@@ -123,7 +123,7 @@ public class DistributedLock extends ProtocolSupport {
       try {
 
         ZooKeeperOperation zopdel = () -> {
-          zookeeper.getSolrZooKeeper().delete(id, -1);
+          zookeeper.getConnectionManager().getKeeper().delete(id, -1);
           return Boolean.TRUE;
         };
         zopdel.execute();
@@ -185,7 +185,7 @@ public class DistributedLock extends ProtocolSupport {
      */
     private void findPrefixInChildren(String prefix, SolrZkClient zookeeper,
         String dir) throws KeeperException, InterruptedException {
-      List<String> names = zookeeper.getSolrZooKeeper().getChildren(dir, false);
+      List<String> names = zookeeper.getConnectionManager().getKeeper().getChildren(dir, false);
       for (String name : names) {
         if (name.startsWith(prefix)) {
           id = name;
@@ -194,7 +194,7 @@ public class DistributedLock extends ProtocolSupport {
         }
       }
       if (id == null) {
-        id = zookeeper.getSolrZooKeeper().create(dir + "/" + prefix, data,
+        id = zookeeper.getConnectionManager().getKeeper().create(dir + "/" + prefix, data,
             zookeeper.getZkACLProvider().getACLsToAdd(dir + "/" + prefix),
             EPHEMERAL_SEQUENTIAL);
         log.debug("Created id: {}", id);
@@ -210,14 +210,14 @@ public class DistributedLock extends ProtocolSupport {
     public boolean execute() throws KeeperException, InterruptedException {
       do {
         if (id == null) {
-          long sessionId = zookeeper.getSolrZooKeeper().getSessionId();
+          long sessionId = zookeeper.getConnectionManager().getKeeper().getSessionId();
           String prefix = "x-" + sessionId + "-";
           // lets try look up the current ID if we failed
           // in the middle of creating the znode
           findPrefixInChildren(prefix, zookeeper, dir);
           idName = new ZNodeName(id);
         }
-        List<String> names = zookeeper.getSolrZooKeeper()
+        List<String> names = zookeeper.getConnectionManager().getKeeper()
             .getChildren(dir, false);
         if (names.isEmpty()) {
           log.warn(
@@ -237,7 +237,7 @@ public class DistributedLock extends ProtocolSupport {
             ZNodeName lastChildName = lessThanMe.last();
             lastChildId = lastChildName.getName();
             log.debug("Watching less than me node: {}", lastChildId);
-            Stat stat = zookeeper.getSolrZooKeeper()
+            Stat stat = zookeeper.getConnectionManager().getKeeper()
                 .exists(lastChildId, new LockWatcher());
             if (stat != null) {
               return Boolean.FALSE;

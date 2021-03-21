@@ -196,6 +196,10 @@ public class LeaderElector implements Closeable {
 
         } else {
 
+          if (state == LEADER || state == POT_LEADER) {
+            return false;
+          }
+
           String toWatch = seqs.get(0);
           for (String node : seqs) {
             if (leaderSeqNodeName.equals(node)) {
@@ -213,6 +217,8 @@ public class LeaderElector implements Closeable {
               IOUtils.closeQuietly(oldWatcher);
             }
 
+            state = WAITING_IN_ELECTION;
+
             watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, context);
             Stat exists = zkClient.exists(watchedNode, watcher);
             if (exists == null) {
@@ -220,7 +226,7 @@ public class LeaderElector implements Closeable {
               return true;
             }
 
-            state = WAITING_IN_ELECTION;
+
             if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader, my node is {}", watchedNode, context.leaderSeqPath);
 
             return false;
@@ -268,7 +274,7 @@ public class LeaderElector implements Closeable {
 
 
   // TODO: get this core param out of here
-  protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
+  protected synchronized void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
           InterruptedException, IOException {
     if (state == CLOSED || isClosed) {
       throw new AlreadyClosedException();

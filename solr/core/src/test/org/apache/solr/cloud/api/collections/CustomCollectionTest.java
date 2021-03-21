@@ -193,7 +193,6 @@ public class CustomCollectionTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.CreateShard req = CollectionAdminRequest.createShard(collectionName, "x");
-    req.setWaitForFinalState(true);
     req.process(cluster.getSolrClient());
 
     waitForState("Not enough active replicas in shard 'x'", collectionName, (n, c) -> {

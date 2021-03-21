@@ -74,18 +74,16 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  private void createCollection(String collectionName, String createNodeSet) throws Exception {
+  private void createCollection(String collectionName, String createNodeSet, boolean waitForState) throws Exception {
     if (random().nextBoolean()) { // process asynchronously
       CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas).setMaxShardsPerNode(maxShardsPerNode)
-          .waitForFinalState(true).setCreateNodeSet(createNodeSet);
-          req.setWaitForFinalState(true);
+          .setCreateNodeSet(createNodeSet).waitForFinalState(waitForState);
           req.processAndWait(cluster.getSolrClient(), 10);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .setMaxShardsPerNode(maxShardsPerNode)
-          .waitForFinalState(true)
-          .setCreateNodeSet(createNodeSet)
+          .setCreateNodeSet(createNodeSet).waitForFinalState(waitForState)
           .process(cluster.getSolrClient());
     }
   }
@@ -129,7 +127,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertEquals(nodeCount, cluster.getJettySolrRunners().size());
 
     // create collection
-    createCollection(collectionName, null);
+    createCollection(collectionName, null, true);
 
     // modify/query collection
     new UpdateRequest().add("id", "1").commit(client, collectionName);
@@ -174,7 +172,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     log.info("create collection again");
     cluster.getZkClient().printLayout();
     // create it again
-    createCollection(collectionName, null);
+    createCollection(collectionName, null, false);
 
     // check that there's no left-over state
     assertEquals(0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
@@ -195,7 +193,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertFalse(cluster.getJettySolrRunners().isEmpty());
 
     // create collection
-    createCollection(collectionName, ZkStateReader.CREATE_NODE_SET_EMPTY);
+    createCollection(collectionName, ZkStateReader.CREATE_NODE_SET_EMPTY, false);
 
     // check the collection's corelessness
     int coreCount = 0;
@@ -227,7 +225,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     final SolrInputDocument doc = new SolrInputDocument();
 
     // create collection
-    createCollection(collectionName, null);
+    createCollection(collectionName, null, true);
 
     ZkStateReader zkStateReader = client.getZkStateReader();
 

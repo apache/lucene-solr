@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -35,7 +36,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
+public class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -64,12 +65,12 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
     LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(leaderName);
     if (leaderElector == null || !leaderElector.isLeader()) {
-      throw new IllegalStateException("Not the valid leader (replica=" + leaderName + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) +
+      throw new NotValidLeader("Not the valid leader (replica=" + leaderName + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) +
           " coll=" + collection);
     }
 
     if (waitForState == null) {
-      log.info("Done checking leader:", cname);
+      log.info("Done checking leader:", leaderName);
       return;
     }
 
@@ -118,6 +119,13 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
       ParWork.propagateInterrupt(e);
       String error = errorMessage.get();
       log.error(error);
+    }
+  }
+
+  public static class NotValidLeader extends SolrException {
+
+    public NotValidLeader(String s) {
+      super(ErrorCode.BAD_REQUEST, s);
     }
   }
 }

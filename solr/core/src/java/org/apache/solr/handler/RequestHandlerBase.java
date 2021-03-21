@@ -38,6 +38,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.handler.admin.PrepRecoveryOp;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -226,7 +227,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         ParWork.propagateInterrupt(e);
         throw new AlreadyClosedException(e);
       } catch (Exception e) {
-        log.error("Exception handling request", e);
+        if (log.isDebugEnabled() && !(e instanceof PrepRecoveryOp.NotValidLeader)) {
+          log.error("Exception handling request", e);
+        }
         if (req.getCore() != null) {
           boolean isTragic = req.getCore().getCoreContainer().checkTragicException(req.getCore());
           if (isTragic) {
@@ -253,6 +256,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
             isServerError = false;
             e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
+        }
+
+        if (e instanceof PrepRecoveryOp.NotValidLeader) {
+          isServerError = false;
+          incrementErrors = false;
         }
 
         rsp.setException(e);

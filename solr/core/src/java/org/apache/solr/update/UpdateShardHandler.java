@@ -103,7 +103,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     Set<String> queryParams = new HashSet<>(2);
     queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
     queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
-    queryParams.add(BaseCloudSolrClient.STATE_VERSION);
     updateOnlyClient.setQueryParams(queryParams);
 
 

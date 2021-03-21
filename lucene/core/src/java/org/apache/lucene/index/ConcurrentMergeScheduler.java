@@ -410,7 +410,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   private synchronized void initDynamicDefaults(Directory directory) throws IOException {
     if (maxThreadCount == AUTO_DETECT_MERGES_AND_THREADS) {
-      boolean spins = IOUtils.spins(directory);
+      boolean spins = false;
 
       // Let tests override this to help reproducing a failure on a machine that has a different
       // core count than the one where the test originally failed:
@@ -418,6 +418,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         String value = System.getProperty(DEFAULT_SPINS_PROPERTY);
         if (value != null) {
           spins = Boolean.parseBoolean(value);
+        } else {
+          spins = IOUtils.spins(directory);
         }
       } catch (Exception ignored) {
         // that's fine we might hit a SecurityException etc. here just continue

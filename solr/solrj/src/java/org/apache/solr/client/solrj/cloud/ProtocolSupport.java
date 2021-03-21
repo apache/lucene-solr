@@ -153,11 +153,11 @@ public class ProtocolSupport {
         final CreateMode flags) {
         try {
             retryOperation(() -> {
-                Stat stat = zookeeper.getSolrZooKeeper().exists(path, false);
+                Stat stat = zookeeper.getConnectionManager().getKeeper().exists(path, false);
                 if (stat != null) {
                     return true;
                 }
-                zookeeper.getSolrZooKeeper().create(path, data, acl, flags);
+                zookeeper.getConnectionManager().getKeeper().create(path, data, acl, flags);
                 return true;
             });
         } catch (KeeperException | InterruptedException e) {

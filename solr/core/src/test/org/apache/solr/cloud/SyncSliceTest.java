@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
@@ -73,7 +75,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
-    // waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+    cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 5, TimeUnit.SECONDS, false, 1, numJettys, true, true);
 
     List<JettySolrRunner> skipServers = new ArrayList<>();
     int docId = 0;
@@ -126,6 +128,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
 
     // kill the leader - new leader could have all the docs or be missing one
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 10000)));
+    log.info("Stopping leader jetty {}", leaderJetty.getBaseUrl());
 
     skipServers = getRandomOtherJetty(leaderJetty, null); // but not the leader
 
@@ -144,7 +147,11 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     int cnt = 0;
     while (deadJetty == leaderJetty) {
       //   updateMappingsFromZk(this.jettys, this.clients);
-      leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 5)));
+      try {
+        leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 1000)));
+      } catch (SolrException e) {
+        log.info("did not get leader", e);
+      }
       if (deadJetty == leaderJetty) {
         Thread.sleep(500);
       }
@@ -157,7 +164,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     deadJetty.start(); // he is not the leader anymore
 
     log.info("numJettys=" + numJettys);
-    cluster.waitForActiveCollection(COLLECTION, 1, numJettys);
+    cluster.waitForActiveCollection(cluster.getSolrClient().getHttpClient(), COLLECTION, 10, TimeUnit.SECONDS, false, 1, numJettys, true, true);
 
     skipServers = getRandomOtherJetty(leaderJetty, deadJetty);
     skipServers.addAll(getRandomOtherJetty(leaderJetty, deadJetty));

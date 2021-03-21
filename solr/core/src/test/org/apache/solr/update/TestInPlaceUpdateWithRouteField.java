@@ -55,7 +55,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
   private static final int NUMBER_OF_DOCS = 100;
 
   private static final String COLLECTION = "collection1";
-  private static final String[] shards = new String[]{"shard1","shard2","shard3"};
+  private static final String[] shards = new String[]{"s1","s2","s3"};
 
   @BeforeClass
   public static void setupCluster() throws Exception {

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -51,7 +52,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
 
-  private int znodeVersion;
+  private volatile int znodeVersion;
 
   private final String name;
   private final Map<String, Slice> slices;
@@ -63,13 +64,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numPullReplicas;
   private final Integer maxShardsPerNode;
   private final Boolean readOnly;
-  private volatile Map stateUpdates;
+  private volatile ConcurrentHashMap stateUpdates;
   private final Long id;
 
   private AtomicInteger sliceAssignCnt = new AtomicInteger();
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, -1, null);
+    this(name, slices, props, router, 0,  new ConcurrentHashMap());
   }
 
   /**
@@ -78,11 +79,16 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, Map stateUpdates) {
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, ConcurrentHashMap stateUpdates) {
     super(props==null ? props = new HashMap<>() : props);
+
     this.znodeVersion = zkVersion;
     this.name = name;
-    this.stateUpdates = stateUpdates;
+    if (stateUpdates == null) {
+      this.stateUpdates = new ConcurrentHashMap();
+    } else {
+      this.stateUpdates = stateUpdates;
+    }
     this.slices = slices;
     this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
     this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
@@ -217,11 +223,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Get the list of all leaders hosted on the given node or <code>null</code> if none.
    */
   public List<Replica> getLeaderReplicas(String nodeName) {
-    Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
+    List<String> shuffleSlices = new ArrayList<>(slices.keySet());
+    Collections.shuffle(shuffleSlices);
     List<Replica> leaders = new ArrayList<>(slices.size());
-    while (iter.hasNext()) {
-      Map.Entry<String, Slice> slice = iter.next();
-      Replica leader = slice.getValue().getLeader();
+    for (String s : shuffleSlices) {
+      Slice slice = slices.get(s);
+      Replica leader = slice.getLeader();
       if (leader != null && leader.getNodeName().equals(nodeName)) {
         leaders.add(leader);
       }
@@ -446,9 +453,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return stateUpdates != null;
   }
 
-  public void setStateUpdates(Map stateUpdates) {
-    this.stateUpdates = stateUpdates;
-  }
+//  public void setStateUpdates(ConcurrentHashMap stateUpdates) {
+//    this.stateUpdates = stateUpdates;
+//  }
 
   public void setSliceAssignCnt(int i) {
     sliceAssignCnt.set(i);

@@ -107,7 +107,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     log.info("Check if collection exists in zookeeper {}", collection);
     CountDownLatch latch = new CountDownLatch(1);
-    zkStateReader.getZkClient().getSolrZooKeeper().sync(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,  (rc, path, ctx) -> {
+    zkStateReader.getZkClient().getConnectionManager().getKeeper().sync(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,  (rc, path, ctx) -> {
       latch.countDown();
     }, null);
     latch.await(10, TimeUnit.SECONDS);

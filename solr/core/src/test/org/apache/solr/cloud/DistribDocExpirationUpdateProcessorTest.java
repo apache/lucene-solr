@@ -168,7 +168,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     // NOTE: don't assume we can find exactly totalNumDocs right now, some may have already been deleted...
     
     // it should not take long for us to get to the point where all 'should_expire_s:yup' docs are gone
-    waitForNoResults(30, params("q","should_expire_s:yup","rows","0","_trace","init_batch_check"));
+    waitForNoResults(10, params("q","should_expire_s:yup","rows","0","_trace","init_batch_check"));
 
     {
       // ...*NOW* we can assert that exactly numDocsThatNeverExpire should exist...
@@ -325,7 +325,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     
     long numFound = req.process(cluster.getSolrClient(), COLLECTION).getResults().getNumFound();
     while (0L < numFound && ! timeout.hasTimedOut()) {
-      Thread.sleep(Math.max(1, Math.min(5000, timeout.timeLeft(TimeUnit.MILLISECONDS))));
+      Thread.sleep(Math.max(1, Math.min(1500, timeout.timeLeft(TimeUnit.MILLISECONDS))));
       
       numFound = req.process(cluster.getSolrClient(), COLLECTION).getResults().getNumFound();
     }

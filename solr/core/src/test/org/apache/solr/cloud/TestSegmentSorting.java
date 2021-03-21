@@ -79,7 +79,6 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, configName,
                                               NUM_SHARDS, TEST_NIGHTLY ? REPLICATION_FACTOR : 1)
               .setMaxShardsPerNode(10)
-          .waitForFinalState(true)
               .setProperties(collectionProperties);
 
     assertTrue( cmd.process(cloudSolrClient).isSuccess() );

@@ -253,7 +253,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
      // shard3: 00
      // shard4: 01
   
-     String[] highBitsToShard = {"shard3","shard4","shard1","shard2"};
+     String[] highBitsToShard = {"shard3","shard4","s1","s2"};
   
   
      for (int i = 0; i<26; i++) {

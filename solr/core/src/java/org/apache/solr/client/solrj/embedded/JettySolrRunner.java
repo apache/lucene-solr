@@ -246,27 +246,13 @@ public class JettySolrRunner implements Closeable {
    * @param config         the configuration
    */
   public JettySolrRunner(String solrHome, Properties nodeProperties, JettyConfig config) {
-    this(solrHome, nodeProperties, config, false);
-  }
-
-  /**
-   * Construct a JettySolrRunner
-   *
-   * After construction, you must start the jetty with {@link #start()}
-   *
-   * @param solrHome            the solrHome to use
-   * @param nodeProperties      the container properties
-   * @param config         the configuration
-   * @param enableProxy       enables proxy feature to disable connections
-   */
-  public JettySolrRunner(String solrHome, Properties nodeProperties, JettyConfig config, boolean enableProxy) {
     assert ObjectReleaseTracker.track(this);
 
     SecurityManager s = System.getSecurityManager();
     ThreadGroup group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
     scheduler = new SolrScheduledExecutorScheduler("jetty-scheduler", null, group);
 
-    this.enableProxy = enableProxy;
+    this.enableProxy = config.enableProxy;
     this.solrHome = solrHome;
     this.config = config;
     this.nodeProperties = nodeProperties;
@@ -705,6 +691,7 @@ public class JettySolrRunner implements Closeable {
         server.join();
       } catch (InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
+        log.error("Interrupted waiting to stop", e);
         throw new RuntimeException(e);
       }
 
@@ -734,7 +721,7 @@ public class JettySolrRunner implements Closeable {
 
     } catch (Exception e) {
       SolrZkClient.checkInterrupted(e);
-      log.error("", e);
+      log.error("Exception stopping jetty", e);
       throw new RuntimeException(e);
     } finally {
 

@@ -609,6 +609,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
       try {
         m = testServerBaseUrl == null ? getRespMap(uri, harness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl + uri, cloudSolrClient);
+        log.info("response is {}", m);
       } catch (Exception e) {
         continue;
 

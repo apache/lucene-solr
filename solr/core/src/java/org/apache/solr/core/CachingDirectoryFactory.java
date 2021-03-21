@@ -179,10 +179,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public void close() throws IOException {
     if (log.isTraceEnabled()) log.trace("close() - start");
-
+    closed = true;
 
     synchronized (this) {
-      closed = true;
+
       if (log.isDebugEnabled()) log.debug("Closing {} - {} directories currently being tracked", this.getClass().getSimpleName(), byDirectoryCache.size());
       Collection<CacheValue> values = new HashSet<>(byDirectoryCache.values());
       for (CacheValue val : values) {

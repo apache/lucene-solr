@@ -148,7 +148,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertEquals(1, client.query(collection, query).getResults().getNumFound());
 
     CollectionAdminRequest.DeleteShard req = CollectionAdminRequest.deleteShard(collection, "s2");
-    req.setWaitForFinalState(true);
     state = req.processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteShard did not complete", RequestStatusState.COMPLETED, state);
 

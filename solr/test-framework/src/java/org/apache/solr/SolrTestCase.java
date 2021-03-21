@@ -325,6 +325,8 @@ public class SolrTestCase extends Assert {
       System.setProperty("urlScheme", "http");
     }
 
+    System.setProperty("lucene.cms.override_spins", "true"); // TODO: detecting spins for every core, every IW#ConcurrentMergeScheduler can be a bit costly, let's detect and cache somehow?
+
     System.setProperty("useCompoundFile", "true");
     System.setProperty("solr.tests.maxBufferedDocs", "1000");
 
@@ -429,7 +431,6 @@ public class SolrTestCase extends Assert {
       System.setProperty("solr.dependentupdate.timeout", "1500");
 
      // System.setProperty("lucene.cms.override_core_count", "3");
-     // System.setProperty("lucene.cms.override_spins", "false");
 
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
@@ -821,7 +822,7 @@ public class SolrTestCase extends Assert {
         return testExecutor;
       }
       testExecutor = (ParWorkExecutor) ParWork.getParExecutorService(
-          "testExecutor", 5, 30, 500, new BlockingArrayQueue(12, 16));
+          "testExecutor", 5, 64, 500, new BlockingArrayQueue(12, 16));
       testExecutor.prestartAllCoreThreads();
       ((ParWorkExecutor) testExecutor).enableCloseLock();
       return testExecutor;

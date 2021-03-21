@@ -59,10 +59,10 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
           .setCreateNodeSet("")
           .process(cluster.getSolrClient());
       CollectionAdminRequest
-          .addReplicaToShard("testCollection"+i, "shard1")
+          .addReplicaToShard("testCollection"+i, "s1")
           .process(cluster.getSolrClient());
       CollectionAdminRequest
-          .addReplicaToShard("testCollection"+i, "shard2")
+          .addReplicaToShard("testCollection"+i, "s2")
           .process(cluster.getSolrClient());
     }
   }
@@ -75,8 +75,8 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
     // The test assume that TEST_COLLECTION_1 and TEST_COLLECTION_2 will have identical layout
     // ( same replica's name on every shard )
     for (int i = 1; i <= 2; i++) {
-      String coll1ShardiLeader = clusterState.getCollection(TEST_COLLECTION_1).getLeader("shard"+i).getName();
-      String coll2ShardiLeader = clusterState.getCollection(TEST_COLLECTION_2).getLeader("shard"+i).getName();
+      String coll1ShardiLeader = clusterState.getCollection(TEST_COLLECTION_1).getLeader("s"+i).getName();
+      String coll2ShardiLeader = clusterState.getCollection(TEST_COLLECTION_2).getLeader("s"+i).getName();
       String assertMss = String.format(Locale.ROOT, "Expect %s and %s each have a replica with same name on shard %s",
           coll1ShardiLeader, coll2ShardiLeader, "shard"+i);
       assertEquals(
@@ -92,8 +92,8 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
 
     try (SolrClient shardLeaderClient = new HttpSolrClient.Builder(replica.get("base_url").toString()).build()) {
       assertEquals(1L, getElectionNodes(TEST_COLLECTION_1, shard, stateReader.getZkClient()).size());
-      List<String> collection2Shard1Nodes = getElectionNodes(TEST_COLLECTION_2, "shard1", stateReader.getZkClient());
-      List<String> collection2Shard2Nodes = getElectionNodes(TEST_COLLECTION_2, "shard2", stateReader.getZkClient());
+      List<String> collection2Shard1Nodes = getElectionNodes(TEST_COLLECTION_2, "s1", stateReader.getZkClient());
+      List<String> collection2Shard2Nodes = getElectionNodes(TEST_COLLECTION_2, "s2", stateReader.getZkClient());
       CoreAdminRequest.unloadCore(replica.getName(), shardLeaderClient);
       // Waiting for leader election being kicked off
       long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
@@ -108,8 +108,8 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       }
       assertTrue(found);
       // There are no leader election was kicked off on testCollection2
-      assertThat(collection2Shard1Nodes, CoreMatchers.is(getElectionNodes(TEST_COLLECTION_2, "shard1", stateReader.getZkClient())));
-      assertThat(collection2Shard2Nodes, CoreMatchers.is(getElectionNodes(TEST_COLLECTION_2, "shard2", stateReader.getZkClient())));
+      assertThat(collection2Shard1Nodes, CoreMatchers.is(getElectionNodes(TEST_COLLECTION_2, "s1", stateReader.getZkClient())));
+      assertThat(collection2Shard2Nodes, CoreMatchers.is(getElectionNodes(TEST_COLLECTION_2, "s2", stateReader.getZkClient())));
     }
   }
 

@@ -165,7 +165,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       waitForState("Expected to find routing rule for split key " + splitKey, "sourceCollection", (n, c) -> {
         if (c == null)
           return false;
-        Slice shard = c.getSlice("shard2");
+        Slice shard = c.getSlice("s2");
         if (shard == null)
           return false;
         if (shard.getRoutingRules() == null || shard.getRoutingRules().isEmpty())
@@ -175,7 +175,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
         return true;
       });
 
-      boolean ruleRemoved = waitForRuleToExpire("sourceCollection", "shard2", splitKey, finishTime);
+      boolean ruleRemoved = waitForRuleToExpire("sourceCollection", "s2", splitKey, finishTime);
       assertTrue("Routing rule was not expired", ruleRemoved);
     }
   }

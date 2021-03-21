@@ -177,11 +177,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Set<Integer> byIDs;
     byIDs = getSomeIds(2);
     sendNonDirectDeletesRequestReplicaWithRetry(leader,
-        byIDs, calcByIdRf(byIDs, testCollectionName, "shard2"),
+        byIDs, calcByIdRf(byIDs, testCollectionName, "s2"),
         getSomeIds(2), 1, testCollectionName);
     byIDs = getSomeIds(2);
     sendNonDirectDeletesRequestReplicaWithRetry(replicas.get(0), byIDs,
-        calcByIdRf(byIDs, testCollectionName, "shard2"),
+        calcByIdRf(byIDs, testCollectionName, "s2"),
         getSomeIds(2), 1, testCollectionName);
     // heal the partition
     getProxyForReplica(shard2Replicas.get(0)).reopen();

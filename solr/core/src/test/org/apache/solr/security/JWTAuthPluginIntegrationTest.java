@@ -299,7 +299,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  private void createCollection(String collectionName) throws IOException {
+  private void createCollection(String collectionName) throws Exception {
     assertEquals(200, get(baseUrl + "/admin/collections?action=CREATE&name=" + collectionName + "&numShards=2", jwtTestToken).second().intValue());
     cluster.waitForActiveCollection(collectionName, 2, 2);
   }

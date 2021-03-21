@@ -68,8 +68,7 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.Nightly // TODO speedup
-  @Ignore // MRM TODO:
+ // @LuceneTestCase.Nightly // TODO speedup
   public void testSharedSchema() throws Exception {
     CollectionAdminRequest.createCollection("col1", "cShare", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -80,10 +79,10 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
 
     CoreContainer coreContainer = cluster.getJettySolrRunner(0).getCoreContainer();
 
-    try (SolrCore coreCol1 = coreContainer.getCore("col1_s1_r1");
-         SolrCore coreCol2 = coreContainer.getCore("col2_s1_r1");
-         SolrCore coreCol3 = coreContainer.getCore("col3_s1_r1")) {
-      assertSame(coreCol1.getLatestSchema(), coreCol2.getLatestSchema());
+    try (SolrCore coreCol1 = coreContainer.getCore("col1_s1_r_n1");
+         SolrCore coreCol2 = coreContainer.getCore("col2_s1_r_n1");
+         SolrCore coreCol3 = coreContainer.getCore("col3_s1_r_n1")) {
+      assertSame(coreContainer.getAllCoreNames().toString(), coreCol1.getLatestSchema(), coreCol2.getLatestSchema());
       assertNotSame(coreCol1.getLatestSchema(), coreCol3.getLatestSchema());
     }
 
@@ -92,8 +91,8 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
         SolrTestCaseJ4.map("collection.configName", "conf1")  // from cShare
     ).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
-    try (SolrCore coreCol1 = coreContainer.getCore("col1_shard1_replica_n1");
-         SolrCore coreCol2 = coreContainer.getCore("col2_shard1_replica_n1")) {
+    try (SolrCore coreCol1 = coreContainer.getCore("col1_s1_r_n1");
+         SolrCore coreCol2 = coreContainer.getCore("col2_s1_r_n1")) {
       assertNotSame(coreCol1.getLatestSchema(), coreCol2.getLatestSchema());
     }
 

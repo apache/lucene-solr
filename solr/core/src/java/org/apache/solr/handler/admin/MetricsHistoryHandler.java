@@ -644,7 +644,6 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     try (ParWork closer = new ParWork(this)) {
       closer.collect(knownDbs.values());
-      closer.collect(solrClient);
     }
     IOUtils.closeQuietly(factory);
     assert ObjectReleaseTracker.release(this);

@@ -235,10 +235,13 @@ public class Replica extends ZkNodeProps {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
-
     Replica replica = (Replica) o;
+    return name.equals(replica.name) && nodeName.equals(replica.nodeName);
+  }
 
-    return name.equals(replica.name);
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, nodeName);
   }
 
   /** Also known as coreNodeName. */

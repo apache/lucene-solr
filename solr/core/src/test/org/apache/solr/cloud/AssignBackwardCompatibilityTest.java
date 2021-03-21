@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestUtil;
@@ -58,7 +59,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void test() throws IOException, SolrServerException, KeeperException, InterruptedException {
+  public void test() throws IOException, SolrServerException, KeeperException, InterruptedException, TimeoutException {
     Set<String> coreNames = new HashSet<>();
 
     int numOperations = random().nextInt(15) + 15;

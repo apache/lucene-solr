@@ -96,8 +96,6 @@ class SolrCores implements Closeable {
     if (log.isDebugEnabled()) log.debug("Closing SolrCores");
     this.closed = true;
 
-    currentlyLoadingCores.clear();
-
     Collection<SolrCore> coreList = new ArrayList<>();
 
     TransientSolrCoreCache transientSolrCoreCache = getTransientCacheHandler();
@@ -135,6 +133,7 @@ class SolrCores implements Closeable {
       }
     });
 
+    currentlyLoadingCores.clear();
   }
   
   // Returns the old core if there was a core of the same name.
@@ -284,12 +283,14 @@ class SolrCores implements Closeable {
   }
 
   protected SolrCore remove(String name) {
+    currentlyLoadingCores.remove(name);
+
     if (name == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot unload non-existent core [null]");
     }
 
     if (log.isDebugEnabled()) log.debug("remove core from solrcores {}", name);
-    currentlyLoadingCores.remove(name);
+
     SolrCore ret = cores.remove(name);
     residentDesciptors.remove(name);
     // It could have been a newly-created core. It could have been a transient core. The newly-created cores
@@ -387,11 +388,6 @@ class SolrCores implements Closeable {
     return cds;
   }
 
-  // cores marked as loading will block on getCore
-  public void markCoreAsLoading(CoreDescriptor cd) {
-    markCoreAsLoading(cd.getName());
-  }
-
   public void markCoreAsLoading(String name) {
     if (getAllCoreNames().contains(name)) {
       log.warn("Creating a core with existing name is not allowed {}", name);
@@ -441,7 +437,7 @@ class SolrCores implements Closeable {
       while (isCoreLoading(core)) {
         synchronized (loadingSignal) {
           try {
-            loadingSignal.wait(1000);
+            loadingSignal.wait(500);
           } catch (InterruptedException e) {
             ParWork.propagateInterrupt(e);
             return;
@@ -454,10 +450,7 @@ class SolrCores implements Closeable {
   }
 
   public boolean isCoreLoading(String name) {
-    if (currentlyLoadingCores.contains(name)) {
-      return true;
-    }
-    return false;
+    return (currentlyLoadingCores.contains(name));
   }
 
   public TransientSolrCoreCache getTransientCacheHandler() {
@@ -472,6 +465,5 @@ class SolrCores implements Closeable {
 
   public void closing() {
     this.closed = true;
-    currentlyLoadingCores.clear();
   }
 }

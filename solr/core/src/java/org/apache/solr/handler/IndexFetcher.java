@@ -152,7 +152,7 @@ public class IndexFetcher {
 
   final ReplicationHandler replicationHandler;
 
-  private volatile Date replicationStartTimeStamp;
+  private volatile long replicationStartTimeStamp;
   private RTimer replicationTimer;
 
   private final SolrCore solrCore;
@@ -950,7 +950,9 @@ public class IndexFetcher {
     // must get the latest solrCore object because the one we have might be closed because of a reload
     // todo stop keeping solrCore around
     try (SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName())) {
-      @SuppressWarnings({"rawtypes"})
+// testing
+//      @SuppressWarnings({"rawtypes"}) SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+//      core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
@@ -1598,21 +1600,21 @@ public class IndexFetcher {
   @SuppressForbidden(reason = "Need currentTimeMillis for debugging/stats")
   private void markReplicationStart() {
     replicationTimer = new RTimer();
-    replicationStartTimeStamp = new Date();
+    replicationStartTimeStamp = System.nanoTime();
   }
 
   private void markReplicationStop() {
-    replicationStartTimeStamp = null;
+    replicationStartTimeStamp = 0;
     replicationTimer = null;
   }
 
   Date getReplicationStartTimeStamp() {
-    return replicationStartTimeStamp;
+    return new Date(TimeUnit.MILLISECONDS.convert(replicationStartTimeStamp, TimeUnit.NANOSECONDS));
   }
 
   long getReplicationTimeElapsed() {
     long timeElapsed = 0;
-    if (replicationStartTimeStamp != null)
+    if (replicationStartTimeStamp > 0)
       timeElapsed = TimeUnit.SECONDS.convert((long) replicationTimer.getTime(), TimeUnit.MILLISECONDS);
     return timeElapsed;
   }

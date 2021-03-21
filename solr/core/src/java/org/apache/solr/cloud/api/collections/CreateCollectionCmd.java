@@ -156,7 +156,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final String alias = message.getStr(ALIAS, collectionName);
     if (log.isDebugEnabled()) log.debug("Create collection {}", collectionName);
     CountDownLatch latch = new CountDownLatch(1);
-    zkStateReader.getZkClient().getSolrZooKeeper().sync(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, (rc, path, ctx) -> {
+    zkStateReader.getZkClient().getConnectionManager().getKeeper().sync(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, (rc, path, ctx) -> {
       latch.countDown();
     }, null);
     latch.await(5, TimeUnit.SECONDS);
@@ -356,6 +356,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     if (log.isDebugEnabled()) log.debug("CreateCollectionCmd clusterstate={}", clusterState);
     CollectionCmdResponse.Response response = new CollectionCmdResponse.Response();
 
+    final Map<String, ShardRequest> cores = Collections.unmodifiableMap(coresToCreate);
+
     List<ReplicaPosition> finalReplicaPositions = replicaPositions;
     response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
       @Override
@@ -402,7 +404,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                 if (c == null) {
                   return false;
                 }
-                for (String name : coresToCreate.keySet()) {
+                for (String name : cores.keySet()) {
                   log.debug("look for core {} {} {} {}", name, c.getReplica(name), c.getReplica(name).getState(),  c.getReplica(name).getState() != Replica.State.ACTIVE);
                   if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
                     log.debug("not the right replica or state {}", c.getReplica(name));

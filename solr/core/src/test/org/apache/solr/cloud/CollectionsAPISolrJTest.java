@@ -89,7 +89,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     System.setProperty("solr.zkclienttimeout", "15000");
     System.setProperty("zkClientTimeout", "15000");
 
-    System.setProperty("solr.getleader.looptimeout", "10000");
     String timeout = "640000";
     System.setProperty("solr.http2solrclient.default.idletimeout", timeout);
     System.setProperty("distribUpdateSoTimeout", timeout);

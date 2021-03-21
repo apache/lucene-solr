@@ -147,7 +147,6 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .setProperties(collectionProperties)
-        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     CLOUD_CLIENT = cluster.getSolrClient();
@@ -248,7 +247,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   @AfterClass
   private static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
+      // CLOUD_CLIENT is not ours to close!
+      // CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
     for (Http2SolrClient client : CLIENTS) {

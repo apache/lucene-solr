@@ -36,6 +36,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.QoSParams;
+import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
@@ -65,6 +66,8 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
   private Http2SolrClient myClient;
   private final boolean clientIsInternal;
 
+  private CloseTracker closeTracker;
+
   /**
    * Create a new client object that connects to Zookeeper and is always aware
    * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
@@ -75,6 +78,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly, false);
+    assert (closeTracker = new CloseTracker()) != null;
     this.clientIsInternal = builder.httpClient == null;
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.zkHosts.size() > 0 && builder.solrUrls != null && builder.solrUrls.size() > 0) {
@@ -176,16 +180,31 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
     }
   }
 
+  public void enableCloseLock() {
+    if (closeTracker != null) {
+      closeTracker.enableCloseLock();
+    }
+  }
+
+  public void disableCloseLock() {
+    if (closeTracker != null) {
+      closeTracker.disableCloseLock();
+    }
+  }
+
   @Override
   public void close() throws IOException {
-    try (ParWork closer = new ParWork(this, true, false)) {
+    super.close();
+
+    try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect(stateProvider);
       closer.collect(lbClient);
       if (clientIsInternal && myClient!=null) {
         closer.collect(myClient);
       }
     }
-    super.close();
+
+    assert closeTracker != null ? closeTracker.close() : true;
     assert ObjectReleaseTracker.release(this);
   }
 

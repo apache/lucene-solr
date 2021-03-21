@@ -225,7 +225,6 @@ public class ClusterState implements JSONWriter.Writable {
       return null;
     }
     DocCollection docCollection = cs.getCollectionsMap().values().iterator().next();
-    docCollection.setZnodeVersion(version);
     return docCollection;
   }
 
@@ -237,11 +236,11 @@ public class ClusterState implements JSONWriter.Writable {
       collections.put(collectionName, new CollectionRef(coll));
     }
 
-    return new ClusterState(collections, version);
+    return new ClusterState(collections, -1);
   }
 
   // TODO move to static DocCollection.loadFromMap
-  private static DocCollection collectionFromObjects(Replica.NodeNameToBaseUrl zkStateReader, String name, Map<String, Object> objs, int version) {
+  private static DocCollection collectionFromObjects(Replica.NodeNameToBaseUrl zkStateReader, String name, Map<String, Object> objs, Integer version) {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
@@ -377,11 +376,11 @@ public class ClusterState implements JSONWriter.Writable {
       this.coll = coll;
     }
 
-    /** Return the DocCollection, always refetching if lazy. Equivalent to get(false)
+    /** Return the DocCollection, using cached state if lazy.
      * @return The collection state modeled in zookeeper
      */
     public DocCollection get(){
-      return get(false);
+      return get(true);
     }
 
     /** Return the DocCollection

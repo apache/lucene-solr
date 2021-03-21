@@ -26,7 +26,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.hamcrest.core.IsCollectionContaining;
 import org.hamcrest.core.IsEqual;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,23 +66,19 @@ public class TestDynamicFieldNamesIndexCorrectly extends SolrCloudBridgeTestCase
   }
 
   void populateIndex(int numRuns) throws IOException, SolrServerException {
-    try {
-      for (int i = 0; i < numRuns; i++) {
-        log.debug("Iteration number: {}", i);
-        cloudClient.deleteByQuery(COLLECTION, "*:*");
-        cloudClient.commit(COLLECTION);
+    for (int i = 0; i < numRuns; i++) {
+      log.debug("Iteration number: {}", i);
+      cloudClient.deleteByQuery(COLLECTION, "*:*");
+      cloudClient.commit(COLLECTION);
 
-        final Collection<SolrInputDocument> solrDocs = generateRandomizedFieldDocuments();
-        addToSolr(solrDocs);
+      final Collection<SolrInputDocument> solrDocs = generateRandomizedFieldDocuments();
+      addToSolr(solrDocs);
 
-        final SolrQuery solrQuery = new SolrQuery("*:*");
-        solrQuery.setRows(solrDocs.size());
-        final SolrDocumentList resultDocs = getSolrResponse(solrQuery, COLLECTION);
-        log.debug("{}", resultDocs);
-        assertThatDocsHaveCorrectFields(solrDocs, resultDocs);
-      }
-    } finally {
-      cloudClient.close();
+      final SolrQuery solrQuery = new SolrQuery("*:*");
+      solrQuery.setRows(solrDocs.size());
+      final SolrDocumentList resultDocs = getSolrResponse(solrQuery, COLLECTION);
+      log.debug("{}", resultDocs);
+      assertThatDocsHaveCorrectFields(solrDocs, resultDocs);
     }
   }
 

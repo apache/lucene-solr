@@ -159,8 +159,8 @@ public class Http2SolrClient extends SolrClient {
    */
   private volatile String serverBaseUrl;
   private volatile boolean closeClient;
-  private SolrQueuedThreadPool httpClientExecutor;
-  private SolrScheduledExecutorScheduler scheduler;
+  private volatile SolrQueuedThreadPool httpClientExecutor;
+  private volatile SolrScheduledExecutorScheduler scheduler;
   private volatile boolean closed;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
@@ -516,7 +516,7 @@ public class Http2SolrClient extends SolrClient {
         req.afterSend.run();
       }
     } catch (Exception e) {
-
+      log.debug("failed sending request", e);
       if (e != CANCELLED_EXCEPTION) {
         asyncListener.onFailure(e, 500);
       }

@@ -36,6 +36,7 @@ import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -231,11 +232,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 //        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "");
 //    ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
 //    ElectionContext context = new ShardLeaderElectionContextBase(elector,
-//        "shard2", "collection1", "dummynode1", props, zkController);
+//        "s2", "collection1", "dummynode1", props, zkController);
 //    elector.setup(context);
 //    elector.joinElection(context, false);
 //    assertEquals("http://127.0.0.1/solr/",
-//        getLeaderUrl("collection1", "shard2"));
+//        getLeaderUrl("collection1", "s2"));
 //  }
 
   // MRM TODO:
@@ -515,7 +516,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             int j;
             j = random().nextInt(threads.size());
             try {
-              threads.get(j).es.zkClient.getSolrZooKeeper().closeCnxn();
+              ((SolrZooKeeper)threads.get(j).es.zkClient.getConnectionManager().getKeeper()).closeCnxn();
               if (random().nextBoolean()) {
                 long sessionId = zkClient.getSessionId();
                 server.expire(sessionId);
@@ -556,7 +557,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     // cleanup any threads still running
     for (ClientThread thread : threads) {
-      thread.es.zkClient.getSolrZooKeeper().close();
+     // thread.es.zkClient.getSolrZooKeeper().close();
       thread.close();
     }
 

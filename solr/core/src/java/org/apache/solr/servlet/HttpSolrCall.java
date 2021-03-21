@@ -49,6 +49,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
+import org.apache.solr.handler.admin.PrepRecoveryOp;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -233,7 +234,6 @@ public class HttpSolrCall {
       solrReq.getContext().put(CoreContainer.class.getName(), cores);
       requestType = RequestType.ADMIN;
       action = ADMIN;
-      ensureStatesAreAtLeastAtClient();
       return;
     }
 
@@ -266,7 +266,7 @@ public class HttpSolrCall {
       }
 
       if (core == null && log.isDebugEnabled()) {
-        log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
+        log.debug("tried to get core by name {} got {}, existing cores {} loading={} found={}", origCorename, core, cores.getAllCoreNames(), cores.getLoadedCoreNames(), core != null);
       }
 
       if (core != null) {
@@ -350,10 +350,8 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
-
         invalidStates = checkStateVersionsAreValid(getCollectionsList(), queryParams.get(CloudSolrClient.STATE_VERSION));
 
-        ensureStatesAreAtLeastAtClient();
         addCollectionParamIfNeeded(getCollectionsList());
 
         action = PROCESS;
@@ -368,34 +366,6 @@ public class HttpSolrCall {
     log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
-  }
-
-  private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
-//    if (cores.isZooKeeperAware()) {
-//      if (log.isDebugEnabled()) log.debug("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
-//      Map<String,Integer> invalidStates = getStateVersions(queryParams.get(CloudSolrClient.STATE_VERSION));
-//      if (invalidStates != null) {
-//        Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
-//        for (Map.Entry<String,Integer> entry : entries) {
-//          String collection = entry.getKey();
-//          Integer version = entry.getValue();
-//          if (log.isDebugEnabled()) log.debug("ensure states are at at least client version {} for collection {}", version, collection);
-//          DocCollection docCollection = cores.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
-//          if (docCollection != null && docCollection.getZNodeVersion() < version) {
-//            cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-//              if (collectionState == null) {
-//                return false;
-//              }
-//              log.info("found server state version {}", collectionState.getZNodeVersion());
-//              if (collectionState.getZNodeVersion() < version) {
-//                return false;
-//              }
-//              return true;
-//            });
-//          }
-//        }
-//      }
-//    }
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {
@@ -656,7 +626,7 @@ public class HttpSolrCall {
         default: return action;
       }
     } catch (Throwable ex) {
-      if (shouldAudit(EventType.ERROR)) {
+      if (!(ex instanceof PrepRecoveryOp.NotValidLeader) && shouldAudit(EventType.ERROR)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, ex, req));
       }
       sendError(ex);
@@ -793,14 +763,6 @@ public class HttpSolrCall {
       }
 
       listener.getInputStream().transferTo(response.getOutputStream());
-
-//      try {
-//        listener.await(60, TimeUnit.SECONDS); // MRM TODO: timeout
-//      } catch (InterruptedException e) {
-//        log.error("Interrupted waiting for proxy request");
-//      } catch (TimeoutException e) {
-//        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout proxying request");
-//      }
 
       if (failException.get() != null) {
         sendError(failException.get());
@@ -1034,19 +996,6 @@ public class HttpSolrCall {
 
   /** Returns null if the state ({@link CloudSolrClient#STATE_VERSION}) is good; otherwise returns state problems. */
   private Map<String, Integer> checkStateVersionsAreValid(List<String> collectionsList, String stateVer) {
-    // TODO: for collections that are local and watched, we should just wait for the right min state, not eager fetch everything
-//    Set<String> colList = cores.getZkController().getZkStateReader().getClusterState().getCollectionsMap().keySet();
-//    if ((stateVer == null || stateVer.isEmpty()) && cores.isZooKeeperAware()) {
-//      StringBuilder sb = new StringBuilder();
-//      for (String collection : colList) {
-//        if (sb.length() > 0) {
-//          sb.append("|");
-//        }
-//        sb.append(collection + ":0>0");
-//      }
-//      stateVer = sb.toString();
-//    }
-
     Map<String, Integer> result = null;
     String[] pairs;
     if (stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware()) {
@@ -1110,55 +1059,54 @@ public class HttpSolrCall {
       return null;
     }
 
-    try {
-      zkStateReader.waitForActiveCollection(collectionName, 10000, TimeUnit.MILLISECONDS, true, collection.getSlices().size(), collection.getReplicas().size(), false);
-    } catch (Exception e) {
-      log.warn("Did not find leaders for collection:" + collection.getName());
-    }
-
     if (isPreferLeader) {
       List<Replica> leaderReplicas = collection.getLeaderReplicas(cores.getZkController().getNodeName());
       log.debug("preferLeader leaderReplicas={}", leaderReplicas);
-      SolrCore core = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), leaderReplicas, true);
+      SolrCore core = randomlyGetSolrCore(leaderReplicas, true);
       if (core != null) return core;
     }
 
     List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
     if (log.isDebugEnabled()) log.debug("replicas for node {} {}", replicas, cores.getZkController().getNodeName());
-    SolrCore returnCore = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), replicas, true);
+    SolrCore returnCore = randomlyGetSolrCore(replicas, true);
     if (log.isDebugEnabled()) log.debug("returning core by collection {}", returnCore == null ? null : returnCore.getName());
     return returnCore;
   }
 
-  private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas, boolean checkActive) {
+  private SolrCore randomlyGetSolrCore(List<Replica> replicas, boolean checkActive) {
     if (replicas != null) {
       RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
       while (it.hasNext()) {
         Replica replica = it.next();
-        if (liveNodes.contains(replica.getNodeName())) {
-          SolrCore core = checkProps(replica);
-          if (core != null && checkActive && replica.getState() != Replica.State.ACTIVE) {
-            try {
-              cores.getZkController().getZkStateReader().waitForState(core.getCoreDescriptor().getCollectionName(), 1, TimeUnit.SECONDS, (liveNodes1, coll) -> {
-                if (coll == null) {
-                  return false;
-                }
-                Replica rep = coll.getReplica(core.getName());
-                if (rep == null) {
-                  return false;
-                }
-                if (rep.getState() != Replica.State.ACTIVE) {
-                  return false;
-                }
+
+        SolrCore core = checkProps(replica);
+        if (core != null && checkActive) {
+          try {
+            cores.getZkController().getZkStateReader().waitForState(core.getCoreDescriptor().getCollectionName(), 1, TimeUnit.SECONDS, (liveNodes1, coll) -> {
+              if (coll == null) {
+                return false;
+              }
+              Replica rep = coll.getReplica(replica.getName());
+              if (rep == null) {
+                return false;
+              }
+              if (rep.getState() == Replica.State.ACTIVE) {
                 return true;
-              });
-            } catch (InterruptedException e) {
-            } catch (TimeoutException e) { }
+              }
+              return false;
+            });
+          } catch (InterruptedException e) {
+            log.debug("interrupted waiting to see active replica");
+            return null;
+          } catch (TimeoutException e) {
+            log.debug("timeout waiting to see active replica {} {}", replica.getName(), replica.getState());
+            return null;
           }
-          if (core != null) return core;
+          return core;
         }
       }
     }
+
     return null;
   }
 
@@ -1181,13 +1129,8 @@ public class HttpSolrCall {
     if (docCollection == null) {
       return null;
     }
-    Collection<Slice> slices = docCollection.getActiveSlices();
 
-    if (slices.isEmpty()) {
-      return null;
-    }
-
-    String coreUrl = getCoreUrl(slices);
+    String coreUrl = getCoreUrl(docCollection.getSlices());
 
     if (log.isDebugEnabled()) {
       log.debug("get remote core url returning {} for {} {}", coreUrl, collectionName, origCorename);
@@ -1203,7 +1146,9 @@ public class HttpSolrCall {
       Collections.shuffle(randomizedReplicas, random);
 
       for (Replica replica : randomizedReplicas) {
-        if (cores.getZkController().zkStateReader.getLiveNodes().contains(replica.getNodeName())
+        log.debug("check replica {} with node name {} against live nodes {} with state {}",
+            replica.getName(), replica.getNodeName(), cores.getZkController().getZkStateReader().getLiveNodes(), replica.getState());
+        if (!replica.getNodeName().equals(cores.getZkController().getNodeName()) && cores.getZkController().zkStateReader.getLiveNodes().contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE) {
 
           coreUrl = replica.getCoreUrl();

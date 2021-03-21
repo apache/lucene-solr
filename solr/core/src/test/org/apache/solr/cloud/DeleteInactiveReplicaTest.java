@@ -94,7 +94,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 //        CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
 //        createRequest.setCoreName("testcore");
 //        createRequest.setCollection(collectionName);
-//        createRequest.setShardId("shard2");
+//        createRequest.setShardId("s2");
 //        queryClient.request(createRequest);
 //      });
 //      assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("No coreNodeName for"));

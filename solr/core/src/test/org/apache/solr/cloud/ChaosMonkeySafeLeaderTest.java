@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slow
-@LuceneTestCase.Nightly // MRM TODO: finish compare against control, look at setErrorHook
+@LuceneTestCase.Nightly // MRM TODO: look at setErrorHook
 public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -137,7 +137,7 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
       indexThread.start();
     }
     
-    chaosMonkey.startTheMonkey(false, 500);
+    chaosMonkey.startTheMonkey(false, 5000);
     try {
       long runLength;
       if (RUN_LENGTH != -1) {
@@ -171,20 +171,34 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
       assertTrue(String.valueOf(indexThread.getFailCount()), indexThread.getFailCount() < 10);
     }
 
-    cluster.getSolrClient().getZkStateReader().waitForState(COLLECTION, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-      if (collectionState == null) return false;
-      Collection<Slice> slices = collectionState.getSlices();
-      for (Slice slice : slices) {
-        for (Replica replica : slice.getReplicas()) {
-          if (cluster.getSolrClient().getZkStateReader().isNodeLive(replica.getNodeName())) {
+    while (true) {
+      cluster.getSolrClient().getZkStateReader().waitForState(COLLECTION, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+        if (collectionState == null) return false;
+        Collection<Slice> slices = collectionState.getSlices();
+        for (Slice slice : slices) {
+          for (Replica replica : slice.getReplicas()) {
+            if (cluster.getSolrClient().getZkStateReader().isNodeLive(replica.getNodeName())) {
               if (replica.getState() != Replica.State.ACTIVE) {
                 return false;
               }
+            }
           }
         }
+        return true;
+      });
+
+      Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getCollectionOrNull(COLLECTION).getSlices();
+      try {
+        for (Slice slice : slices) {
+          cluster.getSolrClient().getZkStateReader().getLeaderRetry(cluster.getSolrClient().getHttpClient(), COLLECTION, slice.getName(), 5000, true);
+        }
+        break;
+      } catch (Exception e) {
+        log.error("exception waiting for leaders", e);
+        Thread.sleep(150);
+        continue;
       }
-      return true;
-    });
+    }
 
     commit();
 

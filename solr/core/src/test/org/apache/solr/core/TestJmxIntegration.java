@@ -183,7 +183,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
 
       ObjectName name = nameFactory.createName("gauge", registryName, "SEARCHER.searcher.numDocs");
 
-      timeout = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      timeout = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
       Integer oldNumDocs = null;
       while (!timeout.hasTimedOut()) {
         nameFactory.createName("gauge", registryName, "SEARCHER.searcher.numDocs");

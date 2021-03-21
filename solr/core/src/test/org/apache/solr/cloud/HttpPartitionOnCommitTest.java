@@ -101,7 +101,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     }
 
     // let's put the leader in its own partition, no replicas can contact it now
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1");
     if (log.isInfoEnabled()) {
       log.info("Creating partition to leader at {}", leader.getCoreUrl());
     }
@@ -109,12 +109,12 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     leaderProxy.close();
 
     // let's find the leader of shard2 and ask him to commit
-    Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard2");
+    Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s2");
     sendCommitWithRetry(shard2Leader);
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "s1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
     if (log.isInfoEnabled()) {

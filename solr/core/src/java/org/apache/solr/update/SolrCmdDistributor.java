@@ -24,6 +24,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -123,7 +124,7 @@ public class SolrCmdDistributor implements Closeable {
             err.t);
 
     // this can happen in certain situations such as close
-    if (isRetry && rspCode != -1) {
+    if (isRetry) {
       // if it's a io exception exception, lets try again
       if (err.t instanceof SolrServerException) {
         if (((SolrServerException) err.t).getRootCause() instanceof IOException  && !(((SolrServerException) err.t).getRootCause() instanceof ClosedChannelException)) {
@@ -135,13 +136,13 @@ public class SolrCmdDistributor implements Closeable {
         doRetry = true;
       }
 
-      if (err.req.retries < maxRetries && doRetry && !isClosed.isClosed()) {
+      if (err.req != null && err.req.retries.get() < maxRetries && doRetry && (isClosed == null || !isClosed.isClosed())) {
         try {
-          Thread.sleep(100);
+          Thread.sleep(10);
         } catch (InterruptedException e) {
 
         }
-        err.req.retries++;
+        err.req.retries.incrementAndGet();
 
         SolrException.log(SolrCmdDistributor.log, "sending update to "
                 + oldNodeUrl + " failed - retrying ... retries: "
@@ -168,9 +169,9 @@ public class SolrCmdDistributor implements Closeable {
                             RollupRequestReplicationTracker rollupTracker,
                             LeaderRequestReplicationTracker leaderTracker) throws IOException {
     if (nodes == null) return;
-//    if (!cmd.isDeleteById()) {
-//      blockAndDoRetries();
-//    }
+    if (!cmd.isDeleteById()) {
+      blockAndDoRetries();
+    }
     for (Node node : nodes) {
       if (node == null) continue;
       UpdateRequest uReq = new UpdateRequest();
@@ -215,7 +216,7 @@ public class SolrCmdDistributor implements Closeable {
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) {
     // we need to do any retries before commit...
-    //blockAndDoRetries();
+    blockAndDoRetries();
     if (log.isDebugEnabled()) {
       log.debug("Distrib commit to: {} params: {}", nodes, params);
     }
@@ -350,7 +351,7 @@ public class SolrCmdDistributor implements Closeable {
   public static class Req {
     public Node node;
     public UpdateRequest uReq;
-    public int retries;
+    public AtomicInteger retries;
     public boolean synchronous;
     public UpdateCommand cmd;
     final private RollupRequestReplicationTracker rollupTracker;

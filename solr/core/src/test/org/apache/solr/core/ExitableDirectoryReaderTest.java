@@ -25,7 +25,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
@@ -96,7 +95,6 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   // removed once it is running and this test should be un-ignored and the assumptions verified.
   // With all the weirdness, I'm not going to vouch for this test. Feel free to change it.
   @Test
-  @Ignore // MRM TODO: - maybe needs a force update
   public void testCacheAssumptions() throws Exception {
     String fq= "name:d*";
     SolrCore core = h.getCore();
@@ -139,7 +137,6 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   // When looking at a problem raised on the user's list I ran across this anomaly with timeAllowed
   // This tests for the second query NOT returning partial results, along with some other
   @Test
-  @Ignore // MRM TODO: - maybe needs a force update
   public void testQueryResults() throws Exception {
     String q = "name:e*";
     SolrCore core = h.getCore();

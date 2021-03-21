@@ -408,6 +408,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     } else {
       leaderJetty = cluster.getReplicaJetty(s.getLeader());
       leaderJetty.stop();
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
       waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
       // Wait for cluster state to be updated
       waitForState("Replica state not updated in cluster state",
@@ -454,7 +455,10 @@ public class TestPullReplica extends SolrCloudTestCase {
       CollectionAdminRequest.addReplicaToShard(collectionName, "s1", Replica.Type.NRT).waitForFinalState(true).process(cluster.getSolrClient());
     } else {
       leaderJetty.start();
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
     }
+
 
     SolrTestCaseJ4.unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
@@ -478,7 +482,11 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
-    try (Http2SolrClient leaderClient = SolrTestCaseJ4.getHttpSolrClient(s.getLeader().getCoreUrl())) {
+
+
+    leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, s.getName());
+
+    try (Http2SolrClient leaderClient = SolrTestCaseJ4.getHttpSolrClient(leader.getCoreUrl())) {
       leaderClient.commit();
       SolrDocumentList results = leaderClient.query(new SolrQuery("*:*")).getResults();
       assertEquals(results.toString(), 2, results.getNumFound());
@@ -500,16 +508,19 @@ public class TestPullReplica extends SolrCloudTestCase {
 
     JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("s1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
     pullReplicaJetty.stop();
-    waitForState("Replica not removed", collectionName, activeReplicaCount(1, 0, 0));
-    // Also wait for the replica to be placed in state="down"
-    waitForState("Didn't not live state", collectionName, notLive(Replica.Type.PULL));
+
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
+
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(cluster.getSolrClient().getHttpClient(), collectionName, 5, TimeUnit.SECONDS, false, 1, 1, true, true);
 
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     waitForNumDocsInAllActiveReplicas(2);
 
     pullReplicaJetty.start();
-    waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
+
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(cluster.getSolrClient().getHttpClient(), collectionName, 5, TimeUnit.SECONDS, false, 1, 2, true, true);
     waitForNumDocsInAllActiveReplicas(2);
   }
 

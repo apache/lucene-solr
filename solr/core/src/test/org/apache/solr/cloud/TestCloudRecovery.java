@@ -149,9 +149,9 @@ public class TestCloudRecovery extends SolrCloudTestCase {
       if (resp.getResults().getNumFound() >= 4) {
         break;
       }
+      Thread.sleep(100);
     }
 
-    resp = cloudClient.query(COLLECTION, params);
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all leader nodes recover from tlog
 

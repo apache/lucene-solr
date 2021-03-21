@@ -25,31 +25,31 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 // See SOLR-6640
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.Nightly
-@Ignore // MRM TODO: proxy not working right?
 public class RecoveryAfterSoftCommitTest extends SolrCloudBridgeTestCase {
   private static final int MAX_BUFFERED_DOCS = 2, ULOG_NUM_RECORDS_TO_KEEP = 2;
 
   public RecoveryAfterSoftCommitTest() {
+
+  }
+
+  @BeforeClass
+  public static void beforeTests() {
     sliceCount = 1;
     numJettys = 2;
     replicationFactor = 2;
     enableProxy = true;
     uploadSelectCollection1Config = true;
+    solrconfigString = "solrconfig.xml";
+    schemaString = "schema.xml";
     System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(MAX_BUFFERED_DOCS));
     System.setProperty("solr.ulog.numRecordsToKeep", String.valueOf(ULOG_NUM_RECORDS_TO_KEEP));
     // avoid creating too many files, see SOLR-7421
     System.setProperty("useCompoundFile", "true");
-  }
-
-  @BeforeClass
-  public static void beforeTests() {
-
   }
 
   @AfterClass

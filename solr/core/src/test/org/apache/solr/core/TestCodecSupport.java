@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
@@ -38,7 +37,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 
 import javax.xml.xpath.XPathExpressionException;
 
@@ -164,29 +162,36 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     doTestCompressionMode("best_compression", "BEST_COMPRESSION");
   }
 
-  @Ignore // MRM TODO: - this test can be flakey after the explicit reload below - some race ...?
   public void testMixedCompressionMode() throws Exception {
     System.setProperty("tests.COMPRESSION_MODE", "BEST_SPEED");
     h.getCoreContainer().reload(h.coreName);
     assertU(add(doc("string_f", "1", "text", "foo bar")));
     assertU(commit());
-    assertCompressionMode("BEST_SPEED", h.getCore());
+    try (SolrCore core = h.getCore()) {
+      assertCompressionMode("BEST_SPEED", core);
+    }
     System.setProperty("tests.COMPRESSION_MODE", "BEST_COMPRESSION");
     h.getCoreContainer().reload(h.coreName);
     assertU(add(doc("string_f", "2", "text", "foo zar")));
     assertU(commit());
-    assertCompressionMode("BEST_COMPRESSION", h.getCore());
+    try (SolrCore core = h.getCore()) {
+      assertCompressionMode("BEST_COMPRESSION", core);
+    }
     System.setProperty("tests.COMPRESSION_MODE", "BEST_SPEED");
     h.getCoreContainer().reload(h.coreName);
     assertU(add(doc("string_f", "3", "text", "foo zoo")));
     assertU(commit());
-    assertCompressionMode("BEST_SPEED", h.getCore());
+    try (SolrCore core = h.getCore()) {
+      assertCompressionMode("BEST_SPEED", core);
+    }
     assertQ(req("q", "*:*"), 
         "//*[@numFound='3']");
     assertQ(req("q", "text:foo"), 
         "//*[@numFound='3']");
     assertU(optimize("maxSegments", "1"));
-    assertCompressionMode("BEST_SPEED", h.getCore());
+    try (SolrCore core = h.getCore()) {
+      assertCompressionMode("BEST_SPEED", core);
+    }
     System.clearProperty("tests.COMPRESSION_MODE");
   }
   
@@ -236,23 +241,21 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
     CoreContainer coreContainer = h.getCoreContainer();
 
-
     CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName), coreContainer);
     c = new SolrCore(coreContainer, cd, new ConfigSet("fakeConfigset", config, schema, null, true));
     c.start();
     assertNull(coreContainer.registerCore(cd, c, false));
     h.coreName = newCoreName;
 
-    try (SolrCore core = h.getCore()) {
-      assertEquals("We are not using the correct core", "solrconfig_codec2.xml", core.getConfigResource());
+   try {
+      assertEquals("We are not using the correct core", "solrconfig_codec2.xml", c.getConfigResource());
       assertU(add(doc("string_f", "foo")));
       assertU(commit());
 
 
-      assertCompressionMode(SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE.name(), core);
+      assertCompressionMode(SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE.name(), c);
 
     } finally {
-      c.close();
       h.coreName = previousCoreName;
       coreContainer.unload(newCoreName);
     }

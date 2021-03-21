@@ -36,6 +36,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -77,8 +78,12 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
     log.info("Informing test component...");
     this.core = core;
     ParWork.getRootSharedExecutor().submit(() -> {
-      core.getCoreContainer().getZkController().getZkStateReader().waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL, 5, TimeUnit.SECONDS, 1, 1, false);
-      this.blob =  core.loadDecodeAndCacheBlob(getKey(), new DumbCsvDecoder()).blob;
+      try {
+        core.getCoreContainer().getZkController().getZkStateReader().waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL, 5, TimeUnit.SECONDS, 1, 1, false);
+      } catch (TimeoutException e) {
+        log.error("timeout", e);
+      }
+      this.blob = core.loadDecodeAndCacheBlob(getKey(), new DumbCsvDecoder()).blob;
     });
 
     log.info("Test component informed!");

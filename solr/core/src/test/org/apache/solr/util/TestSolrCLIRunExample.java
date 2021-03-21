@@ -386,7 +386,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             // brief wait in case of timing issue in getting the new docs committed
             log.warn("Going to wait for 1 second before re-trying query for techproduct example docs ...");
             try {
-              Thread.sleep(1000);
+              Thread.sleep(100);
             } catch (InterruptedException ignore) {
               Thread.interrupted();
             }

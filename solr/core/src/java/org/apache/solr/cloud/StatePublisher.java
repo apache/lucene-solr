@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -62,14 +63,18 @@ public class StatePublisher implements Closeable {
   }
   static final String PREFIX = "qn-";
   public static final NoOpMessage TERMINATE_OP = new NoOpMessage();
+  public static final ConcurrentHashMap TERMINATE_OP_MAP = new ConcurrentHashMap();
 
-  private final ArrayBlockingQueue<ZkNodeProps> workQueue = new ArrayBlockingQueue<>(1024, true);
+  private final ArrayBlockingQueue<ConcurrentHashMap> workQueue = new ArrayBlockingQueue<>(1024, true);
   private final ZkDistributedQueue overseerJobQueue;
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
 
   private volatile boolean terminated;
   private class Worker implements Runnable {
+
+    public static final int POLL_TIME_ON_PUBLISH_NODE = 1;
+    public static final int POLL_TIME = 5;
 
     Worker() {
 
@@ -79,20 +84,19 @@ public class StatePublisher implements Closeable {
     public void run() {
 
       while (!terminated) {
-//        if (!zkStateReader.getZkClient().isConnected()) {
-//          try {
-//            zkStateReader.getZkClient().getConnectionManager().waitForConnected(5000);
-//          } catch (TimeoutException e) {
-//            continue;
-//          } catch (InterruptedException e) {
-//            log.error("publisher interrupted", e);
-//          }
-//          continue;
-//        }
-
-        ZkNodeProps message = null;
-        ZkNodeProps bulkMessage = new ZkNodeProps();
-        bulkMessage.getProperties().put(OPERATION, "state");
+        if (!zkStateReader.getZkClient().isAlive()) {
+          try {
+            zkStateReader.getZkClient().getConnectionManager().waitForConnected(5000);
+          } catch (AlreadyClosedException e) {
+            log.warn("Hit already closed exception while waiting for zkclient to reconnect");
+            return;
+          } catch (Exception e) {
+            continue;
+          }
+        }
+        ConcurrentHashMap message = null;
+        ConcurrentHashMap bulkMessage = new ConcurrentHashMap();
+        bulkMessage.put(OPERATION, "state");
         int pollTime = 250;
         try {
           try {
@@ -104,14 +108,15 @@ public class StatePublisher implements Closeable {
           if (message != null) {
             log.debug("Got state message " + message);
 
-            if (message == TERMINATE_OP) {
+            if (message == TERMINATE_OP_MAP) {
               log.debug("State publish is terminated");
               terminated = true;
+              pollTime = 1;
             } else {
               if (bulkMessage(message, bulkMessage)) {
-                pollTime = 20;
+                pollTime = POLL_TIME_ON_PUBLISH_NODE;
               } else {
-                pollTime = 150;
+                pollTime = POLL_TIME;
               }
             }
 
@@ -124,13 +129,14 @@ public class StatePublisher implements Closeable {
               }
               if (message != null) {
                 if (log.isDebugEnabled()) log.debug("Got state message " + message);
-                if (message == TERMINATE_OP) {
+                if (message == TERMINATE_OP_MAP) {
                   terminated = true;
+                  pollTime = 1;
                 } else {
                   if (bulkMessage(message, bulkMessage)) {
-                    pollTime = 10;
+                    pollTime = POLL_TIME_ON_PUBLISH_NODE;
                   } else {
-                    pollTime = 25;
+                    pollTime = POLL_TIME;
                   }
                 }
               } else {
@@ -139,7 +145,7 @@ public class StatePublisher implements Closeable {
             }
           }
 
-          if (bulkMessage.getProperties().size() > 1) {
+          if (bulkMessage.size() > 1) {
             processMessage(bulkMessage);
           } else {
             log.debug("No messages to publish, loop");
@@ -155,31 +161,32 @@ public class StatePublisher implements Closeable {
       }
     }
 
-    private boolean bulkMessage(ZkNodeProps zkNodeProps, ZkNodeProps bulkMessage) {
-      if (OverseerAction.get(zkNodeProps.getStr(OPERATION)) == OverseerAction.DOWNNODE) {
-        String nodeName = zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+    private boolean bulkMessage(ConcurrentHashMap zkNodeProps, ConcurrentHashMap bulkMessage) {
+      if (OverseerAction.get((String) zkNodeProps.get(OPERATION)) == OverseerAction.DOWNNODE) {
+        String nodeName = (String) zkNodeProps.get(ZkStateReader.NODE_NAME_PROP);
         //clearStatesForNode(bulkMessage, nodeName);
-        bulkMessage.getProperties().put(OverseerAction.DOWNNODE.toLower(), nodeName);
+        bulkMessage.put(OverseerAction.DOWNNODE.toLower(), nodeName);
         log.debug("bulk state publish down node, props={} result={}", zkNodeProps, bulkMessage);
-
-      } else if (OverseerAction.get(zkNodeProps.getStr(OPERATION)) == OverseerAction.RECOVERYNODE) {
+        return true;
+      } else if (OverseerAction.get((String) zkNodeProps.get(OPERATION)) == OverseerAction.RECOVERYNODE) {
         log.debug("bulk state publish recovery node, props={} result={}", zkNodeProps, bulkMessage);
-        String nodeName = zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+        String nodeName = (String) zkNodeProps.get(ZkStateReader.NODE_NAME_PROP);
        // clearStatesForNode(bulkMessage, nodeName);
-        bulkMessage.getProperties().put(OverseerAction.RECOVERYNODE.toLower(), nodeName);
+        bulkMessage.put(OverseerAction.RECOVERYNODE.toLower(), nodeName);
         log.debug("bulk state publish recovery node, props={} result={}" , zkNodeProps, bulkMessage);
+        return true;
       } else {
         //String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
-        String core = zkNodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
-        String id = zkNodeProps.getStr("id");
-        String state = zkNodeProps.getStr(ZkStateReader.STATE_PROP);
+        String core = (String) zkNodeProps.get(ZkStateReader.CORE_NAME_PROP);
+        String id = (String) zkNodeProps.get("id");
+        String state = (String) zkNodeProps.get(ZkStateReader.STATE_PROP);
 
         String line = Replica.State.getShortState(Replica.State.valueOf(state.toUpperCase(Locale.ROOT)));
         if (log.isDebugEnabled()) log.debug("bulk publish core={} id={} state={} line={}", core, id, state, line);
-        bulkMessage.getProperties().put(id, line);
-        if (state.equals(Replica.State.RECOVERING.toString())) {
-          return true;
-        }
+        bulkMessage.put(id, line);
+//        if (state.equals(Replica.State.RECOVERING.toString())) {
+//          return true;
+//        }
       }
       return false;
     }
@@ -207,7 +214,7 @@ public class StatePublisher implements Closeable {
       }
     }
 
-    private void processMessage(ZkNodeProps message) throws KeeperException, InterruptedException {
+    private void processMessage(ConcurrentHashMap message) throws KeeperException, InterruptedException {
       log.info("Send state updates to Overseer {}", message);
       byte[] updates = Utils.toJSON(message);
 
@@ -246,11 +253,12 @@ public class StatePublisher implements Closeable {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
           }
 
-//          if ((state.equals(UpdateLog.State.ACTIVE.toString().toLowerCase(Locale.ROOT)) || state.equals("leader")) && cc.isCoreLoading(core)) {
-//            cc.waitForLoadingCore(core, 10000);
-//          }
-
           DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
+
+          if (coll == null) {
+            zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState != null);
+          }
+
           if (coll != null) {
             Replica replica = coll.getReplica(core);
             if (replica != null) {
@@ -262,7 +270,7 @@ public class StatePublisher implements Closeable {
             CacheEntry lastState = stateCache.get(id);
             //&& (System.currentTimeMillis() - lastState.time < 1000) &&
             // TODO: needs work
-//            if (state.equals(lastState.state)) {
+//            if (replica != null && replica.getType() == Replica.Type.PULL && lastState != null && state.equals(lastState.state) && (System.currentTimeMillis() - lastState.time < 10000)) {
 //              log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
 //              return;
 //            }
@@ -321,7 +329,11 @@ public class StatePublisher implements Closeable {
         }
       }
 
-      workQueue.offer(stateMessage);
+      if (stateMessage == TERMINATE_OP) {
+        workQueue.offer(TERMINATE_OP_MAP);
+      } else {
+        workQueue.offer(new ConcurrentHashMap(stateMessage.getProperties()));
+      }
     } catch (Exception e) {
       log.error("Exception trying to publish state message={}", stateMessage, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -342,9 +354,8 @@ public class StatePublisher implements Closeable {
   }
 
   public void close() {
-    this.terminated = true;
     try {
-      workerFuture.cancel(false);
+      workerFuture.get();
     } catch (Exception e) {
       log.error("Exception waiting for close", e);
     }

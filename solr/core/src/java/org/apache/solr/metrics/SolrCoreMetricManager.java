@@ -28,6 +28,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.search.SolrFieldCacheBean;
 
 /**
  * Helper class for managing registration of {@link SolrMetricProducer}'s

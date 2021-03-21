@@ -124,11 +124,20 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
-  public RefCounted<IndexWriter> getIndexWriter(SolrCore core)
+  public RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException {
+    return getIndexWriter(core, false);
+  }
+
+  @Override
+  public RefCounted<IndexWriter> getIndexWriter(SolrCore core, boolean createIndex)
           throws IOException {
     if (core != null && (!core.indexEnabled || core.readOnly)) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
               "Indexing is temporarily disabled");
+    }
+
+    if (core != null && core.isClosing()) {
+      throw new AlreadyClosedException();
     }
 
     boolean succeeded = false;
@@ -142,7 +151,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           if (refCntWriter == null) return null;
         } else {
           if (indexWriter == null) {
-            indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
+            if (core != null && core.isClosing() || core.isClosed() || core.getCoreContainer().isShutDown()) {
+              throw new AlreadyClosedException();
+            }
+            indexWriter = createMainIndexWriter(core, createIndex,"DirectUpdateHandler2");
           }
           initRefCntWriter();
         }
@@ -195,7 +207,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   // closes and opens index writers without any locking
-  private void changeWriter(SolrCore core, boolean rollback, boolean openNewWriter) throws IOException {
+  private void changeWriter(SolrCore core, boolean rollback, boolean createIndex, boolean openNewWriter) throws IOException {
     String coreName = core.getName();
 
     // We need to null this so it picks up the new writer next get call.
@@ -224,7 +236,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     }
 
     if (openNewWriter) {
-      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
+      indexWriter = createMainIndexWriter(core, createIndex, "DirectUpdateHandler2");
       log.info("New IndexWriter is ready to be used.");
     }
   }
@@ -233,7 +245,17 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public void newIndexWriter(SolrCore core, boolean rollback) throws IOException {
     lock(iwLock.writeLock());
     try {
-      changeWriter(core, rollback, true);
+      changeWriter(core, rollback, false, true);
+    } finally {
+      iwLock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public void newIndexWriter(SolrCore core, boolean rollback, boolean createIndex) throws IOException {
+    lock(iwLock.writeLock());
+    try {
+      changeWriter(core, rollback, createIndex, true);
     } finally {
       iwLock.writeLock().unlock();
     }
@@ -242,14 +264,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public void closeIndexWriter(SolrCore core, boolean rollback) throws IOException {
     lock(iwLock.writeLock());
-    changeWriter(core, rollback, false);
+    changeWriter(core, rollback, false,false);
     // Do not unlock the writeLock in this method.  It will be unlocked by the openIndexWriter call (see base class javadoc)
   }
 
   @Override
   public void openIndexWriter(SolrCore core) throws IOException {
     try {
-      changeWriter(core, false, true);
+      changeWriter(core, false, false, true);
     } finally {
       iwLock.writeLock().unlock();  //unlock even if we failed
     }
@@ -259,16 +281,16 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   public void rollbackIndexWriter(SolrCore core) throws IOException {
     iwLock.writeLock().lock();
     try {
-      changeWriter(core, true, true);
+      changeWriter(core, true, false, true);
     } finally {
       iwLock.writeLock().unlock();
     }
   }
 
-  protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
+  protected SolrIndexWriter createMainIndexWriter(SolrCore core, boolean createIndex, String name) throws IOException {
     SolrIndexWriter iw;
     try {
-      iw = SolrIndexWriter.buildIndexWriter(core, name, core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getLatestSchema(),
+      iw = SolrIndexWriter.buildIndexWriter(core, name, core.getNewIndexDir(), core.getDirectoryFactory(), createIndex, core.getLatestSchema(),
               core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), false);
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
@@ -484,9 +506,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     // a blocking race, we should not need to
     // though
     // iwLock.writeLock().lock();
-    if (recoverying) {
-      cancelRecovery(false, true);
-    }
+
+    cancelRecovery(false, true);
+
     try {
       closeIndexWriter(closer);
     } finally {

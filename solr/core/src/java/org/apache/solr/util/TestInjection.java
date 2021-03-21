@@ -120,7 +120,7 @@ public class TestInjection {
 
   public volatile static String randomDelayInCoreCreation = null;
   
-  public volatile static int randomDelayMaxInCoreCreationInSec = 10;
+  public volatile static int randomDelayMaxInCoreCreationInSec = 5;
 
   public volatile static String splitFailureBeforeReplicaCreation = null;
 

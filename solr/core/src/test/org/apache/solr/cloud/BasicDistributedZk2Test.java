@@ -52,8 +52,8 @@ import java.nio.file.Path;
 @LuceneTestCase.Nightly // MRM TODO: - check out more, convert to bridge
 @Ignore // MRM TODO: convert to bridge
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
-  private static final String SHARD2 = "shard2";
-  private static final String SHARD1 = "shard1";
+  private static final String SHARD2 = "s2";
+  private static final String SHARD1 = "s1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 

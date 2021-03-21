@@ -153,9 +153,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
 
   @Override
   public void connect() {
-    if (isClosed) {
-      throw new AlreadyClosedException();
-    }
     if (this.zkStateReader == null) {
       synchronized (this) {
         if (this.zkStateReader == null) {
@@ -167,9 +164,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
   }
 
   public ZkStateReader getZkStateReader() {
-    if (isClosed) {
-      throw new AlreadyClosedException();
-    }
 
     if (zkStateReader == null) {
       synchronized (this) {
@@ -183,10 +177,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
   
   @Override
   public void close() throws IOException {
-    if (isClosed) {
-      return;
-    }
-
     final ZkStateReader zkToClose = zkStateReader;
     if (zkToClose != null && closeZkStateReader) {
       IOUtils.closeQuietly(zkToClose);

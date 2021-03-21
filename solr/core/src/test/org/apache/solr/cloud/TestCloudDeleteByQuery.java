@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -86,7 +87,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   @AfterClass
   private static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
+      // WE DONT OWN CLOUD_CLIENT!
+      // CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
     }
     if (null != S_ONE_LEADER_CLIENT) {
@@ -212,8 +214,8 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     }
   }
   
-  @Before
-  private void clearCloudCollection() throws Exception {
+  @After
+  public void clearCloudCollection() throws Exception {
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }

@@ -21,9 +21,7 @@ import org.apache.solr.client.solrj.cloud.DistributedLock;
 import org.apache.solr.client.solrj.cloud.LockListener;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -52,7 +50,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
@@ -115,6 +112,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 /**
  * Handle ZooKeeper interactions.
@@ -155,11 +153,6 @@ public class ZkController implements Closeable, Runnable {
 
   @Override
   public void run() {
-    try {
-      publishNodeAs(getNodeName(), OverseerAction.DOWNNODE);
-    } catch (Exception e) {
-      log.warn("Problem publish node as DOWN", e);
-    }
     disconnect(true);
     log.info("Continuing to Solr shutdown");
   }
@@ -575,18 +568,15 @@ public class ZkController implements Closeable, Runnable {
     try (ParWork closer = new ParWork(this, true, false)) {
       closer.collect("replicateFromLeaders", replicateFromLeaders);
       closer.collect(leaderElectors);
+    }
 
-//      if (publishDown) {
-//        closer.collect("PublishNodeAsDown&RepFromLeaders", () -> {
-//          try {
-//            log.info("Publish this node as DOWN...");
-//            publishNodeAs(getNodeName(), OverseerAction.DOWNNODE);
-//          } catch (Exception e) {
-//            ParWork.propagateInterrupt("Error publishing nodes as down. Continuing to close CoreContainer", e);
-//          }
-//          return "PublishDown";
-//        });
-//      }
+
+    if (publishDown) {
+      try {
+        publishNodeAs(getNodeName(), OverseerAction.DOWNNODE);
+      } catch (Exception e) {
+        log.warn("Problem publish node as DOWN", e);
+      }
     }
   }
 
@@ -606,19 +596,14 @@ public class ZkController implements Closeable, Runnable {
       closer.collect(cloudManager);
       closer.collect(cloudSolrClient);
 
-      closer.collect("", () -> {
-        try {
-          if (statePublisher != null) {
-            statePublisher.submitState(StatePublisher.TERMINATE_OP);
-          }
-        } catch (Exception e) {
-          log.error("Exception closing state publisher");
-        }
-      });
-
       collectionToTerms.forEach((s, zkCollectionTerms) -> closer.collect(zkCollectionTerms));
 
     } finally {
+      if (statePublisher != null) {
+        statePublisher.submitState(StatePublisher.TERMINATE_OP);
+      }
+
+      IOUtils.closeQuietly(statePublisher);
       IOUtils.closeQuietly(overseerElector);
       if (overseer != null) {
         try {
@@ -626,6 +611,9 @@ public class ZkController implements Closeable, Runnable {
         } catch (Exception e) {
           log.warn("Exception closing Overseer", e);
         }
+      }
+      if (zkStateReader != null) {
+        zkStateReader.disableCloseLock();
       }
       IOUtils.closeQuietly(zkStateReader);
 
@@ -1074,7 +1062,15 @@ public class ZkController implements Closeable, Runnable {
       zkStateReader = new ZkStateReader(zkClient, () -> {
         if (cc != null) cc.securityNodeChanged();
       });
+      zkStateReader.enableCloseLock();
       zkStateReader.setNode(nodeName);
+      zkStateReader.setLeaderChecker(name -> {
+        LeaderElector elector = leaderElectors.get(name);
+        if (elector != null && elector.isLeader()) {
+          return true;
+        }
+        return false;
+      });
       zkStateReader.setCollectionRemovedListener(this::removeCollectionTerms);
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
@@ -1247,6 +1243,8 @@ public class ZkController implements Closeable, Runnable {
     return overseerElector != null && overseerElector.isLeader();
   }
 
+  public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
+
   /**
    * Register shard with ZooKeeper.
    *
@@ -1256,6 +1254,14 @@ public class ZkController implements Closeable, Runnable {
     if (getCoreContainer().isShutDown() || isDcCalled()) {
       throw new AlreadyClosedException();
     }
+
+    if (testing_beforeRegisterInZk != null) {
+      boolean didTrigger = testing_beforeRegisterInZk.test(desc);
+      if (log.isDebugEnabled()) {
+        log.debug("{} pre-zk hook", (didTrigger ? "Ran" : "Skipped"));
+      }
+    }
+
     MDCLoggingContext.setCoreName(desc.getName());
     ZkShardTerms shardTerms = null;
    // LeaderElector leaderElector = null;
@@ -1302,7 +1308,7 @@ public class ZkController implements Closeable, Runnable {
       log.info("Wait to see leader for {}, {}", collection, shardId);
       String leaderName = null;
 
-      for (int i = 0; i < 20; i++) {
+      for (int i = 0; i < 15; i++) {
         if (isClosed() || isDcCalled() || cc.isShutDown()) {
           throw new AlreadyClosedException();
         }
@@ -1313,46 +1319,29 @@ public class ZkController implements Closeable, Runnable {
           break;
         }
         try {
-          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, Integer.getInteger("solr.getleader.looptimeout", 5000));
-          leaderName = leader.getName();
+          DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
+          if (coll != null) {
+            Slice slice = coll.getSlice(shardId);
+            if (slice != null) {
+              Replica leaderReplica = slice.getLeader();
+              if (leaderReplica != null) {
+                if (leaderReplica.getNodeName().equals(getNodeName())) {
+                  leaderElector = leaderElectors.get(leaderReplica.getName());
 
-          boolean isLeader = leaderName.equals(coreName);
-
-          if (isLeader) {
-            if (leaderElector != null && leaderElector.isLeader()) {
-              break;
-            } else {
-              Thread.sleep(100);
-            }
-          } else {
-            boolean stop = true;
-            CoreAdminRequest.WaitForState prepCmd = new CoreAdminRequest.WaitForState();
-            prepCmd.setCoreName(leader.getName());
-            prepCmd.setLeaderName(leader.getName());
-            prepCmd.setCollection(collection);
-            prepCmd.setShardId(shardId);
-
-            int readTimeout = Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "7000"));
-
-            try (Http2SolrClient client = new Http2SolrClient.Builder(leader.getBaseUrl()).idleTimeout(readTimeout).withHttpClient(cc.getUpdateShardHandler().getTheSharedHttpClient()).markInternalRequest().build()) {
-
-              prepCmd.setBasePath(leader.getBaseUrl());
-
-              try {
-                NamedList<Object> result = client.request(prepCmd);
-              } catch (Exception e) {
-                log.info("failed checking for leader {} {}", leader.getName(), e.getMessage());
-                stop = false;
+                  if (leaderElector != null && leaderElector.isLeader()) {
+                    leaderName = leaderReplica.getName();
+                    break;
+                  }
+                }
               }
             }
-            if (stop) {
-              break;
-            } else {
-              Thread.sleep(100);
-            }
           }
+          
+          Replica leader = zkStateReader.getLeaderRetry(getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient(),collection, shardId, Integer.getInteger("solr.getleader.looptimeout", 2000), true);
+          leaderName = leader.getName();
+          break;
 
-        } catch (TimeoutException timeoutException) {
+        } catch (TimeoutException | InterruptedException e) {
           if (isClosed() || isDcCalled() || cc.isShutDown()) {
             throw new AlreadyClosedException();
           }

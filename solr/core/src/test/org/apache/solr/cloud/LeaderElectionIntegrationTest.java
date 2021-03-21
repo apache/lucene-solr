@@ -28,6 +28,7 @@ import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
@@ -105,8 +106,8 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     JettySolrRunner jetty = getRunner(leader);
     ZkController zkController = jetty.getCoreContainer().getZkController();
 
-    zkController.getZkClient().getSolrZooKeeper().closeCnxn();
-    cluster.getZkServer().expire(zkController.getZkClient().getSolrZooKeeper().getSessionId());
+    ((SolrZooKeeper)zkController.getZkClient().getConnectionManager().getKeeper()).closeCnxn();
+    cluster.getZkServer().expire(zkController.getZkClient().getConnectionManager().getKeeper().getSessionId());
 
     for (int i = 0; i < 60; i++) { // wait till leader is changed
       if (jetty != getRunner(getLeader(collection))) {

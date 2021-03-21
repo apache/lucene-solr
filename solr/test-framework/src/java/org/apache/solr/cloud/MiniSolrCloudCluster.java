@@ -47,7 +47,9 @@ import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.ParWork;
@@ -58,6 +60,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
@@ -135,7 +138,7 @@ public class MiniSolrCloudCluster {
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
-  private CloudHttp2SolrClient solrClient;
+  private volatile CloudHttp2SolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
@@ -328,7 +331,9 @@ public class MiniSolrCloudCluster {
 
       // build the client
       solrClient = buildZkReaderAndSolrClient();
+      solrClient.enableCloseLock();
       solrZkClient = zkStateReader.getZkClient();
+      solrZkClient.enableCloseLock();
 
     } catch (Throwable t) {
       shutdown();
@@ -612,17 +617,24 @@ public class MiniSolrCloudCluster {
     final Set<String> collections = reader.getClusterState().getCollectionsMap().keySet();
     try (ParWork work = new ParWork(this, false, false)) {
       collections.forEach(collection -> {
-         work.collect("", ()->{
-           try {
-             CollectionAdminRequest.deleteCollection(collection).process(solrClient);
-           } catch (Exception e) {
-             throw new SolrException(ErrorCode.SERVER_ERROR, e);
-           }
-         });
+        work.collect("", () -> {
+          try {
+            CollectionAdminRequest.deleteCollection(collection).process(solrClient);
+          } catch (SolrException e) {
+            if (e.code() == 400) {
+              log.warn("400 on collection delete (likely already gone)", e);
+
+            } else {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+          } catch (Exception e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
       });
     }
   }
-  
+
   public void deleteAllConfigSets() throws SolrServerException, IOException {
 
     List<String> configSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
@@ -648,13 +660,21 @@ public class MiniSolrCloudCluster {
       }
       jettys.clear();
 
-      try (ParWork parWork = new ParWork(this, false, false)) {
+      try (ParWork parWork = new ParWork(this, false, true)) {
         parWork.collect(shutdowns);
+      }
+      if (solrClient != null) {
+        solrClient.disableCloseLock();
+      }
+      if (solrZkClient != null) {
+        solrZkClient.disableCloseLock();
       }
 
       IOUtils.closeQuietly(solrClient);
 
       IOUtils.closeQuietly(zkStateReader);
+
+      IOUtils.closeQuietly(solrZkClient);
 
       if (!externalZkServer) {
         IOUtils.closeQuietly(zkServer);
@@ -663,6 +683,8 @@ public class MiniSolrCloudCluster {
     } finally {
       System.clearProperty("zkHost");
       solrClient = null;
+      solrZkClient = null;
+      zkStateReader = null;
       assert ObjectReleaseTracker.release(this);
     }
 
@@ -762,7 +784,7 @@ public class MiniSolrCloudCluster {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      zkClient.getSolrZooKeeper().closeCnxn();
+      ((SolrZooKeeper)zkClient.getConnectionManager().getKeeper()).closeCnxn();
       long sessionId = zkClient.getSessionId();
       zkServer.expire(sessionId);
       if (log.isInfoEnabled()) {
@@ -848,21 +870,28 @@ public class MiniSolrCloudCluster {
     throw new SolrException(ErrorCode.NOT_FOUND, "No open Overseer found");
   }
 
-  public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
+  public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas) throws TimeoutException {
     waitForActiveCollection(collection, wait, unit, shards, totalReplicas, false);
   }
 
-  public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas, boolean exact) {
+  public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas, boolean exact) throws TimeoutException {
     zkStateReader.waitForActiveCollection(collection, wait, unit, shards, totalReplicas, exact);
   }
 
-  public void waitForActiveCollection(String collection, int shards, int totalReplicas) {
+  public void waitForActiveCollection(String collection, long wait, TimeUnit unit, boolean justLeaders, int shards, int totalReplicas, boolean exact, boolean verifyLeaders) throws TimeoutException {
+    zkStateReader.waitForActiveCollection(collection, wait, unit, justLeaders, shards, totalReplicas, exact, verifyLeaders);
+  }
+
+  public void waitForActiveCollection(Http2SolrClient client, String collection, long wait, TimeUnit unit, boolean justLeaders, int shards, int totalReplicas, boolean exact, boolean verifyLeaders) throws TimeoutException {
+    zkStateReader.waitForActiveCollection(client, collection, wait, unit, justLeaders, shards, totalReplicas, exact, verifyLeaders);
+  }
+
+  public void waitForActiveCollection(String collection, int shards, int totalReplicas) throws TimeoutException {
     if (collection == null) throw new IllegalArgumentException("null collection");
     waitForActiveCollection(collection,  60, TimeUnit.SECONDS, shards, totalReplicas);
   }
 
-  public void waitForActiveCollection(String collection, int shards, int totalReplicas, boolean exact) {
-
+  public void waitForActiveCollection(String collection, int shards, int totalReplicas, boolean exact) throws TimeoutException {
     waitForActiveCollection(collection,  60, TimeUnit.SECONDS, shards, totalReplicas, exact);
   }
 

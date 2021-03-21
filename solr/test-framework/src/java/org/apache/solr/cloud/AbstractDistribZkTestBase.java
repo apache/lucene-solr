@@ -109,7 +109,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 //      // give everyone there own solrhome
 //      File jettyHome = new File(new File(getSolrHome()).getParentFile(), "jetty" + homeCount.incrementAndGet());
 //      setupJettySolrHome(jettyHome);
-//      JettySolrRunner j = createJetty(jettyHome, null, "shard" + (i + 2));
+//      JettySolrRunner j = createJetty(jettyHome, null, "s" + (i + 2));
 //      j.start();
 //      jettys.add(j);
 //      clients.add(createNewSolrClient(j.getLocalPort()));

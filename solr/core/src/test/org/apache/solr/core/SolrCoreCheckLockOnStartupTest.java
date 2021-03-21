@@ -25,7 +25,6 @@ import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.Map;
 
-@Ignore // MRM TODO:
 public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

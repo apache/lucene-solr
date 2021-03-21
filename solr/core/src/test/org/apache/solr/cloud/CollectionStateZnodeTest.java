@@ -20,11 +20,15 @@ import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 // MRM TODO: - speed this up - waits for zkwriter to see its own state after delete
 public class CollectionStateZnodeTest extends SolrCloudTestCase {
@@ -54,9 +58,21 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
     Stat stat = new Stat();
     zkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat);
 
-    DocCollection c = getCollectionState(collectionName);
+    // the state.json itself can be ahead of the local DocCollection version due to state updates filling it in
+    try {
+      cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 3, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+        if (collectionState == null) {
+          return false;
+        }
+        if (collectionState.getZNodeVersion() != stat.getVersion() && !collectionState.getStateUpdates().get("_cs_ver_").equals(Integer.toString(stat.getVersion()))) {
+          return false;
+        }
+        return true;
+      });
+    } catch (TimeoutException e) {
+      fail("failed finding state in DocCollection that appears up to date with " + stat.getVersion());
+    }
 
-    assertEquals("DocCollection version should equal the znode version", stat.getVersion(), c.getZNodeVersion() );
 
     // remove collection
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());

@@ -84,7 +84,7 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void doTest() throws IOException, SolrServerException {
+  public void doTest() throws Exception {
     CollectionAdminRequest
         .createCollection(COLLECTION_NAME, "conf", 2, 1)
         .setMaxShardsPerNode(100)

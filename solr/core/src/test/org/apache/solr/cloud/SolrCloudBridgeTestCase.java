@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -184,16 +185,46 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
 
     if (uploadSelectCollection1Config) {
+      String path = null;
       try {
-        zkClient.create("/configs/_default/solrconfig.snippet.randomindexconfig.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(),
-            CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/enumsConfig.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve("enumsConfig.xml").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/currency.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve("currency.xml").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/old_synonyms.txt", TEST_PATH.resolve("collection1").resolve("conf").resolve("old_synonyms.txt").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/open-exchange-rates.json", TEST_PATH.resolve("collection1").resolve("conf").resolve("open-exchange-rates.json").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/mapping-ISOLatin1Accent.txt", TEST_PATH.resolve("collection1").resolve("conf").resolve("mapping-ISOLatin1Accent.txt").toFile(), CreateMode.PERSISTENT, true);
+        path = "/configs/_default/solrconfig.snippet.randomindexconfig.xml";
+        zkClient.create(path, TEST_PATH.resolve("collection1").resolve("conf").resolve(new File(path).getName()).toFile(), CreateMode.PERSISTENT, true);
       } catch (KeeperException.NodeExistsException exists) {
-        log.info("extra collection config files already exist in zk");
+        log.info("extra collection config file already exist in zk {}", path);
+      }
+
+      try {
+        path = "/configs/_default/enumsConfig.xml";
+        zkClient.create(path, TEST_PATH.resolve("collection1").resolve("conf").resolve(new File(path).getName()).toFile(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException exists) {
+        log.info("extra collection config file already exist in zk {}", path);
+      }
+
+      try {
+        path = "/configs/_default/currency.xml";
+        zkClient.create(path, TEST_PATH.resolve("collection1").resolve("conf").resolve(new File(path).getName()).toFile(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException exists) {
+        log.info("extra collection config file already exist in zk {}", path);
+      }
+
+      try {
+        path = "/configs/_default/old_synonyms.txt";
+        zkClient.create(path, TEST_PATH.resolve("collection1").resolve("conf").resolve(new File(path).getName()).toFile(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException exists) {
+        log.info("extra collection config file already exist in zk {}", path);
+      }
+
+      try {
+        path = "/configs/_default/open-exchange-rates.json";
+        zkClient.create(path, TEST_PATH.resolve("collection1").resolve("conf").resolve(new File(path).getName()).toFile(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException exists) {
+        log.info("extra collection config file already exist in zk {}", path);
+      }
+      try {
+        path = "/configs/_default/mapping-ISOLatin1Accent.txt";
+        zkClient.create(path, TEST_PATH.resolve("collection1").resolve("conf").resolve(new File(path).getName()).toFile(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException exists) {
+        log.info("extra collection config file already exist in zk {}", path);
       }
     }
 
@@ -428,24 +459,8 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     return Integer.parseInt(tmp);
   }
 
-  protected Replica getShardLeader(String testCollectionName, String shardId, int timeoutSecs) throws Exception {
-    Replica leader = null;
-    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutSecs, TimeUnit.SECONDS);
-    while (System.nanoTime() < timeout) {
-      Replica tmp = null;
-      try {
-        tmp = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
-      } catch (Exception exc) {}
-      if (tmp != null && State.ACTIVE == tmp.getState()) {
-        leader = tmp;
-        break;
-      }
-      Thread.sleep(250);
-    }
-    assertNotNull("Could not find active leader for " + shardId + " of " +
-        testCollectionName + " after "+timeoutSecs+" secs;", leader);
-
-    return leader;
+  protected Replica getShardLeader(String testCollectionName, String shardId, int timeoutms) throws Exception {
+    return cloudClient.getZkStateReader().getLeaderRetry(cluster.getSolrClient().getHttpClient(), testCollectionName, shardId, timeoutms, true);
   }
   
   protected JettySolrRunner getJettyOnPort(int port) {

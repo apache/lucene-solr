@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,6 +33,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -41,18 +43,26 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void createCluster() throws Exception {
+  public static void beforeTestManagedSchemaAPI() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
         .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
   }
 
+  @AfterClass
+  public static void afterTestManagedSchemaAPI() throws Exception {
+    shutdownCluster();
+  }
+
   @Test
   public void test() throws Exception {
     String collection = "testschemaapi";
-    CollectionAdminRequest.createCollection(collection, "conf1", 1, 2)
-        .waitForFinalState(true).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 2).process(cluster.getSolrClient());
+
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(cluster.getSolrClient().getHttpClient(), collection, 5, TimeUnit.SECONDS, false, 1, 2, true, true);
+
+
     testModifyField(collection);
     testReloadAndAddSimple(collection);
     testAddFieldAndDocument(collection);

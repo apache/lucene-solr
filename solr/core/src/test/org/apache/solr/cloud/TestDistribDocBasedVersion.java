@@ -41,8 +41,8 @@ public class TestDistribDocBasedVersion extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  String bucket1 = "shard1";      // shard1: top bits:10  80000000:ffffffff
-  String bucket2 = "shard2";      // shard2: top bits:00  00000000:7fffffff
+  String bucket1 = "s1";      // shard1: top bits:10  80000000:ffffffff
+  String bucket2 = "s2";      // shard2: top bits:00  00000000:7fffffff
 
   private static String vfield = "my_version_l";
 

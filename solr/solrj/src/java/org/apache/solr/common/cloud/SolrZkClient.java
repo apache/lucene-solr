@@ -26,8 +26,6 @@ import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.TimeOut;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
@@ -1050,7 +1048,8 @@ public class SolrZkClient implements Closeable {
           }
 
           if ((stat != null && stat.getDataLength() < maxBytesBeforeSuppress && lines < 4) || path.endsWith("state.json") || path
-              .endsWith("security.json") || (path.endsWith("solrconfig.xml") && Boolean.getBoolean("solr.tests.printsolrconfig")) || path.endsWith("_statupdates") || path.contains("/terms/")) {
+              .endsWith("security.json") || (path.endsWith("solrconfig.xml") && Boolean.getBoolean("solr.tests.printsolrconfig")) || path.endsWith("_statupdates")
+              || path.contains("/terms/") || path.endsWith("leader")) {
             //        if (path.endsWith(".xml")) {
             //          // this is the cluster state in xml format - lets pretty print
             //          dataString = prettyPrint(path, dataString);
@@ -1169,14 +1168,6 @@ public class SolrZkClient implements Closeable {
   public boolean isClosed() {
     ZooKeeper zk = connManager.getKeeper();
     return zk == null || !zk.getState().isAlive();
-  }
-
-  public SolrZooKeeper getSolrZooKeeper() {
-
-//    if (connManager.getKeeper() == null) {
-//      throw new AlreadyClosedException("No ZooKeeper object");
-//    }
-    return (SolrZooKeeper) connManager.getKeeper();
   }
 
   /**
@@ -1334,23 +1325,35 @@ public class SolrZkClient implements Closeable {
   }
 
   public void addWatch(String basePath, Watcher watcher, AddWatchMode mode) throws KeeperException, InterruptedException {
-    getSolrZooKeeper().addWatch(basePath, watcher == null ? null : wrapWatcher(watcher), mode);
+    addWatch(basePath, watcher, mode, false);
+  }
+
+  public void addWatch(String basePath, Watcher watcher, AddWatchMode mode, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      ZkCmdExecutor.retryOperation(zkCmdExecutor, () ->  {
+        connManager.getKeeper().addWatch(basePath, watcher == null ? null : wrapWatcher(watcher), mode);
+        return null;
+      }, false);
+    } else {
+      connManager.getKeeper().addWatch(basePath, watcher == null ? null : wrapWatcher(watcher), mode);
+    }
+
   }
 
   public void addWatch(String basePath, Watcher watcher, AddWatchMode mode, AsyncCallback.VoidCallback cb, Object ctx) {
-    getSolrZooKeeper().addWatch(basePath, watcher == null ? null : wrapWatcher(watcher), mode, cb, ctx);
+    connManager.getKeeper().addWatch(basePath, watcher == null ? null : wrapWatcher(watcher), mode, cb, ctx);
   }
 
   public void removeWatches(String path, Watcher watcher, Watcher.WatcherType watcherType, boolean local, AsyncCallback.VoidCallback cb, Object ctx) {
-    getSolrZooKeeper().removeWatches(path, watcher, watcherType, local, cb, ctx);
+    connManager.getKeeper().removeWatches(path, watcher, watcherType, local, cb, ctx);
   }
 
   public void removeWatches(String path, Watcher watcher, Watcher.WatcherType watcherType, boolean local) throws KeeperException, InterruptedException {
-    getSolrZooKeeper().removeWatches(path, watcher, watcherType, local);
+    connManager.getKeeper().removeWatches(path, watcher, watcherType, local);
   }
 
   public long getSessionId() {
-    return getSolrZooKeeper().getSessionId();
+    return connManager.getKeeper().getSessionId();
   }
 
   /**

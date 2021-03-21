@@ -24,8 +24,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
@@ -34,13 +34,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@Ignore // MRM TODO: this mock test needs updating after dropping the separate solrdispatchfilter zkclient
 public class CoreSorterTest extends SolrTestCaseJ4 {
 
   private static final List<CountsForEachShard> inputCounts = Arrays.asList(
@@ -104,6 +104,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
 
     Map<String,DocCollection> collToState = new HashMap<>();
     Map<CountsForEachShard, List<CoreDescriptor>> myCountsToDescs = new HashMap<>();
+    long id = 0;
     for (Map.Entry<String, List<CountsForEachShard>> entry : collToCounts.entrySet()) {
       String collection = entry.getKey();
       List<CountsForEachShard> collCounts = entry.getValue();
@@ -125,7 +126,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         Map<String, Replica> replicaMap = replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
         sliceMap.put(slice, new Slice(slice, replicaMap, map(), collection, -1l, nodeName -> "http://" + nodeName));
       }
-      DocCollection col = new DocCollection(collection, sliceMap, map(), DocRouter.DEFAULT);
+      DocCollection col = new DocCollection(collection, sliceMap, map("id", id++), DocRouter.DEFAULT);
       collToState.put(collection, col);
     }
     // reverse map
@@ -143,6 +144,8 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     {
       when(mockCC.isZooKeeperAware()).thenReturn(true);
 
+      ZkStateReader mockZkReader= mock(ZkStateReader.class);
+      when(mockZkReader.getLiveNodes()).thenReturn(new HashSet<>(liveNodes));
       ZkController mockZKC = mock(ZkController.class);
       when(mockCC.getZkController()).thenReturn(mockZKC);
       {
@@ -154,6 +157,8 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
           }
         }
       }
+      when(mockZKC.getCoreContainer()).thenReturn(mockCC);
+      when(mockZKC.getZkStateReader()).thenReturn(mockZkReader);
 
       NodeConfig mockNodeConfig = mock(NodeConfig.class);
       when(mockNodeConfig.getNodeName()).thenReturn(thisNode);

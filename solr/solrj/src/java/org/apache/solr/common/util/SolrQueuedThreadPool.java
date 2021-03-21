@@ -495,7 +495,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
   }
 
   private void ensureThreads() {
-    while (true) {
+    while (!closed) {
       long counts = _counts.get();
       int threads = AtomicBiInteger.getHi(counts);
       if (threads == Integer.MIN_VALUE) break;
@@ -770,49 +770,52 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
   //    }
 
   public void close() {
-
-    removeBean(_tryExecutor);
-    _tryExecutor = TryExecutor.NO_TRY;
-
     try {
-      super.doStop();
-    } catch (Exception e) {
-      LOG.warn("super.doStop", e);
-      return;
-    }
-
-    setMinThreads(0);
-    setIdleTimeout(1);
-    setStopTimeout(1);
-    // Signal the Runner threads that we are stopping
-    int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
-
-    BlockingQueue<Runnable> jobs = getQueue();
-
-
-    for (int i = 0; i < threads; ++i) {
-      jobs.offer(NOOP);
-    }
-
-
-    closed = true;
-
-    if (getBusyThreads() > 0) {
+      removeBean(_tryExecutor);
+      _tryExecutor = TryExecutor.NO_TRY;
 
       try {
-        joinThreads(TimeUnit.MILLISECONDS.toNanos(250));
-      } catch (InterruptedException e) {
-        LOG.warn("Interrupted in joinThreads on close {}", e);
-      } catch (TimeoutException e) {
-        LOG.warn("Timeout in joinThreads on close {}", e);
-      } catch (ExecutionException e) {
-        LOG.warn("Execution exception in joinThreads on close {}", e);
+        super.doStop();
+      } catch (Exception e) {
+        LOG.warn("super.doStop", e);
+
       }
+
+      setMinThreads(0);
+      setIdleTimeout(1);
+      setStopTimeout(1);
+      // Signal the Runner threads that we are stopping
+      int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
+
+      BlockingQueue<Runnable> jobs = getQueue();
+
+      for (int i = 0; i < threads; ++i) {
+        jobs.offer(NOOP);
+      }
+
+      closed = true;
+
+      if (getBusyThreads() > 0) {
+
+        try {
+          joinThreads(TimeUnit.MILLISECONDS.toNanos(250));
+        } catch (InterruptedException e) {
+          LOG.warn("Interrupted in joinThreads on close {}", e);
+        } catch (TimeoutException e) {
+          LOG.warn("Timeout in joinThreads on close {}", e);
+        } catch (ExecutionException e) {
+          LOG.warn("Execution exception in joinThreads on close {}", e);
+        }
+      }
+
+      if (_budget != null) _budget.reset();
+    } catch (RuntimeException e) {
+      log.warn("Exception closing", e);
+      throw e;
+    } finally {
+      assert ObjectReleaseTracker.release(this);
     }
 
-    if (_budget != null) _budget.reset();
-
-    assert ObjectReleaseTracker.release(this);
   }
 
     //    @Override

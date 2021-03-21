@@ -52,6 +52,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final String[] REPORTER_NAMES = {"reporter1", "reporter2"};
   private static final String UNIVERSAL = "universal";
   private static final String SPECIFIC = "specific";
+
+  private static final String DEFAULT = "default";
   private static final String MULTIGROUP = "multigroup";
   private static final String MULTIREGISTRY = "multiregistry";
   private static final String[] INITIAL_REPORTERS = {REPORTER_NAMES[0], REPORTER_NAMES[1], UNIVERSAL, SPECIFIC, MULTIGROUP, MULTIREGISTRY};
@@ -61,7 +63,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private CoreContainer cc;
   private SolrMetricManager metricManager;
   private String tag;
-  private int jmxReporter;
+  private volatile int jmxReporter;
 
   @BeforeClass
   public static void beforeSolrMetricsIntegrationTest() throws Exception {
@@ -95,7 +97,15 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     }
     // initially there are more reporters, because two of them are added via a matching collection name
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.core." + DEFAULT_TEST_CORENAME);
-    assertEquals(INITIAL_REPORTERS.length + jmxReporter, reporters.size());
+
+    for (int i = 0; i < 10; i++) {
+      if (INITIAL_REPORTERS.length + jmxReporter == reporters.size()) {
+        break;
+      }
+      Thread.sleep(250);
+    }
+
+    assertEquals(reporters.toString(), INITIAL_REPORTERS.length + jmxReporter, reporters.size());
     for (String r : INITIAL_REPORTERS) {
       assertTagged(reporters, r);
     }
@@ -150,7 +160,17 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       long finalCount = timer.getCount();
       // MRM TODO: - those timers are disabled right now
       // assertEquals("metric counter incorrect", iterations, finalCount - initialCount);
-      Map<String,SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
+      Map<String,SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());;
+
+      for (int i = 0; i < 50; i++) {
+        if ((RENAMED_REPORTERS.length + jmxReporter) != reporters.size()) {
+          Thread.sleep(100);
+          reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
+        } else {
+          break;
+        }
+      }
+
       assertEquals(RENAMED_REPORTERS.length + jmxReporter, reporters.size());
 
       // SPECIFIC and MULTIREGISTRY were skipped because they were

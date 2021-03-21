@@ -75,6 +75,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tests the Cloud Collections API.
@@ -161,7 +163,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   @Test
   @LuceneTestCase.Nightly // needs 4 nodes
   public void testCoresAreDistributedAcrossNodes() throws Exception {
-    CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2).waitForFinalState(true)
+    CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
         .process(cluster.getSolrClient());
 
     Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getLiveNodes();
@@ -207,7 +209,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("nodeset_collection", "conf", 2, 1)
         .setCreateNodeSet(baseUrls.get(0) + "," + baseUrls.get(1))
-        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     DocCollection collectionState = getCollectionState("nodeset_collection");
@@ -422,7 +423,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .setMaxShardsPerNode(6)
-        .waitForFinalState(true)
         .process(cluster.getSolrClient());
 
     ArrayList<String> nodeList
@@ -442,7 +442,26 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
      req = CollectionAdminRequest.addReplicaToShard(collectionName, "s1").withProperty(CoreAdminParams.INSTANCE_DIR, instancePath.toString());
     req.setWaitForFinalState(true);
     response = req.process(cluster.getSolrClient());
-    newReplica = grabNewReplica(response, getCollectionState(collectionName));
+    String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
+    AtomicReference<Replica> theReplica = new AtomicReference<>();
+    try {
+      cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+        if (collectionState == null) {
+          return false;
+        }
+        Replica replica = collectionState.getReplica(replicaName);
+        if (replica != null) {
+          theReplica.set(replica);
+          return true;
+        }
+        return false;
+      });
+    } catch (TimeoutException e) {
+      log.error("timeout",e);
+      throw new TimeoutException("timeout waiting to see " + replicaName);
+    }
+
+    newReplica = theReplica.get();
     assertNotNull(newReplica);
 
     try (Http2SolrClient coreclient = SolrTestCaseJ4.getHttpSolrClient(newReplica.getBaseUrl())) {
@@ -459,8 +478,22 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     req.setWaitForFinalState(true);
     response =  req.process(cluster.getSolrClient());
 
-    newReplica = grabNewReplica(response, getCollectionState(collectionName));
-    // MRM TODO: do we really want to support this anymore?
+    AtomicReference<Replica> theReplica2 = new AtomicReference<>();
+    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      if (collectionState == null) {
+        return false;
+      }
+      Replica replica = collectionState.getReplica(replicaName);
+      if (replica != null) {
+        theReplica2.set(replica);
+        return true;
+      }
+      return false;
+    });
+
+    newReplica = theReplica2.get();
+    assertNotNull(theReplica2);
+    // MRM TODO: do we really want to support this anymore? We really should control core names for cloud
     // assertEquals("'core' should be 'propertyDotName' " + newReplica.getName(), "propertyDotName", newReplica.getName());
   }
 

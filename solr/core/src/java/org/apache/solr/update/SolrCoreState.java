@@ -106,8 +106,9 @@ public abstract class SolrCoreState {
    * @param rollback close IndexWriter if false, else rollback
    * @throws IOException If there is a low-level I/O error.
    */
+  public abstract void newIndexWriter(SolrCore core, boolean rollback, boolean createIndex) throws IOException;
+
   public abstract void newIndexWriter(SolrCore core, boolean rollback) throws IOException;
-  
   
   /**
    * Expert method that closes the IndexWriter - you must call {@link #openIndexWriter(SolrCore)}
@@ -127,14 +128,22 @@ public abstract class SolrCoreState {
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void openIndexWriter(SolrCore core) throws IOException;
-  
+
+  /**
+   * Get the current IndexWriter. If a new IndexWriter must be created, use the
+   * settings from the given {@link SolrCore}.
+   *
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException;
+
   /**
    * Get the current IndexWriter. If a new IndexWriter must be created, use the
    * settings from the given {@link SolrCore}.
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException;
+  public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core, boolean createIndex) throws IOException;
   
   /**
    * Rollback the current IndexWriter. When creating the new IndexWriter use the
@@ -201,7 +210,7 @@ public abstract class SolrCoreState {
   public abstract Lock getRecoveryLock();
 
   public Throwable getTragicException() throws IOException {
-    RefCounted<IndexWriter> ref = getIndexWriter(null);
+    RefCounted<IndexWriter> ref = getIndexWriter(null, false);
     if (ref == null) return null;
     try {
       return ref.get().getTragicException();

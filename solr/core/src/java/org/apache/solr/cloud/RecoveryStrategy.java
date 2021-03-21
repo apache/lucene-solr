@@ -28,6 +28,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -185,6 +186,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     if (log.isDebugEnabled()) log.debug("Stopping recovery for core=[{}]", coreName);
 
+    if (latch != null) {
+      latch.countDown();
+    }
+
     try {
       if (prevSendPreRecoveryHttpUriRequest != null) {
         prevSendPreRecoveryHttpUriRequest.cancel();
@@ -199,9 +204,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       finalReplicationHandler.abortFetch();
     }
-    if (latch != null) {
-      latch.countDown();
-    }
+
 
     //ObjectReleaseTracker.release(this);
   }
@@ -335,6 +338,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
       return;
     } catch (AlreadyClosedException e) {
       log.info("AlreadyClosedException, won't do recovery", e);
+      return;
+    } catch (RejectedExecutionException e) {
+      log.info("RejectedExecutionException, won't do recovery", e);
       return;
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
@@ -626,6 +632,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (!successfulRecovery && !isClosed() && !core.isClosing() && !core.isClosed()) {
       cnt++;
       try {
+
+        log.debug("Begin buffering updates. core=[{}]", coreName);
+        // recalling buffer updates will drop the old buffer tlog
+        if (ulog.getState() != UpdateLog.State.BUFFERING) {
+          ulog.bufferUpdates();
+        }
+
+
         CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
 
         LeaderElector leaderElector = zkController.getLeaderElector(coreName);
@@ -636,6 +650,22 @@ public class RecoveryStrategy implements Runnable, Closeable {
           return false;
         }
 
+        DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
+        if (coll != null) {
+          Slice slice = coll.getSlice(shard);
+          if (slice != null) {
+            Replica leaderReplica = slice.getLeader();
+            if (leaderReplica != null) {
+              if (leaderReplica.getNodeName().equals(cc.getZkController().getNodeName())) {
+                leaderElector = cc.getZkController().getLeaderElector(leaderReplica.getName());
+                if (leaderElector == null || !leaderElector.isLeader()) {
+                  throw new SolrException(ErrorCode.BAD_REQUEST, leaderReplica.getName() + " is not current valid leader");
+                }
+              }
+            }
+          }
+        }
+
         leader = zkController.getZkStateReader().getLeaderRetry(core.getCoreDescriptor().getCollectionName(), core.getCoreDescriptor().getCloudDescriptor().getShardId(), Integer.getInteger("solr.getleader.looptimeout", 8000));
 
         if (leader != null && leader.getName().equals(coreName)) {
@@ -643,10 +673,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
           Thread.sleep(50);
           continue;
         }
-
-        log.debug("Begin buffering updates. core=[{}]", coreName);
-        // recalling buffer updates will drop the old buffer tlog
-        ulog.bufferUpdates();
 
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state
@@ -708,6 +734,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
           didReplication = true;
           try {
 
+            // recalling buffer updates will drop the old buffer tlog
+            if (ulog.getState() != UpdateLog.State.BUFFERING) {
+              ulog.bufferUpdates();
+            }
+
             try {
               if (prevSendPreRecoveryHttpUriRequest != null) {
                 prevSendPreRecoveryHttpUriRequest.cancel();
@@ -716,11 +747,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
               // okay
             }
             log.debug("Begin buffering updates. core=[{}]", coreName);
-            // recalling buffer updates will drop the old buffer tlog
-            ulog.bufferUpdates();
 
-            sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getName(), zkStateReader.getClusterState().
-                getCollection(core.getCoreDescriptor().getCollectionName()).getSlice(cloudDesc.getShardId()), core.getCoreDescriptor());
+
+            sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getName(), core.getCoreDescriptor());
 
             IndexFetcher.IndexFetchResult result = replicate(leader);
 
@@ -736,8 +765,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
             log.info("Replication Recovery was successful.");
             successfulRecovery = true;
-          } catch (InterruptedException | AlreadyClosedException e) {
-            log.info("Interrupted or already closed, bailing on recovery");
+          } catch (InterruptedException | AlreadyClosedException | RejectedExecutionException e) {
+            log.info("{} bailing on recovery", e.getClass().getSimpleName());
             close = true;
             successfulRecovery = false;
             break;
@@ -772,7 +801,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             publishedActive = true;
             close = true;
 
-          } catch (AlreadyClosedException e) {
+          } catch (AlreadyClosedException | RejectedExecutionException e) {
             log.error("Already closed");
             successfulRecovery = false;
             close = true;
@@ -789,7 +818,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (successfulRecovery) {
           recoveryListener.recovered();
         }
-
       }
 
       if (!successfulRecovery && !isClosed()) {
@@ -941,10 +969,26 @@ public class RecoveryStrategy implements Runnable, Closeable {
     return close || cc.isShutDown();
   }
 
-  final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice, CoreDescriptor coreDescriptor) {
+  final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, CoreDescriptor coreDescriptor) {
 
     if (coreDescriptor.getCollectionName() == null) {
       throw new IllegalStateException("Collection name cannot be null");
+    }
+
+    DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
+    if (coll != null) {
+      Slice slice = coll.getSlice(shard);
+      if (slice != null) {
+        Replica leaderReplica = slice.getLeader();
+        if (leaderReplica != null) {
+          if (leaderReplica.getNodeName().equals(cc.getZkController().getNodeName())) {
+            LeaderElector leaderElector = cc.getZkController().getLeaderElector(leaderReplica.getName());
+            if (leaderElector == null || !leaderElector.isLeader()) {
+              throw new SolrException(ErrorCode.BAD_REQUEST, leaderCoreName + " is not current valid leader");
+            }
+          }
+        }
+      }
     }
 
     WaitForState prepCmd = new WaitForState();
@@ -956,8 +1000,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     log.info("Sending prep recovery command to {} for leader={} params={}", leaderBaseUrl, leaderCoreName, prepCmd.getParams());
 
-    int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "7000"));
+    int readTimeout = Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "5000"));
+
+    if (isClosed()) {
+      throw new AlreadyClosedException();
+    }
 
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(cc.getUpdateShardHandler().
         getRecoveryOnlyClient()).idleTimeout(readTimeout).markInternalRequest().build()) {
@@ -969,10 +1016,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         prevSendPreRecoveryHttpUriRequest = result;
         try {
-          boolean success = latch.await(readTimeout, TimeUnit.MILLISECONDS);
+
+          boolean success = latch.await(readTimeout + 500, TimeUnit.MILLISECONDS);
           if (!success) {
             //result.cancel();
             log.warn("Timeout waiting for prep recovery cmd on leader {}", leaderCoreName);
+            Thread.sleep(100);
+            throw new IllegalStateException("Timeout waiting for prep recovery cmd on leader " + leaderCoreName );
           }
         } catch (InterruptedException e) {
           close = true;
@@ -1008,12 +1058,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     @Override
     public void onFailure(Throwable throwable, int code) {
-      log.info("failed sending prep recovery cmd to leader");
+      log.info("failed sending prep recovery cmd to leader response code={}", code, throwable);
 
-      if (throwable.getMessage().contains("Not the valid leader")) {
+      if (throwable != null && throwable.getMessage() != null && throwable.getMessage().contains("Not the valid leader")) {
         try {
           try {
-            Thread.sleep(250);
+            Thread.sleep(10);
             cc.getZkController().getZkStateReader().waitForState(RecoveryStrategy.this.collection, 3, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
               if (collectionState == null) {
                 return false;

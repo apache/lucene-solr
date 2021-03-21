@@ -49,12 +49,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.ZkContainer;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +151,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     final String collectionName = "deletereplica_test";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).waitForFinalState(true).process(cluster.getSolrClient());
 
-    Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 5000, true);
+    Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(cluster.getSolrClient().getHttpClient(), collectionName, "s1", 5000, true);
 
     //Confirm that the instance and data directory exist
     CoreStatus coreStatus = getCoreStatus(leader);
@@ -166,7 +164,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     log.info("leader was {}", leader);
 
-    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 5000, true);
+    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(cluster.getSolrClient().getHttpClient(), collectionName, "s1", 5000, true);
 
     org.apache.solr.common.util.TimeOut timeOut = new org.apache.solr.common.util.TimeOut(2000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
@@ -268,12 +266,10 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   @Test
   @LuceneTestCase.Slow
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  @LuceneTestCase.Nightly // TODO look at performance of this - need lower connection timeouts for test?
-  @Ignore // MRM TODO:
+  //@LuceneTestCase.Nightly // TODO look at performance of this - need lower connection timeouts for test?
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     final String collectionName = "raceDeleteReplicaCollection";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).waitForFinalState(true).process(cluster.getSolrClient());
 
     Slice shard1 = getCollectionState(collectionName).getSlice("s1");
     Replica leader = shard1.getLeader();
@@ -288,70 +284,56 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     Semaphore waitingForReplicaGetDeleted = new Semaphore(0);
     // for safety, we only want this hook get triggered one time
     AtomicInteger times = new AtomicInteger(0);
-    ZkContainer.testing_beforeRegisterInZk = cd -> {
-      if (cd.getCloudDescriptor() == null) return false;
-      if (replica1.getName().equals(cd.getName())
-          && collectionName.equals(cd.getCloudDescriptor().getCollectionName())) {
-        if (times.incrementAndGet() > 1) {
-          return false;
-        }
-        log.info("Running delete core {}",cd);
-
-        try {
-          ZkNodeProps m = new ZkNodeProps(
-              Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
-              ZkStateReader.CORE_NAME_PROP, replica1.getName(),
-              ZkStateReader.NODE_NAME_PROP, replica1.getNodeName(),
-              ZkStateReader.COLLECTION_PROP, collectionName);
-          cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
-
-          boolean replicaDeleted = false;
-          TimeOut timeOut = new TimeOut(25, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-          while (!timeOut.hasTimedOut()) {
-            try {
-              ZkStateReader stateReader = replica1Jetty.getCoreContainer().getZkController().getZkStateReader();
-              Slice shard = stateReader.getClusterState().getCollection(collectionName).getSlice("s1");
-              if (shard.getReplicas().size() == 1) {
-                replicaDeleted = true;
-                waitingForReplicaGetDeleted.release();
-                break;
-              }
-              Thread.sleep(250);
-            } catch (NullPointerException | SolrException e) {
-              log.error("", e);
-              Thread.sleep(250);
-            }
-          }
-          if (!replicaDeleted) {
-            fail("Timeout for waiting replica get deleted");
-          }
-        } catch (Exception e) {
-          log.error("", e);
-          fail("Failed to delete replica");
-        } finally {
-          //avoiding deadlock
-          waitingForReplicaGetDeleted.release();
-        }
-        return true;
-      }
-      return false;
-    };
-
     try {
+      ZkController.testing_beforeRegisterInZk = cd -> {
+        if (cd.getCloudDescriptor() == null) return false;
+        if (replica1.getName().equals(cd.getName()) && collectionName.equals(cd.getCloudDescriptor().getCollectionName())) {
+          if (times.incrementAndGet() > 1) {
+            return false;
+          }
+          log.info("Running delete core {}", cd);
+
+          try {
+
+            CollectionAdminRequest.DeleteReplica deleteReplica = CollectionAdminRequest.deleteReplica(collectionName, replica1.getSlice(), replica1.getName());
+            deleteReplica.setAsyncId("async1");
+            deleteReplica.process(cluster.getSolrClient(), collectionName);
+
+            cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+              if (collectionState == null) {
+                return false;
+              }
+              if (collectionState.getReplica(replica1.getName()) != null) {
+                return false;
+              }
+              waitingForReplicaGetDeleted.release();
+              return true;
+            });
+
+          } catch (Exception e) {
+            log.error("", e);
+            fail("Failed to delete replica");
+          } finally {
+            //avoiding deadlock
+            waitingForReplicaGetDeleted.release();
+          }
+          return true;
+        }
+        return false;
+      };
+
       replica1Jetty.stop();
-      waitForState("Expected replica:"+replica1+" get down", collectionName, (liveNodes, collectionState)
-              -> collectionState.getSlice("s1").getReplica(replica1.getName()).getState() == DOWN);
+      waitForState("Expected replica:" + replica1 + " get down", collectionName, (liveNodes, collectionState) -> collectionState.getSlice("s1").getReplica(replica1.getName()).getState() == DOWN);
       replica1Jetty.start();
       waitingForReplicaGetDeleted.acquire();
     } finally {
-      ZkContainer.testing_beforeRegisterInZk = null;
+      ZkController.testing_beforeRegisterInZk = null;
     }
 
     TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     timeOut.waitFor("Timeout adding replica to shard", () -> {
       try {
-        CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
-            .process(cluster.getSolrClient());
+        CollectionAdminRequest.addReplicaToShard(collectionName, "s1").process(cluster.getSolrClient());
         return true;
       } catch (Exception e) {
         // expected, when the node is not fully started

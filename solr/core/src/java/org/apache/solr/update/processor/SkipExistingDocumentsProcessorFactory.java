@@ -122,7 +122,7 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
                                                           SolrQueryResponse rsp,
                                                           UpdateRequestProcessor next) {
     // Ensure the parameters are forwarded to the leader
-    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(req, PARAM_SKIP_INSERT_IF_EXISTS, PARAM_SKIP_UPDATE_IF_MISSING, BaseCloudSolrClient.STATE_VERSION);
+    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(req, PARAM_SKIP_INSERT_IF_EXISTS, PARAM_SKIP_UPDATE_IF_MISSING);
 
     // Allow the particular request to override the plugin's configured behaviour
     boolean skipInsertForRequest = req.getOriginalParams().getBool(PARAM_SKIP_INSERT_IF_EXISTS, this.skipInsertIfExists);

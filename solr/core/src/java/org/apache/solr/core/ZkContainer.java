@@ -195,36 +195,6 @@ public class ZkContainer implements Closeable {
     if (zkRun == null || zkRun.trim().length() == 0 || zkRun.lastIndexOf('/') < 0) return zkRun;
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
-
-  public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
-
-  public Future registerInZk(final SolrCore core) {
-    log.info("Register in ZooKeeper core={} liveNodes={}", core.getName(), zkController.getZkStateReader().getLiveNodes());
-    CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
-    Runnable r = () -> {
-        MDCLoggingContext.setCoreName(core.getName());
-        try {
-          try {
-            if (testing_beforeRegisterInZk != null) {
-              boolean didTrigger = testing_beforeRegisterInZk.test(cd);
-              if (log.isDebugEnabled()) {
-                log.debug("{} pre-zk hook", (didTrigger ? "Ran" : "Skipped"));
-              }
-            }
-
-            zkController.register(core.getName(), cd);
-
-          } catch (Exception e) {
-            log.error("Failed trying to register with zookeeper", e);
-          }
-        } finally {
-          MDCLoggingContext.clear();
-        }
-      };
-    // r.run();
-     return ParWork.getRootSharedExecutor().submit(r); // ### expert usage
-     //return null;
-  }
   
   public ZkController getZkController() {
     return zkController;

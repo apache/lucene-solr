@@ -31,9 +31,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -107,9 +104,7 @@ public class SolrMetricManager {
 
   private static final ConcurrentMap<String, MetricRegistry> REGISTRIES = new ConcurrentHashMap<>(12, 0.75f, 1);
 
-  private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>(32);
-
-  private final Lock reportersLock = new ReentrantLock();
+  private final Map<String, Map<String, SolrMetricReporter>> reporters = new ConcurrentHashMap<>(32);
 
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
 
@@ -1044,32 +1039,23 @@ public class SolrMetricManager {
   }
 
   private void registerReporter(String registry, String name, String tag, SolrMetricReporter reporter) throws Exception {
-    try {
-      if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
-        throw new Exception("Could not obtain lock to modify reporters registry: " + registry);
+    Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
+    if (perRegistry == null) {
+      perRegistry = new ConcurrentHashMap<>();
+      Map<String,SolrMetricReporter> existingRegistry = reporters.putIfAbsent(registry, perRegistry);
+      if (existingRegistry != null) {
+        perRegistry = existingRegistry;
       }
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new Exception("Interrupted while trying to obtain lock to modify reporters registry: " + registry);
     }
-    try {
-      Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
-      if (perRegistry == null) {
-        perRegistry = new HashMap<>();
-        reporters.put(registry, perRegistry);
-      }
-      if (tag != null && !tag.isEmpty()) {
-        name = name + "@" + tag;
-      }
-      SolrMetricReporter oldReporter = perRegistry.get(name);
-      if (oldReporter != null) { // close it
-        log.info("Replacing existing reporter '{}' in registry'{}': {}", name, registry, oldReporter);
-        oldReporter.close();
-      }
-      perRegistry.put(name, reporter);
+    if (tag != null && !tag.isEmpty()) {
+      name = name + "@" + tag;
+    }
 
-    } finally {
-      reportersLock.unlock();
+    SolrMetricReporter oldReporter = perRegistry.put(name, reporter);
+
+    if (oldReporter != null) { // close it
+      log.info("Replacing existing reporter '{}' in registry'{}': {}", name, registry, oldReporter);
+      oldReporter.close();
     }
   }
 
@@ -1085,37 +1071,24 @@ public class SolrMetricManager {
   public boolean closeReporter(String registry, String name, String tag) {
     // make sure we use a name with prefix
     registry = enforcePrefix(registry);
-    try {
-      if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
-        log.warn("Could not obtain lock to modify reporters registry: {}", registry);
-        return false;
-      }
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
+
+    Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
+    if (perRegistry == null) {
+      return false;
+    }
+    if (tag != null && !tag.isEmpty()) {
+      name = name + "@" + tag;
+    }
+    SolrMetricReporter reporter = perRegistry.remove(name);
+    if (reporter == null) {
       return false;
     }
     try {
-      Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
-      if (perRegistry == null) {
-        return false;
-      }
-      if (tag != null && !tag.isEmpty()) {
-        name = name + "@" + tag;
-      }
-      SolrMetricReporter reporter = perRegistry.remove(name);
-      if (reporter == null) {
-        return false;
-      }
-      try {
-        reporter.close();
-      } catch (Exception e) {
-        log.warn("Error closing metric reporter, registry={}, name={}", registry, name, e);
-      }
-      return true;
-    } finally {
-      reportersLock.unlock();
+      reporter.close();
+    } catch (Exception e) {
+      log.warn("Error closing metric reporter, registry={}, name={}", registry, name, e);
     }
+    return true;
   }
 
   /**
@@ -1142,34 +1115,29 @@ public class SolrMetricManager {
     List<SolrMetricReporter> closeReporters = new ArrayList<>();
     // make sure we use a name with prefix
     registry = enforcePrefix(registry);
-    try {
 
-      reportersLock.lock();
-      if (log.isDebugEnabled()) log.debug("Closing metric reporters for registry=" + registry + ", tag=" + tag);
-      // MRM TODO:
-      Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
-      if (perRegistry != null) {
-        Set<String> names = new HashSet<>(perRegistry.keySet());
+    if (log.isDebugEnabled()) log.debug("Closing metric reporters for registry=" + registry + ", tag=" + tag);
+    // MRM TODO:
+    Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
+    if (perRegistry != null) {
 
-        names.forEach(name -> {
-          if (tag != null && !tag.isEmpty() && !name.endsWith("@" + tag)) {
-            return;
-          }
-          SolrMetricReporter reporter = perRegistry.remove(name);
 
-          closeReporters.add(reporter);
-          removed.add(name);
-        });
-        if (removed.size() == names.size()) {
-          reporters.remove(registry);
+      perRegistry.keySet().forEach(name -> {
+        if (tag != null && !tag.isEmpty() && !name.endsWith("@" + tag)) {
+          return;
         }
-      }
+        SolrMetricReporter reporter = perRegistry.remove(name);
 
-    } finally {
-      reportersLock.unlock();
+        closeReporters.add(reporter);
+        removed.add(name);
+      });
+      if (perRegistry.size() == 0) {
+        reporters.remove(registry);
+      }
     }
+
     if (closeReporters.size() > 0) {
-      try (ParWork closer = new ParWork(this, true, false)) {
+      try (ParWork closer = new ParWork(this, true, true)) {
         closer.collect("MetricReporters", closeReporters);
       }
     }
@@ -1185,26 +1153,13 @@ public class SolrMetricManager {
   public Map<String, SolrMetricReporter> getReporters(String registry) {
     // make sure we use a name with prefix
     registry = enforcePrefix(registry);
-    try {
-      if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
-        log.warn("Could not obtain lock to modify reporters registry: {}", registry);
-        return Collections.emptyMap();
-      }
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
+
+    Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
+    if (perRegistry == null) {
       return Collections.emptyMap();
-    }
-    try {
-      Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
-      if (perRegistry == null) {
-        return Collections.emptyMap();
-      } else {
-        // defensive copy - the original map may change after we release the lock
-        return Collections.unmodifiableMap(new HashMap<>(perRegistry));
-      }
-    } finally {
-      reportersLock.unlock();
+    } else {
+      // defensive copy - the original map may change after we release the lock
+      return Collections.unmodifiableMap(new HashMap<>(perRegistry));
     }
   }
 

@@ -551,9 +551,17 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "777"));
     delI("777");
     assertU(commit());  // arg... commit no longer "commits" unless there has been a change.
-    final Gauge filterCacheStats;
+    Gauge filterCacheStats;
     try (SolrCore core = h.getCore()) {
       filterCacheStats = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+      if (filterCacheStats == null) {
+        Thread.sleep(250);
+        filterCacheStats = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+        if (filterCacheStats == null) {
+          Thread.sleep(250);
+          filterCacheStats = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+        }
+      }
       assertNotNull(filterCacheStats);
       final Gauge queryCacheStats = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
 

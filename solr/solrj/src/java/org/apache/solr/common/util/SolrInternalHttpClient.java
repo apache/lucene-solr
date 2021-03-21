@@ -21,8 +21,11 @@ public class SolrInternalHttpClient extends HttpClient {
     if (log.isDebugEnabled()) {
       log.debug("Stopping {}", this.getClass().getSimpleName());
     }
-    super.doStop();
-    assert ObjectReleaseTracker.release(this);
+    try {
+      super.doStop();
+    } finally {
+      assert ObjectReleaseTracker.release(this);
+    }
   }
 
 }

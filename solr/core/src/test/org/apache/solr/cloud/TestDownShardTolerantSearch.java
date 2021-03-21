@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.CoreMatchers.is;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test which asserts that shards.tolerant=true works even if one shard is down
@@ -43,14 +45,21 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeTestDownShardTolerantSearch() throws Exception {
     configureCluster(2).addConfig("conf", SolrTestUtil.configset("cloud-minimal")).configure();
+    CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1).waitForFinalState(true).process(cluster.getSolrClient());
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(cluster.getSolrClient().getHttpClient(), "tolerant", 5, TimeUnit.SECONDS, false, 2, 2, true, true);
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+  }
+
+  @AfterClass
+  public static void afterTestDownShardTolerantSearch() throws Exception {
+    cluster.deleteAllCollections();
+    shutdownCluster();
   }
 
   @Test
   public void searchingShouldFailWithoutTolerantSearchSetToTrue() throws Exception {
-
-    CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1).waitForFinalState(true).process(cluster.getSolrClient());
 
     UpdateRequest update = new UpdateRequest();
     for (int i = 0; i < 100; i++) {
@@ -66,17 +75,21 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
     cluster.waitForJettyToStop(stoppedServer);
 
-    try (SolrClient client = cluster.buildSolrClient()) {
+    cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
 
-      response = client.query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection("tolerant", 5, TimeUnit.SECONDS, false, 2, 1, true, false);
 
-      assertThat(response.getStatus(), is(0));
-      assertTrue(response.getResults().getNumFound() > 0);
+    SolrClient client = cluster.getSolrClient();
 
-      Exception e = SolrTestCaseUtil.expectThrows(Exception.class, "Request should have failed because we killed shard1 jetty",
-          () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false)));
+    response = client.query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
 
-      assertNotNull(e);
-    }
+    assertThat(response.getStatus(), is(0));
+    assertTrue(response.getResults().getNumFound() > 0);
+
+    Exception e = SolrTestCaseUtil.expectThrows(Exception.class, "Request should have failed because we killed shard1 jetty",
+        () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false)));
+
+    assertNotNull(e);
+
   }
 }

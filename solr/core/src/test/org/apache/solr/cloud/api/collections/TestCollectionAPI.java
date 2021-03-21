@@ -82,9 +82,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       CollectionAdminRequest.Create req;
       if (useTlogReplicas()) {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 0, 1, 0).waitForFinalState(true); // MRM-TEST TODO: 1 pull replica each
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 0, 1, 0); // MRM-TEST TODO: 1 pull replica each
       } else {
-        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 1, 0, 0).waitForFinalState(true);
+        req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "_default",2, 1, 0, 0);
       }
       setV2(req);
       client.request(req);
@@ -1029,7 +1029,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       // first, try creating a collection with badconf
       // MRM TODO: this should fail with the wait for final state
       BaseHttpSolrClient.RemoteSolrException rse = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-        CollectionAdminResponse rsp = CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2).waitForFinalState(true).process(client);
+        CollectionAdminResponse rsp = CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2).process(client);
       });
       assertNotNull(rse.getMessage());
       assertNotSame(0, rse.code());

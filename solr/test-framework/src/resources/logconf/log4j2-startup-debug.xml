@@ -72,6 +72,7 @@
         <AsyncLogger name="org.apache.solr.cloud.StatePublisher" level="DEBUG"/>
 
         <AsyncLogger name="org.apache.solr.core.SolrCore" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.core.CachingDirectoryFactory" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.core.CoreContainer" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.common.cloud.ZkMaintenanceUtils" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="DEBUG"/>

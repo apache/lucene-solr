@@ -195,11 +195,17 @@ public class CoreContainer implements Closeable {
       4, 256, 1000, new BlockingArrayQueue<>(64, 64));
 
   public final ThreadPoolExecutor coreContainerExecutor = (ThreadPoolExecutor) ParWork.getParExecutorService("Core",
-      4, SysStats.PROC_COUNT * 2, 1000, new BlockingArrayQueue<>(64, 64));
+      4, Math.max(4, SysStats.PROC_COUNT * 2), 1000, new BlockingArrayQueue<>(64, 64));
 
   {
-    solrCoreExecutor.prestartAllCoreThreads();
-    coreContainerExecutor.prestartAllCoreThreads();
+    for (int i = 0; i < 12; i++) {
+      solrCoreExecutor.prestartCoreThread();
+    }
+
+    for (int i = 0; i < 4; i++) {
+      coreContainerExecutor.prestartCoreThread();
+    }
+
   }
 
   private final OrderedExecutor replayUpdatesExecutor;
@@ -693,12 +699,6 @@ public class CoreContainer implements Closeable {
     }
 
     if (isZooKeeperAware()) {
-      try {
-        getZkController().publishNodeAs(getZkController().getNodeName(), OverseerAction.RECOVERYNODE);
-      } catch (Exception e) {
-        log.error("Failed publishing loading core as recovering", e);
-      }
-
       List<CoreDescriptor> removeCds = new ArrayList<>();
       for (final CoreDescriptor cd : cds) {
 
@@ -719,13 +719,21 @@ public class CoreContainer implements Closeable {
             } catch (Exception e) {
               SolrException.log(log, "Failed to delete instance dir for core:" + cd.getName() + " dir:" + cd.getInstanceDir());
             }
-
+            continue;
           }
         }
         markCoreAsLoading(cd.getName());
         String collection = cd.getCollectionName();
-        getZkController().getZkStateReader().registerCore(collection, cd.getName());
-
+        try {
+          getZkController().getZkStateReader().registerCore(collection, cd.getName());
+        } catch (Exception e) {
+          log.error("Failed registering core with zkstatereader", e);
+        }
+      }
+      try {
+        getZkController().publishNodeAs(getZkController().getNodeName(), OverseerAction.RECOVERYNODE);
+      } catch (Exception e) {
+        log.error("Failed publishing loading core as recovering", e);
       }
       for (CoreDescriptor removeCd : removeCds) {
         cds.remove(removeCd);
@@ -736,6 +744,8 @@ public class CoreContainer implements Closeable {
       }
     }
 
+
+    try {
     // Always add $SOLR_HOME/lib to the shared resource loader
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
@@ -766,7 +776,7 @@ public class CoreContainer implements Closeable {
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-    try {
+
 
       logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
@@ -853,10 +863,7 @@ public class CoreContainer implements Closeable {
         });
 
       }
-    } catch (Exception e) {
-      log.error("Exception in CoreContainer load", e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Exception in CoreContainer load", e);
-    }
+
 
     if (!containerHandlers.keySet().contains(CORES_HANDLER_PATH)) {
       throw new IllegalStateException("No core admin path was loaded " + CORES_HANDLER_PATH);
@@ -900,10 +907,6 @@ public class CoreContainer implements Closeable {
       metricManager.loadClusterReporters(cfg.getMetricsConfig().getMetricReporters(), this);
     }
 
-    List<Future<SolrCore>> coreLoadFutures = null;
-
-
-    coreLoadFutures = new ArrayList<>(cds.size());
     if (isZooKeeperAware()) {
       cds = CoreSorter.sortCores(this, cds);
     }
@@ -915,6 +918,15 @@ public class CoreContainer implements Closeable {
       zkSys.getZkController().createEphemeralLiveNode();
     }
 
+    } catch (Exception e) {
+      log.error("Exception in CoreContainer load", e);
+      for (final CoreDescriptor cd : cds) {
+        markCoreAsNotLoading(cd.getName());
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Exception in CoreContainer load", e);
+    }
+    List<Future<SolrCore>> coreLoadFutures = null;
+    coreLoadFutures = new ArrayList<>(cds.size());
     for (final CoreDescriptor cd : cds) {
 
       if (log.isDebugEnabled()) log.debug("Process core descriptor {} {} {}", cd.getName(), cd.isTransient(), cd.isLoadOnStartup());
@@ -922,26 +934,6 @@ public class CoreContainer implements Closeable {
         solrCores.addCoreDescriptor(cd);
       }
 
-      // MRM TODO: look at ids for this
-//      if (isZooKeeperAware()) {
-//        String collection = cd.getCollectionName();
-//
-//        if (!zkSys.zkController.getClusterState().hasCollection(collection)) {
-//          solrCores.markCoreAsNotLoading(cd);
-//          try {
-//            coresLocator.delete(this, cd);
-//          } catch (Exception e) {
-//            log.error("Exception deleting core.properties file for non existing collection", e);
-//          }
-//
-//          try {
-//            unload(cd, cd.getName(),true, true, true);
-//          } catch (Exception e) {
-//            log.error("Exception unloading core for non existing collection", e);
-//          }
-//          continue;
-//        }
-//      }
 
       if (cd.isLoadOnStartup()) {
         startedLoadingCores = true;
@@ -949,14 +941,7 @@ public class CoreContainer implements Closeable {
           SolrCore core = null;
           MDCLoggingContext.setCoreName(cd.getName());
           try {
-            try {
-
-              core = createFromDescriptor(cd, false);
-
-            } finally {
-              solrCores.markCoreAsNotLoading(cd);
-            }
-
+            core = createFromDescriptor(cd, false);
           } catch (AlreadyClosedException e){
             log.warn("Will not finish creating and registering core={} because we are shutting down", cd.getName(), e);
           } catch (Exception e){
@@ -1250,17 +1235,10 @@ public class CoreContainer implements Closeable {
       throw new AlreadyClosedException("Will not register SolrCore with ZooKeeper, already closed");
     }
 
-    //    if (isShutDown) {
-    //      core.close();
-    //      throw new IllegalStateException("This CoreContainer has been closed");
-    //    }
-    SolrCore old = solrCores.putCore(cd, core);
-    /*
-     * set both the name of the descriptor and the name of the
-     * core, since the descriptors name is used for persisting.
-     */
-
     core.setName(cd.getName());
+    SolrCore old = solrCores.putCore(cd, core);
+
+    markCoreAsNotLoading(cd.getName());
 
     coreInitFailures.remove(cd.getName());
 
@@ -1494,6 +1472,7 @@ public class CoreContainer implements Closeable {
       throw solrException;
     } catch (Throwable t) {
       log.error("Unable to create SolrCore", t);
+      solrCores.markCoreAsNotLoading(dcore);
       SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       solrCores.remove(dcore.getName());
@@ -1944,6 +1923,10 @@ public class CoreContainer implements Closeable {
     if (cd == null) {
       cd = solrCores.getCoreDescriptor(name);
     }
+    if (name == null && cd != null) {
+      name = cd.getName();
+    }
+
     SolrException exception = null;
     try {
 
@@ -1982,9 +1965,10 @@ public class CoreContainer implements Closeable {
         }
       }
 
-      SolrCore core;
-
-      core = solrCores.remove(name);
+      SolrCore core = null;
+      if (name != null) {
+        core = solrCores.remove(name);
+      }
       if (core != null) {
         if (cd == null) {
           cd = core.getCoreDescriptor();

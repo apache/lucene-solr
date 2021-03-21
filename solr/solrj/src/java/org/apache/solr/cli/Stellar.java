@@ -298,7 +298,7 @@ public class Stellar {
       //  zk = new ZooKeeperAdmin(host, Integer.parseInt(cl.getOption("timeout")), new MyWatcher(), readOnly, clientConfig);
 
         zkStateReader = new ZkStateReader(host, Integer.parseInt(cl.getOption("timeout")), 10000);
-        zk = zkStateReader.getZkClient().getSolrZooKeeper();
+        zk = zkStateReader.getZkClient().getConnectionManager().getKeeper();
         solrClient = new CloudHttp2SolrClient.Builder(zkStateReader).build();
         zkStateReader.createClusterStateWatchersAndUpdate();
     }

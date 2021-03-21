@@ -29,6 +29,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -36,10 +38,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * The cluster with this key will include an explicit list of host whitelisted (all hosts in both the clusters)
@@ -148,7 +154,11 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
     clusterId2cluster.forEach((s, miniSolrCloudCluster) -> {
 
-      miniSolrCloudCluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards);
+      try {
+        miniSolrCloudCluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards);
+      } catch (TimeoutException e) {
+        log.error("timeout", e);
+      }
 
       List<SolrInputDocument> docs = new ArrayList<>(10);
       for (int i = 0; i < 10; i++) {

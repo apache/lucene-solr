@@ -47,8 +47,6 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
                     "useCompoundFile");
   }
 
-  @Ignore // this fails because a small change - currently, a SolrCore failing in CoreContainer#load will
-  // not fail with an exception, though the exception will be logged - we should check the core init exceptions here
   public void testUpdateLogButNoVersionField() throws Exception {
     
     System.setProperty("enable.update.log", "true");

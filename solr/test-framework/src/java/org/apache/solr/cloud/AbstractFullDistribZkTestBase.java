@@ -152,8 +152,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  public static final String SHARD1 = "shard1";
-  public static final String SHARD2 = "shard2";
+  public static final String SHARD1 = "s1";
+  public static final String SHARD2 = "s2";
 
   protected boolean printLayoutOnTearDown = false;
 
@@ -476,7 +476,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 j.start();
                 jettys.add(j);
                 createReplicaRequests.add(CollectionAdminRequest
-                        .addReplicaToShard(DEFAULT_COLLECTION, "shard" + ((currentI % sliceCount) + 1))
+                        .addReplicaToShard(DEFAULT_COLLECTION, "s" + ((currentI % sliceCount) + 1))
                         .setNode(j.getNodeName())
                         .setType(Replica.Type.TLOG));
                 waitForLiveNode(j);
@@ -506,7 +506,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 j.start();
                 jettys.add(j);
                 createReplicaRequests.add(CollectionAdminRequest
-                        .addReplicaToShard(DEFAULT_COLLECTION, "shard" + ((currentI % sliceCount) + 1))
+                        .addReplicaToShard(DEFAULT_COLLECTION, "s" + ((currentI % sliceCount) + 1))
                         .setNode(j.getNodeName())
                         .setType(Replica.Type.NRT));
                 waitForLiveNode(j);
@@ -532,7 +532,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               j.start();
               jettys.add(j);
               createPullReplicaRequests.add(CollectionAdminRequest
-                      .addReplicaToShard(DEFAULT_COLLECTION, "shard" + ((currentI % sliceCount) + 1))
+                      .addReplicaToShard(DEFAULT_COLLECTION, "s" + ((currentI % sliceCount) + 1))
                       .setNode(j.getNodeName())
                       .setType(Replica.Type.PULL));
               waitForLiveNode(j);
@@ -596,13 +596,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 //            MiniSolrCloudCluster.expectedShardsAndActiveReplicas(sliceCount, addReplicas.get()));
     waitForActiveReplicaCount(cloudClient, DEFAULT_COLLECTION, addReplicas.get());
 
+
     this.jettys.addAll(jettys);
     this.clients.addAll(clients);
 
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+
+    zkStateReader.waitForActiveCollection(cloudClient.getHttpClient(), DEFAULT_COLLECTION, 10, TimeUnit.SECONDS, false, sliceCount, addReplicas.get(), true, true);
+
     // make sure we have a leader for each shard
     for (int i = 1; i <= sliceCount; i++) {
-      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
+      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "s" + i, 10000);
     }
 
     if (sliceCount > 0) {
@@ -760,6 +764,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         .withServlets(getExtraServlets())
         .withFilters(getExtraRequestFilters())
         .withSSLConfig(sslConfig.buildServerSSLConfig())
+        .enableProxy(true)
         .build();
 
     Properties props = new Properties();
@@ -778,7 +783,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toAbsolutePath().toString());
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig, true);
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), props, jettyconfig);
 
     return jetty;
   }
@@ -961,7 +966,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < sliceCount; i++) {
         if (i > 0) sb.append(',');
-        sb.append("shard").append(i + 1);
+        sb.append("s").append(i + 1);
       }
       params.set("shards", sb.toString());
     }
