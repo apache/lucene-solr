@@ -87,12 +87,12 @@ feature branches in these projects).
 # of "origin")
 git clone --origin apache https://github.com/apache/lucene.git
 cd lucene
-# in Github UI, create [user]'s fork of new project (as in the "rebase" example)
-# add [user]'s fork of the new project
-git remote add mynewfork https://github.com/[user]/lucene.git
+# in Github UI, create ${user}'s fork of new project (as in the "rebase" example)
+# add ${user}'s fork of the new project
+git remote add mynewfork https://github.com/${user}/lucene.git
 git fetch mynewfork
-# add [user]'s fork of the legacy (joint) project
-git remote add mylegacyfork https://github.com/[user]/lucene-solr.git
+# add ${user}'s fork of the legacy (joint) project
+git remote add mylegacyfork https://github.com/${user}/lucene-solr.git
 git fetch mylegacyfork
 # get the legacy PR's branch:
 git checkout --no-track mylegacyfork/LUCENE-XXXX -b LUCENE-XXXX
@@ -101,7 +101,7 @@ git checkout --no-track mylegacyfork/LUCENE-XXXX -b LUCENE-XXXX
 # number of files deleted across the TLP split)
 git -c merge.renameLimit=7000 merge apache/main
 # after resolving any conflicts and committing the merge,
-# push to [user]'s new fork
+# push to ${user}'s new fork
 git push -u mynewfork LUCENE-XXXX
 # in Github UI, create PR from mynewfork/LUCENE-XXXX (against apache/main)
 # as in the "rebase" example
