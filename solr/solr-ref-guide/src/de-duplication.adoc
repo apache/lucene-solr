@@ -43,15 +43,13 @@ The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` a
 
 [source,xml]
 ----
-<updateRequestProcessorChain name="dedupe">
+<updateRequestProcessorChain default="true">
+  <processor class="solr.LogUpdateProcessorFactory" />
   <processor class="solr.processor.SignatureUpdateProcessorFactory">
-    <bool name="enabled">true</bool>
     <str name="signatureField">id</str>
-    <bool name="overwriteDupes">false</bool>
     <str name="fields">name,features,cat</str>
     <str name="signatureClass">solr.processor.Lookup3Signature</str>
   </processor>
-  <processor class="solr.LogUpdateProcessorFactory" />
   <processor class="solr.RunUpdateProcessorFactory" />
 </updateRequestProcessorChain>
 ----
@@ -77,32 +75,18 @@ enabled::
 Set to *false* to disable de-duplication processing. The default is *true*.
 
 overwriteDupes::
-If true, the default, when a document exists that already matches this signature, it will be overwritten.
+If *true*, the default, when a document exists that already matches this signature, it will be overwritten.  If you are using `overwriteDupes=true` the `signatureField` must be `indexed="true"` in your Schema.
 
-=== In schema.xml
-
-If you are using a separate field for storing the signature, you must have it indexed:
-
-[source,xml]
-----
-<field name="signatureField" type="string" stored="true" indexed="true" multiValued="false" />
-----
-
-Be sure to change your update handlers to use the defined chain, as below:
-
-[source,xml]
-----
-<requestHandler name="/update" class="solr.UpdateRequestHandler" >
-  <lst name="defaults">
-    <str name="update.chain">dedupe</str>
-  </lst>
-...
-</requestHandler>
-----
-
-This example assumes you have other sections of your request handler defined.
-
-[TIP]
+.Using `SignatureUpdateProcessorFactory` in SolrCloud
+[WARNING]
 ====
-The update processor can also be specified per request with a parameter of `update.chain=dedupe`.
+// https://issues.apache.org/jira/browse/SOLR-3473
+
+There are 2 important things to keep in mind when using `SignatureUpdateProcessorFactory` with SolrCloud:
+
+1. The `overwriteDupes=true` setting does not work _except_ in the special case of using the uniqueKey field as the `signatureField`.  Attempting De-duplication on any other `signatureField` will not work correctly because of how updates are forwarded to replicas
+1. When using the uniqueKey field as the `signatureField`, `SignatureUpdateProcessorFactory` must be run prior to the `<<update-request-processors.adoc#update-processors-in-solrcloud,DistributedUpdateProcessor>>` to ensure that documents can be routed to the correct shard leader based on the (generated) uniqueKey field.
+
+(Using any other `signatureField` with `overwriteDupes=false` -- to generate a Signature for each document with out De-duplication -- has no limitations.)
 ====
+
