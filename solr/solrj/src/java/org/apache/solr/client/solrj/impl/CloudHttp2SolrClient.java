@@ -44,7 +44,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
   private final LBHttp2SolrClient lbClient;
-  private Http2SolrClient myClient;
+  private final Http2SolrClient myClient;
   private final boolean clientIsInternal;
 
   /**
@@ -57,8 +57,17 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
-    this.clientIsInternal = builder.httpClient == null;
-    this.myClient = (builder.httpClient == null) ? new Http2SolrClient.Builder().build() : builder.httpClient;
+    if (builder.httpClient == null) {
+      this.clientIsInternal = true;
+      if (builder.internalClientBuilder == null) {
+        this.myClient = new Http2SolrClient.Builder().build();
+      } else {
+        this.myClient = builder.internalClientBuilder.build();
+      }
+    } else {
+      this.clientIsInternal = false;
+      this.myClient = builder.httpClient;
+    }
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.solrUrls != null) {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
@@ -125,6 +134,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
+    protected Http2SolrClient.Builder internalClientBuilder;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient} instances.
@@ -207,7 +217,25 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     }
 
     public Builder withHttpClient(Http2SolrClient httpClient) {
+      if (this.internalClientBuilder != null) {
+        throw new IllegalStateException("The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
+      }
       this.httpClient = httpClient;
+      return this;
+    }
+
+    /**
+     * If provided, the CloudHttp2SolrClient will build it's internal Http2SolrClient using this builder
+     * (instead of the empty default one). Providing this builder allows users to configure the internal
+     * clients (authentication, timeouts, etc).
+     * @param internalClientBuilder the builder to use for creating the internal http client.
+     * @return this
+     */
+    public Builder withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder) {
+      if (this.httpClient != null) {
+        throw new IllegalStateException("The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
+      }
+      this.internalClientBuilder = internalClientBuilder;
       return this;
     }
 

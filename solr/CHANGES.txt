@@ -46,6 +46,8 @@ Improvements
 
 * SOLR-11233: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr. (Pranav Murugappan, Christine Poerschke)
 
+* SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
