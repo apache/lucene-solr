@@ -573,9 +573,8 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   
   @Test
   public void testFacetEnumSearch() throws Exception {
-    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
-        System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
-            && System.getProperty("solr.tests.numeric.dv").equals("false"));
+    assumeFalse("This requires docValues",
+            System.getProperty("solr.tests.numeric.dv").equals("false"));
 
     clearIndex();
 
