@@ -286,6 +286,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "fq", s1 + ":a", "fl", "id," + i1, "group", "true", "group.field", i1, "sort", i1 + " asc, id asc", "group.ngroups", "true");
     query("q", "*:*", "fq", s1 + ":a", "rows", 0, "fl", "id," + i1, "group", "true", "group.field", i1, "sort", i1 + " asc, id asc", "group.ngroups", "true");
 
+    // SOLR-15273: if id was renamed we need to use the new name
+    query("q", "*:*", "rows", 100, "fl", "aliasId:id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc");
+
     // SOLR-3960 - include a postfilter
     for (String facet : new String[] { "false", "true"}) {
       for (String fcache : new String[] { "", " cache=false cost=200"}) {
