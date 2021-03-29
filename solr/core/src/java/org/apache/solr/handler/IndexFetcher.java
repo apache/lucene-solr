@@ -92,6 +92,7 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -275,25 +276,28 @@ public class IndexFetcher {
   }
 
   private void setLeaderUrl(String leaderUrl) {
-    if (leaderUrl != null && solrCore.getCoreContainer().getShardHandlerFactory() instanceof HttpShardHandlerFactory) {
-      ClusterState clusterState = solrCore.getCoreContainer().getZkController() == null ?
-          null : solrCore.getCoreContainer().getZkController().getClusterState();
-      try {
-        ((HttpShardHandlerFactory) solrCore.getCoreContainer().getShardHandlerFactory()).getWhitelistHostChecker()
-            .checkWhitelist(clusterState, null, Collections.singletonList(leaderUrl));
-      } catch (SolrException e) {
-        // Replace the exception because the message is about the 'shard' parameter, which is not right here.
-        // This code is refactored and cleaned up in 9.x and above.
-        if (e.code() == ErrorCode.BAD_REQUEST.code) {
-          throw new SolrException(ErrorCode.BAD_REQUEST,
-              "Invalid URL syntax in '" + LEADER_URL + "' with value '" + leaderUrl + "'", e);
-        } else {
-          log.warn("The '{}' parameter value '{}' is not in the '{}'",
-              LEADER_URL, leaderUrl, HttpShardHandlerFactory.INIT_SHARDS_WHITELIST);
-          throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
-              "The '" + LEADER_URL + "' parameter value '" + leaderUrl
-                  + "' is not in the '" + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST + "'."
-                  + HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+    if (leaderUrl != null) {
+      ShardHandlerFactory shardHandlerFactory = solrCore.getCoreContainer().getShardHandlerFactory();
+      if (shardHandlerFactory instanceof HttpShardHandlerFactory) {
+        ZkController zkController = solrCore.getCoreContainer().getZkController();
+        ClusterState clusterState = zkController == null ? null : zkController.getClusterState();
+        try {
+          ((HttpShardHandlerFactory) shardHandlerFactory).getWhitelistHostChecker()
+              .checkWhitelist(clusterState, null, Collections.singletonList(leaderUrl));
+        } catch (SolrException e) {
+          // Replace the exception because the message is about the 'shard' parameter, which is not right here.
+          // This code is refactored and cleaned up in 9.x and above.
+          if (e.code() == ErrorCode.BAD_REQUEST.code) {
+            throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Invalid URL syntax in '" + LEADER_URL + "' with value '" + leaderUrl + "'", e);
+          } else {
+            log.warn("The '{}' parameter value '{}' is not in the '{}'",
+                LEADER_URL, leaderUrl, HttpShardHandlerFactory.INIT_SHARDS_WHITELIST);
+            throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+                "The '" + LEADER_URL + "' parameter value '" + leaderUrl
+                    + "' is not in the '" + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST + "'."
+                    + HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+          }
         }
       }
     }
