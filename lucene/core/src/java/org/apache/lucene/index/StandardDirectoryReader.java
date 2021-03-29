@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +44,11 @@ public final class StandardDirectoryReader extends DirectoryReader {
   private final boolean applyAllDeletes;
   private final boolean writeAllDeletes;
 
-  /** called only from static open() methods */
+  /** package private constructor, called only from static open() methods */
   StandardDirectoryReader(Directory directory, LeafReader[] readers, IndexWriter writer,
-                          SegmentInfos sis, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
-    super(directory, readers);
+        SegmentInfos sis, Comparator<LeafReader> leafSorter, boolean applyAllDeletes, boolean writeAllDeletes)
+        throws IOException {
+    super(directory, readers, leafSorter);
     this.writer = writer;
     this.segmentInfos = sis;
     this.applyAllDeletes = applyAllDeletes;
@@ -54,7 +56,8 @@ public final class StandardDirectoryReader extends DirectoryReader {
   }
 
   /** called from DirectoryReader.open(...) methods */
-  static DirectoryReader open(final Directory directory, final IndexCommit commit) throws IOException {
+  static DirectoryReader open(
+        final Directory directory, final IndexCommit commit, Comparator<LeafReader> leafSorter) throws IOException {
     return new SegmentInfos.FindSegmentsFile<DirectoryReader>(directory) {
       @Override
       protected DirectoryReader doBody(String segmentFileName) throws IOException {
@@ -68,7 +71,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
           // This may throw CorruptIndexException if there are too many docs, so
           // it must be inside try clause so we close readers in that case:
-          DirectoryReader reader = new StandardDirectoryReader(directory, readers, null, sis, false, false);
+          DirectoryReader reader = new StandardDirectoryReader(directory, readers, null, sis, leafSorter, false, false);
           success = true;
 
           return reader;
@@ -117,7 +120,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
       StandardDirectoryReader result = new StandardDirectoryReader(dir,
           readers.toArray(new SegmentReader[readers.size()]), writer,
-          segmentInfos, applyAllDeletes, writeAllDeletes);
+          segmentInfos, writer.getConfig().getLeafSorter(), applyAllDeletes, writeAllDeletes);
       return result;
     } catch (Throwable t) {
       try {
@@ -132,8 +135,8 @@ public final class StandardDirectoryReader extends DirectoryReader {
   /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)}, as well as NRT replication.
    *
    *  @lucene.internal */
-  public static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends LeafReader> oldReaders) throws IOException {
-
+  public static DirectoryReader open(Directory directory, SegmentInfos infos,
+        List<? extends LeafReader> oldReaders, Comparator<LeafReader> leafSorter) throws IOException {
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
     final Map<String,Integer> segmentReaders = (oldReaders == null ? Collections.emptyMap() : new HashMap<>(oldReaders.size()));
@@ -214,7 +217,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
         }
       }
     }    
-    return new StandardDirectoryReader(directory, newReaders, null, infos, false, false);
+    return new StandardDirectoryReader(directory, newReaders, null, infos, leafSorter,false, false);
   }
 
   // TODO: move somewhere shared if it's useful elsewhere
@@ -327,7 +330,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
   }
 
   DirectoryReader doOpenIfChanged(SegmentInfos infos) throws IOException {
-    return StandardDirectoryReader.open(directory, infos, getSequentialSubReaders());
+    return StandardDirectoryReader.open(directory, infos, getSequentialSubReaders(), subReadersSorter);
   }
 
   @Override
