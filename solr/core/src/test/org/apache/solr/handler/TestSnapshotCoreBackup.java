@@ -20,6 +20,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   @Before // unique core per test
   public void coreInit() throws Exception {

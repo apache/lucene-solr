@@ -60,7 +60,7 @@ Each Lucene/Solr release has an extensively tested minimum Java version. For ins
 * Java 8 has been extensively tested by both automated tests and users through Solr 8. Long Term Support (LTS) for Java 8 is provided by some sources, see https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free].
 * The project's testing infrastructure continuously tests with the minimum and greater versions of Java for each development branch.
 * Java 9 and 10 have no LTS. For this reason, Java 11 is preferred over 9 or 10 when upgrading Java.
-* For specific questions the http://lucene.apache.org/solr/community.html#mailing-lists-irc[Solr User's List] is a great resource.
+* For specific questions the http://solr.apache.org/community.html#mailing-lists-chat[Solr User's List] is a great resource.
 
 === Project Testing of Java-Solr Combinations
 Solr and Lucene run a continuous integration model, running automated unit and integration tests using several versions of Java. In addition, some organizations also maintain their own test infrastructure and feed their results back to the community.

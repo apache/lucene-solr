@@ -28,7 +28,7 @@ limitations under the License.
       </p>
       <br/>
       <div ng-show="error" class="alert alert-danger">{{error}}</div>
-      <form name="form" ng-submit="login()" role="form">
+      <form name="form" ng-submit="login()" role="form" autocomplete="off">
         <div class="form-group">
           <label for="username">Username</label>
           <input type="text" name="username" id="username" class="form-control" ng-model="username" required />

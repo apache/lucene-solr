@@ -101,6 +101,95 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     IOUtils.close(searcher.getIndexReader(), dir);
   }
 
+  public void testDrillDownOptions() throws Exception {
+    Directory dir = newDirectory();
+
+    FacetsConfig config = new FacetsConfig();
+    config.setDrillDownTermsIndexing("c", FacetsConfig.DrillDownTermsIndexing.NONE);
+    config.setDrillDownTermsIndexing(
+        "d", FacetsConfig.DrillDownTermsIndexing.DIMENSION_AND_FULL_PATH);
+    config.setDrillDownTermsIndexing("e", FacetsConfig.DrillDownTermsIndexing.ALL_PATHS_NO_DIM);
+    config.setDrillDownTermsIndexing("f", FacetsConfig.DrillDownTermsIndexing.FULL_PATH_ONLY);
+    config.setDrillDownTermsIndexing("g", FacetsConfig.DrillDownTermsIndexing.ALL);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("c", "foo"));
+    doc.add(new SortedSetDocValuesFacetField("d", "foo"));
+    doc.add(new SortedSetDocValuesFacetField("e", "foo"));
+    doc.add(new SortedSetDocValuesFacetField("f", "foo"));
+    doc.add(new SortedSetDocValuesFacetField("g", "foo"));
+    writer.addDocument(config.build(doc));
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+
+    doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("a", "foo"));
+    writer.addDocument(config.build(doc));
+
+    // NRT open
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    ExecutorService exec = randomExecutorServiceOrNull();
+
+    // Drill down with different indexing configuration options
+    DrillDownQuery q = new DrillDownQuery(config);
+    q.add("c");
+    TopDocs hits = searcher.search(q, 1);
+    assertEquals(0, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("c", "foo");
+    hits = searcher.search(q, 1);
+    assertEquals(0, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("d");
+    hits = searcher.search(q, 1);
+    assertEquals(1, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("d", "foo");
+    hits = searcher.search(q, 1);
+    assertEquals(1, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("e");
+    hits = searcher.search(q, 1);
+    assertEquals(0, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("e", "foo");
+    hits = searcher.search(q, 1);
+    assertEquals(1, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("f");
+    hits = searcher.search(q, 1);
+    assertEquals(0, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("f", "foo");
+    hits = searcher.search(q, 1);
+    assertEquals(1, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("g");
+    hits = searcher.search(q, 1);
+    assertEquals(1, hits.totalHits.value);
+
+    q = new DrillDownQuery(config);
+    q.add("g", "foo");
+    hits = searcher.search(q, 1);
+    assertEquals(1, hits.totalHits.value);
+
+    if (exec != null) {
+      exec.shutdownNow();
+    }
+    writer.close();
+    IOUtils.close(searcher.getIndexReader(), dir);
+  }
+
   // LUCENE-5090
   @SuppressWarnings("unused")
   public void testStaleState() throws Exception {

@@ -27,12 +27,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 @ThreadLeakFilters(defaultFilters = true, filters = {
         BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
