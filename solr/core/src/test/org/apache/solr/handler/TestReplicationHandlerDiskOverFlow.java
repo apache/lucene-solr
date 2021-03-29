@@ -67,6 +67,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
   @Before
   public void setUp() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     originalDiskSpaceprovider = IndexFetcher.usableDiskSpaceProvider;
     originalTestWait = IndexFetcher.testWait;
     
@@ -91,6 +92,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
+    systemClearPropertySolrDisableShardsWhitelist();
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;

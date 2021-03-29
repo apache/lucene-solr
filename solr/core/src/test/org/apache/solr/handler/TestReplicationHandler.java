@@ -79,6 +79,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -131,6 +132,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    systemSetPropertySolrDisableShardsWhitelist("true");
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
@@ -160,6 +162,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
+    systemClearPropertySolrDisableShardsWhitelist();
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;
@@ -300,6 +303,26 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Test
   public void doTestHandlerPathUnchanged() throws Exception {
     assertEquals("/replication", ReplicationHandler.PATH);
+  }
+
+  @Test
+  public void testShardsWhitelist() throws Exception {
+    // Run another test with shards whitelist enabled and whitelist is empty.
+    // Expect an exception because the leader URL is not allowed.
+    systemClearPropertySolrDisableShardsWhitelist();
+    SolrException e = expectThrows(SolrException.class, this::doTestDetails);
+    assertTrue(e.getMessage().contains("is not in the '" + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST + "'"));
+
+    // Set the whitelist to allow the leader URL.
+    // Expect the same test to pass now.
+    String propertyName = "solr.tests." + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST;
+    System.setProperty(propertyName, "127.0.0.1:" + leaderJetty.getLocalPort()
+        + ",127.0.0.1:" + followerJetty.getLocalPort());
+    try {
+      doTestDetails();
+    } finally {
+      System.clearProperty(propertyName);
+    }
   }
 
   @Test
