@@ -171,7 +171,7 @@ class Circle2D implements Component2D {
 
     final double distance = dotProduct / magnitudeAB;
 
-    if (distance < 0 || distance > dotProduct) {
+    if (distance < 0 || distance > 1) {
       return false;
     }
 

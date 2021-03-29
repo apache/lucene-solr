@@ -73,6 +73,13 @@ Other
 
 * LUCENE-9836: Migrate Maven tasks to use "maven-resolver-ant-tasks"
   instead of the no longer maintained "maven-ant-tasks".  (Uwe Schindler)
+
+======================= Lucene 8.8.2 =======================
+
+Bug Fixes
+---------------------
+
+* LUCENE-9870: Fix Circle2D intersectsLine t-value (distance) range clamp (Jørgen Nystad)
   
 ======================= Lucene 8.8.1 =======================
 
