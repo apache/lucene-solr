@@ -905,52 +905,9 @@ Example:
 
 == More Like This Query Parser
 
-`MLTQParser` enables retrieving documents that are similar to a given document. It uses Lucene's existing `MoreLikeThis` logic and also works in SolrCloud mode. The document identifier used here is the unique id value and not the Lucene internal document id. The list of returned documents excludes the queried document.
-
-This query parser takes the following parameters:
-
-`qf`::
-Specifies the fields to use for similarity.
-
-`mintf`::
-Specifies the Minimum Term Frequency, the frequency below which terms will be ignored in the source document.
-
-`mindf`::
-Specifies the Minimum Document Frequency, the frequency at which words will be ignored when they do not occur in at least this many documents.
-
-`maxdf`::
-Specifies the Maximum Document Frequency, the frequency at which words will be ignored when they occur in more than this many documents.
-
-`minwl`::
-Sets the minimum word length below which words will be ignored.
-
-`maxwl`::
-Sets the maximum word length above which words will be ignored.
-
-`maxqt`::
-Sets the maximum number of query terms that will be included in any generated query.
-
-`maxntp`::
-Sets the maximum number of tokens to parse in each example document field that is not stored with TermVector support.
-
-`boost`::
-Specifies if the query will be boosted by the interesting term relevance. It can be either "true" or "false".
-
-*Examples*
-
-Find documents like the document with id=1 and using the `name` field for similarity.
-
-[source,text]
-----
-{!mlt qf=name}1
-----
-
-Adding more constraints to what qualifies as similar using mintf and mindf.
-
-[source,text]
-----
-{!mlt qf=name mintf=2 mindf=3}1
-----
+The `MLTQParser` enables retrieving documents that are similar to a given document.
+It uses Lucene's existing `MoreLikeThis` logic and also works in SolrCloud mode.
+Information about how to use this query parser is with the documentation about MoreLikeThis, in the section <<morelikethis.adoc#morelikethis-query-parser,MoreLikeThis Query Parser>>.
 
 == Nested Query Parser
 
