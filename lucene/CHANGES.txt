@@ -55,6 +55,9 @@ Bug Fixes
   Luwak/Monitor bug causing registered queries to sometimes fail to
   match. (Paweł Bugalski)
 
+* LUCENE-9887: Fixed parameter use in RadixSelector.
+  (liupanfeng via Adrien Grand)
+
 Other
 ---------------------
 

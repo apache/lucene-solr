@@ -118,7 +118,7 @@ public abstract class RadixSelector extends Selector {
   }
 
   private void select(int from, int to, int k, int d, int l) {
-    if (to - from <= LENGTH_THRESHOLD || d >= LEVEL_THRESHOLD) {
+    if (to - from <= LENGTH_THRESHOLD || l >= LEVEL_THRESHOLD) {
       getFallbackSelector(d).select(from, to, k);
     } else {
       radixSelect(from, to, k, d, l);
