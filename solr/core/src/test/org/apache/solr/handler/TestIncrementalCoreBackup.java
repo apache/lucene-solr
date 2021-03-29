@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -38,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Optional;
 
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     @Before // unique core per test
     public void coreInit() throws Exception {

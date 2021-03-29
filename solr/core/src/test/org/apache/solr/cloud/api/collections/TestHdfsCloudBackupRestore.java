@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -60,6 +61,7 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 /**
  * This class implements the tests for HDFS integration for Solr backup/restore capability.
  */
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 @ThreadLeakFilters(defaultFilters = true, filters = {
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class,
