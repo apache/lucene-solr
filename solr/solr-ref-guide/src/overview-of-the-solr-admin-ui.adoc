@@ -73,7 +73,7 @@ These icons include the following links.
 [cols="25,75",options="header"]
 |===
 |Link |Description
-|Documentation |Navigates to the Apache Solr documentation hosted on https://lucene.apache.org/solr/.
+|Documentation |Navigates to the Apache Solr documentation hosted on https://solr.apache.org/.
 |Issue Tracker |Navigates to the JIRA issue tracking server for the Apache Solr project. This server resides at https://issues.apache.org/jira/browse/SOLR.
 |IRC Channel |Navigates to Solr's http://en.wikipedia.org/wiki/Internet_Relay_Chat[IRC] live-chat room: http://webchat.freenode.net/?channels=#solr.
 |Community forum |Navigates to the Apache Wiki page which has further information about ways to engage in the Solr User community mailing lists: https://cwiki.apache.org/confluence/display/solr/UsingMailingLists.

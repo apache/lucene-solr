@@ -18,7 +18,7 @@
 
 This guide describes all of the important features and functions of Apache Solr.
 
-Solr is free to download from http://lucene.apache.org/solr/.
+Solr is free to download from http://solr.apache.org/.
 
 Designed to provide high-level documentation, this guide is intended to be more encyclopedic and less of a cookbook. It is structured to address a broad spectrum of needs, ranging from new developers getting started to well-experienced developers extending their application or troubleshooting. It will be of use at any point in the application life cycle, for whenever you need authoritative information about Solr.
 

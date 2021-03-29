@@ -16,9 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-If the documents you need to index are in a binary format, such as Word, Excel, PDFs, etc., Solr includes a request handler which uses http://lucene.apache.org/tika/[Apache Tika] to extract text for indexing to Solr.
+If the documents you need to index are in a binary format, such as Word, Excel, PDFs, etc., Solr includes a request handler which uses http://tika.apache.org/[Apache Tika] to extract text for indexing to Solr.
 
-Solr uses code from the Tika project to provide a framework for incorporating many different file-format parsers such as http://incubator.apache.org/pdfbox/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] into Solr itself.
+Solr uses code from the Tika project to provide a framework for incorporating many different file-format parsers such as http://pdfbox.apache.org/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] into Solr itself.
 
 Working with this framework, Solr's `ExtractingRequestHandler` uses Tika internally to support uploading binary files
 for data extraction and indexing. Downloading Tika is not required to use Solr Cell.

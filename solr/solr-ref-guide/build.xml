@@ -90,7 +90,7 @@
   </condition>
   <condition property="html-solr-javadocs"
              value="link:../../docs/"
-             else="https://lucene.apache.org/solr/${solr-docs-version-path}/">
+             else="https://solr.apache.org/docs/${solr-docs-version-path}/">
     <isset property="local.javadocs" />
   </condition>
   <condition property="html-lucene-javadocs"
