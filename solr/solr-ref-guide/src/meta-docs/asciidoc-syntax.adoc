@@ -133,7 +133,7 @@ When converting content to HTML, Asciidoctor will automatically render many link
 However, you can add a name to a link by adding the URI followed by square brackets:
 
 [source]
-http://lucene.apache.org/solr[Solr Website]
+http://solr.apache.org/[Solr Website]
 
 === Link to Other Pages/Sections of the Guide
 A warning up front, linking to other pages can be a little bit painful. There are slightly different rules depending on the type of link you want to create, and where you are linking from.

@@ -54,7 +54,7 @@ defaults:
       search: true
 
 # needed for sitemap.xml
-url: https://lucene.apache.org/solr/guide/
+url: https://solr.apache.org/guide/
 
 # Asciidoc settings - disabled so we can use asciidoctor instead
 asciidoc: {}
