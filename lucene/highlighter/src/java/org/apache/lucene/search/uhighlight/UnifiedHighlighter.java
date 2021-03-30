@@ -1086,7 +1086,7 @@ public class UnifiedHighlighter {
           .map(LeafReaderContext::reader)
           .map(TermVectorReusingLeafReader::new)
           .toArray(LeafReader[]::new);
-      return new BaseCompositeReader<IndexReader>(leafReaders) {
+      return new BaseCompositeReader<IndexReader>(leafReaders, null) {
         @Override
         protected void doClose() { // don't close the underlying reader
         }

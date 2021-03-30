@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.Comparator;
 
 /** A {@link CompositeReader} which reads multiple indexes, appending
  *  their content. It can be used to create a view on several
@@ -46,7 +47,7 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
   * @param subReaders set of (sub)readers
   */
   public MultiReader(IndexReader... subReaders) throws IOException {
-    this(subReaders, true);
+    this(subReaders, null, true);
   }
 
   /**
@@ -56,7 +57,22 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
    * when this MultiReader is closed
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
-    super(subReaders.clone());
+    this(subReaders, null, closeSubReaders);
+  }
+
+  /**
+   * Construct a MultiReader aggregating the named set of (sub)readers.
+   *
+   * @param subReaders set of (sub)readers; this array will be cloned.
+   * @param subReadersSorter – a comparator, that if not {@code null} is used for sorting sub
+   *     readers.
+   * @param closeSubReaders indicates whether the subreaders should be closed when this MultiReader
+   *     is closed
+   */
+  public MultiReader(
+      IndexReader[] subReaders, Comparator<IndexReader> subReadersSorter, boolean closeSubReaders)
+      throws IOException {
+    super(subReaders.clone(), subReadersSorter);
     this.closeSubReaders = closeSubReaders;
     if (!closeSubReaders) {
       for (int i = 0; i < subReaders.length; i++) {

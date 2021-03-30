@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
@@ -60,7 +61,24 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final Directory directory) throws IOException {
-    return StandardDirectoryReader.open(directory, null);
+    return StandardDirectoryReader.open(directory, null, null);
+  }
+
+  /**
+   * Returns a IndexReader for the the index in the given Directory
+   *
+   * @param directory the index directory
+   * @param leafSorter a comparator for sorting leaf readers. Providing leafSorter is useful for
+   *     indices on which it is expected to run many queries with particular sort criteria (e.g. for
+   *     time-based indices this is usually a descending sort on timestamp). In this case {@code
+   *     leafSorter} should sort leaves according to this sort criteria. Providing leafSorter allows
+   *     to speed up this particular type of sort queries by early terminating while iterating
+   *     through segments and segments' documents.
+   * @throws IOException if there is a low-level IO error
+   */
+  public static DirectoryReader open(final Directory directory, Comparator<LeafReader> leafSorter)
+      throws IOException {
+    return StandardDirectoryReader.open(directory, null, leafSorter);
   }
   
   /**
@@ -109,7 +127,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @throws IOException if there is a low-level IO error
    */
   public static DirectoryReader open(final IndexCommit commit) throws IOException {
-   return StandardDirectoryReader.open(commit.getDirectory(), commit);
+   return StandardDirectoryReader.open(commit.getDirectory(), commit, null);
   }
 
   /**
@@ -337,9 +355,12 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * cloned and not protected for modification outside of this reader.
    * Subclasses of {@code DirectoryReader} should take care to not allow
    * modification of this internal array, e.g. {@link #doOpenIfChanged()}.
+   * @param leafSorter – a comparator for sorting leaf readers. If not {@code null},
+   * this comparator is used for sorting leaf readers.
    */
-  protected DirectoryReader(Directory directory, LeafReader[] segmentReaders) throws IOException {
-    super(segmentReaders);
+  protected DirectoryReader(
+        Directory directory, LeafReader[] segmentReaders, Comparator<LeafReader> leafSorter) throws IOException {
+    super(segmentReaders, leafSorter);
     this.directory = directory;
   }
 
