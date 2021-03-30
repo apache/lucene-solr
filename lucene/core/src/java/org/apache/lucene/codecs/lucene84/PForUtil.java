@@ -47,23 +47,23 @@ final class PForUtil {
    * Encode 128 integers from {@code longs} into {@code out}.
    */
   void encode(long[] longs, DataOutput out) throws IOException {
-    // At most 3 exceptions
-    final long[] top4 = new long[4];
-    Arrays.fill(top4, -1L);
+    // At most 7 exceptions
+    final long[] top8 = new long[8];
+    Arrays.fill(top8, -1L);
     for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
-      if (longs[i] > top4[0]) {
-        top4[0] = longs[i];
-        Arrays.sort(top4); // For only 4 entries we just sort on every iteration instead of maintaining a PQ
+      if (longs[i] > top8[0]) {
+        top8[0] = longs[i];
+        Arrays.sort(top8); // For only 8 entries we just sort on every iteration instead of maintaining a PQ
       }
     }
 
-    final int maxBitsRequired = PackedInts.bitsRequired(top4[3]);
+    final int maxBitsRequired = PackedInts.bitsRequired(top8[7]);
     // We store the patch on a byte, so we can't decrease the number of bits required by more than 8
-    final int patchedBitsRequired =  Math.max(PackedInts.bitsRequired(top4[0]), maxBitsRequired - 8);
+    final int patchedBitsRequired =  Math.max(PackedInts.bitsRequired(top8[0]), maxBitsRequired - 8);
     int numExceptions = 0;
     final long maxUnpatchedValue = (1L << patchedBitsRequired) - 1;
-    for (int i = 1; i < 4; ++i) {
-      if (top4[i] > maxUnpatchedValue) {
+    for (int i = 1; i < 8; ++i) {
+      if (top8[i] > maxUnpatchedValue) {
         numExceptions++;
       }
     }
