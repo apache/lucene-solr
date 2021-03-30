@@ -355,7 +355,7 @@ The above example would always enable MoreLikeThis for all queries and will alwa
 This is probably not something you really want!
 But the example serves to show how you might define whichever parameters you would like to be default for MoreLikeThis.
 
-If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#referencing-search-components,Referencing Search Components>>.
+If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-components,Search Components>>.
 Because the above example uses the same name as the default, the parameters defined there override Solr's default.
 
 ==== Search Component Parameters
