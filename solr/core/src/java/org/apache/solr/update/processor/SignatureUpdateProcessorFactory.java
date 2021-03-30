@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,8 +34,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @since 3.1
@@ -42,6 +47,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 public class SignatureUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory 
   implements SolrCoreAware {
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private List<String> sigFields;
   private String signatureField;
@@ -77,7 +84,9 @@ public class SignatureUpdateProcessorFactory
 
   @Override
   public void inform(SolrCore core) {
-    final SchemaField field = core.getLatestSchema().getFieldOrNull(getSignatureField());
+    final IndexSchema schema = core.getLatestSchema();
+    final SchemaField field = schema.getFieldOrNull(getSignatureField());
+    
     if (null == field) {
       throw new SolrException
         (ErrorCode.SERVER_ERROR,
@@ -90,6 +99,15 @@ public class SignatureUpdateProcessorFactory
         (ErrorCode.SERVER_ERROR,
          "Can't set overwriteDupes when signatureField is not indexed: "
          + getSignatureField());
+    }
+
+    if (getOverwriteDupes() && (null != core.getCoreDescriptor().getCloudDescriptor()) ) {
+      // Not Safe, see SOLR-3473 + SOLR-15290
+      if ( ! field.equals(schema.getUniqueKeyField()) ) {
+        // TODO: throw new SolrException(ErrorCode.SERVER_ERROR, ...
+        log.error("Can't use overwriteDupes safely in SolrCloud when signatureField is not the uniqueKeyField: {}",
+                  schema.getUniqueKeyField().getName());
+      }
     }
   }
 

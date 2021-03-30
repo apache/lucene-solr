@@ -1199,7 +1199,6 @@
        <processor class="solr.processor.SignatureUpdateProcessorFactory">
          <bool name="enabled">true</bool>
          <str name="signatureField">id</str>
-         <bool name="overwriteDupes">false</bool>
          <str name="fields">name,features,cat</str>
          <str name="signatureClass">solr.processor.Lookup3Signature</str>
        </processor>

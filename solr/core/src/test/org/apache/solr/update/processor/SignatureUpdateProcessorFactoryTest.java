@@ -56,8 +56,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml", "schema12.xml");
+    initCore("solrconfig-dedup-overwrites.xml", "schema15.xml");
   }
 
   @Override
@@ -80,14 +79,8 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   
   @Test
   public void testDupeAllFieldsDetection() throws Exception {
-    
     this.chain = "dedupe-allfields";
-    
-    SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(this.chain);
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
-    assertNotNull(chained);
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
 
     addDoc(adoc("v_t", "Hello Dude man!"));
     addDoc(adoc("v_t", "Hello Dude man!", "name", "name1'"));
@@ -96,18 +89,11 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     addDoc(commit());
     
     checkNumDocs(3);
-
-    factory.setEnabled(false);
   }  
 
   @Test
   public void testDupeDetection() throws Exception {
-    SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(
-        "dedupe");
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
-    assertNotNull(chained);
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
 
     addDoc(adoc("id", "1a", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(adoc("id", "2a", "name", "ali babi", "v_t", "Hello Dude man . -"));
@@ -143,15 +129,12 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     addDoc(commit());
 
     checkNumDocs(4);
-    factory.setEnabled(false);
   }
 
   @Test
   public void testMultiThreaded() throws Exception {
-    UpdateRequestProcessorChain chained = h.getCore().getUpdateProcessingChain(
-        "dedupe");
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
+
     Thread[] threads = null;
     Thread[] threads2 = null;
 
@@ -221,7 +204,6 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     checkNumDocs(1);
-    factory.setEnabled(false);
   }
 
   /**
@@ -229,11 +211,11 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testNonIndexedSignatureField() throws Exception {
-    SolrCore core = h.getCore();
+    this.chain = "stored_sig";
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
 
     checkNumDocs(0);    
 
-    chain = "stored_sig";
     addDoc(adoc("id", "2a", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(adoc("id", "2b", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(commit());
@@ -263,13 +245,8 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   @SuppressWarnings({"rawtypes"})
   public void testNonStringFieldsValues() throws Exception {
     this.chain = "dedupe-allfields";
-    
-    SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core
-        .getUpdateProcessingChain(chain);
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
-    
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
+
     Map<String,String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] {chain});
@@ -338,8 +315,6 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     addDoc(commit());
     
     checkNumDocs(4);
-    
-
   }
 
   /** A list with an unusual toString */

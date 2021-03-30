@@ -28,7 +28,7 @@ import java.util.Map;
 public class TestPartialUpdateDeduplication extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-tlog.xml", "schema15.xml");
+    initCore("solrconfig-dedup-overwrites.xml", "schema15.xml");
   }
 
   @Test
