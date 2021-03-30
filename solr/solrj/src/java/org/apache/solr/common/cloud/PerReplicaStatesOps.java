@@ -115,6 +115,12 @@ public class PerReplicaStatesOps {
    * @param newState the new state
    */
   public static PerReplicaStatesOps flipState(String replica, Replica.State newState, PerReplicaStates rs) {
+    PerReplicaStates.State state = rs.get(replica);
+    if(state != null && state.state == Replica.State.ACTIVE && newState == Replica.State.DOWN) {
+      log.info("replica: " + replica +
+          "marked A->D ", new RuntimeException("DOWN"));
+    }
+
     return new PerReplicaStatesOps(prs -> {
       List<PerReplicaStates.Operation> operations = new ArrayList<>(2);
       PerReplicaStates.State existing = prs.get(replica);

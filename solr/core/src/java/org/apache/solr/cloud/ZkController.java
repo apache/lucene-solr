@@ -1544,6 +1544,7 @@ public class ZkController implements Closeable {
         }
       }
     }
+    log.info("publish_state : {} , forcePublish: {}, cd: {}",state, forcePublish, cd.getName()  );
     MDCLoggingContext.setCoreDescriptor(cc, cd);
     try {
       String collection = cd.getCloudDescriptor().getCollectionName();
@@ -1618,6 +1619,9 @@ public class ZkController implements Closeable {
       }
       DocCollection coll = zkStateReader.getCollection(collection);
       if (forcePublish || sendToOverseer(coll, coreNodeName)) {
+        if(state == Replica.State.DOWN){
+          log.info("DOWN state being published for replica: "+Utils.toJSONString(m) + " "+coreNodeName, new RuntimeException("SEND.DOWN"));
+        }
         overseerJobQueue.offer(Utils.toJSON(m));
       } else {
         if (log.isDebugEnabled()) {
@@ -1637,15 +1641,30 @@ public class ZkController implements Closeable {
    */
   static boolean sendToOverseer(DocCollection coll, String replicaName) {
     if (coll == null) return true;
-    if (coll.getStateFormat() < 2 || !coll.isPerReplicaState()) return true;
+    if (coll.getStateFormat() < 2 || !coll.isPerReplicaState()) {
+      log.info("sendToOverseer PRS=false");
+      return true;
+    }
     Replica r = coll.getReplica(replicaName);
-    if (r == null) return true;
+    if (r == null) {
+      log.info("sendToOverseer replicaIsNull in state.json");
+      return true;
+    }
     Slice shard = coll.getSlice(r.slice);
     if (shard == null) return true;//very unlikely
-    if (shard.getState() == Slice.State.RECOVERY) return true;
-    if (shard.getParent() != null) return true;
+    if (shard.getState() == Slice.State.RECOVERY) {
+      log.info("sendToOverseer ShardState=Recovery");
+      return true;
+    }
+    if (shard.getParent() != null) {
+      log.info("sendToOverseer shard.parent NOTNULL");
+      return true;
+    }
     for (Slice slice : coll.getSlices()) {
-      if (Objects.equals(shard.getName(), slice.getParent())) return true;
+      if (Objects.equals(shard.getName(), slice.getParent())) {
+        log.info("sendToOverseer IamParentOf  "+ slice.getName());
+        return true;
+      }
     }
     return false;
   }
