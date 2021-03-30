@@ -291,8 +291,6 @@ public class IndexFetcher {
             throw new SolrException(ErrorCode.BAD_REQUEST,
                 "Invalid URL syntax in '" + LEADER_URL + "' with value '" + leaderUrl + "'", e);
           } else {
-            log.warn("The '{}' parameter value '{}' is not in the '{}'",
-                LEADER_URL, leaderUrl, HttpShardHandlerFactory.INIT_SHARDS_WHITELIST);
             throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
                 "The '" + LEADER_URL + "' parameter value '" + leaderUrl
                     + "' is not in the '" + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST + "'."

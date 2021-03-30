@@ -316,8 +316,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // Set the whitelist to allow the leader URL.
     // Expect the same test to pass now.
     String propertyName = "solr.tests." + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST;
-    System.setProperty(propertyName, "127.0.0.1:" + leaderJetty.getLocalPort()
-        + ",127.0.0.1:" + followerJetty.getLocalPort());
+    System.setProperty(propertyName, leaderJetty.getBaseUrl() + "," + followerJetty.getBaseUrl());
     try {
       doTestDetails();
     } finally {
