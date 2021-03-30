@@ -494,9 +494,6 @@ Each of these documents are similar to the document in the result list to varyin
 
 == MoreLikeThis Query Parser
 
-<<<<<<< HEAD
-The `mlt` query parser provides a mechanism to retrieve documents similar to a given document, like the handler. More information on the usage of the mlt query parser can be found in the section <<other-parsers.adoc#other-parsers,Other Parsers>>.
-=======
 The `mlt` query parser provides a mechanism to retrieve documents similar to a specific document, like the request handler.
 
 It uses Lucene's existing `MoreLikeThis` logic and also works in SolrCloud mode.
@@ -645,4 +642,3 @@ The query parser response includes only the similar documents sorted by score:
         "_version_":1693062911095734272}]
   }}
 ----
->>>>>>> eaba6040968... SOLR-15243: Update MoreLikeThis docs
