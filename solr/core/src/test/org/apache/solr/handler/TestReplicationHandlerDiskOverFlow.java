@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
@@ -67,7 +68,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
   @Before
   public void setUp() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
     originalDiskSpaceprovider = IndexFetcher.usableDiskSpaceProvider;
     originalTestWait = IndexFetcher.testWait;
     
@@ -79,6 +79,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     leader.setUp();
     leaderJetty = createAndStartJetty(leader);
     leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    System.setProperty("solr.tests." + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST, leaderJetty.getBaseUrl().toString());
 
     follower = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
     follower.setUp();
@@ -92,7 +93,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    systemClearPropertySolrDisableShardsWhitelist();
     if (null != leaderJetty) {
       leaderJetty.stop();
       leaderJetty = null;
@@ -110,6 +110,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
       followerClient.close();
       followerClient = null;
     }
+    System.clearProperty("solr.tests." + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST);
     System.clearProperty("solr.indexfetcher.sotimeout");
     
     IndexFetcher.usableDiskSpaceProvider = originalDiskSpaceprovider;
