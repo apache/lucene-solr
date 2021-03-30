@@ -47,13 +47,6 @@ Optimizations
 Bug Fixes
 ---------------------
 
-* LUCENE-9744: NPE on a degenerate query in MinimumShouldMatchIntervalsSource
-  $MinimumMatchesIterator.getSubMatches(). (Alan Woodward)
-
-* LUCENE-9762: DoubleValuesSource.fromQuery (also used by FunctionScoreQuery.boostByQuery) could
-  throw an exception when the query implements TwoPhaseIterator and when the score is requested
-  repeatedly. (David Smiley, hossman)
-
 * LUCENE-9791: BytesRefHash.equals/find is now thread safe, fixing a
   Luwak/Monitor bug causing registered queries to sometimes fail to
   match. (Paweł Bugalski)
@@ -81,6 +74,13 @@ Bug Fixes
 
 * LUCENE-9870: Fix Circle2D intersectsLine t-value (distance) range clamp (Jørgen Nystad)
   
+* LUCENE-9744: NPE on a degenerate query in MinimumShouldMatchIntervalsSource
+  $MinimumMatchesIterator.getSubMatches(). (Alan Woodward)
+
+* LUCENE-9762: DoubleValuesSource.fromQuery (also used by FunctionScoreQuery.boostByQuery) could
+  throw an exception when the query implements TwoPhaseIterator and when the score is requested
+  repeatedly. (David Smiley, hossman)
+
 ======================= Lucene 8.8.1 =======================
 
 Bug Fixes
