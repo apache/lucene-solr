@@ -38,7 +38,7 @@ This operates in much the same way as the request handler but since it is a quer
 `MoreLikeThis` constructs a Lucene query based on terms in a document.
 It does this by pulling terms from the list of fields provided with the request.
 
-For best results, the fields should have stored term vectors (`termVectors=true`), which can be <<defining-fields.adoc#,configured in the schema>>.
+For best results, the fields should have stored term vectors (`termVectors=true`), which can be <<defining-fields.adoc#defining-fields,configured in the schema>>.
 If term vectors are not stored, MoreLikeThis can generate terms from stored fields.
 The field used for the `uniqueKey` must also be stored in order for MoreLikeThis to work properly.
 
@@ -156,7 +156,7 @@ Possible values are `true` or `false`.
 |Optional |Default: none
 |===
 +
-Query fields and their boosts using the same format used by the <<the-dismax-query-parser.adoc#,DisMax Query Parser>>.
+Query fields and their boosts using the same format used by the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax Query Parser>>.
 These fields must also be specified in `mlt.fl`.
 
 `mlt.interestingTerms`::
@@ -318,7 +318,7 @@ If we had not requested `mlt.match.include=true`, the response would not have in
 
 An external document (one not in the index) can be passed to the MoreLikeThis request handler to be used for recommended documents.
 
-This is accomplished with the use of <<content-streams.adoc#,Content Streams>>.
+This is accomplished with the use of <<content-streams.adoc#content-streams,Content Streams>>.
 The body of a document can be passed directly to the request handler with the `stream.body` parameter.
 Alternatively, if remote streams are enabled, a URL or file could be passed.
 
@@ -355,7 +355,7 @@ The above example would always enable MoreLikeThis for all queries and will alwa
 This is probably not something you really want!
 But the example serves to show how you might define whichever parameters you would like to be default for MoreLikeThis.
 
-If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#referencing-search-components,Referencing Search Components>>.
+If you gave the search component a name other than "mlt" as in the above example, you would need to explicitly add it to a request handler as described in the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-components,Search Components>>.
 Because the above example uses the same name as the default, the parameters defined there override Solr's default.
 
 ==== Search Component Parameters
@@ -590,7 +590,7 @@ Specifies if the query will be boosted by the interesting term relevance. It can
 
 === Query Parser Query and Response
 
-The structure of a MoreLikeThis query parser request is like a query using <<local-parameters-in-queries.adoc#,local params>>, as in:
+The structure of a MoreLikeThis query parser request is like a query using <<local-parameters-in-queries.adoc#local-parameters-in-queries,local params>>, as in:
 
 [source,bash]
 ----
