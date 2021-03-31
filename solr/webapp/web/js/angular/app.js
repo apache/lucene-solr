@@ -500,6 +500,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
             $scope.currentCore = core;
         }
       }
+      $scope.cores.sort((a, b) => (a.name > b.name) ? 1 : -1);
       $scope.showInitFailures = Object.keys(data.initFailures).length>0;
       $scope.initFailures = data.initFailures;
     });
