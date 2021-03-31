@@ -213,7 +213,6 @@ public class ReplicaMutator {
     if (Overseer.isLegacy(cloudManager.getClusterStateProvider())) {
       return updateState(clusterState, message);
     } else {
-      log.info("MESSAGE: {}", Utils.toJSONString(message));
       return updateStateNew(clusterState, message);
     }
   }
