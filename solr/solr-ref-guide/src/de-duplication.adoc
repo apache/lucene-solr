@@ -84,9 +84,8 @@ If *true*, the default, when a document exists that already matches this signatu
 
 There are 2 important things to keep in mind when using `SignatureUpdateProcessorFactory` with SolrCloud:
 
-1. The `overwriteDupes=true` setting does not work _except_ in the special case of using the uniqueKey field as the `signatureField`.  Attempting De-duplication on any other `signatureField` will not work correctly because of how updates are forwarded to replicas
-1. When using the uniqueKey field as the `signatureField`, `SignatureUpdateProcessorFactory` must be run prior to the `<<update-request-processors.adoc#update-processors-in-solrcloud,DistributedUpdateProcessor>>` to ensure that documents can be routed to the correct shard leader based on the (generated) uniqueKey field.
+. The `overwriteDupes=true` setting does not work _except_ in the special case of using the uniqueKey field as the `signatureField`.  Attempting De-duplication on any other `signatureField` will not work correctly because of how updates are forwarded to replicas
+. When using the uniqueKey field as the `signatureField`, `SignatureUpdateProcessorFactory` must be run prior to the `<<update-request-processors.adoc#update-processors-in-solrcloud,DistributedUpdateProcessor>>` to ensure that documents can be routed to the correct shard leader based on the (generated) uniqueKey field.
 
 (Using any other `signatureField` with `overwriteDupes=false` -- to generate a Signature for each document with out De-duplication -- has no limitations.)
 ====
-
