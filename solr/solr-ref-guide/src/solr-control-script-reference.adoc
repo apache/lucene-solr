@@ -922,7 +922,7 @@ bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.js
 
 === Importing Documents to a Collection
 
-Once you have exported documents in a file, you can use the <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,/update request handler>> to import them to a new Solr collection.
+Once you have exported documents in a file, you can use the <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,/update request handler>> to import them to a new Solr collection.
 
 *Example: import `jsonl` files*
 
