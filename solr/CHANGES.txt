@@ -48,6 +48,8 @@ Improvements
 
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
 
+* SOLR-15217: Use shardsWhitelist in ReplicationHandler. (Bruno Roustant)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.

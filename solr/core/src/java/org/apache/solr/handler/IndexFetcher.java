@@ -78,6 +78,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -90,6 +91,8 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -248,7 +251,7 @@ public class IndexFetcher {
       leaderUrl = leaderUrl.substring(0, leaderUrl.length()-12);
       log.warn("'leaderUrl' must be specified without the {} suffix", ReplicationHandler.PATH);
     }
-    this.leaderUrl = leaderUrl;
+    setLeaderUrl(leaderUrl);
 
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
@@ -271,7 +274,34 @@ public class IndexFetcher {
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
-  
+
+  private void setLeaderUrl(String leaderUrl) {
+    if (leaderUrl != null) {
+      ShardHandlerFactory shardHandlerFactory = solrCore.getCoreContainer().getShardHandlerFactory();
+      if (shardHandlerFactory instanceof HttpShardHandlerFactory) {
+        ZkController zkController = solrCore.getCoreContainer().getZkController();
+        ClusterState clusterState = zkController == null ? null : zkController.getClusterState();
+        try {
+          ((HttpShardHandlerFactory) shardHandlerFactory).getWhitelistHostChecker()
+              .checkWhitelist(clusterState, null, Collections.singletonList(leaderUrl));
+        } catch (SolrException e) {
+          // Replace the exception because the message is about the 'shard' parameter, which is not right here.
+          // This code is refactored and cleaned up in 9.x and above.
+          if (e.code() == ErrorCode.BAD_REQUEST.code) {
+            throw new SolrException(ErrorCode.BAD_REQUEST,
+                "Invalid URL syntax in '" + LEADER_URL + "' with value '" + leaderUrl + "'", e);
+          } else {
+            throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+                "The '" + LEADER_URL + "' parameter value '" + leaderUrl
+                    + "' is not in the '" + HttpShardHandlerFactory.INIT_SHARDS_WHITELIST + "'."
+                    + HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
+          }
+        }
+      }
+    }
+    this.leaderUrl = leaderUrl;
+  }
+
   @SuppressWarnings({"unchecked"})
   protected <T> T getParameter(@SuppressWarnings({"rawtypes"})NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
     T toReturn = defaultValue;
@@ -405,7 +435,7 @@ public class IndexFetcher {
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
         if (!replica.getCoreUrl().equals(leaderUrl)) {
-          leaderUrl = replica.getCoreUrl();
+          setLeaderUrl(replica.getCoreUrl());
           log.info("Updated leaderUrl to {}", leaderUrl);
           // TODO: Do we need to set forceReplication = true?
         } else {

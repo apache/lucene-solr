@@ -140,9 +140,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   public static final String INIT_SHARDS_WHITELIST = "shardsWhitelist";
 
-  static final String INIT_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable." + INIT_SHARDS_WHITELIST;
+  public static final String INIT_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable." + INIT_SHARDS_WHITELIST;
 
-  static final String SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE = " set -D"+INIT_SOLR_DISABLE_SHARDS_WHITELIST+"=true to disable shards whitelist checks";
+  public static final String SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE = " set -D"+INIT_SOLR_DISABLE_SHARDS_WHITELIST+"=true to disable shards whitelist checks";
 
   /**
    * Get {@link ShardHandler} that uses the default http client.
@@ -510,7 +510,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
      * @param shardsParamValue The original shards parameter
      * @param shardUrls The list of cores generated from the shards parameter.
      */
-    protected void checkWhitelist(ClusterState clusterState, String shardsParamValue, List<String> shardUrls) {
+    public void checkWhitelist(ClusterState clusterState, String shardsParamValue, List<String> shardUrls) {
       if (!whitelistHostCheckingEnabled) {
         return;
       }
@@ -540,8 +540,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
           throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid URL syntax in \"shards\" parameter: " + shardsParamValue);
         }
         if (!localWhitelistHosts.contains(url.getHost() + ":" + url.getPort())) {
-          log.warn("The '{}' parameter value '{}' contained value(s) not on the shards whitelist ({}), shardUrl: '{}'"
-              , ShardParams.SHARDS, shardsParamValue, localWhitelistHosts, shardUrl);
           throw new SolrException(ErrorCode.FORBIDDEN,
               "The '"+ShardParams.SHARDS+"' parameter value '"+shardsParamValue+"' contained value(s) not on the shards whitelist. shardUrl:" + shardUrl + "." +
                   HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
