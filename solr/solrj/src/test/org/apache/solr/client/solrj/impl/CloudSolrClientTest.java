@@ -32,8 +32,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -1133,7 +1131,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     try {
       CollectionAdminRequest.createCollection(testCollection, "conf1", 1, 1)
           .setPerReplicaState(Boolean.TRUE)
-          .process(cluster.getSolrClient());
+          .process(cluster1.getSolrClient());
       cluster1.waitForActiveCollection(testCollection, 1, 1);
 
       DocCollection c = cluster1.getSolrClient().getZkStateReader().getCollection(testCollection);

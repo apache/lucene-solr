@@ -37,14 +37,12 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.overseer.SliceMutator.getZkClient;
-
 public class NodeMutator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected SolrZkClient zkClient;
   public NodeMutator(SolrCloudManager cloudManager) {
-    zkClient = getZkClient(cloudManager);
+    zkClient = SliceMutator.getZkClient(cloudManager);
   }
 
   public List<ZkWriteCommand> downNode(ClusterState clusterState, ZkNodeProps message) {
@@ -90,9 +88,9 @@ public class NodeMutator {
 
       if (needToUpdateCollection) {
         if (docCollection.isPerReplicaState()) {
-          PerReplicaStates fetch = PerReplicaStates.fetch(docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates());
           zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy),
-              PerReplicaStatesOps.downReplicas(downedReplicas, fetch), false));
+              PerReplicaStatesOps.downReplicas(downedReplicas,
+                  PerReplicaStates.fetch(docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates())), false));
         } else {
           zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
         }
