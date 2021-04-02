@@ -456,7 +456,7 @@ public class Overseer implements SolrCloseable {
             }
             break;
           case DOWNNODE:
-            return new NodeMutator().downNode(clusterState, message);
+            return new NodeMutator(getSolrCloudManager()).downNode(clusterState, message);
           default:
             throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
         }

@@ -24,11 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
@@ -37,6 +40,10 @@ import org.slf4j.LoggerFactory;
 public class NodeMutator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected SolrZkClient zkClient;
+  public NodeMutator(SolrCloudManager cloudManager) {
+    zkClient = SliceMutator.getZkClient(cloudManager);
+  }
 
   public List<ZkWriteCommand> downNode(ClusterState clusterState, ZkNodeProps message) {
     List<ZkWriteCommand> zkWriteCommands = new ArrayList<>();
@@ -82,7 +89,8 @@ public class NodeMutator {
       if (needToUpdateCollection) {
         if (docCollection.isPerReplicaState()) {
           zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy),
-              PerReplicaStatesOps.downReplicas(downedReplicas, docCollection.getPerReplicaStates()), false));
+              PerReplicaStatesOps.downReplicas(downedReplicas,
+                  PerReplicaStates.fetch(docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates())), false));
         } else {
           zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
         }
