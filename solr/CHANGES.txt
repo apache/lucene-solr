@@ -15,6 +15,7 @@ Bug Fixes
 
 * SOLR-15288: Hardening NODEDOWN event in PRS collections (noble)
 
+* SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
 
 ==================  8.8.1 ==================
 

@@ -87,7 +87,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   }
 
   private SPNEGOAuthentication createSPNEGOAuthentication() {
-    SPNEGOAuthentication authentication = new SPNEGOAuthentication(null){
+    SPNEGOAuthentication authentication = new SPNEGOAuthentication(null) {
 
       public boolean matches(String type, URI uri, String realm) {
         return this.getType().equals(type);
@@ -96,7 +96,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     String clientAppName = System.getProperty("solr.kerberos.jaas.appname", "Client");
     AppConfigurationEntry[] entries = jaasConfig.getAppConfigurationEntry(clientAppName);
     if (entries == null) {
-      log.warn("Could not find login configuration entry for {}. SPNego authentication may not be successful.", (Object)clientAppName);
+      log.warn("Could not find login configuration entry for {}. SPNego authentication may not be successful.", (Object) clientAppName);
       return authentication;
     }
     if (entries.length != 1) {
@@ -104,12 +104,17 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       return authentication;
     }
     Map<String, ?> options = entries[0].getOptions();
+    setAuthenticationOptions(authentication, options, (String) options.get("principal"));
+    return authentication;
+  }
+
+  static void setAuthenticationOptions(SPNEGOAuthentication authentication, Map<String, ?> options, String username) {
     String keyTab = (String)options.get("keyTab");
     if (keyTab != null) {
-      authentication.setUserKeyTabPath(Paths.get(keyTab, new String[0]));
+      authentication.setUserKeyTabPath(Paths.get(keyTab));
     }
     authentication.setServiceName("HTTP");
-    authentication.setUserName((String)options.get("principal"));
+    authentication.setUserName(username);
     if ("true".equalsIgnoreCase((String)options.get("useTicketCache"))) {
       authentication.setUseTicketCache(true);
       String ticketCachePath = (String)options.get("ticketCache");
@@ -118,7 +123,6 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       }
       authentication.setRenewTGT("true".equalsIgnoreCase((String)options.get("renewTGT")));
     }
-    return authentication;
   }
 
   @Override
@@ -203,7 +207,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     }
   };
 
-  private static class SolrJaasConfiguration extends javax.security.auth.login.Configuration {
+  static class SolrJaasConfiguration extends javax.security.auth.login.Configuration {
 
     private javax.security.auth.login.Configuration baseConfig;
 
