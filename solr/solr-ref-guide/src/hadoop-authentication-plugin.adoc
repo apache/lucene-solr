@@ -77,6 +77,8 @@ After consulting the Hadoop authentication library's documentation, you can supp
 
 Please note that this example uses `ConfigurableInternodeAuthHadoopPlugin`, and hence you must provide the `clientBuilderFactory` implementation. As a result, all internode communication will use the Kerberos mechanism, instead of PKI authentication.
 
+This configuration assumes that your servers are using the `solr` principal, and will be allowed to impersonate any other user with requests coming from any other host. For additional security, consider setting the host list to match your cluster nodes. The Hadoop https://hadoop.apache.org/docs/r3.2.2/hadoop-project-dist/hadoop-common/Superusers.html[proxy users] documentation contains more detail about available configuration options.
+
 To setup this plugin, use the following in your `security.json` file.
 
 [source,json]
@@ -88,16 +90,24 @@ To setup this plugin, use the following in your `security.json` file.
         "type": "kerberos",
         "clientBuilderFactory": "org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder",
         "initKerberosZk": "true",
+        "enableDelegationToken": "true",
         "authConfigs": [
             "kerberos.principal",
             "kerberos.keytab",
             "kerberos.name.rules"
         ],
         "defaultConfigs": {
+        },
+        "proxyUserConfigs": {
+          "proxyuser.solr.hosts": "*",
+          "proxyuser.solr.groups": "*"
         }
     }
 }
 ----
+
+[WARNING]
+For the `ConfigurableInternodeAuthHadoopPlugin`, user credential proxying relies on delegation token support. Without it, forwarded requests will authenticate as Solr server credentials instead of real-user credentials, and likely allowing authenticated-but-unauthorized users to query and index documents into your collections.
 
 === Simple Authentication with Delegation Tokens
 
