@@ -13,6 +13,8 @@ Bug Fixes
 
 * SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
 
+* SOLR-15288: Hardening NODEDOWN event in PRS collections (noble)
+
 
 ==================  8.8.1 ==================
 
