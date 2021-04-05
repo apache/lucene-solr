@@ -85,14 +85,15 @@ import org.apache.lucene.util.SmallFloat;
  *      <tr><td>
  *      <table cellpadding="2" cellspacing="2" border="0" style="margin-left:auto; margin-right:auto" summary="cosine similarity formula">
  *        <tr>
- *          <td valign="middle" align="right" rowspan="1">
+ *          <td style="vertical-align: middle; text-align: right" rowspan="1">
  *            cosine-similarity(q,d) &nbsp; = &nbsp;
  *          </td>
- *          <td valign="middle" align="center">
- *            <table summary="cosine similarity formula">
- *               <tr><td align="center" style="text-align: center"><small>V(q)&nbsp;&middot;&nbsp;V(d)</small></td></tr>
- *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
- *               <tr><td align="center" style="text-align: center"><small>|V(q)|&nbsp;|V(d)|</small></td></tr>
+ *          <td style="vertical-align: middle; text-align: center">
+ *            <table>
+ *               <caption>cosine similarity formula</caption>
+ *               <tr><td style="text-align: center"><small>V(q)&nbsp;&middot;&nbsp;V(d)</small></td></tr>
+ *               <tr><td style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
+ *               <tr><td style="text-align: center"><small>|V(q)|&nbsp;|V(d)|</small></td></tr>
  *            </table>
  *          </td>
  *        </tr>
@@ -167,18 +168,19 @@ import org.apache.lucene.util.SmallFloat;
  *      <tr><td>
  *      <table cellpadding="2" cellspacing="2" border="0" style="margin-left:auto; margin-right:auto" summary="formatting only">
  *        <tr>
- *          <td valign="middle" align="right" rowspan="1">
+ *          <td style="vertical-align: middle; text-align: right" rowspan="1">
  *            score(q,d) &nbsp; = &nbsp;
  *            <span style="color: #CCCC00">query-boost(q)</span> &middot; &nbsp;
  *          </td>
- *          <td valign="middle" align="center">
- *            <table summary="Lucene conceptual scoring formula">
- *               <tr><td align="center" style="text-align: center"><small><span style="color: #993399">V(q)&nbsp;&middot;&nbsp;V(d)</span></small></td></tr>
- *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
- *               <tr><td align="center" style="text-align: center"><small><span style="color: #FF33CC">|V(q)|</span></small></td></tr>
+ *          <td style="vertical-align: middle; text-align: center">
+ *            <table>
+ *               <caption>Lucene conceptual scoring formula</caption>
+ *               <tr><td style="text-align: center"><small><span style="color: #993399">V(q)&nbsp;&middot;&nbsp;V(d)</span></small></td></tr>
+ *               <tr><td style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
+ *               <tr><td style="text-align: center"><small><span style="color: #FF33CC">|V(q)|</span></small></td></tr>
  *            </table>
  *          </td>
- *          <td valign="middle" align="right" rowspan="1">
+ *          <td style="vertical-align: middle; text-align: right" rowspan="1">
  *            &nbsp; &middot; &nbsp; <span style="color: #3399FF">doc-len-norm(d)</span>
  *            &nbsp; &middot; &nbsp; <span style="color: #3399FF">doc-boost(d)</span>
  *          </td>
@@ -252,12 +254,12 @@ import org.apache.lucene.util.SmallFloat;
  *  <tr><td>
  *   <table cellpadding="2" cellspacing="2" border="0" style="margin-left:auto; margin-right:auto" summary="Lucene conceptual scoring formula">
  *   <tr>
- *     <td valign="middle" align="right" rowspan="1">
+ *     <td style="vertical-align: middle; text-align: right" rowspan="1">
  *       score(q,d) &nbsp; = &nbsp;
  *       <big><big><big>&sum;</big></big></big>
  *     </td>
- *     <td valign="middle" align="right" rowspan="1">
- *       <big><big>(</big></big>
+ *     <td style="vertical-align: middle; text-align: right" rowspan="1">
+ *       <span style="font-size: larger">(</span>
  *       <A HREF="#formula_tf"><span style="color: #993399">tf(t in d)</span></A> &nbsp;&middot;&nbsp;
  *       <A HREF="#formula_idf"><span style="color: #993399">idf(t)</span></A><sup>2</sup> &nbsp;&middot;&nbsp;
  *       <A HREF="#formula_termBoost"><span style="color: #CCCC00">t.getBoost()</span></A>&nbsp;&middot;&nbsp;
@@ -265,7 +267,7 @@ import org.apache.lucene.util.SmallFloat;
  *       <big><big>)</big></big>
  *     </td>
  *   </tr>
- *   <tr valign="top">
+ *   <tr style="vertical-align: top">
  *    <td></td>
  *    <td align="center" style="text-align: center"><small>t in q</small></td>
  *    <td></td>
@@ -297,11 +299,11 @@ import org.apache.lucene.util.SmallFloat;
  *      <br>&nbsp;<br>
  *      <table cellpadding="2" cellspacing="2" border="0" style="width:auto; margin-left:auto; margin-right:auto" summary="term frequency computation">
  *        <tr>
- *          <td valign="middle" align="right" rowspan="1">
+ *          <td style="vertical-align: middle; text-align: right" rowspan="1">
  *            {@link org.apache.lucene.search.similarities.ClassicSimilarity#tf(float) tf(t in d)} &nbsp; = &nbsp;
  *          </td>
- *          <td valign="top" align="center" rowspan="1">
- *               frequency<sup><big>&frac12;</big></sup>
+ *          <td style="vertical-align: top; text-align: center" rowspan="1">
+ *               frequency<sup><span style="font-size: larger">&frac12;</span></sup>
  *          </td>
  *        </tr>
  *      </table>
@@ -322,21 +324,22 @@ import org.apache.lucene.util.SmallFloat;
  *      <br>&nbsp;<br>
  *      <table cellpadding="2" cellspacing="2" border="0" style="width:auto; margin-left:auto; margin-right:auto" summary="inverse document frequency computation">
  *        <tr>
- *          <td valign="middle" align="right">
+ *          <td style="vertical-align: middle; text-align: right">
  *            {@link org.apache.lucene.search.similarities.ClassicSimilarity#idf(long, long) idf(t)}&nbsp; = &nbsp;
  *          </td>
- *          <td valign="middle" align="center">
- *            1 + log <big>(</big>
+ *          <td style="vertical-align: middle; text-align: center">
+ *            1 + log <span style="font-size: larger">(</span>
  *          </td>
- *          <td valign="middle" align="center">
- *            <table summary="inverse document frequency computation">
- *               <tr><td align="center" style="text-align: center"><small>docCount+1</small></td></tr>
- *               <tr><td align="center" style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
- *               <tr><td align="center" style="text-align: center"><small>docFreq+1</small></td></tr>
+ *          <td style="vertical-align: middle; text-align: center">
+ *            <table>
+ *               <caption>inverse document frequency computation</caption>
+ *               <tr><td style="text-align: center"><small>docCount+1</small></td></tr>
+ *               <tr><td style="text-align: center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
+ *               <tr><td style="text-align: center"><small>docFreq+1</small></td></tr>
  *            </table>
  *          </td>
- *          <td valign="middle" align="center">
- *            <big>)</big>
+ *          <td style="vertical-align: middle; text-align: center">
+ *            <span style="font-size: larger">)</span>
  *          </td>
  *        </tr>
  *      </table>

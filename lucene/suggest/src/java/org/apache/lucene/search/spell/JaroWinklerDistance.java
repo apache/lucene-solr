@@ -20,8 +20,8 @@ import java.util.Arrays;
 
 /**
  * Similarity measure for short strings such as person names.
- * <p>
- * @see <a href="http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance">http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance</a>
+ * @see <a
+ *     href="http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance">http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance</a>
  */
 public class JaroWinklerDistance implements StringDistance {
 

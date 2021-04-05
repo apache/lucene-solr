@@ -492,12 +492,8 @@ public class WeightedSpanTermExtractor {
   /**
    * Creates a Map of <code>WeightedSpanTerms</code> from the given <code>Query</code> and <code>TokenStream</code>.
    * 
-   * <p>
-   * 
-   * @param query
-   *          that caused hit
-   * @param tokenStream
-   *          of text to be highlighted
+   * @param query that caused hit
+   * @param tokenStream of text to be highlighted
    * @return Map containing WeightedSpanTerms
    * @throws IOException If there is a low-level I/O error
    */
@@ -509,14 +505,9 @@ public class WeightedSpanTermExtractor {
   /**
    * Creates a Map of <code>WeightedSpanTerms</code> from the given <code>Query</code> and <code>TokenStream</code>.
    * 
-   * <p>
-   * 
-   * @param query
-   *          that caused hit
-   * @param tokenStream
-   *          of text to be highlighted
-   * @param fieldName
-   *          restricts Term's used based on field name
+   * @param query that caused hit
+   * @param tokenStream of text to be highlighted
+   * @param fieldName restricts Term's used based on field name
    * @return Map containing WeightedSpanTerms
    * @throws IOException If there is a low-level I/O error
    */
@@ -539,16 +530,10 @@ public class WeightedSpanTermExtractor {
    * Creates a Map of <code>WeightedSpanTerms</code> from the given <code>Query</code> and <code>TokenStream</code>. Uses a supplied
    * <code>IndexReader</code> to properly weight terms (for gradient highlighting).
    * 
-   * <p>
-   * 
-   * @param query
-   *          that caused hit
-   * @param tokenStream
-   *          of text to be highlighted
-   * @param fieldName
-   *          restricts Term's used based on field name
-   * @param reader
-   *          to use for scoring
+   * @param query that caused hit
+   * @param tokenStream of text to be highlighted
+   * @param fieldName restricts Term's used based on field name
+   * @param reader to use for scoring
    * @return Map of WeightedSpanTerms with quasi tf/idf scores
    * @throws IOException If there is a low-level I/O error
    */

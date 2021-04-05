@@ -77,7 +77,6 @@ import static org.apache.lucene.analysis.util.StemmerUtil.*;
  *       the list is non-empty, then a word must end with one of these conditions or it will
  *       bypass the step completely as an optimization.
  * </ul>
- * <p>
  * @see <a href="http://www.inf.ufrgs.br/~viviane/rslp/index.htm">RSLP description</a>
  * @lucene.internal
  */

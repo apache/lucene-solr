@@ -111,8 +111,6 @@ public final class JoinUtil {
    * Method for query time joining for numeric fields. It supports multi- and single- values longs, ints, floats and longs.
    * All considerations from {@link JoinUtil#createJoinQuery(String, boolean, String, Query, IndexSearcher, ScoreMode)} are applicable here too,
    * though memory consumption might be higher.
-   * <p>
-   *
    * @param fromField                 The from field to join from
    * @param multipleValuesPerDocument Whether the from field has multiple terms per document
    *                                  when true fromField might be {@link DocValuesType#SORTED_NUMERIC},

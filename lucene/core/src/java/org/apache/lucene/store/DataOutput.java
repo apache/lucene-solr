@@ -91,89 +91,89 @@ public abstract class DataOutput {
    * byte, values from 128 to 16,383 may be stored in two bytes, and so on.</p>
    * <p>VByte Encoding Example</p>
    * <table cellspacing="0" cellpadding="2" border="0" summary="variable length encoding examples">
-   * <tr valign="top">
+   * <tr style="vertical-align: top">
    *   <th align="left">Value</th>
    *   <th align="left">Byte 1</th>
    *   <th align="left">Byte 2</th>
    *   <th align="left">Byte 3</th>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>0</td>
    *   <td><code>00000000</code></td>
    *   <td></td>
    *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>1</td>
    *   <td><code>00000001</code></td>
    *   <td></td>
    *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>2</td>
    *   <td><code>00000010</code></td>
    *   <td></td>
    *   <td></td>
    * </tr>
    * <tr>
-   *   <td valign="top">...</td>
-   *   <td valign="bottom"></td>
-   *   <td valign="bottom"></td>
-   *   <td valign="bottom"></td>
+   *   <td style="vertical-align: top">...</td>
+   *   <td></td>
+   *   <td></td>
+   *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>127</td>
    *   <td><code>01111111</code></td>
    *   <td></td>
    *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>128</td>
    *   <td><code>10000000</code></td>
    *   <td><code>00000001</code></td>
    *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>129</td>
    *   <td><code>10000001</code></td>
    *   <td><code>00000001</code></td>
    *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>130</td>
    *   <td><code>10000010</code></td>
    *   <td><code>00000001</code></td>
    *   <td></td>
    * </tr>
    * <tr>
-   *   <td valign="top">...</td>
+   *   <td style="vertical-align: top">...</td>
    *   <td></td>
    *   <td></td>
    *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>16,383</td>
    *   <td><code>11111111</code></td>
    *   <td><code>01111111</code></td>
    *   <td></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>16,384</td>
    *   <td><code>10000000</code></td>
    *   <td><code>10000000</code></td>
    *   <td><code>00000001</code></td>
    * </tr>
-   * <tr valign="bottom">
+   * <tr style="vertical-align: bottom">
    *   <td>16,385</td>
    *   <td><code>10000001</code></td>
    *   <td><code>10000000</code></td>
    *   <td><code>00000001</code></td>
    * </tr>
    * <tr>
-   *   <td valign="top">...</td>
-   *   <td valign="bottom"></td>
-   *   <td valign="bottom"></td>
-   *   <td valign="bottom"></td>
+   *   <td style="vertical-align: top">...</td>
+   *   <td ></td>
+   *   <td ></td>
+   *   <td ></td>
    * </tr>
    * </table>
    * <p>This provides compression while still being efficient to decode.</p>
