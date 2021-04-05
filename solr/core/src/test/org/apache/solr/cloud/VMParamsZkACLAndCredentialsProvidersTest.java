@@ -34,6 +34,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
+
 public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -163,6 +165,32 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
   }
+
+  @Test
+  public void testRepairACL() throws Exception {
+    clearSecuritySystemProperties();
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      // Currently no credentials on ZK connection, because those same VM-params are used for adding ACLs, and here we want
+      // no (or completely open) ACLs added. Therefore hack your way into being authorized for creating anyway
+      zkClient.getSolrZooKeeper().addAuthInfo("digest", ("connectAndAllACLUsername:connectAndAllACLPassword")
+          .getBytes(StandardCharsets.UTF_8));
+
+      zkClient.create("/security.json", "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, false);
+      assertEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
+    }
+
+    setSecuritySystemProperties();
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      ZkController.createClusterZkNodes(zkClient);
+      assertNotEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
+    }
+
+    useReadonlyCredentials();
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      NoAuthException e = assertThrows(NoAuthException.class, () -> zkClient.getData("/security.json", null, null, false));
+      assertEquals("/security.json", e.getPath());
+    }
+  }
     
   protected static void doTest(
       SolrZkClient zkClient,
@@ -244,7 +272,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   private void useWrongCredentials() {
     clearSecuritySystemProperties();
     
-    System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, VMParamsSingleSetCredentialsDigestZkCredentialsProvider.class.getName());
+    System.setProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME, VMParamsSingleSetCredentialsDigestZkCredentialsProvider.class.getName());
     System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "connectAndAllACLUsername");
     System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "connectAndAllACLPasswordWrong");
   }

@@ -79,6 +79,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica.Type;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.UrlScheme;
@@ -123,6 +124,7 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -864,11 +866,8 @@ public class ZkController implements Closeable {
     cmdExecutor.ensureExists(ZkStateReader.CLUSTER_STATE, emptyJson, CreateMode.PERSISTENT, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
-    if (zkClient.getACL(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true).equals(OPEN_ACL_UNSAFE)) {
-      log.warn("Contents of zookeeper /security.json are world-readable;" +
-          " consider setting up ACLs as described in https://solr.apache.org/guide/zookeeper-access-control.html");
-    }
     bootstrapDefaultConfigSet(zkClient);
+    repairSecurityJson(zkClient);
   }
 
   private static void bootstrapDefaultConfigSet(SolrZkClient zkClient) throws KeeperException, InterruptedException, IOException {
@@ -906,6 +905,39 @@ public class ZkController implements Closeable {
       configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
     }
     return configDirPath;
+  }
+
+  private static void repairSecurityJson(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    List<ACL> securityConfAcl = zkClient.getACL(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true);
+    ZkACLProvider aclProvider = zkClient.getZkACLProvider();
+
+    boolean tryUpdate = false;
+
+    if (OPEN_ACL_UNSAFE.equals(securityConfAcl)) {
+      List<ACL> aclToAdd = aclProvider.getACLsToAdd(ZkStateReader.SOLR_SECURITY_CONF_PATH);
+      if (OPEN_ACL_UNSAFE.equals(aclToAdd)) {
+        log.warn("Contents of zookeeper /security.json are world-readable;" +
+            " consider setting up ACLs as described in https://solr.apache.org/guide/zookeeper-access-control.html");
+      } else {
+        tryUpdate = true;
+      }
+    } else if (aclProvider instanceof SecurityAwareZkACLProvider) {
+      // Use Set to explicitly ignore order
+      Set<ACL> nonSecureACL = new HashSet<>(aclProvider.getACLsToAdd(null));
+      // case where security.json was not treated as a secure path
+      if (nonSecureACL.equals(new HashSet<>(securityConfAcl))) {
+        tryUpdate = true;
+      }
+    }
+
+    if (tryUpdate) {
+      if (Boolean.getBoolean("solr.security.aclautorepair.disable")) {
+        log.warn("Detected inconsistent ACLs for zookeeper /security.json, but self-repair is disabled.");
+      } else {
+        log.info("Detected inconsistent ACLs for zookeeper /security.json, attempting to repair.");
+        zkClient.updateACLs(ZkStateReader.SOLR_SECURITY_CONF_PATH);
+      }
+    }
   }
 
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
