@@ -37,6 +37,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.CdcrParams;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,20 @@ import org.slf4j.LoggerFactory;
 public class CdcrBootstrapTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    systemSetPropertySolrDisableShardsWhitelist("true");
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    systemClearPropertySolrDisableShardsWhitelist();
+  }
 
   /**
    * Starts a source cluster with no CDCR configuration, indexes enough documents such that
