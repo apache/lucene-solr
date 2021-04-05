@@ -73,9 +73,15 @@ public class BackupRepositoryFactory {
             "Could not find a backup repository with name " + name);
 
     BackupRepository result = loader.newInstance(repo.className, BackupRepository.class);
-    if ("trackingBackupRepository".equals(name) && repo.initArgs.get("factory") == null) {
-      repo.initArgs.add("factory", this);
-      repo.initArgs.add("loader", loader);
+    if ("trackingBackupRepository".equals(name)) {
+      // newInstance can be called by multiple threads, synchronization prevents simultaneous multi-threaded 'adds' from
+      // corrupting the namedlist
+      synchronized (repo.initArgs) {
+        if (repo.initArgs.get("factory") == null) {
+          repo.initArgs.add("factory", this);
+          repo.initArgs.add("loader", loader);
+        }
+      }
     }
 
     result.init(repo.initArgs);
