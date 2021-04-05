@@ -57,4 +57,19 @@
   </query>
 
   <requestHandler name="/select" class="solr.SearchHandler" default="true" />
+
+  <!-- elevation should have no (adverse) impact on deep paging -->
+  <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
+    <!-- NOTE: we don't particularly care about the elevate.xml or queryFieldType used,
+         deep paging tests will only worry about using elevateIds.
+    -->
+    <str name="queryFieldType">str</str>
+    <str name="config-file">elevate.xml</str><!-- neccessary due to SOLR-14970 -->
+  </searchComponent>
+  <requestHandler name="/elevate" class="solr.SearchHandler">
+    <arr name="last-components">
+      <str>elevate</str>
+    </arr>
+  </requestHandler>
+
 </config>

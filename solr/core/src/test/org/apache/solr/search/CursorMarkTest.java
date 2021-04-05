@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.UUID;
 
 import org.junit.BeforeClass;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Primarily a test of parsing and serialization of the CursorMark values.
@@ -71,15 +72,16 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     assertEquals("next values not correct", nextValues, next.getSortValues());
     assertEquals("next SortSpec not correct", ss, next.getSortSpec());
 
-    try {
-      // append to our random sort string so we know it has wrong num clauses
-      final SortSpec otherSort = SortSpecParsing.parseSortSpec(randomSortString+",id asc", req);
-      CursorMark trash = previous.createNext(Arrays.<Object>asList
-                                             (buildRandomSortObjects(otherSort)));
-      fail("didn't fail on next with incorrect num of sortvalues");
-    } catch (AssertionError e) {
-      // NOOP: we're happy
-    }
+    SolrException e = expectThrows(SolrException.class,
+                                   "didn't fail on next with incorrect num of sortvalues",
+                                   () -> {
+        // append to our random sort string so we know it has wrong num clauses
+        final SortSpec otherSort = SortSpecParsing.parseSortSpec(randomSortString+",id asc", req);
+        CursorMark trash = previous.createNext(Arrays.<Object>asList
+                                               (buildRandomSortObjects(otherSort)));
+                                   });
+    assertEquals(500, e.code());
+    assertThat(e.getMessage(), containsString("sort values != sort length"));
   }
 
   public void testInvalidUsage() {

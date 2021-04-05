@@ -101,10 +101,10 @@ public final class CursorMark {
     }
 
     if (sort.getSort().length != sortSpec.getSchemaFields().size()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-                                "Cursor SortSpec failure: sort length != SchemaFields: " 
-                                + sort.getSort().length + " != " + 
-                                sortSpec.getSchemaFields().size());
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+                              "Cursor SortSpec failure: sort length != SchemaFields: " 
+                              + sort.getSort().length + " != " + 
+                              sortSpec.getSchemaFields().size());
     }
 
     this.sortSpec = sortSpec;
@@ -144,7 +144,12 @@ public final class CursorMark {
     if (null == input) {
       this.values = null;
     } else {
-      assert input.size() == sortSpec.getSort().getSort().length;
+      if (input.size() != sortSpec.getSort().getSort().length) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+                                "Cursor SortSpec failure: sort values != sort length: "
+                                + input.size() + " != " + sortSpec.getSort().getSort().length);
+      }
+      
       // defensive copy
       this.values = new ArrayList<>(input);
     }
@@ -204,7 +209,7 @@ public final class CursorMark {
                               "'"+CURSOR_MARK_NEXT+"' returned by a previous search: "
                               + serialized, ex);
     }
-    assert null != pieces : "pieces wasn't parsed?";
+    assert null != pieces : "pieces wasn't parsed, nor exception thrown?";
 
     if (sortFields.length != pieces.size()) {
       throw new SolrException(ErrorCode.BAD_REQUEST,

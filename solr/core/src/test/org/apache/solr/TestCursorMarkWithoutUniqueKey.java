@@ -27,13 +27,12 @@ import org.junit.After;
  */
 public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
 
-  /** solrconfig.xml file name, shared with other cursor related tests */
-  public final static String TEST_SOLRCONFIG_NAME = CursorPagingTest.TEST_SOLRCONFIG_NAME;
-
+  public final static String TEST_SOLRCONFIG_NAME = "solrconfig-minimal.xml";
   public final static String TEST_SCHEMAXML_NAME = "schema-minimal.xml";
 
   @Before
   public void beforeSetupCore() throws Exception {
+    System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
     SchemaField uniqueKeyField = h.getCore().getLatestSchema().getUniqueKeyField();

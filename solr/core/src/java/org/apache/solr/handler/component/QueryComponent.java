@@ -189,14 +189,6 @@ public class QueryComponent extends SearchComponent
       rb.setSortSpec( parser.getSortSpec(true) );
       rb.setQparser(parser);
 
-      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
-      if (null != cursorStr) {
-        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(),
-                                                     rb.getSortSpec());
-        cursorMark.parseSerializedTotem(cursorStr);
-        rb.setCursorMark(cursorMark);
-      }
-
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
@@ -240,7 +232,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
 
-    if (null != rb.getCursorMark()) {
+    if (null != params.get(CursorMarkParams.CURSOR_MARK_PARAM)) {
       // It's hard to imagine, conceptually, what it would mean to combine
       // grouping with a cursor - so for now we just don't allow the combination at all
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not use Grouping with " +

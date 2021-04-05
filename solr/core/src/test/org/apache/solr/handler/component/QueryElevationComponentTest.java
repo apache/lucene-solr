@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
@@ -48,6 +50,11 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
@@ -1031,8 +1038,102 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       delete();
     }
   }
+  @Test
+  public void testCursor() throws Exception {
+    try {
+      init("schema12.xml");
+      
+      assertU(adoc("id", "a", "title", "ipod trash trash", "str_s1", "group1"));
+      assertU(adoc("id", "b", "title", "ipod ipod  trash", "str_s1", "group2"));
+      assertU(adoc("id", "c", "title", "ipod ipod  ipod ", "str_s1", "group2"));
 
+      assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "group1"));
+      assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "group2"));
+      assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "group2"));
+      assertU(commit());
+
+      final SolrParams baseParams = params("qt", "/elevate",
+                                           "q", "title:ipod",
+                                           "sort", "score desc, id asc",
+                                           "fl", "id",
+                                           "elevateIds", "x,y,z",
+                                           "excludeIds", "b");
+
+      // sanity check everything returned w/these elevation options...
+      assertJQ(req(baseParams)
+               , "/response/numFound==5"
+               , "/response/start==0"
+               , "/response/docs==[{'id':'x'},{'id':'y'},{'id':'z'},{'id':'c'},{'id':'a'}]"
+               );
+      // same query using CURSOR_MARK_START should produce a 'next' cursor...
+      assertCursorJQ(req(baseParams, CURSOR_MARK_PARAM, CURSOR_MARK_START)
+                     , "/response/numFound==5"
+                     , "/response/start==0"
+                     , "/response/docs==[{'id':'x'},{'id':'y'},{'id':'z'},{'id':'c'},{'id':'a'}]"
+                     );
+
+      // use a cursor w/rows < 5, then fetch next cursor...
+      String nextCursor = null;
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, CURSOR_MARK_START
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[{'id':'x'},{'id':'y'}]"
+                                  );
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, nextCursor
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[{'id':'z'},{'id':'c'}]"
+                                  );
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, nextCursor
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[{'id':'a'}]"
+                                  );
+      final String lastCursor = nextCursor;
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, nextCursor
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[]"
+                                  );
+      assertEquals(lastCursor, nextCursor);
+
+    } finally {
+      delete();
+    }
+
+  }
   private static Set<BytesRef> toIdSet(String... ids) {
     return Arrays.stream(ids).map(BytesRef::new).collect(Collectors.toSet());
   }
+
+  
+  /**
+   * Asserts that the query matches the specified JSON patterns and then returns the
+   * {@link CursorMarkParams#CURSOR_MARK_NEXT} value from the response
+   *
+   * @see #assertJQ
+   */
+  private static String assertCursorJQ(SolrQueryRequest req, String... tests) throws Exception {
+    String json = assertJQ(req, tests);
+    @SuppressWarnings({"rawtypes"})
+    Map rsp = (Map) fromJSONString(json);
+    assertTrue("response doesn't contain "+CURSOR_MARK_NEXT + ": " + json,
+               rsp.containsKey(CURSOR_MARK_NEXT));
+    String next = (String)rsp.get(CURSOR_MARK_NEXT);
+    assertNotNull(CURSOR_MARK_NEXT + " is null", next);
+    return next;
+  }
+
 }

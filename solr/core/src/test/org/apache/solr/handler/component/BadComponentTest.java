@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -37,5 +38,10 @@ public class BadComponentTest extends SolrTestCaseJ4{
       System.clearProperty("elevate.file");
       resetExceptionIgnores();
     }
+  }
+
+  @After
+  public void deleteCoreThatFailedToInit() throws Exception {
+    deleteCore();
   }
 }

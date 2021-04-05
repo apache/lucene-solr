@@ -24,6 +24,7 @@ import org.apache.solr.CursorPagingTest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -36,6 +37,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.CursorMark;
 
+import org.apache.commons.lang3.StringUtils;
+
+import static org.apache.solr.common.params.SolrParams.wrapDefaults;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
@@ -50,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Distributed tests of deep paging using {@link CursorMark} and {@link CursorMarkParams#CURSOR_MARK_PARAM}.
@@ -75,8 +80,17 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     return configString;
   }
 
+  /** 
+   * A really obnoxious hack needed to get our elevate.xml into zk ... 
+   * But simpler for now then re-writing the whole test case using SolrCloudTestCase.
+   */
+  @Override
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
+    ZkTestServer.putConfig("conf1", zkServer.getZkClient(), ZkTestServer.SOLRHOME, "elevate.xml");
+  }
+  
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void test() throws Exception {
     boolean testFinished = false;
     try {
@@ -139,6 +153,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
                       GroupParams.GROUP_FIELD, "str",
                       CURSOR_MARK_PARAM, CURSOR_MARK_START),
                ErrorCode.BAD_REQUEST, "Grouping");
+
   }
 
   private void doSimpleTest() throws Exception {
@@ -538,36 +553,25 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       for (String order : new String[] {" asc", " desc"}) {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
         String rows = "" + TestUtil.nextInt(random(), 13, 50);
-        SentinelIntSet ids = assertFullWalkNoDups(numInitialDocs,
-                                                  params("q", "*:*",
-                                                         "fl","id,"+f,
-                                                         "rows",rows,
-                                                         "sort",sort));
-        if (numInitialDocs != ids.size()) {
-          StringBuilder message = new StringBuilder
-              ("Expected " + numInitialDocs + " docs but got " + ids.size() + ". ");
-          message.append("sort=");
-          message.append(sort);
-          message.append(". ");
-          if (ids.size() < numInitialDocs) {
-            message.append("Missing doc(s): ");
-            for (SolrInputDocument doc : initialDocs) {
-              int id = Integer.parseInt(doc.getFieldValue("id").toString());
-              if ( ! ids.exists(id)) {
-                QueryResponse rsp = cloudClient.query(params("q", "id:" + id,
-                                                             "rows", "1"));
-                if (0 == rsp.getResults().size()) {
-                  message.append("<NOT RETRIEVABLE>:");
-                  message.append(doc.values());
-                } else {
-                  message.append(rsp.getResults().get(0).getFieldValueMap().toString());
-                }
-                message.append("; ");
-              }
-            }
-          }
-          fail(message.toString());
-        }
+        final SolrParams main = params("q", "*:*",
+                                       "fl","id,"+f,
+                                       "rows",rows,
+                                       "sort",sort);
+        final SentinelIntSet ids = assertFullWalkNoDups(numInitialDocs, main);
+        assertEquals(numInitialDocs, ids.size());
+
+        // same query, now with QEC ... verify we get all the same docs, but the (expected) elevated docs are first...
+        final SentinelIntSet elevated = assertFullWalkNoDupsElevated(wrapDefaults(params("qt", "/elevate",
+                                                                                         "fl","id,[elevated]",
+                                                                                         "forceElevation","true",
+                                                                                         "elevateIds", "50,20,80"),
+                                                                                  main),
+                                                                     ids);
+        assertTrue(elevated.exists(50));
+        assertTrue(elevated.exists(20));
+        assertTrue(elevated.exists(80));
+        assertEquals(3, elevated.size());
+
       }
     }
 
@@ -585,15 +589,36 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       final String fl = random().nextBoolean() ? "id" : "id,score";
       final boolean matchAll = random().nextBoolean();
       final String q = matchAll ? "*:*" : CursorPagingTest.buildRandomQuery();
-
-      SentinelIntSet ids = assertFullWalkNoDups(totalDocs,
-                                                params("q", q,
-                                                       "fl",fl,
-                                                       "rows",rows,
-                                                       "sort",sort));
+      final SolrParams main = params("q", q,
+                                     "fl",fl,
+                                     "rows",rows,
+                                     "sort",sort);
+      final SentinelIntSet ids = assertFullWalkNoDups(totalDocs,
+                                                      params("q", q,
+                                                             "fl",fl,
+                                                             "rows",rows,
+                                                             "sort",sort));
       if (matchAll) {
         assertEquals(totalDocs, ids.size());
       }
+      
+      // same query, now with QEC ... verify we get all the same docs, but the (expected) elevated docs are first...
+      // first we have to build a set of ids to elevate, from the set of ids known to match query...
+      final int[] expectedElevated = CursorPagingTest.pickElevations(TestUtil.nextInt(random(), 3, 33), ids);
+      final SentinelIntSet elevated = assertFullWalkNoDupsElevated
+        (wrapDefaults(params("qt", "/elevate",
+                             "fl", fl + ",[elevated]",
+                             // HACK: work around SOLR-15307... same results should match, just not same order
+                             "sort", (sort.startsWith("score asc") ? "score desc, " + sort : sort),
+                             "forceElevation","true",
+                             "elevateIds", StringUtils.join(expectedElevated,',')),
+                      main),
+         ids);
+      for (int expected : expectedElevated) {
+        assertTrue(expected + " wasn't elevated even though it should have been",
+                   elevated.exists(expected));
+      }
+      assertEquals(expectedElevated.length, elevated.size());
 
     }
 
@@ -689,6 +714,60 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   }
 
   /**
+   * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
+   * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long
+   * as a non-0 number of docs ar returned.  This method records the the set of all id's
+   * (must be positive ints) encountered and throws an assertion failure if any id is
+   * encountered more than once, or if an id is encountered which is not expected, 
+   * or if an id is <code>[elevated]</code> and comes "after" any ids which were not <code>[elevated]</code>
+   * 
+   *
+   * @returns set of all elevated ids encountered in the walk
+   * @see #assertFullWalkNoDups(SolrParams,Consumer)
+   */
+  public SentinelIntSet assertFullWalkNoDupsElevated(final SolrParams params, final SentinelIntSet allExpected)
+    throws Exception {
+
+    final SentinelIntSet ids = new SentinelIntSet(allExpected.size(), -1);
+    final SentinelIntSet idsElevated = new SentinelIntSet(32, -1);
+
+    assertFullWalkNoDups(params, (doc) -> {
+        final int id = Integer.parseInt(doc.get("id").toString());
+        final boolean elevated = Boolean.parseBoolean(doc.getOrDefault("[elevated]","false").toString());
+        assertTrue(id + " is not expected to match query",
+                   allExpected.exists(id));
+        
+        if (ids.exists(id)) {
+          String msg = "walk already seen: " + id;
+          try {
+            try {
+              queryAndCompareShards(params("distrib","false",
+                                           "q","id:"+id));
+            } catch (AssertionError ae) {
+              throw new AssertionError(msg + ", found shard inconsistency that would explain it...", ae);
+            }
+            final QueryResponse rsp = cloudClient.query(params("q","id:"+id));
+            throw new AssertionError(msg + ", don't know why; q=id:"+id+" gives: " + rsp.toString());
+          } catch (Exception e) {
+            throw new AssertionError(msg + ", exception trying to fiture out why...", e);
+          }
+        }
+        if (elevated) {
+          assertEquals("id is elevated, but we've already seen non elevated ids: " + id,
+                       idsElevated.size(), ids.size());
+          idsElevated.put(id);
+        }
+        ids.put(id);
+      });
+
+    assertEquals("total number of ids seen did not match expected",
+                 allExpected.size(), ids.size());
+    
+    return idsElevated;
+  }
+
+  
+  /**
    * <p>
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START} 
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long 
@@ -705,9 +784,57 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
    * to the control index -- which can affect the sorting in some cases and cause false 
    * negatives in the response comparisons (even if we don't include "score" in the "fl")
    * </p>
+   *
+   * @returns set of all ids encountered in the walk
+   * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) throws Exception {
-    SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
+    final SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
+    assertFullWalkNoDups(params, (doc) -> {
+        int id = Integer.parseInt(doc.getFieldValue("id").toString());
+        if (ids.exists(id)) {
+          String msg = "walk already seen: " + id;
+          try {
+            try {
+              queryAndCompareShards(params("distrib","false",
+                                           "q","id:"+id));
+            } catch (AssertionError ae) {
+              throw new AssertionError(msg + ", found shard inconsistency that would explain it...", ae);
+            }
+            final QueryResponse rsp = cloudClient.query(params("q","id:"+id));
+            throw new AssertionError(msg + ", don't know why; q=id:"+id+" gives: " + rsp.toString());
+          } catch (Exception e) {
+            throw new AssertionError(msg + ", exception trying to fiture out why...", e);
+          }
+        }
+        ids.put(id);
+        assertFalse("id set bigger then max allowed ("+maxSize+"): " + ids.size(),
+                    maxSize < ids.size());
+      });
+    return ids;
+  }
+
+  
+  /**
+   * <p>
+   * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START} 
+   * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as long 
+   * as a non-0 number of docs ar returned.  This method does some basic validation of each response, and then 
+   * passes each doc encountered (in order returned) to the specified Consumer, which may throw an assertion if 
+   * there is a problem. 
+   * </p>
+   *
+   * <p>
+   * Note that this method explicitly uses the "cloudClient" for executing the queries, 
+   * instead of relying on the test infrastructure to execute the queries redundently
+   * against both the cloud client as well as a control client.  This is because term stat 
+   * differences in a sharded setup can result in different scores for documents compared 
+   * to the control index -- which can affect the sorting in some cases and cause false 
+   * negatives in the response comparisons (even if we don't include "score" in the "fl")
+   * </p>
+   */
+  public void assertFullWalkNoDups(SolrParams params, Consumer<SolrDocument> consumer) throws Exception {
+  
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
@@ -727,25 +854,10 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
       }
 
       for (SolrDocument doc : docs) {
-        int id = Integer.parseInt(doc.getFieldValue("id").toString());
-        if (ids.exists(id)) {
-          String msg = "(" + p + ") walk already seen: " + id;
-          try {
-            queryAndCompareShards(params("distrib","false",
-                                         "q","id:"+id));
-          } catch (AssertionError ae) {
-            throw new AssertionError(msg + ", found shard inconsistency that would explain it...", ae);
-          }
-          rsp = cloudClient.query(params("q","id:"+id));
-          throw new AssertionError(msg + ", don't know why; q=id:"+id+" gives: " + rsp.toString());
-        }
-        ids.put(id);
-        assertFalse("id set bigger then max allowed ("+maxSize+"): " + ids.size(),
-                    maxSize < ids.size());
+        consumer.accept(doc);
       }
       cursorMark = nextCursorMark;
     }
-    return ids;
   }
 
   private SolrParams p(SolrParams params, String... other) {
