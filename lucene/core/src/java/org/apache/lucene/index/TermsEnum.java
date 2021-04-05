@@ -63,9 +63,6 @@ public abstract class TermsEnum implements BytesRefIterator {
   /**
    * Attempts to seek to the exact term, returning true if the term is found. If this returns false, the enum is
    * unpositioned. For some codecs, seekExact may be substantially faster than {@link #seekCeil}.
-   * <p>
-   * 
-   *
    * @return true if the term is found; return false if the enum is unpositioned.
    */
   public abstract boolean seekExact(BytesRef text) throws IOException;

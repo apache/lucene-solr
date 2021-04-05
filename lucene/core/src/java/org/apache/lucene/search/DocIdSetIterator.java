@@ -146,8 +146,6 @@ public abstract class DocIdSetIterator {
    * <li>{@link #NO_MORE_DOCS} if the iterator has exhausted.
    * <li>Otherwise it should return the doc ID it is currently on.
    * </ul>
-   * <p>
-   * 
    * @since 2.9
    */
   public abstract int docID();
@@ -191,7 +189,6 @@ public abstract class DocIdSetIterator {
    * efficiency by some Scorers. If your implementation cannot efficiently
    * determine that it should exhaust, it is recommended that you check for that
    * value in each call to this method.
-   * <p>
    *
    * @since 2.9
    */

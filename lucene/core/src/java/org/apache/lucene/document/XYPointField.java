@@ -132,7 +132,6 @@ public class XYPointField extends Field {
 
   /**
    * Create a query for matching a bounding box.
-   * <p>
    * @param field field name. must not be null.
    * @param minX x lower bound.
    * @param maxX x upper bound.

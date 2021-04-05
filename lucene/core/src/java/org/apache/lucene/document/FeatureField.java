@@ -595,7 +595,6 @@ public final class FeatureField extends Field {
    * the hits contains a Float instance with the feature value.
    * <p>
    * If a document is missing the field, then it is treated as having a vaue of <code>0.0f</code>.
-   * <p>
    * 
    * @param field field name. Must not be null.
    * @param featureName feature name. Must not be null.
