@@ -33,7 +33,7 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
 
 
   @Override
-  public List<ACL> getACLsToAdd(String zNodePath) {
+  public final List<ACL> getACLsToAdd(String zNodePath) {
     if (isSecurityZNodePath(zNodePath)) {
       return getSecurityACLsToAdd();
     } else {
