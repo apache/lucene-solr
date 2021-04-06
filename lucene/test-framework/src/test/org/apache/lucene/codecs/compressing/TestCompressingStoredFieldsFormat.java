@@ -281,7 +281,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     
     // we have to enforce certain things like maxDocsPerChunk to cause dirty chunks to be created
     // by this test.
-    iwConf.setCodec(CompressingCodec.randomInstance(random(), 4*1024, 100, false, 8));
+    iwConf.setCodec(CompressingCodec.randomInstance(random(), 4 * 1024, 4, false, 8));
     IndexWriter iw = new IndexWriter(dir, iwConf);
     DirectoryReader ir = DirectoryReader.open(iw);
     for (int i = 0; i < 5; i++) {

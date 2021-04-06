@@ -66,6 +66,7 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_META_EXTENSION;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_META;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_NUMCHUNKS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
 
 /**
@@ -85,8 +86,9 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private final int numDocs;
   private boolean closed;
   private final BlockPackedReaderIterator reader;
+  private final long numChunks; // number of written blocks
   private final long numDirtyChunks; // number of incomplete compressed blocks written
-  private final long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
+  private final long numDirtyDocs; // cumulative number of docs in incomplete chunks
   private final long maxPointer; // end of the data section
 
   // used by clone
@@ -101,6 +103,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     this.numDocs = reader.numDocs;
     this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
     this.version = reader.version;
+    this.numChunks = reader.numChunks;
     this.numDirtyChunks = reader.numDirtyChunks;
     this.numDirtyDocs = reader.numDirtyDocs;
     this.maxPointer = reader.maxPointer;
@@ -177,14 +180,15 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       this.indexReader = indexReader;
       this.maxPointer = maxPointer;
 
-      if (version >= VERSION_META) {
+      if (version >= VERSION_NUMCHUNKS) {
+        numChunks = metaIn.readVLong();
         numDirtyChunks = metaIn.readVLong();
         numDirtyDocs = metaIn.readVLong();
       } else {
-        // Old versions of this format did not record numDirtyDocs. Since bulk
+        // Old versions of this format did not record these. Since bulk
         // merges are disabled on version increments anyway, we make no effort
-        // to get valid values of numDirtyChunks and numDirtyDocs.
-        numDirtyChunks = numDirtyDocs = -1;
+        // to get valid values for these stats.
+        numChunks = numDirtyChunks = numDirtyDocs = -1;
       }
 
       decompressor = compressionMode.newDecompressor();
@@ -252,6 +256,15 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
     assert numDirtyChunks >= 0;
     return numDirtyChunks;
+  }
+
+  long getNumChunks() {
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException(
+          "getNumChunks should only ever get called when the reader is on the current version");
+    }
+    assert numChunks >= 0;
+    return numChunks;
   }
 
   int getNumDocs() {

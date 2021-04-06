@@ -57,9 +57,6 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
-  // hard limit on the maximum number of documents per chunk
-  static final int MAX_DOCUMENTS_PER_CHUNK = 128;
-
   static final String VECTORS_EXTENSION = "tvd";
   static final String VECTORS_INDEX_EXTENSION = "tvx";
   static final String VECTORS_META_EXTENSION = "tvm";
@@ -69,7 +66,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final int VERSION_OFFHEAP_INDEX = 2;
   /** Version where all metadata were moved to the meta file. */
   static final int VERSION_META = 3;
-  static final int VERSION_CURRENT = VERSION_META;
+  /** Version where numChunks is explicitly recorded in meta file */
+  static final int VERSION_NUMCHUNKS = 4;
+  static final int VERSION_CURRENT = VERSION_NUMCHUNKS;
   static final int META_VERSION_START = 0;
 
   static final int PACKED_BLOCK_SIZE = 64;
@@ -87,8 +86,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   private final Compressor compressor;
   private final int chunkSize;
 
+  private long numChunks; // number of chunks
   private long numDirtyChunks; // number of incomplete compressed blocks written
-  private long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
+  private long numDirtyDocs; // cumulative number of docs in incomplete chunks
 
   /** a pending doc */
   private class DocData {
@@ -206,15 +206,17 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   private final GrowableByteArrayDataOutput termSuffixes; // buffered term suffixes
   private final GrowableByteArrayDataOutput payloadBytes; // buffered term payloads
   private final BlockPackedWriter writer;
+  private final int maxDocsPerChunk; // hard limit on number of docs per chunk
 
   /** Sole constructor. */
   CompressingTermVectorsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
-      String formatName, CompressionMode compressionMode, int chunkSize, int blockShift) throws IOException {
+      String formatName, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockShift) throws IOException {
     assert directory != null;
     this.segment = si.name;
     this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
     this.chunkSize = chunkSize;
+    this.maxDocsPerChunk = maxDocsPerChunk;
 
     numDocs = 0;
     pendingDocs = new ArrayDeque<>();
@@ -324,11 +326,11 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   }
 
   private boolean triggerFlush() {
-    return termSuffixes.getPosition() >= chunkSize
-        || pendingDocs.size() >= MAX_DOCUMENTS_PER_CHUNK;
+    return termSuffixes.getPosition() >= chunkSize || pendingDocs.size() >= maxDocsPerChunk;
   }
 
   private void flush() throws IOException {
+    numChunks++;
     final int chunkDocs = pendingDocs.size();
     assert chunkDocs > 0 : chunkDocs;
 
@@ -645,14 +647,14 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   public void finish(FieldInfos fis, int numDocs) throws IOException {
     if (!pendingDocs.isEmpty()) {
       numDirtyChunks++; // incomplete: we had to force this flush
-      final long expectedChunkDocs = Math.min(MAX_DOCUMENTS_PER_CHUNK, (long) ((double) chunkSize / termSuffixes.getPosition() * pendingDocs.size()));
-      numDirtyDocs += expectedChunkDocs - pendingDocs.size();
+      numDirtyDocs += pendingDocs.size();
       flush();
     }
     if (numDocs != this.numDocs) {
       throw new RuntimeException("Wrote " + this.numDocs + " docs, finish called with numDocs=" + numDocs);
     }
     indexWriter.finish(numDocs, vectorsStream.getFilePointer(), metaStream);
+    metaStream.writeVLong(numChunks);
     metaStream.writeVLong(numDirtyChunks);
     metaStream.writeVLong(numDirtyDocs);
     CodecUtil.writeFooter(metaStream);
@@ -770,8 +772,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
         
         // flush any pending chunks
         if (!pendingDocs.isEmpty()) {
-          flush();
           numDirtyChunks++; // incomplete: we had to force this flush
+          numDirtyDocs += pendingDocs.size();
+          flush();
         }
         
         // iterate over each chunk. we use the vectors index to find chunk boundaries,
@@ -852,9 +855,10 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
    * compression ratio can degrade. This is a safety switch.
    */
   boolean tooDirty(CompressingTermVectorsReader candidate) {
-    // more than 1% dirty, or more than hard limit of 1024 dirty chunks
-    return candidate.getNumDirtyChunks() > 1024 || 
-           candidate.getNumDirtyDocs() * 100 > candidate.getNumDocs();
+    // A segment is considered dirty only if it has enough dirty docs to make a full block
+    // AND more than 1% blocks are dirty.
+    return candidate.getNumDirtyDocs() > maxDocsPerChunk
+        && candidate.getNumDirtyChunks() * 100 > candidate.getNumChunks();
   }
 
   @Override
