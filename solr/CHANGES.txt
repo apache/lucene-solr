@@ -17,6 +17,8 @@ Bug Fixes
 
 * SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
 
+* SOLR-15217: Use shardsWhitelist in ReplicationHandler. (Bruno Roustant)
+
 ==================  8.8.1 ==================
 
 Bug Fixes
