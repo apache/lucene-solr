@@ -49,7 +49,7 @@ to check if the results are what we expect):</p>
     ScoreDoc[] hits = isearcher.search(query, 10).scoreDocs;
     assertEquals(1, hits.length);
     // Iterate through the results:
-    for (int i = 0; i < hits.length; i++) {
+    for (int i = 0; i &lt; hits.length; i++) {
       Document hitDoc = isearcher.doc(hits[i].doc);
       assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
     }

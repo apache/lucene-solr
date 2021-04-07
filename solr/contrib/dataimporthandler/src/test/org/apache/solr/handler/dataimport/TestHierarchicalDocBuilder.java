@@ -296,7 +296,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
    * <pre>
    * 
    * &lt;dataConfig>
-   *   <dataSource type="MockDataSource" />
+   *   &lt;dataSource type="MockDataSource" />
    *   &lt;document>
    *     &lt;entity name="parent" query="SELECT * FROM parent">
    *       &lt;field column="id" />
