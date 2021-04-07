@@ -148,7 +148,7 @@ algorithm.
   String[] tracer = new String[] { "A", "B", "C", "D", "E" };
   String[] data = new String[] { "HAT", "HUT", "H\u00C5T", "H\u00D8T", "HOT" };
   String[] sortedTracerOrder = new String[] { "A", "E", "B", "D", "C" };
-  for (int i = 0 ; i < data.length ; ++i) {
+  for (int i = 0 ; i &lt; data.length ; ++i) {
     Document doc = new Document();
     doc.add(new Field("tracer", tracer[i], Field.Store.YES, Field.Index.NO));
     doc.add(new Field("contents", data[i], Field.Store.NO, Field.Index.ANALYZED));
@@ -160,7 +160,7 @@ algorithm.
   sort.setSort(new SortField("contents", SortField.STRING));
   Query query = new MatchAllDocsQuery();
   ScoreDoc[] result = searcher.search(query, null, 1000, sort).scoreDocs;
-  for (int i = 0 ; i < result.length ; ++i) {
+  for (int i = 0 ; i &lt; result.length ; ++i) {
     Document doc = searcher.doc(result[i].doc);
     assertEquals(sortedTracerOrder[i], doc.getValues("tracer")[0]);
   }
