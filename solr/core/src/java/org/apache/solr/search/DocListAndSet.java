@@ -25,8 +25,6 @@ package org.apache.solr.search;
  * have been retrieved or inserted into a cache and should be considered shared.
  * <p>
  * Oh, if only java had "out" parameters or multiple return args...
- * <p>
- *
  *
  * @since solr 0.9
  */

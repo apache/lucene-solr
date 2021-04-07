@@ -148,7 +148,6 @@ public class LambdaFunction {
    * <br>
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
-   * <p>
    *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (boolean,boolean) -> boolean}
@@ -245,7 +244,6 @@ public class LambdaFunction {
    * <br>
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
-   * <p>
    *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (integer,integer) -> integer}
@@ -342,7 +340,6 @@ public class LambdaFunction {
    * <br>
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
-   * <p>
    *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (long,long) -> long}
@@ -439,7 +436,6 @@ public class LambdaFunction {
    * <br>
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
-   * <p>
    *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (float,float) -> float}
@@ -536,7 +532,6 @@ public class LambdaFunction {
    * <br>
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
-   * <p>
    *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (double,double) -> double}
@@ -741,7 +736,6 @@ public class LambdaFunction {
    * <br>
    * The inputs can be either {@code func(single,multi)} or {@code func(multi,single)}.
    * </ul>
-   * <p>
    *
    * @param name name for the function
    * @param lambda the function to be applied to every value: {@code (String,String) -> String}

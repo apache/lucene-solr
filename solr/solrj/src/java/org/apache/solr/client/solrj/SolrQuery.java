@@ -650,7 +650,6 @@ public class SolrQuery extends ModifiableSolrParams
    * If the field is already used for sorting, the order
    * of the existing field is modified; otherwise, it is
    * added to the end.
-   * <p>
    * @return the modified SolrQuery object, for easy chaining
    * @since 4.2
    */

@@ -1174,7 +1174,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns the set of document ids matching both the query and the filter. This method is cache-aware and attempts to
    * retrieve the answer from the cache if possible. If the answer was not cached, it may have been inserted into the
    * cache as a result of this call.
-   * <p>
    *
    * @param filter
    *          may be null

@@ -2255,7 +2255,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * then it is filled in with a Future that will return after the searcher is registered.  The Future may be set to
    * <tt>null</tt> in which case the SolrIndexSearcher created has already been registered at the time
    * this method returned.
-   * <p>
    *
    * @param forceNew             if true, force the open of a new index searcher regardless if there is already one open.
    * @param returnSearcher       if true, returns a {@link SolrIndexSearcher} holder with the refcount already incremented.

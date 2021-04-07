@@ -54,14 +54,12 @@ public abstract class ReturnFields {
 
   /**
    * The requested field names (includes pseudo fields)
-   * <p>
    * @return Set of field names or <code>null</code> (all fields).
    */
   public abstract Set<String> getRequestedFieldNames();
 
   /**
    * The explicitly requested field names (includes pseudo fields)
-   * <p>
    * @return Set of explicitly requested field names or <code>null</code> (no explict)
    */
   public abstract Set<String> getExplicitlyRequestedFieldNames();

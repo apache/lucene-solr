@@ -35,7 +35,6 @@ import java.util.Map;
  *
  * <p>
  * Ex: ghhsin(ValueSource, ValueSource, radius)
- * <p>
  *
  * @see org.apache.solr.search.function.distance.HaversineFunction for more details on the implementation
  *
