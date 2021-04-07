@@ -206,9 +206,9 @@
   <property name="javadoc.noindex" value="true"/>
 
   <!---TODO: Fix accessibility (order of H1/H2/H3 headings), see https://issues.apache.org/jira/browse/LUCENE-8729 -->
-  <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing -Xdoclint:-accessibility"/>
+  <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing -Xdoclint:-accessibility -Xdoclint:-html"/>
   <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
-  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -Xdoclint:-accessibility -proc:none"/>
+  <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -Xdoclint:-accessibility -Xdoclint:-html -proc:none"/>
   
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
