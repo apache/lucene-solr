@@ -194,6 +194,10 @@ def check_prerequisites(todo=None):
         git_ver = run("git --version").splitlines()[0]
     except:
         sys.exit("You will need git installed")
+    try:
+        svn_ver = run("svn --version").splitlines()[0]
+    except:
+        sys.exit("You will need svn installed")
     if not 'EDITOR' in os.environ:
         print("WARNING: Environment variable $EDITOR not set, using %s" % get_editor())
 
