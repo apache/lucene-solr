@@ -639,6 +639,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
         }
         
         // since we bulk merged all chunks, we inherit any dirty ones from this segment.
+        numChunks += matchingFieldsReader.getNumChunks();
         numDirtyChunks += matchingFieldsReader.getNumDirtyChunks();
         numDirtyDocs += matchingFieldsReader.getNumDirtyDocs();
       } else {
