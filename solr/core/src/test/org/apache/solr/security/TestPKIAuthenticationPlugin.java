@@ -67,6 +67,10 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
   }
 
+  final AtomicReference<Header> header = new AtomicReference<>();
+  final AtomicReference<ServletRequest> wrappedRequestByFilter = new AtomicReference<>();
+  final FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
+
   public void test() throws Exception {
     assumeWorkingMockito();
     
@@ -83,22 +87,20 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     PublicKey correctKey = CryptoKeys.deserializeX509PublicKey(mock.getPublicKey());
     mock.remoteKeys.put(nodeName, correctKey);
 
-    principal.set(new BasicUserPrincipal("solr"));
+    String username = "solr user"; // with spaces
+    principal.set(new BasicUserPrincipal(username));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
     BasicHttpRequest request = new BasicHttpRequest("GET", "http://localhost:56565");
     mock.setHeader(request);
-    final AtomicReference<Header> header = new AtomicReference<>();
     header.set(request.getFirstHeader(PKIAuthenticationPlugin.HEADER));
     assertNotNull(header.get());
     assertTrue(header.get().getValue().startsWith(nodeName));
-    final AtomicReference<ServletRequest> wrappedRequestByFilter = new AtomicReference<>();
     HttpServletRequest mockReq = createMockRequest(header);
-    FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
     mock.authenticate(mockReq, null, filterChain);
 
-    assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
     assertNotNull(wrappedRequestByFilter.get());
-    assertEquals("solr", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+    assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
+    assertEquals(username, ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
 
     //test 2
     principal.set(null); // no user

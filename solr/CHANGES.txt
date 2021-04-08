@@ -82,6 +82,8 @@ Bug Fixes
 
 * SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
 
+* SOLR-15317: Correctly handle user principals with whitespace in PKIAuthPlugin (Dominik Dresel, Mike Drob)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)

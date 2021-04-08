@@ -178,15 +178,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       return null;
     }
     String s = new String(bytes, UTF_8).trim();
-    String[] ss = s.split(" ");
-    if (ss.length < 2) {
+    int splitPoint = s.lastIndexOf(' ');
+    if (splitPoint == -1) {
       log.warn("Invalid cipher {} deciphered data {}", cipher, s);
       return null;
     }
     PKIHeaderData headerData = new PKIHeaderData();
     try {
-      headerData.timestamp = Long.parseLong(ss[1]);
-      headerData.userName = ss[0];
+      headerData.timestamp = Long.parseLong(s.substring(splitPoint + 1));
+      headerData.userName = s.substring(0, splitPoint);
       log.debug("Successfully decrypted header {} {}", headerData.userName, headerData.timestamp);
       return headerData;
     } catch (NumberFormatException e) {
