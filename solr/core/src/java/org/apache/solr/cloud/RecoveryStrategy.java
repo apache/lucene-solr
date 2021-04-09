@@ -64,6 +64,7 @@ import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -290,7 +291,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     try (HttpSolrClient client = buildRecoverySolrClient(leaderUrl)) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
-      // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+      ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
       // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);// Why do we need to open searcher if
       // "onlyLeaderIndexes"?
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
