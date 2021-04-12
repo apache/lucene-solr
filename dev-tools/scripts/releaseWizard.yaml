@@ -137,7 +137,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, java-user@lucene.apache.org
+    To: dev@lucene.apache.org, java-user@lucene.apache.org
     Subject: [ANNOUNCE] Apache Lucene {{ release_version }} released
 
     (( template=announce_lucene_mail_body ))
@@ -171,7 +171,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, solr-user@lucene.apache.org
+    To: dev@solr.apache.org, users@solr.apache.org
     Subject: [ANNOUNCE] Apache Solr {{ release_version }} released
 
     (( template=announce_solr_mail_body ))
@@ -1194,7 +1194,7 @@ groups:
     depends:
     - prepare_announce_solr
     description: |
-      Push the website changes to 'master' branch, and check the staging site.
+      Push the website changes to 'main' branch, and check the staging site.
       You will get a chance to preview the diff of all changes before you push.
       If you need to do changes, do the changes (e.g. by re-running previous step 'Update rest of webpage')
       and commit your changes. Then re-run this step and push when everything is OK.
@@ -1205,7 +1205,7 @@ groups:
         You have to exit the editor after review to continue.
       commands:
       - !Command
-        cmd: git checkout master && git status
+        cmd: git checkout main && git status
         stdout: true
       - !Command
         cmd: git diff
@@ -1244,7 +1244,7 @@ groups:
           cmd: git checkout production && git pull
           stdout: true
         - !Command
-          cmd: git merge master
+          cmd: git merge main
           stdout: true
         - !Command
           cmd: git push origin
@@ -1275,41 +1275,54 @@ groups:
       commands_text: Edit DOAP files
       commands:
       - !Command
-        cmd: git checkout master && git pull
+        cmd: git remote add lucene https://gitbox.apache.org/repos/asf/lucene.git && git fetch lucene && git checkout lucene/main
         stdout: true
-        comment: Goto master branch
+        comment: Goto lucene main branch
       - !Command
         cmd: "{{ editor }} dev-tools/doap/lucene.rdf"
         comment: Edit Lucene DOAP, add version {{ release_version }}
         stdout: true
       - !Command
+        cmd: git commit dev-tools/doap/lucene.rdf  -m "DOAP changes for release {{ release_version }}"
+        logfile: commit-lucene.log
+        stdout: true
+      - !Command
+        cmd: git remote add solr https://gitbox.apache.org/repos/asf/solr.git && git fetch solr && git checkout solr/main
+        stdout: true
+        comment: Goto solr main branch
+      - !Command
+        cmd: git push lucene HEAD:main
+        logfile: push-lucene.log
+        stdout: true
+        comment: Push the main branch
+      - !Command
         cmd: "{{ editor }} dev-tools/doap/solr.rdf"
         comment: Edit Solr DOAP, add version {{ release_version }}
         stdout: true
       - !Command
-        cmd: git add dev-tools/doap/lucene.rdf dev-tools/doap/solr.rdf  && git commit -m "DOAP changes for release {{ release_version }}"
+        cmd: git commit dev-tools/doap/solr.rdf  -m "DOAP changes for release {{ release_version }}"
         logfile: commit.log
         stdout: true
       - !Command
-        cmd: git push origin
-        logfile: push.log
+        cmd: git push solr HEAD:main
+        logfile: push-solr.log
         stdout: true
-        comment: Push the master branch
+        comment: Push the main branch
       - !Command
         cmd: "git checkout {{ stable_branch }} && git pull"
         stdout: true
         comment: Checkout the stable branch
       - !Command
-        cmd: "git cherry-pick master"
+        cmd: "git cherry-pick lucene/main solr/main"
         logfile: commit.log
         stdout: true
-        comment: Cherrypick the DOAP changes from master onto the stable branch.
+        comment: Cherrypick the DOAP changes from mains onto the stable branch.
       - !Command
         cmd: git show HEAD
         stdout: true
         comment: Ensure the only change is adding the new version.
       - !Command
-        cmd: git push origin
+        cmd: "git push origin {{ stable_branch }}"
         logfile: push.log
         stdout: true
         comment: Push the stable branch
@@ -1318,16 +1331,16 @@ groups:
         stdout: true
         comment: Checkout the release branch
       - !Command
-        cmd: "git cherry-pick {{ stable_branch }}"
+        cmd: "git cherry-pick lucene/main solr/main"
         logfile: commit.log
         stdout: true
-        comment: Cherrypick the DOAP changes from the stable branch onto the release branch.
+        comment: Cherrypick the DOAP changes from the main branch onto the release branch.
       - !Command
         cmd: git show HEAD
         stdout: true
         comment: Ensure the only change is adding the new version.
       - !Command
-        cmd: git push origin
+        cmd: "git push origin {{ release_branch }}"
         logfile: push.log
         stdout: true
         comment: Push the release branch
@@ -1600,7 +1613,7 @@ groups:
     id: backcompat_master
     title: Generate Backcompat Indexes for unstable branch
     description: |
-      Now generate back-compat for unstable (master) branch.
+      Now generate back-compat for unstable (main) branch.
       Note that this time we do not specify `--no-cleanup` meaning the tmp folder will be deleted
     depends: 
     - increment_release_version
@@ -1612,13 +1625,13 @@ groups:
       commands_text: Run these commands to add back-compat indices to master
       commands:
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        cmd: git checkout main && git pull && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: ./gradlew clean
       - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
+        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/backward_index/
         logfile: add-backcompat.log
       - !Command
         cmd: git diff --staged
