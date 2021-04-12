@@ -821,6 +821,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
         }
         
         // since we bulk merged all chunks, we inherit any dirty ones from this segment.
+        numChunks += matchingVectorsReader.getNumChunks();
         numDirtyChunks += matchingVectorsReader.getNumDirtyChunks();
         numDirtyDocs += matchingVectorsReader.getNumDirtyDocs();
       } else {        

@@ -191,6 +191,31 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         numChunks = numDirtyChunks = numDirtyDocs = -1;
       }
 
+      if (numChunks < numDirtyChunks) {
+        throw new CorruptIndexException(
+            "Cannot have more dirty chunks than chunks: numChunks="
+                + numChunks
+                + ", numDirtyChunks="
+                + numDirtyChunks,
+            metaIn);
+      }
+      if ((numDirtyChunks == 0) != (numDirtyDocs == 0)) {
+        throw new CorruptIndexException(
+            "Cannot have dirty chunks without dirty docs or vice-versa: numDirtyChunks="
+                + numDirtyChunks
+                + ", numDirtyDocs="
+                + numDirtyDocs,
+            metaIn);
+      }
+      if (numDirtyDocs < numDirtyChunks) {
+        throw new CorruptIndexException(
+            "Cannot have more dirty chunks than documents within dirty chunks: numDirtyChunks="
+                + numDirtyChunks
+                + ", numDirtyDocs="
+                + numDirtyDocs,
+            metaIn);
+      }
+
       decompressor = compressionMode.newDecompressor();
       this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
 
