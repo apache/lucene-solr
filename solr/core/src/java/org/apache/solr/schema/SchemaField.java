@@ -29,8 +29,6 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.loader.FastFieldReader;
-import org.apache.solr.loader.FastFieldReaders;
 import org.apache.solr.response.TextResponseWriter;
 
 /**
@@ -48,7 +46,6 @@ public final class SchemaField extends FieldProperties implements IndexableField
   final int properties;
   final String defaultValue;
   boolean required = false;  // this can't be final since it may be changed dynamically
-  private FastFieldReader fastFieldReader;
   
   /** Declared field property overrides */
   Map<String,Object> args = Collections.emptyMap();
@@ -59,7 +56,6 @@ public final class SchemaField extends FieldProperties implements IndexableField
    */
   public SchemaField(String name, FieldType type) {
     this(name, type, type.properties, null);
-    this.fastFieldReader = FastFieldReaders.getInst(type);
   }
 
   /** Create a new SchemaField from an existing one by using all
@@ -454,9 +450,5 @@ public final class SchemaField extends FieldProperties implements IndexableField
   @Override
   public Map<String, String> getAttributes() {
     return null;
-  }
-
-  public FastFieldReader getFastFieldReader() {
-    return fastFieldReader;
   }
 }
