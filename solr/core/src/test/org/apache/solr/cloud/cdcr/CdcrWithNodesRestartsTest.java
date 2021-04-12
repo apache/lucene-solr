@@ -55,6 +55,7 @@ public class CdcrWithNodesRestartsTest extends SolrTestCaseJ4 {
   
   @Before
   public void before() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     target = new MiniSolrCloudCluster(2, createTempDir(TARGET_COLLECTION), buildJettyConfig("/solr"));
     System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
     source = new MiniSolrCloudCluster(2, createTempDir(SOURCE_COLLECTION), buildJettyConfig("/solr"));
@@ -62,6 +63,7 @@ public class CdcrWithNodesRestartsTest extends SolrTestCaseJ4 {
 
   @After
   public void after() throws Exception {
+    systemClearPropertySolrDisableShardsWhitelist();
     if (null != target) {
       target.shutdown();
       target = null;
