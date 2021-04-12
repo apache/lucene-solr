@@ -607,8 +607,6 @@ public final class CheckIndex implements Closeable {
     result.newSegments.clear();
     result.maxSegmentName = -1;
 
-    Sort previousIndexSort = null;
-
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = sis.info(i);
       long segmentName = Long.parseLong(info.info.name.substring(1), Character.MAX_RADIX);
@@ -645,13 +643,6 @@ public final class CheckIndex implements Closeable {
         Sort indexSort = info.info.getIndexSort();
         if (indexSort != null) {
           msg(infoStream, "    sort=" + indexSort);
-          if (previousIndexSort != null) {
-            if (previousIndexSort.equals(indexSort) == false) {
-              throw new RuntimeException("index sort changed from " + previousIndexSort + " to " + indexSort);
-            }
-          } else {
-            previousIndexSort = indexSort;
-          }
         }
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
