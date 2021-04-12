@@ -48,8 +48,6 @@ Improvements
 
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
 
-* SOLR-15217: Use shardsWhitelist in ReplicationHandler. (Bruno Roustant)
-
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
@@ -72,15 +70,11 @@ Bug Fixes
 
 * SOLR-15216: Fix for Invalid Reference to data.followers in Admin UI. (Dean Pearce)
 
-* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
-
 * SOLR-15273: Fix NullPointerException in StoredFieldsShardResponseProcessor that happened when a field name alias is
   used for the unique key field in searches with distributed result grouping. (limingnihao via Christine Poerschke)
 
 * SOLR-11921: Move "cursorMark" logic from QueryComponent to SearchHandler so it can work with things like QueryElevationComponent
   that modify the SortSpec in prepare(), as well as possible custom "search" components other then QueryComponent.  (hossman)
-
-* SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
 
 * SOLR-15317: Correctly handle user principals with whitespace in PKIAuthPlugin (Dominik Dresel, Mike Drob)
 
@@ -91,6 +85,21 @@ Other Changes
 * SOLR-15292: An ERROR is logged if SignatureUpdateProcessorFactory is used in SolrCloud cluster in a way that is known to
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
+
+==================  8.8.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+
+* SOLR-15249: Properly set ZK ACLs on /security.json (Mike Drob)
+
+* SOLR-15288: Hardening NODEDOWN event in PRS collections (noble)
+
+* SOLR-15233: Set doAs param in ConfigurableInternodeAuthHadoopPlugin (Geza Nagy, Jason Gerlowski, Mike Drob)
+
+* SOLR-15217: Use shardsWhitelist in ReplicationHandler. (Bruno Roustant)
 
 ==================  8.8.1 ==================
 
