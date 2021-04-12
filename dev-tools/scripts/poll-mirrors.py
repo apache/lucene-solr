@@ -117,7 +117,7 @@ if (args.version is None and args.path is None) \
   sys.exit(1)
 
 try:
-  conn = http.HTTPConnection('www.apache.org')
+  conn = http.HTTPSConnection('www.apache.org')
   conn.request('GET', '/mirrors/')
   response = conn.getresponse()
   html = response.read()
