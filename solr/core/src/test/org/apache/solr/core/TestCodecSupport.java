@@ -196,9 +196,9 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     SolrCore c = null;
     
     SolrConfig config = TestHarness.createConfig(testSolrHome, previousCoreName, "solrconfig_codec2.xml");
-    assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
-    assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
-        config.getNode("codecFactory", false).getFirstChild());
+    assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.__("codecFactory").attr("class"));
+    assertTrue("Unexpected configuration of codec factory for this test. Expecting empty element",
+        config.__("codecFactory").children(null, (String)null).isEmpty());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();

@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.DOMUtil;
@@ -99,6 +100,18 @@ public class PluginInfo implements MapSerializable {
   }
 
 
+  public PluginInfo(ConfigNode node,  String err,boolean requireName, boolean requireClass) {
+    type = node.name();
+    name = node.requiredStrAttr(NAME,requireName? () -> new RuntimeException(err + ": missing mandatory attribute 'name'"):null);
+    cName = parseClassName(node.requiredStrAttr(CLASS_NAME, requireClass? () -> new RuntimeException(err + ": missing mandatory attribute 'class'"):null ));
+    className = cName.className;
+    pkgName = cName.pkg;
+    initArgs = DOMUtil.childNodesToNamedList(node);
+    attributes = node.attributes().asMap();
+    children = loadSubPlugins(node);
+    isFromSolrConfig = true;
+
+  }
   public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
     type = node.getNodeName();
     name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
@@ -143,6 +156,17 @@ public class PluginInfo implements MapSerializable {
     isFromSolrConfig = true;
   }
 
+  private List<PluginInfo> loadSubPlugins(ConfigNode node) {
+    List<PluginInfo> children = new ArrayList<>();
+    //if there is another sub tag with a non namedlist tag that has to be another plugin
+    node.forEachChild(nd -> {
+      if (NL_TAGS.contains(nd.name())) return null;
+      PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
+      if (pluginInfo.isEnabled()) children.add(pluginInfo);
+      return null;
+    });
+    return children.isEmpty() ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
+  }
   private List<PluginInfo> loadSubPlugins(Node node) {
     List<PluginInfo> children = new ArrayList<>();
     //if there is another sub tag with a non namedlist tag that has to be another plugin

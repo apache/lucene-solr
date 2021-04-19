@@ -16,12 +16,14 @@
  */
 package org.apache.solr.core;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -60,6 +62,12 @@ public class ConfigOverlay implements MapSerializable {
     List<String> hierarchy = checkEditable(xpath, true, false);
     if (hierarchy == null) return null;
     return Utils.getObjectByPath(props, onlyPrimitive, hierarchy);
+  }
+
+  public Object getXPathProperty(List<String> path) {
+    List<String> hierarchy = new ArrayList<>();
+    if(isEditable(true, hierarchy, path) == null) return null;
+    return Utils.getObjectByPath(props, true, hierarchy);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -180,7 +188,11 @@ public class ConfigOverlay implements MapSerializable {
 
   @SuppressWarnings({"rawtypes"})
   public static Class checkEditable(String path, boolean isXpath, List<String> hierarchy) {
-    List<String> parts = StrUtils.splitSmart(path, isXpath ? '/' : '.');
+    return isEditable(isXpath, hierarchy, StrUtils.splitSmart(path, isXpath ? '/' : '.'));
+  }
+
+  @SuppressWarnings("rawtypes")
+  private static Class isEditable(boolean isXpath, List<String> hierarchy, List<String> parts) {
     Object obj = editable_prop_map;
     for (int i = 0; i < parts.size(); i++) {
       String part = parts.get(i);

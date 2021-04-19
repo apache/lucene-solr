@@ -60,9 +60,7 @@ public class DataConfigNode implements ConfigNode {
   }
 
   public String subtituteVal(String s) {
-    Function<String, String> props = SUBSTITUTES.get();
-    if (props == null) return s;
-    return PropertiesUtil.substitute(s, props);
+    return PropertiesUtil.substitute(s, SUBSTITUTES.get());
   }
 
   private SimpleMap<String> wrap(SimpleMap<String> delegate) {
