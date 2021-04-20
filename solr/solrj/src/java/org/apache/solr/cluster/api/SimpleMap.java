@@ -85,9 +85,12 @@ public interface SimpleMap<T> extends MapWriter {
     forEachEntry(ew::putNoEx);
   }
 
+  default Map<String, T> asMap( Map<String, T> sink) {
+    forEachEntry(sink::put);
+    return sink;
+  }
+
   default Map<String, T> asMap() {
-    Map<String, T> result = new LinkedHashMap<>();
-    forEachEntry((k, v) -> result.put(k, v));
-    return result;
+    return asMap(new LinkedHashMap<String, T>());
   }
 }

@@ -565,7 +565,7 @@ public class IndexSchema {
       if (node==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
-        uniqueKeyField=getIndexedField(node.textValue().trim());
+        uniqueKeyField=getIndexedField(node.txt().trim());
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
 

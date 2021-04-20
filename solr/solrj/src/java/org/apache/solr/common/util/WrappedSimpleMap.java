@@ -47,6 +47,12 @@ public class WrappedSimpleMap<T>  implements SimpleMap<T> {
         this.delegate = delegate;
     }
 
+  @Override
+  public Map<String, T> asMap(Map<String, T> sink) {
+    sink.putAll(delegate);
+    return sink;
+  }
+
     @Override
     public Map<String, T> asMap() {
         return Collections.unmodifiableMap(delegate);

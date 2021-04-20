@@ -43,7 +43,7 @@ public class DOMConfigNode implements ConfigNode {
   }
 
   @Override
-  public String textValue() {
+  public String txt() {
     return DOMUtil.getText(node);
   }
 

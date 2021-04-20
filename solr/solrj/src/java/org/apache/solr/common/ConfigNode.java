@@ -43,11 +43,6 @@ public interface ConfigNode {
   String name();
 
   /**
-   * Text value of the node
-   */
-  String textValue();
-
-  /**
    * Attributes
    */
   SimpleMap<String> attributes();
@@ -95,19 +90,20 @@ public interface ConfigNode {
     return n;
   }
 
-  default boolean _bool(boolean def) { return __bool(textValue(),def); }
-  default int _int(int def) { return __int(textValue(), def); }
+  default boolean _bool(boolean def) { return __bool(txt(),def); }
+  default int _int(int def) { return __int(txt(), def); }
   default String attr(String name, String def) { return __txt(attributes().get(name), def);}
   default String attr(String name) { return attributes().get(name);}
   default String requiredStrAttr(String name, Supplier<RuntimeException> err) {
-    if(attributes().get(name) == null && err != null) throw err.get();
-    return attributes().get(name);
+    String attr = attr(name);
+    if(attr == null && err != null) throw err.get();
+    return attr;
   }
-  default int intAttr(String name, int def) { return __int(attributes().get(name), def); }
-  default boolean boolAttr(String name, boolean def){ return __bool(attributes().get(name), def); }
-  default String txt(String def) { return textValue() == null ? def : textValue();}
-  default String txt() { return textValue();}
-  default double doubleVal(double def){ return __double(textValue(), def); }
+  default int intAttr(String name, int def) { return __int(attr(name), def); }
+  default boolean boolAttr(String name, boolean def){ return __bool(attr(name), def); }
+  default String txt(String def) { return txt() == null ? def : txt();}
+  String txt() ;
+  default double doubleVal(double def){ return __double(txt(), def); }
   /**Iterate through child nodes with the name and return the first child that matches
    */
   default ConfigNode child(Predicate<ConfigNode> test, String name) {
@@ -169,7 +165,7 @@ public interface ConfigNode {
     }
 
     @Override
-    public String textValue() { return null; }
+    public String txt() { return null; }
 
     @Override
     public SimpleMap<String> attributes() {

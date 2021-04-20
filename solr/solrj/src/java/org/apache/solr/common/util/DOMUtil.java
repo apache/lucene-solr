@@ -233,7 +233,7 @@ public class DOMUtil {
       String tag = it.name();
       String varName = it.attributes().get("name");
       if (NL_TAGS.contains(tag)) {
-        result.add(varName, parseVal(tag, varName, it.textValue()));
+        result.add(varName, parseVal(tag, varName, it.txt()));
       }
       if ("lst".equals(tag)) {
         result.add(varName, readNamedListChildren(it));
@@ -242,7 +242,7 @@ public class DOMUtil {
         result.add(varName, l);
         it.forEachChild(n -> {
           if (NL_TAGS.contains(n.name())) {
-            l.add(parseVal(n.name(), null, n.textValue()));
+            l.add(parseVal(n.name(), null, n.txt()));
           }
           return Boolean.TRUE;
         });

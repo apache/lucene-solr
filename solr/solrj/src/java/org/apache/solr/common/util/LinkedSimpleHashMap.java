@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import org.apache.solr.cluster.api.SimpleMap;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class LinkedSimpleHashMap<T> extends LinkedHashMap<String, T>  implements SimpleMap<T> {
@@ -30,5 +31,10 @@ public class LinkedSimpleHashMap<T> extends LinkedHashMap<String, T>  implements
     @Override
     public void forEachEntry(BiConsumer<String, ? super T> fun) {
 
+    }
+
+    @Override
+    public Map<String, T> asMap() {
+        return this;
     }
 }

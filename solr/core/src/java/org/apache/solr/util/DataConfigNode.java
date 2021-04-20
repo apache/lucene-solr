@@ -30,20 +30,23 @@ import java.util.function.Predicate;
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.PropertiesUtil;
+import org.apache.solr.common.util.WrappedSimpleMap;
 
 /**
  * ConfigNode impl that copies and maintains data internally from DOM
  */
 public class DataConfigNode implements ConfigNode {
-  final String name;
-  final SimpleMap<String> attributes;
-  private final Map<String, List<ConfigNode>> kids = new HashMap<>();
-  private final String textData;
+  public final String name;
+  public final SimpleMap<String> attributes;
+  public final SimpleMap<List<ConfigNode>> kids ;
+  public final String textData;
+
 
   public DataConfigNode(ConfigNode root) {
+    Map<String, List<ConfigNode>> kids = new HashMap<>();
     name = root.name();
     attributes = wrap(root.attributes());
-    textData = root.textValue();
+    textData = root.txt();
     root.forEachChild(it -> {
       List<ConfigNode> nodes = kids.computeIfAbsent(it.name(),
           k -> new ArrayList<>());
@@ -56,7 +59,7 @@ public class DataConfigNode implements ConfigNode {
         e.setValue(Collections.unmodifiableList(e.getValue()));
       }
     }
-
+    this.kids = new WrappedSimpleMap<>(kids);
   }
 
   public String subtituteVal(String s) {
@@ -88,8 +91,8 @@ public class DataConfigNode implements ConfigNode {
   }
 
   @Override
-  public String textValue() {
-    return  subtituteVal(textData);
+  public String txt() {
+    return subtituteVal(textData);
   }
 
   @Override
@@ -105,7 +108,7 @@ public class DataConfigNode implements ConfigNode {
 
   @Override
   public List<ConfigNode> children(String name) {
-    return kids.getOrDefault(name, Collections.emptyList());
+    return kids.get(name, Collections.emptyList());
   }
 
   @Override
@@ -126,7 +129,7 @@ public class DataConfigNode implements ConfigNode {
 
   @Override
   public void forEachChild(Function<ConfigNode, Boolean> fun) {
-    kids.forEach((s, configNodes) -> {
+    kids.forEachEntry((s, configNodes) -> {
       if (configNodes != null) {
         configNodes.forEach(fun::apply);
       }
