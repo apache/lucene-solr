@@ -895,23 +895,6 @@ public class SolrConfig implements MapSerializable {
     return enableStreamBody;
   }
 
-  /*private Object _getVal(String path) {
-    List<String> parts = StrUtils.split(path,'/');
-    Object val = overlay.getXPathProperty(parts);
-    if(val !=null) return val;
-    return root.child(parts);
-  }
-
-  public String get(String path) {
-    Object val = _getVal(path);
-    return val != null ? val.toString() :null;
-  }
-
-  public String get(String path, String def) {
-    Object val = _getVal(path);
-    return val != null ? val.toString() : xml.get(path, def);
-
-  }*/
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
