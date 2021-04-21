@@ -90,7 +90,7 @@ public interface ConfigNode {
     return n;
   }
 
-  default boolean _bool(boolean def) { return __bool(txt(),def); }
+  default boolean boolVal(boolean def) { return __bool(txt(),def); }
   default int _int(int def) { return __int(txt(), def); }
   default String attr(String name, String def) { return __txt(attributes().get(name), def);}
   default String attr(String name) { return attributes().get(name);}

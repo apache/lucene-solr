@@ -110,7 +110,7 @@ public class SolrIndexConfig implements MapSerializable {
     // enable coarse-grained metrics by default
     metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
   }
-  private ConfigNode __(String s) { return node.get(s); }
+  private ConfigNode get(String s) { return node.get(s); }
   public SolrIndexConfig(SolrConfig cfg, SolrIndexConfig def)  {
     this(cfg.get("indexConfig"), def);
   }
@@ -132,56 +132,56 @@ public class SolrIndexConfig implements MapSerializable {
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        __("mergeScheduler").isNull() || __("mergeScheduler").attr("class") != null,
+        get("mergeScheduler").isNull() || get("mergeScheduler").attr("class") != null,
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergePolicy>myclass</mergePolicy> is no longer supported, use <mergePolicyFactory> instead.",
-        __("mergePolicy").isNull() || __("mergePolicy").attr("class") != null,
+        get("mergePolicy").isNull() || get("mergePolicy").attr("class") != null,
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
-        __("luceneAutoCommit").isNull(),
+        get("luceneAutoCommit").isNull(),
         true);
 
-    useCompoundFile = __("useCompoundFile")._bool(def.useCompoundFile);
-    maxBufferedDocs = __("maxBufferedDocs")._int(def.maxBufferedDocs);
-    ramBufferSizeMB = __("ramBufferSizeMB").doubleVal(def.ramBufferSizeMB);
-    maxCommitMergeWaitMillis = __("maxCommitMergeWaitTime")._int(def.maxCommitMergeWaitMillis);
+    useCompoundFile = get("useCompoundFile").boolVal(def.useCompoundFile);
+    maxBufferedDocs = get("maxBufferedDocs")._int(def.maxBufferedDocs);
+    ramBufferSizeMB = get("ramBufferSizeMB").doubleVal(def.ramBufferSizeMB);
+    maxCommitMergeWaitMillis = get("maxCommitMergeWaitTime")._int(def.maxCommitMergeWaitMillis);
 
     // how do we validate the value??
-    ramPerThreadHardLimitMB = __("ramPerThreadHardLimitMB")._int(def.ramPerThreadHardLimitMB);
+    ramPerThreadHardLimitMB = get("ramPerThreadHardLimitMB")._int(def.ramPerThreadHardLimitMB);
 
-    writeLockTimeout= __("writeLockTimeout")._int(def.writeLockTimeout);
-    lockType = __("lockType").txt(def.lockType);
+    writeLockTimeout= get("writeLockTimeout")._int(def.writeLockTimeout);
+    lockType = get("lockType").txt(def.lockType);
 
-    metricsInfo = getPluginInfo(__("metrics"), def.metricsInfo);
-    mergeSchedulerInfo = getPluginInfo(__("mergeScheduler"), def.mergeSchedulerInfo);
-    mergePolicyFactoryInfo = getPluginInfo(__("mergePolicyFactory"), def.mergePolicyFactoryInfo);
+    metricsInfo = getPluginInfo(get("metrics"), def.metricsInfo);
+    mergeSchedulerInfo = getPluginInfo(get("mergeScheduler"), def.mergeSchedulerInfo);
+    mergePolicyFactoryInfo = getPluginInfo(get("mergePolicyFactory"), def.mergePolicyFactoryInfo);
 
     assertWarnOrFail("Beginning with Solr 7.0, <mergePolicy> is no longer supported, use <mergePolicyFactory> instead.",
-        __("mergePolicy").isNull(),
+        get("mergePolicy").isNull(),
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <maxMergeDocs> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        __("maxMergeDocs").isNull(),
+        get("maxMergeDocs").isNull(),
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergeFactor> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        __("maxMergeFactor").isNull(),
+        get("maxMergeFactor").isNull(),
         true);
 
-    if (__("termIndexInterval").exists()) {
+    if (get("termIndexInterval").exists()) {
       throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
     }
 
-    if(__("infoStream")._bool(false)) {
-      if (__("infoStream").attr("file") == null) {
+    if(get("infoStream").boolVal(false)) {
+      if (get("infoStream").attr("file") == null) {
         log.info("IndexWriter infoStream solr logging is enabled");
         infoStream = new LoggingInfoStream();
       } else {
         throw new IllegalArgumentException("Remove @file from <infoStream> to output messages to solr's logfile");
       }
     }
-    mergedSegmentWarmerInfo = getPluginInfo(__("mergedSegmentWarmer"), def.mergedSegmentWarmerInfo);
+    mergedSegmentWarmerInfo = getPluginInfo(get("mergedSegmentWarmer"), def.mergedSegmentWarmerInfo);
 
     assertWarnOrFail("Beginning with Solr 5.0, <checkIntegrityAtMerge> option is no longer supported and should be removed from solrconfig.xml (these integrity checks are now automatic)",
-        __( "checkIntegrityAtMerge").isNull(),
+        get( "checkIntegrityAtMerge").isNull(),
         true);
   }
 
@@ -208,7 +208,7 @@ public class SolrIndexConfig implements MapSerializable {
 
   private PluginInfo getPluginInfo(ConfigNode node , PluginInfo def)  {
     return node != null && node.exists() ?
-        new PluginInfo(node, "[solrconfig.xml] " + node.name(), false, true) :
+        new PluginInfo(node, "[solrconfig.xml] " + node.name(), false, false) :
         def;
   }
 

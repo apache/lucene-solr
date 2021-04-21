@@ -278,10 +278,10 @@ public class SolrConfig implements MapSerializable {
 //    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
 //    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
 
-      useFilterForSortedQuery = get("query").get("useFilterForSortedQuery")._bool(false);
+      useFilterForSortedQuery = get("query").get("useFilterForSortedQuery").boolVal(false);
       queryResultWindowSize = Math.max(1, get("query").get("queryResultWindowSize")._int(1));
       queryResultMaxDocsCached = get("query").get("queryResultMaxDocsCached")._int(Integer.MAX_VALUE);
-      enableLazyFieldLoading = get("query").get("enableLazyFieldLoading")._bool(false);
+      enableLazyFieldLoading = get("query").get("enableLazyFieldLoading").boolVal(false);
 
       filterCacheConfig = CacheConfig.getConfig(this, get("query").get("filterCache"), "query/filterCache");
       queryResultCacheConfig = CacheConfig.getConfig(this, get("query").get("queryResultCache"), "query/queryResultCache");
@@ -296,7 +296,7 @@ public class SolrConfig implements MapSerializable {
         conf = new CacheConfig(FastLRUCache.class, args, null);
       }
       fieldValueCacheConfig = conf;
-      useColdSearcher = get("query").get("useColdSearcher")._bool(false);
+      useColdSearcher = get("query").get("useColdSearcher").boolVal(false);
       dataDir = get("dataDir").txt();
       if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
@@ -405,9 +405,10 @@ public class SolrConfig implements MapSerializable {
           // way around that in the PluginInfo framework
       .add(new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK, REQUIRE_NAME_IN_OVERLAY))
       .add(new SolrPluginInfo(it -> {
-        List<ConfigNode> l = it.get("query").getAll("listener");
-        l.addAll(it.get( "updateHandler").getAll("listener"));
-        return l;
+        List<ConfigNode> result = new ArrayList<>();
+        result.addAll(it.get("query").getAll("listener"));
+        result.addAll( it.get("updateHandler").getAll("listener"));
+        return result;
       }, SolrEventListener.class, "//listener", REQUIRE_CLASS, MULTI_OK, REQUIRE_NAME_IN_OVERLAY))
 
       .add(new SolrPluginInfo(DirectoryFactory.class, "directoryFactory", REQUIRE_CLASS))
@@ -501,11 +502,11 @@ public class SolrConfig implements MapSerializable {
         get("updateHandler").get("autoCommit").get("maxDocs")._int( -1),
         get("updateHandler").get("autoCommit").get("maxTime")._int( -1),
         convertHeapOptionStyleConfigStringToBytes(get("updateHandler").get("autoCommit").get("maxSize").txt()),
-       get("updateHandler").get("indexWriter").get("closeWaitsForMerges")._bool(true),
-        get("updateHandler").get("autoCommit").get("openSearcher")._bool(true),
+       get("updateHandler").get("indexWriter").get("closeWaitsForMerges").boolVal(true),
+        get("updateHandler").get("autoCommit").get("openSearcher").boolVal(true),
         get("updateHandler").get("autoSoftCommit").get("maxDocs")._int(-1),
         get("updateHandler").get("autoSoftCommit").get("maxTime")._int(-1),
-        get("updateHandler").get("commitWithin").get("softCommit")._bool(true));
+        get("updateHandler").get("commitWithin").get("softCommit").boolVal(true));
   }
 
   /**
