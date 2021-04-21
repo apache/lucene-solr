@@ -259,7 +259,7 @@ public class SolrConfig implements MapSerializable {
       // Parse indexConfig section, using mainIndex as backup in case old config is used
       indexConfig = new SolrIndexConfig(get("indexConfig"), null);
 
-      booleanQueryMaxClauseCount = get("query").get("maxBooleanClauses")._int(BooleanQuery.getMaxClauseCount());
+      booleanQueryMaxClauseCount = get("query").get("maxBooleanClauses").intVal(BooleanQuery.getMaxClauseCount());
       if (BooleanQuery.getMaxClauseCount() < booleanQueryMaxClauseCount) {
         log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} and will have no effect {}"
             , booleanQueryMaxClauseCount, BooleanQuery.getMaxClauseCount()
@@ -279,8 +279,8 @@ public class SolrConfig implements MapSerializable {
 //    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
 
       useFilterForSortedQuery = get("query").get("useFilterForSortedQuery").boolVal(false);
-      queryResultWindowSize = Math.max(1, get("query").get("queryResultWindowSize")._int(1));
-      queryResultMaxDocsCached = get("query").get("queryResultMaxDocsCached")._int(Integer.MAX_VALUE);
+      queryResultWindowSize = Math.max(1, get("query").get("queryResultWindowSize").intVal(1));
+      queryResultMaxDocsCached = get("query").get("queryResultMaxDocsCached").intVal(Integer.MAX_VALUE);
       enableLazyFieldLoading = get("query").get("enableLazyFieldLoading").boolVal(false);
 
       filterCacheConfig = CacheConfig.getConfig(this, get("query").get("filterCache"), "query/filterCache");
@@ -309,8 +309,8 @@ public class SolrConfig implements MapSerializable {
 
       httpCachingConfig = new HttpCachingConfig(this);
 
-      maxWarmingSearchers = get("query").get("maxWarmingSearchers")._int(1);
-      slowQueryThresholdMillis = get("query").get("slowQueryThresholdMillis")._int(-1);
+      maxWarmingSearchers = get("query").get("maxWarmingSearchers").intVal(1);
+      slowQueryThresholdMillis = get("query").get("slowQueryThresholdMillis").intVal(-1);
       for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
       Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache",
@@ -499,13 +499,13 @@ public class SolrConfig implements MapSerializable {
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
     return new UpdateHandlerInfo( get("updateHandler").attr("class"),
-        get("updateHandler").get("autoCommit").get("maxDocs")._int( -1),
-        get("updateHandler").get("autoCommit").get("maxTime")._int( -1),
+        get("updateHandler").get("autoCommit").get("maxDocs").intVal( -1),
+        get("updateHandler").get("autoCommit").get("maxTime").intVal( -1),
         convertHeapOptionStyleConfigStringToBytes(get("updateHandler").get("autoCommit").get("maxSize").txt()),
        get("updateHandler").get("indexWriter").get("closeWaitsForMerges").boolVal(true),
         get("updateHandler").get("autoCommit").get("openSearcher").boolVal(true),
-        get("updateHandler").get("autoSoftCommit").get("maxDocs")._int(-1),
-        get("updateHandler").get("autoSoftCommit").get("maxTime")._int(-1),
+        get("updateHandler").get("autoSoftCommit").get("maxDocs").intVal(-1),
+        get("updateHandler").get("autoSoftCommit").get("maxTime").intVal(-1),
         get("updateHandler").get("commitWithin").get("softCommit").boolVal(true));
   }
 

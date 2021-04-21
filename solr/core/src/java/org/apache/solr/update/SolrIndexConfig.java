@@ -142,14 +142,14 @@ public class SolrIndexConfig implements MapSerializable {
         true);
 
     useCompoundFile = get("useCompoundFile").boolVal(def.useCompoundFile);
-    maxBufferedDocs = get("maxBufferedDocs")._int(def.maxBufferedDocs);
+    maxBufferedDocs = get("maxBufferedDocs").intVal(def.maxBufferedDocs);
     ramBufferSizeMB = get("ramBufferSizeMB").doubleVal(def.ramBufferSizeMB);
-    maxCommitMergeWaitMillis = get("maxCommitMergeWaitTime")._int(def.maxCommitMergeWaitMillis);
+    maxCommitMergeWaitMillis = get("maxCommitMergeWaitTime").intVal(def.maxCommitMergeWaitMillis);
 
     // how do we validate the value??
-    ramPerThreadHardLimitMB = get("ramPerThreadHardLimitMB")._int(def.ramPerThreadHardLimitMB);
+    ramPerThreadHardLimitMB = get("ramPerThreadHardLimitMB").intVal(def.ramPerThreadHardLimitMB);
 
-    writeLockTimeout= get("writeLockTimeout")._int(def.writeLockTimeout);
+    writeLockTimeout= get("writeLockTimeout").intVal(def.writeLockTimeout);
     lockType = get("lockType").txt(def.lockType);
 
     metricsInfo = getPluginInfo(get("metrics"), def.metricsInfo);

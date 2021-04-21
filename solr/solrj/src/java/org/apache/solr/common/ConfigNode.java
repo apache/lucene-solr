@@ -90,20 +90,20 @@ public interface ConfigNode {
     return n;
   }
 
-  default boolean boolVal(boolean def) { return __bool(txt(),def); }
-  default int _int(int def) { return __int(txt(), def); }
-  default String attr(String name, String def) { return __txt(attributes().get(name), def);}
+  default boolean boolVal(boolean def) { return _bool(txt(),def); }
+  default int intVal(int def) { return _int(txt(), def); }
+  default String attr(String name, String def) { return _txt(attributes().get(name), def);}
   default String attr(String name) { return attributes().get(name);}
   default String requiredStrAttr(String name, Supplier<RuntimeException> err) {
     String attr = attr(name);
     if(attr == null && err != null) throw err.get();
     return attr;
   }
-  default int intAttr(String name, int def) { return __int(attr(name), def); }
-  default boolean boolAttr(String name, boolean def){ return __bool(attr(name), def); }
+  default int intAttr(String name, int def) { return _int(attr(name), def); }
+  default boolean boolAttr(String name, boolean def){ return _bool(attr(name), def); }
   default String txt(String def) { return txt() == null ? def : txt();}
   String txt() ;
-  default double doubleVal(double def){ return __double(txt(), def); }
+  default double doubleVal(double def){ return _double(txt(), def); }
   /**Iterate through child nodes with the name and return the first child that matches
    */
   default ConfigNode child(Predicate<ConfigNode> test, String name) {
@@ -200,10 +200,10 @@ public interface ConfigNode {
   SimpleMap<String> empty_attrs = new WrappedSimpleMap<>(Collections.emptyMap());
 
   public class Helpers {
-    static boolean __bool(Object v, boolean def) { return v == null ? def : Boolean.parseBoolean(v.toString()); }
-    static String __txt(Object v, String def) { return v == null ? def : v.toString(); }
-    static int __int(Object v, int def) { return v==null? def: Integer.parseInt(v.toString()); }
-    static double __double(Object v, double def) { return v == null ? def: Double.parseDouble(v.toString()); }
+    static boolean _bool(Object v, boolean def) { return v == null ? def : Boolean.parseBoolean(v.toString()); }
+    static String _txt(Object v, String def) { return v == null ? def : v.toString(); }
+    static int _int(Object v, int def) { return v==null? def: Integer.parseInt(v.toString()); }
+    static double _double(Object v, double def) { return v == null ? def: Double.parseDouble(v.toString()); }
     public static Predicate<ConfigNode> at(int i) {
       return new Predicate<ConfigNode>() {
         int index =0;
