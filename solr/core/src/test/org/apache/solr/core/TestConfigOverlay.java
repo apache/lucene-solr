@@ -46,9 +46,6 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(isEditableProp("query.queryResultMaxDocsCached", false, null));
     assertTrue(isEditableProp("query.enableLazyFieldLoading", false, null));
     assertTrue(isEditableProp("query.boolTofilterOptimizer", false, null));
-    assertTrue(isEditableProp("jmx.agentId", false, null));
-    assertTrue(isEditableProp("jmx.serviceUrl", false, null));
-    assertTrue(isEditableProp("jmx.rootName", false, null));
 
     assertTrue(isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));
     assertTrue(isEditableProp("requestDispatcher.requestParsers.formdataUploadLimitInKB", false, null));
