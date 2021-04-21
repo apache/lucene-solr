@@ -16,10 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.function.Predicate;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -27,8 +24,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.common.ConfigNode.Helpers.at;
 
 
 public class SuggestComponentTest extends SolrTestCaseJ4 {
@@ -210,24 +205,24 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // validate that this suggester is not storing the lookup
     assertEquals(suggester,
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",8).
-            __("str", n -> "name".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",8).
+            get("str", n -> "name".equals(n.attr("name"))).txt());
 
-    assertNull( h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-        .__("lst",8).
-            __("str", n -> "storeDir".equals(n.attr("name"))).txt());
+    assertNull( h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+        .get("lst",8).
+            get("str", n -> "storeDir".equals(n.attr("name"))).txt());
     
     // validate that this suggester only builds manually and has not buildOnStartup parameter
 
     assertEquals("false",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",8).
-            __("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",8).
+            get("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
 
-    assertNull(h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-        .__("lst",8).
-            __("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
+    assertNull(h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+        .get("lst",8).
+            get("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
     
     reloadCore(random().nextBoolean());
     
@@ -272,25 +267,25 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     // validate that this suggester is storing the lookup
 
     assertEquals(suggester,
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",7).
-            __("str", n -> "name".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",7).
+            get("str", n -> "name".equals(n.attr("name"))).txt());
 
     assertEquals(suggester,
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",7).
-            __("str", n -> "storeDir".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",7).
+            get("str", n -> "storeDir".equals(n.attr("name"))).txt());
     
     // validate that this suggester only builds manually and has not buildOnStartup parameter
 
     assertEquals("false",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",7).
-            __("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",7).
+            get("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
 
-    assertNull( h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-        .__("lst",7).
-            __("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
+    assertNull( h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+        .get("lst",7).
+            get("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
     
     assertQ(req("qt", rh, 
         SuggesterParams.SUGGEST_DICT, suggester,
@@ -369,25 +364,25 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     // validate that this suggester is storing the lookup
 
     assertEquals(suggester,
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",6).
-            __("str", n -> "name".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",6).
+            get("str", n -> "name".equals(n.attr("name"))).txt());
 
     assertEquals(suggester,
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",6).
-            __("str", n -> "storeDir".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",6).
+            get("str", n -> "storeDir".equals(n.attr("name"))).txt());
     
     // validate that this suggester only builds manually
 
     assertEquals("false",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",6).
-            __("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",6).
+            get("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
     assertEquals("false",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",6).
-            __("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",6).
+            get("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
     
     // build the suggester manually
     assertQ(req("qt", rh, 
@@ -442,24 +437,24 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // validate that this suggester is not storing the lookup and buildOnStartup is not set
     assertEquals(suggesterFuzzy,
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",3).
-            __("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",3).
+            get("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
 
-    assertNull(  h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-        .__("lst",3).
-            __("str", n -> "storeDir".equals(n.attr("name"))).txt());
+    assertNull(  h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+        .get("lst",3).
+            get("str", n -> "storeDir".equals(n.attr("name"))).txt());
 
     
     // assert that buildOnStartup=false
     assertEquals("false",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",3).
-            __("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",3).
+            get("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
     assertEquals("true",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",3).
-            __("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",3).
+            get("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
     
     // verify that this suggester is built (there was a commit in setUp)
     assertQ(req("qt", rh, 
@@ -503,20 +498,20 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // repeat the test with "suggest_fuzzy_doc_dict_build_startup", it is exactly the same but with buildOnStartup=true
     assertEquals(suggestStartup,
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",5).
-            __("str", n -> "name".equals(n.attr("name"))).txt());
-    assertNull( h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-        .__("lst",5).
-            __("str", n -> "storeDir".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",5).
+            get("str", n -> "name".equals(n.attr("name"))).txt());
+    assertNull( h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+        .get("lst",5).
+            get("str", n -> "storeDir".equals(n.attr("name"))).txt());
     assertEquals("true",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",5).
-            __("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",5).
+            get("str", n -> "buildOnStartup".equals(n.attr("name"))).txt());
     assertEquals("false",
-        h.getCore().getSolrConfig().__("searchComponent", n -> "suggest".equals(n.attr("name")))
-            .__("lst",5).
-            __("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
+        h.getCore().getSolrConfig().get("searchComponent", n -> "suggest".equals(n.attr("name")))
+            .get("lst",5).
+            get("str", n -> "buildOnCommit".equals(n.attr("name"))).txt());
     
     // reload the core
     reloadCore(createNewCores);

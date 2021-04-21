@@ -107,12 +107,12 @@ public class DataConfigNode implements ConfigNode {
   }
 
   @Override
-  public List<ConfigNode> children(String name) {
+  public List<ConfigNode> getAll(String name) {
     return kids.get(name, Collections.emptyList());
   }
 
   @Override
-  public List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> matchNames) {
+  public List<ConfigNode> getAll(Predicate<ConfigNode> test, Set<String> matchNames) {
     List<ConfigNode> result = new ArrayList<>();
     for (String s : matchNames) {
       List<ConfigNode> vals = kids.get(s);

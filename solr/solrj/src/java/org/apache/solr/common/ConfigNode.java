@@ -59,17 +59,17 @@ public interface ConfigNode {
    * if there are multiple values , it returns the first elem
    * This never returns a null
    */
-  default ConfigNode __(String name) {
+  default ConfigNode get(String name) {
     ConfigNode child = child(null, name);
     return child == null? EMPTY: child;
   }
-  default ConfigNode __(String name, Predicate<ConfigNode> test) {
-    List<ConfigNode> children = children(test, name);
+  default ConfigNode get(String name, Predicate<ConfigNode> test) {
+    List<ConfigNode> children = getAll(test, name);
     if(children.isEmpty()) return EMPTY;
     return children.get(0);
   }
-  default ConfigNode __(String name, int idx) {
-    List<ConfigNode> children = children(null, name);
+  default ConfigNode get(String name, int idx) {
+    List<ConfigNode> children = getAll(null, name);
     if(idx < children.size()) return children.get(idx);
     return EMPTY;
 
@@ -123,15 +123,15 @@ public interface ConfigNode {
    * @param nodeNames names of tags to be returned
    * @param  test check for the nodes to be returned
    */
-  default List<ConfigNode> children(Predicate<ConfigNode> test, String... nodeNames) {
-    return children(test, nodeNames == null ? Collections.emptySet() : new HashSet<>(Arrays.asList(nodeNames)));
+  default List<ConfigNode> getAll(Predicate<ConfigNode> test, String... nodeNames) {
+    return getAll(test, nodeNames == null ? Collections.emptySet() : new HashSet<>(Arrays.asList(nodeNames)));
   }
 
   /**Iterate through child nodes with the names and return all the matching children
    * @param matchNames names of tags to be returned
    * @param  test check for the nodes to be returned
    */
-  default List<ConfigNode> children(Predicate<ConfigNode> test, Set<String> matchNames) {
+  default List<ConfigNode> getAll(Predicate<ConfigNode> test, Set<String> matchNames) {
     List<ConfigNode> result = new ArrayList<>();
     forEachChild(it -> {
       if (matchNames != null && !matchNames.isEmpty() && !matchNames.contains(it.name())) return Boolean.TRUE;
@@ -141,8 +141,8 @@ public interface ConfigNode {
     return result;
   }
 
-  default List<ConfigNode> children(String name) {
-    return children(null, Collections.singleton(name));
+  default List<ConfigNode> getAll(String name) {
+    return getAll(null, Collections.singleton(name));
   }
 
   default boolean exists() { return true; }
@@ -182,7 +182,7 @@ public interface ConfigNode {
     public ConfigNode child(String name) { return null; }
 
     @Override
-    public ConfigNode __(String name) {
+    public ConfigNode get(String name) {
       return EMPTY;
     }
 

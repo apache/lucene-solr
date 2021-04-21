@@ -237,14 +237,14 @@ public class SolrConfig implements MapSerializable {
 
       // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0_0.
       // For older solrconfig.xml's we allow the old sections, but never mixed with the new <indexConfig>
-      boolean hasDeprecatedIndexConfig = __("indexDefaults").exists() || __("mainIndex").exists();
+      boolean hasDeprecatedIndexConfig = get("indexDefaults").exists() || get("mainIndex").exists();
       if (hasDeprecatedIndexConfig) {
         throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
       } else {
         indexConfigPrefix = "indexConfig";
       }
       assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
-              " This config will be removed in future versions.", !__("indexDefaults").__("nrtMode").exists(),
+              " This config will be removed in future versions.", !get("indexDefaults").get("nrtMode").exists(),
           true
       );
       assertWarnOrFail("Solr no longer supports forceful unlocking via the 'unlockOnStartup' option.  " +
@@ -252,14 +252,14 @@ public class SolrConfig implements MapSerializable {
               "it would be dangerous and should not be done.  For other lockTypes and/or " +
               "directoryFactory options it may also be dangerous and users must resolve " +
               "problematic locks manually.",
-          !__(indexConfigPrefix).__("unlockOnStartup").exists(),
+          !get(indexConfigPrefix).get("unlockOnStartup").exists(),
           true // 'fail' in trunk
       );
 
       // Parse indexConfig section, using mainIndex as backup in case old config is used
-      indexConfig = new SolrIndexConfig(__("indexConfig"), null);
+      indexConfig = new SolrIndexConfig(get("indexConfig"), null);
 
-      booleanQueryMaxClauseCount = __("query").__("maxBooleanClauses")._int(BooleanQuery.getMaxClauseCount());
+      booleanQueryMaxClauseCount = get("query").get("maxBooleanClauses")._int(BooleanQuery.getMaxClauseCount());
       if (BooleanQuery.getMaxClauseCount() < booleanQueryMaxClauseCount) {
         log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} and will have no effect {}"
             , booleanQueryMaxClauseCount, BooleanQuery.getMaxClauseCount()
@@ -268,9 +268,9 @@ public class SolrConfig implements MapSerializable {
 
       // Warn about deprecated / discontinued parameters
       // boolToFilterOptimizer has had no effect since 3.1
-      if (__("query").__("boolTofilterOptimizer").exists())
+      if (get("query").get("boolTofilterOptimizer").exists())
         log.warn("solrconfig.xml: <boolTofilterOptimizer> is currently not implemented and has no effect.");
-      if (__("query").__("HashDocSet").exists())
+      if (get("query").get("HashDocSet").exists())
         log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer used.");
 
 // TODO: Old code - in case somebody wants to re-enable. Also see SolrIndexSearcher#search()
@@ -278,15 +278,15 @@ public class SolrConfig implements MapSerializable {
 //    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
 //    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
 
-      useFilterForSortedQuery = __("query").__("useFilterForSortedQuery")._bool(false);
-      queryResultWindowSize = Math.max(1, __("query").__("queryResultWindowSize")._int(1));
-      queryResultMaxDocsCached = __("query").__("queryResultMaxDocsCached")._int(Integer.MAX_VALUE);
-      enableLazyFieldLoading = __("query").__("enableLazyFieldLoading")._bool(false);
+      useFilterForSortedQuery = get("query").get("useFilterForSortedQuery")._bool(false);
+      queryResultWindowSize = Math.max(1, get("query").get("queryResultWindowSize")._int(1));
+      queryResultMaxDocsCached = get("query").get("queryResultMaxDocsCached")._int(Integer.MAX_VALUE);
+      enableLazyFieldLoading = get("query").get("enableLazyFieldLoading")._bool(false);
 
-      filterCacheConfig = CacheConfig.getConfig(this, __("query").__("filterCache"), "query/filterCache");
-      queryResultCacheConfig = CacheConfig.getConfig(this, __("query").__("queryResultCache"), "query/queryResultCache");
-      documentCacheConfig = CacheConfig.getConfig(this, __("query").__("documentCache"), "query/documentCache");
-      CacheConfig conf = CacheConfig.getConfig(this, __("query").__("fieldValueCache"), "query/fieldValueCache");
+      filterCacheConfig = CacheConfig.getConfig(this, get("query").get("filterCache"), "query/filterCache");
+      queryResultCacheConfig = CacheConfig.getConfig(this, get("query").get("queryResultCache"), "query/queryResultCache");
+      documentCacheConfig = CacheConfig.getConfig(this, get("query").get("documentCache"), "query/documentCache");
+      CacheConfig conf = CacheConfig.getConfig(this, get("query").get("fieldValueCache"), "query/fieldValueCache");
       if (conf == null) {
         Map<String, String> args = new HashMap<>();
         args.put(NAME, "fieldValueCache");
@@ -296,25 +296,25 @@ public class SolrConfig implements MapSerializable {
         conf = new CacheConfig(FastLRUCache.class, args, null);
       }
       fieldValueCacheConfig = conf;
-      useColdSearcher = __("query").__("useColdSearcher")._bool(false);
-      dataDir = __("dataDir").txt();
+      useColdSearcher = get("query").get("useColdSearcher")._bool(false);
+      dataDir = get("dataDir").txt();
       if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
 
       org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
 
-      if (__("jmx").exists()) {
+      if (get("jmx").exists()) {
         log.warn("solrconfig.xml: <jmx> is no longer supported, use solr.xml:/metrics/reporter section instead");
       }
 
       httpCachingConfig = new HttpCachingConfig(this);
 
-      maxWarmingSearchers = __("query").__("maxWarmingSearchers")._int(1);
-      slowQueryThresholdMillis = __("query").__("slowQueryThresholdMillis")._int(-1);
+      maxWarmingSearchers = get("query").get("maxWarmingSearchers")._int(1);
+      slowQueryThresholdMillis = get("query").get("slowQueryThresholdMillis")._int(-1);
       for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
       Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache",
-          __("query").children("cache"));
+          get("query").getAll("cache"));
       List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
       if (!caches.isEmpty()) {
         for (PluginInfo c : caches) {
@@ -325,18 +325,18 @@ public class SolrConfig implements MapSerializable {
 
       updateHandlerInfo = loadUpdatehandlerInfo();
 
-      multipartUploadLimitKB = __("requestDispatcher").__("requestParsers").intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
+      multipartUploadLimitKB = get("requestDispatcher").get("requestParsers").intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
       if (multipartUploadLimitKB == -1) multipartUploadLimitKB = Integer.MAX_VALUE;
 
-      formUploadLimitKB = __("requestDispatcher").__("requestParsers").intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
+      formUploadLimitKB = get("requestDispatcher").get("requestParsers").intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
       if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
-      enableRemoteStreams = __("requestDispatcher").__("requestParsers").boolAttr("enableRemoteStreaming", false);
+      enableRemoteStreams = get("requestDispatcher").get("requestParsers").boolAttr("enableRemoteStreaming", false);
 
-      enableStreamBody = __("requestDispatcher").__("requestParsers").boolAttr("enableStreamBody", false);
+      enableStreamBody = get("requestDispatcher").get("requestParsers").boolAttr("enableStreamBody", false);
 
-      handleSelect = __("requestDispatcher").boolAttr("handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
-      addHttpRequestToContext = __("requestDispatcher").__("requestParsers").boolAttr("addHttpRequestToContext", false);
+      handleSelect = get("requestDispatcher").boolAttr("handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
+      addHttpRequestToContext = get("requestDispatcher").get("requestParsers").boolAttr("addHttpRequestToContext", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -404,15 +404,19 @@ public class SolrConfig implements MapSerializable {
           // declared outside of the appropriate context) but there's no nice
           // way around that in the PluginInfo framework
       .add(new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK, REQUIRE_NAME_IN_OVERLAY))
-      .add(new SolrPluginInfo(SolrEventListener.class, "//listener", REQUIRE_CLASS, MULTI_OK, REQUIRE_NAME_IN_OVERLAY))
+      .add(new SolrPluginInfo(it -> {
+        List<ConfigNode> l = it.get("query").getAll("listener");
+        l.addAll(it.get( "updateHandler").getAll("listener"));
+        return l;
+      }, SolrEventListener.class, "//listener", REQUIRE_CLASS, MULTI_OK, REQUIRE_NAME_IN_OVERLAY))
 
       .add(new SolrPluginInfo(DirectoryFactory.class, "directoryFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(RecoveryStrategy.Builder.class, "recoveryStrategy"))
-      .add(new SolrPluginInfo(IndexDeletionPolicy.class, "indexConfig/deletionPolicy", REQUIRE_CLASS))
+      .add(new SolrPluginInfo(it -> it.get("indexConfig").getAll("deletionPolicy"), IndexDeletionPolicy.class, "indexConfig/deletionPolicy", REQUIRE_CLASS))
       .add(new SolrPluginInfo(CodecFactory.class, "codecFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(IndexReaderFactory.class, "indexReaderFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(UpdateRequestProcessorChain.class, "updateRequestProcessorChain", MULTI_OK))
-      .add(new SolrPluginInfo(UpdateLog.class, "updateHandler/updateLog"))
+      .add(new SolrPluginInfo(it -> it.get("updateHandler").getAll("updateLog"), UpdateLog.class, "updateHandler/updateLog"))
       .add(new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS))
       .add(new SolrPluginInfo(RestManager.class, "restManager"))
       .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
@@ -432,10 +436,16 @@ public class SolrConfig implements MapSerializable {
     public final Class clazz;
     public final String tag;
     public final Set<PluginOpts> options;
+    final Function<SolrConfig, List<ConfigNode>> configReader;
 
+    private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
+      this(solrConfig -> solrConfig.root.getAll(null, tag), clz, tag, opts);
+
+    }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private SolrPluginInfo(Class clz, String tag, PluginOpts... opts) {
+    private SolrPluginInfo(Function<SolrConfig, List<ConfigNode>> configReader, Class clz, String tag, PluginOpts... opts) {
+      this.configReader = configReader;
       this.clazz = clz;
       this.tag = tag;
       this.options = opts == null ? Collections.EMPTY_SET : EnumSet.of(NOOP, opts);
@@ -487,15 +497,15 @@ public class SolrConfig implements MapSerializable {
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
-    return new UpdateHandlerInfo( __("updateHandler").attr("class"),
-        __("updateHandler").__("autoCommit").__("maxDocs")._int( -1),
-        __("updateHandler").__("autoCommit").__("maxTime")._int( -1),
-        convertHeapOptionStyleConfigStringToBytes(__("updateHandler").__("autoCommit").__("maxSize").txt()),
-       __("updateHandler").__("indexWriter").__("closeWaitsForMerges")._bool(true),
-        __("updateHandler").__("autoCommit").__("openSearcher")._bool(true),
-        __("updateHandler").__("autoSoftCommit").__("maxDocs")._int(-1),
-        __("updateHandler").__("autoSoftCommit").__("maxTime")._int(-1),
-        __("updateHandler").__("commitWithin").__("softCommit")._bool(true));
+    return new UpdateHandlerInfo( get("updateHandler").attr("class"),
+        get("updateHandler").get("autoCommit").get("maxDocs")._int( -1),
+        get("updateHandler").get("autoCommit").get("maxTime")._int( -1),
+        convertHeapOptionStyleConfigStringToBytes(get("updateHandler").get("autoCommit").get("maxSize").txt()),
+       get("updateHandler").get("indexWriter").get("closeWaitsForMerges")._bool(true),
+        get("updateHandler").get("autoCommit").get("openSearcher")._bool(true),
+        get("updateHandler").get("autoSoftCommit").get("maxDocs")._int(-1),
+        get("updateHandler").get("autoSoftCommit").get("maxTime")._int(-1),
+        get("updateHandler").get("commitWithin").get("softCommit")._bool(true));
   }
 
   /**
@@ -540,7 +550,7 @@ public class SolrConfig implements MapSerializable {
     boolean requireName = pluginInfo.options.contains(REQUIRE_NAME);
     boolean requireClass = pluginInfo.options.contains(REQUIRE_CLASS);
 
-    List<PluginInfo> result = readPluginInfos(pluginInfo.tag, requireName, requireClass);
+    List<PluginInfo> result = readPluginInfos(pluginInfo, requireName, requireClass);
 
     if (1 < result.size() && !pluginInfo.options.contains(MULTI_OK)) {
       throw new SolrException
@@ -551,12 +561,15 @@ public class SolrConfig implements MapSerializable {
     if (!result.isEmpty()) pluginStore.put(pluginInfo.clazz.getName(), result);
   }
 
-  public List<PluginInfo> readPluginInfos(String tag, boolean requireName, boolean requireClass) {
+  public List<PluginInfo> readPluginInfos(SolrPluginInfo info, boolean requireName, boolean requireClass) {
     ArrayList<PluginInfo> result = new ArrayList<>();
-    List<ConfigNode> nodes = root.children(tag);
-    for (int i = 0; i < nodes.size(); i++) {
-      PluginInfo pluginInfo = new PluginInfo(nodes.get(i), "[solrconfig.xml] " + tag, requireName, requireClass);
-      if (pluginInfo.isEnabled()) result.add(pluginInfo);
+    try {
+      for (ConfigNode node : info.configReader.apply(this)) {
+        PluginInfo pluginInfo = new PluginInfo(node, "[solrconfig.xml] " + info.tag, requireName, requireClass);
+        if (pluginInfo.isEnabled()) result.add(pluginInfo);
+      }
+    } catch (RuntimeException e) {
+      throw e;
     }
     return result;
   }
@@ -651,14 +664,14 @@ public class SolrConfig implements MapSerializable {
       configNode = conf.root;
 
       //"requestDispatcher/httpCaching/";
-      never304 = __("requestDispatcher").__("httpCaching").boolAttr("never304", false);
+      never304 = __("requestDispatcher").get("httpCaching").boolAttr("never304", false);
 
-      etagSeed = __("requestDispatcher").__("httpCaching").attr("etagSeed", "Solr");
+      etagSeed = __("requestDispatcher").get("httpCaching").attr("etagSeed", "Solr");
 
 
-      lastModFrom = LastModFrom.parse(__("requestDispatcher").__("httpCaching").attr("lastModFrom","openTime"));
+      lastModFrom = LastModFrom.parse(__("requestDispatcher").get("httpCaching").attr("lastModFrom","openTime"));
 
-      cacheControlHeader = __("requestDispatcher").__("httpCaching").__("cacheControl").txt();
+      cacheControlHeader = __("requestDispatcher").get("httpCaching").get("cacheControl").txt();
 
       Long tmp = null; // maxAge
       if (null != cacheControlHeader) {
@@ -677,7 +690,7 @@ public class SolrConfig implements MapSerializable {
 
     }
     private ConfigNode __(String name){
-      return configNode.__(name);
+      return configNode.get(name);
     }
 
     public boolean isNever304() {
@@ -827,7 +840,7 @@ public class SolrConfig implements MapSerializable {
       }
     }
 
-    List<ConfigNode> nodes = root.children("lib");
+    List<ConfigNode> nodes = root.getAll("lib");
     if (nodes != null && nodes.size() > 0) {
       if (!isConfigsetTrusted) {
         throw new SolrException(ErrorCode.UNAUTHORIZED,
@@ -1029,16 +1042,16 @@ public class SolrConfig implements MapSerializable {
    *
    *
    */
-  public ConfigNode __(String name) {
+  public ConfigNode get(String name) {
     if (!overlay.hasKey(name)) {
       //there is no overlay
-      return root.__(name);
+      return root.get(name);
     }
-    return new OverlaidConfigNode(name, null,root.__(name));
+    return new OverlaidConfigNode(name, null,root.get(name));
   }
 
-  public ConfigNode __(String name, Predicate<ConfigNode> test) {
-    return root.__(name, test);
+  public ConfigNode get(String name, Predicate<ConfigNode> test) {
+    return root.get(name, test);
   }
    private class OverlaidConfigNode implements ConfigNode {
 
@@ -1063,8 +1076,8 @@ public class SolrConfig implements MapSerializable {
      }
 
      @Override
-    public ConfigNode __(String name) {
-      return wrap(delegate.__(name), name);
+    public ConfigNode get(String name) {
+      return wrap(delegate.get(name), name);
     }
 
     private ConfigNode wrap(ConfigNode n, String name) {
@@ -1072,8 +1085,8 @@ public class SolrConfig implements MapSerializable {
     }
 
     @Override
-    public ConfigNode __(String name, Predicate<ConfigNode> test) {
-      return wrap(delegate.__(name, test), name);
+    public ConfigNode get(String name, Predicate<ConfigNode> test) {
+      return wrap(delegate.get(name, test), name);
     }
 
      @Override
@@ -1082,8 +1095,8 @@ public class SolrConfig implements MapSerializable {
      }
 
      @Override
-    public ConfigNode __(String name, int idx) {
-      return wrap(delegate.__(name, idx), name);
+    public ConfigNode get(String name, int idx) {
+      return wrap(delegate.get(name, idx), name);
     }
 
     @Override

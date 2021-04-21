@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -111,9 +110,9 @@ public class SolrIndexConfig implements MapSerializable {
     // enable coarse-grained metrics by default
     metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
   }
-  private ConfigNode __(String s) { return node.__(s); }
+  private ConfigNode __(String s) { return node.get(s); }
   public SolrIndexConfig(SolrConfig cfg, SolrIndexConfig def)  {
-    this(cfg.__("indexConfig"), def);
+    this(cfg.get("indexConfig"), def);
   }
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml

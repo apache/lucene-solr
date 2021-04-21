@@ -188,9 +188,9 @@ public final class FieldTypePluginLoader
 
     // check for all of these up front, so we can error if used in 
     // conjunction with an explicit analyzer class.
-    List<ConfigNode> charFilterNodes = node.children("charFilter");
-    List<ConfigNode> tokenizerNodes = node.children("tokenizer");
-    List<ConfigNode> tokenFilterNodes = node.children("filter");
+    List<ConfigNode> charFilterNodes = node.getAll("charFilter");
+    List<ConfigNode> tokenizerNodes = node.getAll("tokenizer");
+    List<ConfigNode> tokenFilterNodes = node.getAll("filter");
 
     if (analyzerName != null) {
 

@@ -79,24 +79,24 @@ public class TestConfig extends SolrTestCaseJ4 {
   public void testJavaProperty() {
     // property values defined in build.xml
 
-    String s = solrConfig.__("propTest").txt();
+    String s = solrConfig.get("propTest").txt();
     assertEquals("prefix-proptwo-suffix", s);
 
-    s = solrConfig.__("propTest").attr("attr1", "default");
+    s = solrConfig.get("propTest").attr("attr1", "default");
     assertEquals("propone-${literal}", s);
 
-    s = solrConfig.__("propTest").attr("attr2", "default");
+    s = solrConfig.get("propTest").attr("attr2", "default");
     assertEquals("default-from-config", s);
 
 
-    assertEquals("prefix-proptwo-suffix", solrConfig.__("propTest",
+    assertEquals("prefix-proptwo-suffix", solrConfig.get("propTest",
         it -> "default-from-config".equals(it.attr("attr2"))).txt());
 
-    List<ConfigNode> nl = solrConfig.root.children ("propTest");
+    List<ConfigNode> nl = solrConfig.root.getAll("propTest");
     assertEquals(1, nl.size());
     assertEquals("prefix-proptwo-suffix", nl.get(0).txt());
 
-    assertEquals("prefix-proptwo-suffix", solrConfig.__("propTest").txt());
+    assertEquals("prefix-proptwo-suffix", solrConfig.get("propTest").txt());
   }
 
   // sometime if the config referes to old things, it must be replaced with new stuff

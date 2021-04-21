@@ -64,7 +64,7 @@ public class DOMConfigNode implements ConfigNode {
   }
 
   @Override
-  public List<ConfigNode> children(String name) {
+  public List<ConfigNode> getAll(String name) {
     List<ConfigNode> result = new ArrayList<>();
     forEachChild(it -> {
       if (name.equals(it.name())) {
