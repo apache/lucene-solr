@@ -43,6 +43,7 @@ import org.apache.solr.index.DefaultMergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactoryArgs;
 import org.apache.solr.index.SortingMergePolicy;
+import org.apache.solr.index.UninvertDocValuesMergePolicyFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
@@ -302,6 +303,10 @@ public class SolrIndexConfig implements MapSerializable {
         NO_SUB_PACKAGES,
         new Class[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
         new Object[] {resourceLoader, mpfArgs, schema });
+
+    if (mpf instanceof UninvertDocValuesMergePolicyFactory) {
+      log.warn("UninvertDocValuesMergePolicyFactory will be removed in Solr 9 due to changes in Lucene 9.");
+    }
 
     return mpf.getMergePolicy();
   }

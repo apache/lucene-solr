@@ -48,7 +48,9 @@ import org.apache.solr.uninverting.UninvertingReader;
  * 
  * This merge policy will delegate to the wrapped merge policy for selecting merge segments
  * 
+ * @deprecated This class will be removed in Solr 9 due to changes in Lucene 9.
  */
+@Deprecated
 public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFactory {
   
   final private boolean skipIntegrityCheck;
