@@ -61,6 +61,7 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
@@ -187,28 +188,27 @@ public class SolrConfig implements MapSerializable {
     this.substituteProperties = substitutableProperties;
     getOverlay();//just in case it is not initialized
     // insist we have non-null substituteProperties; it might get overlayed
-    if(loader.getCoreContainer()!= null && loader.getCoreContainer().getZkController() != null ){
-      @SuppressWarnings("unchecked")
-      Map<String, IndexSchemaFactory.VersionedConfig> configCache = (Map<String, IndexSchemaFactory.VersionedConfig>) loader.getCoreContainer().getZkController().getSolrCloudManager().getObjectCache()
+    if (loader.getCoreContainer() != null && loader.getCoreContainer().getObjectCache() != null) {
+      Map<String, IndexSchemaFactory.VersionedConfig> configCache = (Map<String, IndexSchemaFactory.VersionedConfig>) loader.getCoreContainer().getObjectCache()
           .computeIfAbsent(ConfigSetService.ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
 
-        //currently not optimized for this
-        IndexSchemaFactory.VersionedConfig cfg = configCache.get(name);
-        if(cfg != null) {
-          InputStream in = loader.openResource(name);
-          if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-            int zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-            int overlayVersion = overlay.getZnodeVersion();
-            int hashcode = Objects.hash(zkVersion, overlayVersion);
-            if(cfg.version == hashcode) {
-              root = cfg.data;
-            } else {
-              configCache.remove(name);
-              readXml(loader, name);
-              configCache.put(name, new IndexSchemaFactory.VersionedConfig(hashcode, root));
-            }
+      //currently not optimized for this
+      IndexSchemaFactory.VersionedConfig cfg = configCache.get(name);
+      if (cfg != null) {
+        InputStream in = loader.openResource(name);
+        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+          int zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+          int overlayVersion = overlay.getZnodeVersion();
+          int hashcode = Objects.hash(zkVersion, overlayVersion);
+          if (cfg.version == hashcode) {
+            root = cfg.data;
+          } else {
+            configCache.remove(name);
+            readXml(loader, name);
+            configCache.put(name, new IndexSchemaFactory.VersionedConfig(hashcode, root));
           }
         }
+      }
     }
     if(root == null) {
       readXml(loader, name);
@@ -244,7 +244,7 @@ public class SolrConfig implements MapSerializable {
         indexConfigPrefix = "indexConfig";
       }
       assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
-              " This config will be removed in future versions.", !get("indexDefaults").get("nrtMode").exists(),
+              " This config will be removed in future versions.", get(indexConfigPrefix).get("nrtMode").isNull(),
           true
       );
       assertWarnOrFail("Solr no longer supports forceful unlocking via the 'unlockOnStartup' option.  " +
