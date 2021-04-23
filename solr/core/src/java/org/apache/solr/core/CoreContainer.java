@@ -185,6 +185,9 @@ public class CoreContainer {
 
   private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
 
+  final int maxSearchExecutors = Integer.getInteger("SolrCoreSearchExecutors", 113);
+  ExecutorService[] searcherExecutors;
+
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
   protected volatile CoreAdminHandler coreAdminHandler = null;
@@ -308,7 +311,6 @@ public class CoreContainer {
       log.debug("New CoreContainer {}", System.identityHashCode(this));
     }
   }
-
   /**
    * Create a new CoreContainer using the given solr home directory.  The container's
    * cores are not loaded.
@@ -377,7 +379,16 @@ public class CoreContainer {
     } catch (Exception e) {
       log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
     }
+    this.searcherExecutors = new ExecutorService[maxSearchExecutors];
+    initializeSearchExecutors();
     log.info("Initialized core container as {}", isQueryAggregator ? "query aggregator" : "data node");
+  }
+
+  private void initializeSearchExecutors() {
+    for (int i = 0; i < this.searcherExecutors.length; i++) {
+      this.searcherExecutors[i] = ExecutorUtil.newMDCAwareSingleThreadExecutor(
+          new SolrNamedThreadFactory("searcherExecutor"));
+    }
   }
 
   private void registerCollectionListener() {
@@ -592,6 +603,10 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
+  }
+
+  public ExecutorService getSearchExecutor(String seed) {
+    return searcherExecutors[Math.abs(seed.hashCode()) % searcherExecutors.length];
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1110,6 +1125,15 @@ public class CoreContainer {
       // Since all the pending operations queues have been drained, there should be nothing to do.
       synchronized (solrCores.getModifyLock()) {
         solrCores.getModifyLock().notifyAll(); // wake up the thread
+      }
+
+      //closing searchexecutors
+      for (ExecutorService es : searcherExecutors) {
+        try {
+          ExecutorUtil.shutdownAndAwaitTermination(es);
+        } catch (Throwable e) {
+          SolrException.log(log, e);
+        }
       }
 
       customThreadPool.submit(() -> {

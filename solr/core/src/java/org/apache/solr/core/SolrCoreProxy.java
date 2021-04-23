@@ -17,9 +17,24 @@
 
 package org.apache.solr.core;
 
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SolrCoreProxy extends SolrCore {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  //to wait during core close
+  private Future searcherExecutorFuture = null;
+  private boolean isSearchExecutorClosed = false;
 
   public SolrCoreProxy(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet coreConfig) {
     super(coreContainer, cd, coreConfig);
@@ -47,5 +62,40 @@ public class SolrCoreProxy extends SolrCore {
    */
   protected boolean forceReloadCore() {
     return true;
+  }
+
+  protected ExecutorService getExecutorService(CoreContainer coreContainer, String name) {
+    //using executor from pool
+    final ExecutorService searcherExecutor;
+    searcherExecutor = coreContainer.getSearchExecutor(name + System.nanoTime());
+    return searcherExecutor;
+  }
+
+  protected void searchExecutorWaiter(Future future) {
+    searcherExecutorFuture = future;
+  }
+
+  protected void searchExecutorClosed() {
+    if (isSearchExecutorClosed) {
+      //caller should take care of it
+      throw new RuntimeException("Core has been closed");
+    }
+  }
+
+  protected void closeSearchExecutor() {
+    try {
+      openSearcherLock.lock();
+      if (searcherExecutor != null) {
+        searcherExecutorFuture.get(60, TimeUnit.SECONDS);
+      }
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
+    } finally {
+      isSearchExecutorClosed = true;
+      openSearcherLock.unlock();
+    }
   }
 }
