@@ -304,10 +304,6 @@ public class SolrIndexConfig implements MapSerializable {
         new Class[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
         new Object[] {resourceLoader, mpfArgs, schema });
 
-    if (mpf instanceof UninvertDocValuesMergePolicyFactory) {
-      log.warn("UninvertDocValuesMergePolicyFactory will be removed in Solr 9 due to changes in Lucene 9.");
-    }
-
     return mpf.getMergePolicy();
   }
 
