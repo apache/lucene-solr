@@ -41,7 +41,7 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
-  public static final Set<String>  NL_TAGS = new HashSet<>(Arrays.asList("str", "int", "long", "float", "double", "bool"));
+  public static final Set<String>  NL_TAGS = new HashSet<>(Arrays.asList("str", "int", "long", "float", "double", "bool", "null"));
 
 
   public static Map<String,String> toMap(NamedNodeMap attrs) {
@@ -214,6 +214,8 @@ public class DOMUtil {
         val = Double.valueOf(textValue);
       } else if ("bool".equals(type)) {
         val = StrUtils.parseBool(textValue);
+      } else if("null".equals(type)) {
+        val = null;
       }
       // :NOTE: Unexpected Node names are ignored
       // :TODO: should we generate an error here?
