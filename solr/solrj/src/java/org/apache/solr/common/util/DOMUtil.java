@@ -243,6 +243,8 @@ public class DOMUtil {
         it.forEachChild(n -> {
           if (NL_TAGS.contains(n.name())) {
             l.add(parseVal(n.name(), null, n.txt()));
+          } else if("lst".equals(n.name())){
+            l.add(readNamedListChildren(n));
           }
           return Boolean.TRUE;
         });

@@ -59,7 +59,7 @@ public class DataConfigNode implements ConfigNode {
         e.setValue(Collections.unmodifiableList(e.getValue()));
       }
     }
-    this.kids = new WrappedSimpleMap<>(kids);
+    this.kids = kids.isEmpty()? EMPTY:  new WrappedSimpleMap<>(kids);
   }
 
   public String subtituteVal(String s) {
@@ -67,6 +67,7 @@ public class DataConfigNode implements ConfigNode {
   }
 
   private SimpleMap<String> wrap(SimpleMap<String> delegate) {
+    if(delegate.size() == 0) return delegate;//avoid unnecessary object creation
     return new SimpleMap<String>() {
           @Override
           public String get(String key) {
@@ -135,4 +136,5 @@ public class DataConfigNode implements ConfigNode {
       }
     });
   }
+  public static final SimpleMap<List<ConfigNode>> EMPTY = new WrappedSimpleMap<>(Collections.emptyMap());
 }
