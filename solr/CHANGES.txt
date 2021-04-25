@@ -55,6 +55,8 @@ Optimizations
 
 * SOLR-15120 Reduce duplicated core creation work (Mike Drob, Mark Miller)
 
+* SOLR-15067 ChildDocTransformerFactory uses perSegFilter cache (Bence Szabo via David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)

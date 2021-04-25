@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
 
@@ -64,6 +65,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
   private static final BooleanQuery rootFilter = new BooleanQuery.Builder()
       .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
       .add(new BooleanClause(new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME), BooleanClause.Occur.MUST_NOT)).build();
+  public static final String CACHE_NAME="perSegFilter";
 
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
@@ -98,7 +100,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     // DocSet parentDocSet = req.getSearcher().getDocSet(parentFilterQuery);
     // then return BitSetProducer with custom BitSet impl accessing the docSet
     if (parentFilterStr == null) {
-      parentsFilter = !buildHierarchy ? null : new QueryBitSetProducer(rootFilter);
+      parentsFilter = !buildHierarchy ? null : getCachedBitSetProducer(req, rootFilter);
     } else {
       if(buildHierarchy) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Parent filter should not be sent when the schema is nested");
@@ -107,7 +109,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       if (query == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid Parent filter '" + parentFilterStr + "', resolves to null");
       }
-      parentsFilter = new QueryBitSetProducer(query);
+      parentsFilter = getCachedBitSetProducer(req, query);
     }
 
     String childFilterStr = params.get( "childFilter" );
@@ -170,6 +172,17 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     return
         "+" + NEST_PATH_FIELD_NAME + (isAbsolutePath? ":": ":*\\/") + path
         + " +(" + remaining + ")";
+  }
+
+  public static BitSetProducer getCachedBitSetProducer(final SolrQueryRequest request, Query query) {
+    @SuppressWarnings("unchecked")
+    SolrCache<Query, BitSetProducer> parentCache = request.getSearcher().getCache(CACHE_NAME);
+    // lazily retrieve from solr cache
+    if (parentCache != null) {
+      return parentCache.computeIfAbsent(query, QueryBitSetProducer::new);
+    } else {
+      return new QueryBitSetProducer(query);
+    }
   }
 }
 
