@@ -172,14 +172,17 @@ public class SolrConfig implements MapSerializable {
   }
   private class ResourceProvider implements Function<String, InputStream> {
     int zkVersion;
-    public Integer hash;
+    int hash = -1;
     InputStream in;
+    String fileName;
 
     ResourceProvider(InputStream in) {
       this.in = in;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-        int zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        ZkSolrResourceLoader.ZkByteArrayInputStream zkin = (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
+        int zkVersion = zkin.getStat().getVersion();
         hash = Objects.hash(zkVersion, overlay.getZnodeVersion());
+        this.fileName = zkin.fileName;
       }
     }
 
@@ -199,7 +202,7 @@ public class SolrConfig implements MapSerializable {
    * @param substitutableProperties optional properties to substitute into the XML
    */
   private SolrConfig(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties)
-      throws ParserConfigurationException, IOException, SAXException {
+      throws IOException {
     this.resourceLoader = loader;
     this.resourceName = name;
     this.substituteProperties = substitutableProperties;
@@ -209,16 +212,15 @@ public class SolrConfig implements MapSerializable {
     if (loader.getCoreContainer() != null && loader.getCoreContainer().getObjectCache() != null) {
       configCache = (Map<String, IndexSchemaFactory.VersionedConfig>) loader.getCoreContainer().getObjectCache()
           .computeIfAbsent(ConfigSetService.ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
-
-      IndexSchemaFactory.VersionedConfig cfg = configCache.get(name);
+      ResourceProvider rp = new ResourceProvider(loader.openResource(name));
+      IndexSchemaFactory.VersionedConfig cfg = rp.fileName == null ? null : configCache.get(rp.fileName);
       if (cfg != null) {
-        ResourceProvider fr = new ResourceProvider(loader.openResource(name));
-        if (fr.hash != null) {
-          if (fr.hash == cfg.version) {
+        if (rp.hash != -1) {
+          if (rp.hash == cfg.version) {
             log.debug("LOADED_FROM_CACHE");
             root = cfg.data;
           } else {
-            readXml(loader, name, configCache, fr);
+            readXml(loader, name, configCache, rp);
           }
         }
       }
@@ -235,9 +237,6 @@ public class SolrConfig implements MapSerializable {
       }
     });
     try {
-//    xml = new XmlConfigFile(loader, name, null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties );
-//    root = new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement()));
-//    super(loader, name, null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
       getRequestParams();
       initLibs(loader, isConfigsetTrusted);
       String val = root.child(IndexSchema.LUCENE_MATCH_VERSION_PARAM,
@@ -368,13 +367,12 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  private void readXml(SolrResourceLoader loader, String name, Map<String, IndexSchemaFactory.VersionedConfig> configCache, ResourceProvider fr) throws IOException {
-    XmlConfigFile xml = new XmlConfigFile(loader,fr, name, null, "/config/", null);
+  private void readXml(SolrResourceLoader loader, String name, Map<String, IndexSchemaFactory.VersionedConfig> configCache, ResourceProvider rp) throws IOException {
+    XmlConfigFile xml = new XmlConfigFile(loader,rp, name, null, "/config/", null);
     root = new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement()));
-    this.znodeVersion = fr.zkVersion;
-    if(configCache != null) {
-      configCache.remove(name);
-      configCache.put(name, new IndexSchemaFactory.VersionedConfig(fr.hash, root));
+    this.znodeVersion = rp.zkVersion;
+    if(configCache != null && rp.fileName !=null) {
+      configCache.put(rp.fileName, new IndexSchemaFactory.VersionedConfig(rp.hash, root));
     }
   }
 
@@ -635,12 +633,6 @@ public class SolrConfig implements MapSerializable {
   public static class HttpCachingConfig implements MapSerializable {
 
     /**
-     * config xpath prefix for getting HTTP Caching options
-     */
-   /* private final static String CACHE_PRE
-        = "requestDispatcher/httpCaching/";
-*/
-    /**
      * For extracting Expires "ttl" from <cacheControl> config
      */
     private final static Pattern MAX_AGE
@@ -681,14 +673,14 @@ public class SolrConfig implements MapSerializable {
       configNode = conf.root;
 
       //"requestDispatcher/httpCaching/";
-      never304 = __("requestDispatcher").get("httpCaching").boolAttr("never304", false);
+      never304 = get("requestDispatcher").get("httpCaching").boolAttr("never304", false);
 
-      etagSeed = __("requestDispatcher").get("httpCaching").attr("etagSeed", "Solr");
+      etagSeed = get("requestDispatcher").get("httpCaching").attr("etagSeed", "Solr");
 
 
-      lastModFrom = LastModFrom.parse(__("requestDispatcher").get("httpCaching").attr("lastModFrom","openTime"));
+      lastModFrom = LastModFrom.parse(get("requestDispatcher").get("httpCaching").attr("lastModFrom","openTime"));
 
-      cacheControlHeader = __("requestDispatcher").get("httpCaching").get("cacheControl").txt();
+      cacheControlHeader = get("requestDispatcher").get("httpCaching").get("cacheControl").txt();
 
       Long tmp = null; // maxAge
       if (null != cacheControlHeader) {
@@ -706,7 +698,7 @@ public class SolrConfig implements MapSerializable {
       maxAge = tmp;
 
     }
-    private ConfigNode __(String name){
+    private ConfigNode get(String name){
       return configNode.get(name);
     }
 

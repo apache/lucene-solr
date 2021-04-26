@@ -37,7 +37,7 @@ import static org.apache.solr.core.TestConfigSets.solrxml;
 
 public class TestConfLoadPerf extends SolrTestCaseJ4 {
 
-  @Ignore
+//  @Ignore
   public void testPerf() throws Exception{
     String sourceHome = ExternalPaths.SOURCE_HOME;
     File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
@@ -70,7 +70,7 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
         if(resource.equals("solrconfig.xml")) {
           Stat stat = new Stat();
           stat.setVersion(1);
-          return new ZkSolrResourceLoader.ZkByteArrayInputStream(b, "solrconfig.xml", stat);
+          return new ZkSolrResourceLoader.ZkByteArrayInputStream(b, file.getAbsolutePath(), stat);
         } else {
           throw new FileNotFoundException(resource);
         }
