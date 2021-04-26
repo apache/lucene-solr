@@ -19,7 +19,6 @@ package org.apache.solr.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.PropertiesUtil;
@@ -51,16 +52,15 @@ public class DataConfigNode implements ConfigNode {
     root.forEachChild(it -> {
       List<ConfigNode> nodes = kids.computeIfAbsent(it.name(),
           k -> new ArrayList<>());
-
-     nodes.add(new DataConfigNode(it));
+      nodes.add(new DataConfigNode(it));
       return Boolean.TRUE;
     });
     for (Map.Entry<String, List<ConfigNode>> e : kids.entrySet()) {
       if(e.getValue()  != null) {
-        e.setValue(Collections.unmodifiableList(e.getValue()));
+        e.setValue(ImmutableList.copyOf(e.getValue()));
       }
     }
-    this.kids = kids.isEmpty()? EMPTY:  new WrappedSimpleMap<>(kids);
+    this.kids = kids.isEmpty()? EMPTY:  new WrappedSimpleMap<>(ImmutableMap.copyOf(kids));
   }
 
   public String subtituteVal(String s) {
