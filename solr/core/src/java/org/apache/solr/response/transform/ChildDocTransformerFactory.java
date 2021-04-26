@@ -24,7 +24,6 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.BitSetProducer;
-import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -33,9 +32,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.join.BlockJoinParentQParser;
 
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
@@ -174,15 +173,8 @@ public class ChildDocTransformerFactory extends TransformerFactory {
         + " +(" + remaining + ")";
   }
 
-  public static BitSetProducer getCachedBitSetProducer(final SolrQueryRequest request, Query query) {
-    @SuppressWarnings("unchecked")
-    SolrCache<Query, BitSetProducer> parentCache = request.getSearcher().getCache(CACHE_NAME);
-    // lazily retrieve from solr cache
-    if (parentCache != null) {
-      return parentCache.computeIfAbsent(query, QueryBitSetProducer::new);
-    } else {
-      return new QueryBitSetProducer(query);
-    }
+  private static BitSetProducer getCachedBitSetProducer(final SolrQueryRequest request, Query query) {
+    return BlockJoinParentQParser.getCachedFilter(request, query).getFilter();
   }
 }
 
