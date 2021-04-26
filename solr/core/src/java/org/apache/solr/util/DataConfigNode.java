@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +44,7 @@ public class DataConfigNode implements ConfigNode {
 
 
   public DataConfigNode(ConfigNode root) {
-    Map<String, List<ConfigNode>> kids = new HashMap<>();
+    Map<String, List<ConfigNode>> kids = new LinkedHashMap<>();
     name = root.name();
     attributes = wrap(root.attributes());
     textData = root.txt();
