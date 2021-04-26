@@ -88,7 +88,7 @@ public void testMultipleDirectoryFactories() throws Exception {
 
   public void testSchemaMutableButNotManaged() throws Exception {
     assertConfigs("bad-solrconfig-schema-mutable-but-not-managed.xml",
-                  "schema-minimal.xml", "Unexpected arg(s): {managedSchemaResourceName=schema.xml,mutable=false}");
+                  "schema-minimal.xml", "Unexpected arg(s): {mutable=false,managedSchemaResourceName=schema.xml}");
   }
 
   public void testManagedSchemaCannotBeNamedSchemaDotXml() throws Exception {
