@@ -170,6 +170,24 @@ public class SolrConfig implements MapSerializable {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading solr config from " + resource, e);
     }
   }
+  private class ResourceProvider implements Function<String, InputStream> {
+    int zkVersion;
+    public Integer hash;
+    InputStream in;
+
+    ResourceProvider(InputStream in) {
+      this.in = in;
+      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+        int zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+        hash = Objects.hash(zkVersion, overlay.getZnodeVersion());
+      }
+    }
+
+    @Override
+    public InputStream apply(String s) {
+      return in;
+    }
+  }
 
   /**
    * Creates a configuration instance from a resource loader, a configuration name and a stream.
@@ -186,31 +204,27 @@ public class SolrConfig implements MapSerializable {
     this.resourceName = name;
     this.substituteProperties = substitutableProperties;
     getOverlay();//just in case it is not initialized
-    // insist we have non-null substituteProperties; it might get overlayed
+    // insist we have non-null substituteProperties; it might get overlaid
+    Map<String, IndexSchemaFactory.VersionedConfig> configCache =null;
     if (loader.getCoreContainer() != null && loader.getCoreContainer().getObjectCache() != null) {
-      Map<String, IndexSchemaFactory.VersionedConfig> configCache = (Map<String, IndexSchemaFactory.VersionedConfig>) loader.getCoreContainer().getObjectCache()
+      configCache = (Map<String, IndexSchemaFactory.VersionedConfig>) loader.getCoreContainer().getObjectCache()
           .computeIfAbsent(ConfigSetService.ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
 
-      //currently not optimized for this
       IndexSchemaFactory.VersionedConfig cfg = configCache.get(name);
       if (cfg != null) {
-        InputStream in = loader.openResource(name);
-        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-          int zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-          int overlayVersion = overlay.getZnodeVersion();
-          int hashcode = Objects.hash(zkVersion, overlayVersion);
-          if (cfg.version == hashcode) {
+        ResourceProvider fr = new ResourceProvider(loader.openResource(name));
+        if (fr.hash != null) {
+          if (fr.hash == cfg.version) {
+            log.debug("LOADED_FROM_CACHE");
             root = cfg.data;
           } else {
-            configCache.remove(name);
-            readXml(loader, name);
-            configCache.put(name, new IndexSchemaFactory.VersionedConfig(hashcode, root));
+            readXml(loader, name, configCache, fr);
           }
         }
       }
     }
     if(root == null) {
-      readXml(loader, name);
+      readXml(loader, name, configCache,new ResourceProvider(loader.openResource(name)) );
     }
     ConfigNode.SUBSTITUTES.set(key -> {
       if(substitutableProperties== null || !substitutableProperties.containsKey(key)) {
@@ -345,7 +359,6 @@ public class SolrConfig implements MapSerializable {
           argsMap.put(args.name == null ? String.valueOf(args.hashCode()) : args.name, args);
         }
         this.initParams = Collections.unmodifiableMap(argsMap);
-
       }
 
       solrRequestParsers = new SolrRequestParsers(this);
@@ -355,10 +368,14 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  private void readXml(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException {
-    XmlConfigFile xml = new XmlConfigFile(loader, name, null, "/config/", null);
+  private void readXml(SolrResourceLoader loader, String name, Map<String, IndexSchemaFactory.VersionedConfig> configCache, ResourceProvider fr) throws IOException {
+    XmlConfigFile xml = new XmlConfigFile(loader,fr, name, null, "/config/", null);
     root = new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement()));
-    this.znodeVersion = xml.getZnodeVersion();
+    this.znodeVersion = fr.zkVersion;
+    if(configCache != null) {
+      configCache.remove(name);
+      configCache.put(name, new IndexSchemaFactory.VersionedConfig(fr.hash, root));
+    }
   }
 
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
