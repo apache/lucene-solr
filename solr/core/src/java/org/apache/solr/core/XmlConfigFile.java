@@ -36,6 +36,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -85,6 +86,15 @@ public class XmlConfigFile { // formerly simply "Config"
   {
     this(loader, name, is, prefix, null);
   }
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException{
+    this(loader, s -> {
+      try {
+        return loader.openResource(s);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    },name, is, prefix, substituteProps);
+  }
 
   /**
    * Builds a config:
@@ -103,8 +113,7 @@ public class XmlConfigFile { // formerly simply "Config"
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    * @param substituteProps optional property substitution
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException
-  {
+  public XmlConfigFile(SolrResourceLoader loader, Function<String, InputStream> fileSupplier, String name, InputSource is, String prefix, Properties substituteProps) throws IOException {
     if (null == loader) throw new NullPointerException("loader");
     this.loader = loader;
     
@@ -115,7 +124,7 @@ public class XmlConfigFile { // formerly simply "Config"
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
       if (is == null) {
-        InputStream in = loader.openResource(name);
+        InputStream in = fileSupplier.apply(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
           log.debug("loaded config {} with version {} ",name,zkVersion);

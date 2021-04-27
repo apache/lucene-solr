@@ -56,10 +56,6 @@
     "enableLazyFieldLoading":1,
     "boolTofilterOptimizer":1,
     "maxBooleanClauses":1},
-  "jmx":{
-    "agentId":0,
-    "serviceUrl":0,
-    "rootName":0},
   "requestDispatcher":{
     "handleSelect":0,
     "requestParsers":{

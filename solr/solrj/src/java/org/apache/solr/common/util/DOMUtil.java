@@ -41,7 +41,7 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
-  public static final Set<String>  NL_TAGS = new HashSet<>(Arrays.asList("str", "int", "long", "float", "double", "bool"));
+  public static final Set<String>  NL_TAGS = new HashSet<>(Arrays.asList("str", "int", "long", "float", "double", "bool", "null"));
 
 
   public static Map<String,String> toMap(NamedNodeMap attrs) {
@@ -214,6 +214,8 @@ public class DOMUtil {
         val = Double.valueOf(textValue);
       } else if ("bool".equals(type)) {
         val = StrUtils.parseBool(textValue);
+      } else if("null".equals(type)) {
+        val = null;
       }
       // :NOTE: Unexpected Node names are ignored
       // :TODO: should we generate an error here?
@@ -233,7 +235,7 @@ public class DOMUtil {
       String tag = it.name();
       String varName = it.attributes().get("name");
       if (NL_TAGS.contains(tag)) {
-        result.add(varName, parseVal(tag, varName, it.textValue()));
+        result.add(varName, parseVal(tag, varName, it.txt()));
       }
       if ("lst".equals(tag)) {
         result.add(varName, readNamedListChildren(it));
@@ -242,7 +244,9 @@ public class DOMUtil {
         result.add(varName, l);
         it.forEachChild(n -> {
           if (NL_TAGS.contains(n.name())) {
-            l.add(parseVal(n.name(), null, n.textValue()));
+            l.add(parseVal(n.name(), null, n.txt()));
+          } else if("lst".equals(n.name())){
+            l.add(readNamedListChildren(n));
           }
           return Boolean.TRUE;
         });
