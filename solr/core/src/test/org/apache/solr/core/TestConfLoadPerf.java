@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Ignore;
@@ -37,7 +38,8 @@ import static org.apache.solr.core.TestConfigSets.solrxml;
 
 public class TestConfLoadPerf extends SolrTestCaseJ4 {
 
-//  @Ignore
+  @Ignore
+  @SuppressForbidden(reason = "Needed to provide time for tests.")
   public void testPerf() throws Exception{
     String sourceHome = ExternalPaths.SOURCE_HOME;
     File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
@@ -46,7 +48,6 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
 
 
     File file = new File(configSetDir, "solrconfig.xml");
-    System.out.println(file.exists());
     byte[]  b  = new byte[(int) file.length()];
     new FileInputStream(file).read(b);
 
