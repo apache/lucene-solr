@@ -115,7 +115,6 @@ public class SolrConfig implements MapSerializable {
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
   private final String resourceName;
 
-//  private XmlConfigFile xml;
   private int znodeVersion;
   ConfigNode root;
   private final SolrResourceLoader resourceLoader;
@@ -180,7 +179,7 @@ public class SolrConfig implements MapSerializable {
       this.in = in;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin = (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
-        int zkVersion = zkin.getStat().getVersion();
+        zkVersion = zkin.getStat().getVersion();
         hash = Objects.hash(zkVersion, overlay.getZnodeVersion());
         this.fileName = zkin.fileName;
       }

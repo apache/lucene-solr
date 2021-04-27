@@ -33,6 +33,7 @@ import static org.apache.solr.common.ConfigNode.Helpers.*;
 
 /**
  * A generic interface that represents a config file, mostly XML
+ * Please note that this is an immutable, read-only object.
  */
 public interface ConfigNode {
   ThreadLocal<Function<String,String>> SUBSTITUTES = new ThreadLocal<>();
@@ -148,16 +149,16 @@ public interface ConfigNode {
   default boolean exists() { return true; }
   default boolean isNull() { return false; }
 
-  default <T> T compute(Function<ConfigNode, T> ifNotNull, Supplier<T> ifNull) {
-    return ifNotNull.apply(this);
-  }
-
   /** abortable iterate through children
    *
    * @param fun consume the node and return true to continue or false to abort
    */
   void forEachChild(Function<ConfigNode, Boolean> fun);
 
+  /**An empty node object.
+   * usually returned when the node is absent
+   *
+   */
   ConfigNode EMPTY = new ConfigNode() {
     @Override
     public String name() {
@@ -192,14 +193,11 @@ public interface ConfigNode {
     public boolean isNull() { return true; }
 
     @Override
-    public <T> T compute(Function<ConfigNode, T> ifNotNull, Supplier<T> ifNull) { return ifNull.get(); }
-
-    @Override
     public void forEachChild(Function<ConfigNode, Boolean> fun) { }
   } ;
   SimpleMap<String> empty_attrs = new WrappedSimpleMap<>(Collections.emptyMap());
 
-  public class Helpers {
+  class Helpers {
     static boolean _bool(Object v, boolean def) { return v == null ? def : Boolean.parseBoolean(v.toString()); }
     static String _txt(Object v, String def) { return v == null ? def : v.toString(); }
     static int _int(Object v, int def) { return v==null? def: Integer.parseInt(v.toString()); }
@@ -215,8 +213,5 @@ public interface ConfigNode {
         }
       };
     }
-
-
   }
-
 }
