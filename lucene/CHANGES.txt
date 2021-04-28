@@ -13,6 +13,8 @@ API Changes
 New Features
 ---------------------
 
+* LUCENE-9574 A token filter to drop tokens that match all specified flags. (Gus Heck, Uwe Schindler)
+
 * LUCENE-9537:  Added smoothingScore method and default implementation to 
   Scorable abstract class.  The smoothing score allows scorers to calculate a 
   score for a document where the search term or subquery is not present.  The 
