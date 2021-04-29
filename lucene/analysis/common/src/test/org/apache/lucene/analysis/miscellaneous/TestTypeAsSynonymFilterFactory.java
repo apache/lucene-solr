@@ -40,6 +40,13 @@ public class TestTypeAsSynonymFilterFactory extends BaseTokenStreamFactoryTestCa
         null, null, new String[] { "<ALPHANUM>", "<ALPHANUM>", "<URL>", "<URL>" }, new int[] { 1, 0, 1, 0 });
   }
 
+  public void testIgnore() throws Exception {
+    TokenStream stream = new CannedTokenStream(TOKENS);
+    stream = tokenFilterFactory("typeAsSynonym", "prefix", "_type_","ignore", "<ALPHANUM>").create(stream);
+    assertTokenStreamContents(stream, new String[] { "Visit", "example.com", "_type_<URL>" },
+        null, null, new String[] { "<ALPHANUM>", "<URL>", "<URL>" }, new int[] { 1,  1, 0 });
+  }
+
   private static Token token(String term, String type) {
     Token token = new Token();
     token.setEmpty();
