@@ -313,6 +313,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
           "configuration file on each zookeeper node: '4lw.commands.whitelist=mntr,conf,ruok'. See also chapter " +
           "'Setting Up an External ZooKeeper Ensemble' in the Solr Reference Guide.");
     }
+    if (response.size() == 1 && response.get(0).contains("not currently serving requests")) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper " + zkHostPort + " is not currently serving requests.");
+    }
     return true;
   }
 }
