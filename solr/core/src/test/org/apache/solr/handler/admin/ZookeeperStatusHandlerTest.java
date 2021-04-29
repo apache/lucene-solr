@@ -177,6 +177,16 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     }
   }
 
+  @Test(expected = SolrException.class)
+  public void validateNotServingRequestsResponse() {
+    try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
+      zsh.validateZkRawResponse(Collections.singletonList("This ZooKeeper instance is not currently serving requests"),
+          "zoo1:2181", "mntr");
+    }  catch (IOException e) {
+      fail("Error closing ZookeeperStatusHandler");
+    }
+  }
+
   @Test
   public void testMntrBugZk36Solr14463() {
     assumeWorkingMockito();
