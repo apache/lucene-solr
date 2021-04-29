@@ -48,6 +48,8 @@ Improvements
 
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
 
+* SOLR-15337: Avoid XPath in solrconfig.xml parsing (noble)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.

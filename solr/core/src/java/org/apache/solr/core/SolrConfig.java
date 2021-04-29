@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -55,7 +54,6 @@ import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
@@ -87,7 +85,6 @@ import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
@@ -152,7 +149,7 @@ public class SolrConfig implements MapSerializable {
    * @param name        the configuration name used by the loader if the stream is null
    */
   public SolrConfig(Path instanceDir, String name)
-      throws ParserConfigurationException, IOException, SAXException {
+      throws IOException {
     this(new SolrResourceLoader(instanceDir), name, true, null);
   }
 
@@ -200,6 +197,7 @@ public class SolrConfig implements MapSerializable {
    * @param isConfigsetTrusted  false if configset was uploaded using unsecured configset upload API, true otherwise
    * @param substitutableProperties optional properties to substitute into the XML
    */
+  @SuppressWarnings("unchecked")
   private SolrConfig(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties)
       throws IOException {
     this.resourceLoader = loader;
@@ -577,13 +575,9 @@ public class SolrConfig implements MapSerializable {
 
   public List<PluginInfo> readPluginInfos(SolrPluginInfo info, boolean requireName, boolean requireClass) {
     ArrayList<PluginInfo> result = new ArrayList<>();
-    try {
-      for (ConfigNode node : info.configReader.apply(this)) {
-        PluginInfo pluginInfo = new PluginInfo(node, "[solrconfig.xml] " + info.tag, requireName, requireClass);
-        if (pluginInfo.isEnabled()) result.add(pluginInfo);
-      }
-    } catch (RuntimeException e) {
-      throw e;
+    for (ConfigNode node : info.configReader.apply(this)) {
+      PluginInfo pluginInfo = new PluginInfo(node, "[solrconfig.xml] " + info.tag, requireName, requireClass);
+      if (pluginInfo.isEnabled()) result.add(pluginInfo);
     }
     return result;
   }
@@ -1055,87 +1049,10 @@ public class SolrConfig implements MapSerializable {
       //there is no overlay
       return root.get(name);
     }
-    return new OverlaidConfigNode(name, null,root.get(name));
+    return new OverlaidConfigNode(overlay, name, null,root.get(name));
   }
 
   public ConfigNode get(String name, Predicate<ConfigNode> test) {
     return root.get(name, test);
-  }
-   private class OverlaidConfigNode implements ConfigNode {
-
-    private final String _name;
-    private final ConfigNode delegate;
-    private final OverlaidConfigNode parent;
-
-     private OverlaidConfigNode(String name, OverlaidConfigNode parent, ConfigNode delegate) {
-       this._name = name;
-       this.delegate = delegate;
-       this.parent = parent;
-     }
-
-     private List<String> path(List<String> path) {
-       if(path== null) path = new ArrayList<>(5);
-       try {
-         if (parent != null) return parent.path(path);
-       } finally {
-         path.add(_name);
-       }
-       return path;
-     }
-
-     @Override
-    public ConfigNode get(String name) {
-      return wrap(delegate.get(name), name);
-    }
-
-    private ConfigNode wrap(ConfigNode n, String name) {
-      return new OverlaidConfigNode(name,this, n);
-    }
-
-    @Override
-    public ConfigNode get(String name, Predicate<ConfigNode> test) {
-      return wrap(delegate.get(name, test), name);
-    }
-
-     @Override
-     public String txt() {
-       return overlayText(delegate.txt(), null);
-     }
-
-     @Override
-    public ConfigNode get(String name, int idx) {
-      return wrap(delegate.get(name, idx), name);
-    }
-
-    @Override
-    public String name() {
-      return delegate.name();
-    }
-    @Override
-    public SimpleMap<String> attributes() {
-      return delegate.attributes();
-    }
-
-     @Override
-     public boolean exists() {
-       return delegate.exists();
-     }
-
-     @Override
-     public String attr(String name) {
-       return overlayText(delegate.attr(name),name);
-     }
-
-     private String overlayText(String def, String appendToPath) {
-       List<String> path = path(null);
-       if(appendToPath !=null) path.add(appendToPath);
-       Object val = overlay.getXPathProperty(path);
-       return val ==null? def: val.toString();
-     }
-
-     @Override
-    public void forEachChild(Function<ConfigNode, Boolean> fun) {
-       delegate.forEachChild(fun);
-    }
   }
 }
