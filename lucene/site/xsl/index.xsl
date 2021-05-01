@@ -86,6 +86,10 @@
           </ul>
         <h2>API Javadocs</h2>
         <xsl:call-template name="modules"/>
+        <h2>Tools</h2>
+          <ul>
+            <li>Luke - Lucene Toolbox GUI tool: A Swing app for browsing documents, indexed terms and posting lists, searching an index, and so on. Type "/path/to/lucene-<xsl:value-of select="$version"/>/luke/luke.{sh|bat}" to launch Luke.</li>
+          </ul>
       </body>
     </html>
   </xsl:template>
