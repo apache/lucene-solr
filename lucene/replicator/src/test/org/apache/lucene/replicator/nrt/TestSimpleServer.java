@@ -47,14 +47,18 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Assume;
+import org.junit.AssumptionViolatedException;
+import org.junit.BeforeClass;
 
 /** Child process with silly naive TCP socket server to handle
  *  between-node commands, launched for each node  by TestNRTReplication. */
 @SuppressCodecs({"MockRandom", "Direct", "SimpleText"})
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed, important stuff for debugging a failure")
 @SuppressForbidden(reason = "We need Unsafe to actually crush :-)")
-public class SimpleServer extends LuceneTestCase {
+public class TestSimpleServer extends LuceneTestCase {
 
   final static Set<Thread> clientThreads = Collections.synchronizedSet(new HashSet<>());
   final static AtomicBoolean stop = new AtomicBoolean();
@@ -220,6 +224,12 @@ public class SimpleServer extends LuceneTestCase {
     return new CopyState(files, version, gen, infosBytes, completedMergeFiles, primaryGen, null);
   }
 
+  @BeforeClass
+  public static void ensureNested() {
+    Assume.assumeTrue(TestRuleIgnoreTestSuites.isRunningNested());
+  }
+
+  @SuppressWarnings("try")
   public void test() throws Exception {
 
     int id = Integer.parseInt(System.getProperty("tests.nrtreplication.nodeid"));

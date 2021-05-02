@@ -54,6 +54,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -546,7 +547,11 @@ public class TestStressNRTReplication extends LuceneTestCase {
     long myPrimaryGen = primaryGen;
     cmd.add("-Dtests.nrtreplication.primaryGen=" + myPrimaryGen);
 
-    // Mixin our own counter because this is called from a fresh thread which means the seed otherwise isn't changing each time we spawn a
+    // Mark as running nested.
+    cmd.add("-D" + TestRuleIgnoreTestSuites.PROPERTY_RUN_NESTED + "=true");
+
+    // Mixin our own counter because this is called from a fresh thread which means the seed
+    // otherwise isn't changing each time we spawn a
     // new node:
     long seed = random().nextLong() * nodeStartCounter.incrementAndGet();
 
@@ -555,7 +560,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
     cmd.add("-cp");
     cmd.add(System.getProperty("java.class.path"));
     cmd.add("org.junit.runner.JUnitCore");
-    cmd.add(getClass().getName().replace(getClass().getSimpleName(), "SimpleServer"));
+    cmd.add(TestSimpleServer.class.getName());
 
     Writer childLog;
 

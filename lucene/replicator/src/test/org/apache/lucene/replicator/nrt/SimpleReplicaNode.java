@@ -119,7 +119,7 @@ class SimpleReplicaNode extends ReplicaNode {
         // No incoming CopyState: ask primary for latest one now
         c.out.writeByte((byte) 1);
         c.flush();
-        copyState = SimpleServer.readCopyState(c.in);
+        copyState = TestSimpleServer.readCopyState(c.in);
         files = copyState.files;
       } else {
         c.out.writeByte((byte) 0);
@@ -289,7 +289,7 @@ class SimpleReplicaNode extends ReplicaNode {
 
         long newPrimaryGen = in.readVLong();
         curPrimaryTCPPort = in.readVInt();
-        Map<String,FileMetaData> files = SimpleServer.readFilesMetaData(in);
+        Map<String,FileMetaData> files = TestSimpleServer.readFilesMetaData(in);
         message("done reading files to copy files=" + files.keySet());
         AtomicBoolean finished = new AtomicBoolean();
         CopyJob job = launchPreCopyMerge(finished, newPrimaryGen, files);

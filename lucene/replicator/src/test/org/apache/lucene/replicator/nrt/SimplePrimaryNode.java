@@ -179,7 +179,7 @@ class SimplePrimaryNode extends PrimaryNode {
           c.out.writeByte(SimpleReplicaNode.CMD_PRE_COPY_MERGE);
           c.out.writeVLong(primaryGen);
           c.out.writeVInt(tcpPort);
-          SimpleServer.writeFilesMetaData(c.out, files);
+          TestSimpleServer.writeFilesMetaData(c.out, files);
           c.flush();
           c.s.shutdownOutput();
           message("warm connection " + c.s);
@@ -327,7 +327,7 @@ class SimplePrimaryNode extends PrimaryNode {
     out.writeBytes(state.infosBytes, 0, state.infosBytes.length);
     out.writeVLong(state.gen);
     out.writeVLong(state.version);
-    SimpleServer.writeFilesMetaData(out, state.files);
+    TestSimpleServer.writeFilesMetaData(out, state.files);
 
     out.writeVInt(state.completedMergeFiles.size());
     for(String fileName : state.completedMergeFiles) {
@@ -711,7 +711,7 @@ class SimplePrimaryNode extends PrimaryNode {
             c.out.writeByte(SimpleReplicaNode.CMD_PRE_COPY_MERGE);
             c.out.writeVLong(primaryGen);
             c.out.writeVInt(tcpPort);
-            SimpleServer.writeFilesMetaData(c.out, preCopy.files);
+            TestSimpleServer.writeFilesMetaData(c.out, preCopy.files);
             c.flush();
             c.s.shutdownOutput();
             message("successfully started warming");
