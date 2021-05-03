@@ -15,6 +15,9 @@ API Changes
   Users can now access the count of an ordinal directly without constructing an extra FacetLabel.
   Also use variable length arguments for the getOrdinal call in TaxonomyReader. (Gautam Worah)
 
+* LUCENE-9948: No longer require the user to specify whether-or-not a field is multi-valued in
+  LongValueFacetCounts (detect automatically based on what is indexed). (Greg Miller)
+
 New Features
 ---------------------
 (No changes)
