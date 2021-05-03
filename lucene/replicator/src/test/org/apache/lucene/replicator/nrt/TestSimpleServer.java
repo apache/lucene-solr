@@ -50,7 +50,6 @@ import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Assume;
-import org.junit.AssumptionViolatedException;
 import org.junit.BeforeClass;
 
 /** Child process with silly naive TCP socket server to handle
