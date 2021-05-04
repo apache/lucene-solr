@@ -1509,7 +1509,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // we have a sort
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
-
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
       return TopFieldCollector.create(weightedSort, len, searchAfter, minNumFound);
     }
