@@ -1017,16 +1017,18 @@
             $replica_obj.value.base_url as $base_url |
             $replica_obj.value.node_name as $node_name |
             $replica_obj.value.type as $type |
-            (if $replica_obj.value.state == "active" then 1.0 else 0.0 end) as $value |
+            $replica_obj.value.state as $state |
+            (if $state == "active" then 1.0 else 0.0 end) as $value |
             {
               name         : "solr_collections_replica_state",
               type         : "GAUGE",
               help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
-              label_names  : ["collection", "shard", "replica", "replica_name", "core", "base_url", "node_name", "type"],
-              label_values : [$collection, $shard, $replica, $replica_name, $core, $base_url, $node_name, $type],
+              label_names  : ["collection", "shard", "replica", "replica_name", "core", "base_url", "node_name", "type", "state"],
+              label_values : [$collection, $shard, $replica, $replica_name, $core, $base_url, $node_name, $type, $state],
               value        : $value
             }
           </str>
+
           <str>
             .cluster.collections | to_entries | .[] | . as $object |
             $object.key as $collection |

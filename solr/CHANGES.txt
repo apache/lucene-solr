@@ -19,6 +19,8 @@ New Features
 
 * SOLR-15132: Add temporal graph query to the nodes Streaming Expression (Joel Bernstein)
 
+* SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with new Solr Cluster row (janhoy)
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
@@ -45,6 +47,8 @@ Improvements
 * SOLR-15154: Let Http2SolrClient pass Basic Auth credentials to all requests (Tomás Fernández Löbbe)
 
 * SOLR-11233: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr. (Pranav Murugappan, Christine Poerschke)
+
+* SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with a new "cluster" row (janhoy)
 
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
 
