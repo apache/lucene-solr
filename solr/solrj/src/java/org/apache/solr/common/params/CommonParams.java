@@ -208,6 +208,8 @@ public interface CommonParams {
       HEALTH_CHECK_HANDLER_PATH,
       CONFIGSETS_HANDLER_PATH,
       SYSTEM_INFO_PATH,
+      ZK_PATH,
+      ZK_STATUS_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,
       METRICS_PATH,
