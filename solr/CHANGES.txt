@@ -54,6 +54,8 @@ Improvements
 
 * SOLR-15337: Avoid XPath in solrconfig.xml parsing (noble)
 
+* SOLR-6152: Pre-populating values into search parameters on the query page of solr admin (jafurrer, daniel6691)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
