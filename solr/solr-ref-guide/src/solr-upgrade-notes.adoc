@@ -45,6 +45,12 @@ When upgrading to 8.9.x users should be aware of the following major changes fro
 
 * When using EmbeddedSolrServer, it will no longer close CoreContainer instances that were passed to it.
 
+*Nested Docs*
+
+* Child Doc Transformer's `childFilter` param no longer applies query syntax
+escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
+There was no escaping here prior to 8.0 either.
+
 === Solr 8.8
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote88[8.8 Release Notes^]

@@ -145,24 +145,24 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     try {
       return QParser.getParser(qstr, req).getQuery();
     } catch (SyntaxError syntaxError) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Failed to parse '" + param + "' param.");
+      throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "Failed to parse '" + param + "' param: " + syntaxError.getMessage(),
+              syntaxError);
     }
   }
 
-  // NOTE: THIS FEATURE IS PRESENTLY EXPERIMENTAL; WAIT TO SEE IT IN THE REF GUIDE.  FINAL SYNTAX IS TBD.
   protected static String processPathHierarchyQueryString(String queryString) {
     // if the filter includes a path string, build a lucene query string to match those specific child documents.
     // e.g. /toppings/ingredients/name_s:cocoa -> +_nest_path_:/toppings/ingredients +(name_s:cocoa)
     // ingredients/name_s:cocoa -> +_nest_path_:*/ingredients +(name_s:cocoa)
     int indexOfFirstColon = queryString.indexOf(':');
     if (indexOfFirstColon <= 0) {
-      return queryString;// give up
+      return queryString; // regular filter, not hierarchy based.
     }
     int indexOfLastPathSepChar = queryString.lastIndexOf(PATH_SEP_CHAR, indexOfFirstColon);
     if (indexOfLastPathSepChar < 0) {
-      // regular filter, not hierarchy based.
-      return ClientUtils.escapeQueryChars(queryString.substring(0, indexOfFirstColon))
-          + ":" + ClientUtils.escapeQueryChars(queryString.substring(indexOfFirstColon + 1));
+      return queryString; // regular filter, not hierarchy based.
     }
     final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
     String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));

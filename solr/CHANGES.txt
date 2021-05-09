@@ -54,6 +54,9 @@ Improvements
 
 * SOLR-15337: Avoid XPath in solrconfig.xml parsing (noble)
 
+* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
+  It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
