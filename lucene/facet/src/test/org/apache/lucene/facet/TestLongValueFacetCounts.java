@@ -390,7 +390,8 @@ public class TestLongValueFacetCounts extends LuceneTestCase {
       int expectedChildCount = 0;
       int expectedTotalCount = 0;
       for (int i = 0; i < valueCount; i++) {
-        if (values[i] != null) {
+        if (values[i] != null && values[i].length > 0) {
+          expectedTotalCount++;
           for (long value : values[i]) {
             Integer curCount = expected.get(value);
             if (curCount == null) {
@@ -398,7 +399,6 @@ public class TestLongValueFacetCounts extends LuceneTestCase {
               expectedChildCount++;
             }
             expected.put(value, curCount + 1);
-            expectedTotalCount++;
           }
         }
       }
@@ -471,9 +471,9 @@ public class TestLongValueFacetCounts extends LuceneTestCase {
       expectedChildCount = 0;
       int totCount = 0;
       for (int i = minId; i <= maxId; i++) {
-        if (values[i] != null) {
+        if (values[i] != null && values[i].length > 0) {
+          totCount++;
           for (long value : values[i]) {
-            totCount++;
             Integer curCount = expected.get(value);
             if (curCount == null) {
               expectedChildCount++;
