@@ -17,11 +17,11 @@
 
 package org.apache.lucene.analysis.pattern;
 
-import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pattern.PatternTypingFilter.PatternTypingRule;
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -81,13 +81,6 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-  }
-
-  /**
-   * Default ctor for compatibility with SPI
-   */
-  public PatternTypingFilterFactory() {
-    throw defaultCtorException();
   }
 
   @Override
