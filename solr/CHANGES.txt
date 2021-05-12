@@ -56,6 +56,8 @@ Improvements
 
 * SOLR-15337: Avoid XPath in solrconfig.xml parsing (noble)
 
+* SOLR-6152: Pre-populating values into search parameters on the query page of solr admin (jafurrer, daniel6691)
+
 * SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
   It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
 
