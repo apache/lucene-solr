@@ -124,7 +124,7 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 6,
         "x": 0,
         "y": 1
       },
@@ -176,7 +176,7 @@
           "refId": "A"
         },
         {
-          "expr": "count(count by (node_name) (solr_collections_replica_state))",
+          "expr": "count(count by (node_name) (solr_collections_replica_state)) < solr_collections_live_nodes or solr_collections_live_nodes",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
@@ -213,6 +213,131 @@
           "show": true
         },
         {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "hiddenSeries": false,
+      "id": 221,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:395",
+          "alias": "Ensemble size",
+          "lines": true
+        },
+        {
+          "$$hashKey": "object:396",
+          "alias": "Healthy nodes",
+          "bars": true,
+          "color": "#5794F2",
+          "lines": false
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "count(solr_zookeeper_nodestatus == 1)",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Healthy nodes",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "solr_zookeeper_ensemble_size",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "Ensemble size",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Zookeepers",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:413",
+          "decimals": 0,
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:414",
           "format": "short",
           "label": null,
           "logBase": 1,
