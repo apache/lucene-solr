@@ -17,17 +17,16 @@
 
 package org.apache.lucene.analysis.pattern;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
+
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 
 /**
@@ -70,12 +69,10 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
   public static final String NAME = "patternTyping";
 
   private final String patternFile;
-  // todo, perhaps this could be turned into an FST (wanted: regex FST with capturing groups in java)
-  private final LinkedHashMap<Pattern, String> patterns = new LinkedHashMap<>();
-  private final Map<Pattern, Integer> flags = new HashMap<>();
+  private final LinkedHashMap<Pattern, Map.Entry<String, Integer>> replacementAndFlagByPattern = new LinkedHashMap<>();
 
   /**
-   * Creates a new KeepWordFilterFactory
+   * Creates a new PatternTypingFilter
    */
   public PatternTypingFilterFactory(Map<String, String> args) {
     super(args);
@@ -85,7 +82,9 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
     }
   }
 
-  /** Default ctor for compatibility with SPI */
+  /**
+   * Default ctor for compatibility with SPI
+   */
   public PatternTypingFilterFactory() {
     throw defaultCtorException();
   }
@@ -97,24 +96,20 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
     // eg: 2 (\d+\(?([a-z])\)?\(?(\d+)\)? ::: legal3_$1_$2_3
     // which yields legal3_501_c_3 for 501(c)(3) or 501c3 and sets the second lowest bit in flags
     for (String line : lines) {
-      if (line.trim().startsWith("#")) {
-        continue; // allow for comments
-      }
       int firstSpace = line.indexOf(" "); // no leading spaces allowed
-      int flagsVal = Integer.parseInt(line.substring(0,firstSpace));
+      int flagsVal = Integer.parseInt(line.substring(0, firstSpace));
       line = line.substring(firstSpace + 1);
       String[] split = line.split(" ::: "); // arbitrary, unlikely to occur in a useful regex easy to read
       if (split.length != 2) {
-        throw new RuntimeException("The PatternRecognizerFilter: Always two there are, no more, no less, a pattern and a replacement (separated by ' ::: ' )");
+        throw new RuntimeException("The PatternTypingFilter: Always two there are, no more, no less, a pattern and a replacement (separated by ' ::: ' )");
       }
       Pattern compiled = Pattern.compile(split[0]);
-      patterns.put(compiled, split[1]);
-      flags.put(compiled, flagsVal);
+      replacementAndFlagByPattern.put(compiled, Map.entry(split[1], flagsVal));
     }
   }
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new PatternTypingFilter(input, patterns, flags);
+    return new PatternTypingFilter(input, replacementAndFlagByPattern);
   }
 }

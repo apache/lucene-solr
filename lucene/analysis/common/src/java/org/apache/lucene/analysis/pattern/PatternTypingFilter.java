@@ -17,17 +17,16 @@
 
 package org.apache.lucene.analysis.pattern;
 
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Set a type attribute to a parameterized value when tokens are matched by any of a several regex patterns. The
@@ -36,39 +35,31 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
  * that are protected from subsequent analysis, and optionally drop the original term based on the flag
  * set in this filter. See {@link PatternTypingFilterFactory} for full documentation.
  *
- * @since 8.8.0
  * @see PatternTypingFilterFactory
+ * @since 8.8.0
  */
 public class PatternTypingFilter extends TokenFilter {
 
-  private final Map<Pattern, String> patterns;
-  private final Map<Pattern, Integer> flags;
+  private final Map<Pattern, Map.Entry<String, Integer>> replacementAndFlagByPattern;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final FlagsAttribute flagAtt = addAttribute(FlagsAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
-  public PatternTypingFilter(TokenStream input, LinkedHashMap<Pattern,String> patterns, Map<Pattern,Integer> flags) {
+  public PatternTypingFilter(TokenStream input, LinkedHashMap<Pattern, Map.Entry<String, Integer>> replacementAndFlagByPattern) {
     super(input);
-    this.patterns = patterns;
-    this.flags = flags;
+    this.replacementAndFlagByPattern = replacementAndFlagByPattern;
   }
 
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      if (hasAttribute(CharTermAttribute.class)) {
-        String termText = termAtt.toString();
-        for (Map.Entry<Pattern, String> patRep : patterns.entrySet()) {
-          Pattern pattern = patRep.getKey();
-          Matcher matcher = pattern.matcher(termText);
-          String replaced = matcher.replaceFirst(patRep.getValue());
-          // N.B. Does not support producing a synonym identical to the original term.
-          // Avoids having to match() then replace() which performs a second find().
-          if (!replaced.equals(termText)) {
-            typeAtt.setType(replaced);
-            flagAtt.setFlags(flags.get(pattern));
-            return true;
-          }
+      for (Map.Entry<Pattern, Map.Entry<String, Integer>> patRep : replacementAndFlagByPattern.entrySet()) {
+        if (patRep.getKey().matcher(termAtt).find()) {
+          Map.Entry<String, Integer> replAndFlags = patRep.getValue();
+          // allow 2nd reset() and find() that occurs inside replaceFirst to avoid excess string creation
+          typeAtt.setType(patRep.getKey().matcher(termAtt).replaceFirst(replAndFlags.getKey()));
+          flagAtt.setFlags(replAndFlags.getValue());
+          return true;
         }
       }
       return true;

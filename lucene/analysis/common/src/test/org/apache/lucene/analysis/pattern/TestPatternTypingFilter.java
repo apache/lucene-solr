@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.analysis.pattern;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Test that this filter sets a type for tokens matching patterns defined in a patterns.txt file
@@ -45,14 +44,11 @@ public class TestPatternTypingFilter extends BaseTokenStreamTestCase {
 
     TokenStream ts = new CannedTokenStream(tokenA1, tokenA2, tokenA3, tokenB1, tokenB2);
 
-    //2 (\d+)\(?([a-z])\)? ::: legal2_$1_$2
-    LinkedHashMap<Pattern, String> repls = new LinkedHashMap<>();
-    Map<Pattern, Integer> flags = new HashMap<>();
-    Pattern fourOhOneK = Pattern.compile("(\\d+)\\(?([a-z])\\)?");
-    repls.put(fourOhOneK, "legal2_$1_$2");
-    flags.put(fourOhOneK, 2);
+    //2 ^(\d+)\(?([a-z])\)?$ ::: legal2_$1_$2
+    LinkedHashMap<Pattern, Map.Entry<String, Integer>> patMap = new LinkedHashMap<>();
+    patMap.put(Pattern.compile("^(\\d+)\\(?([a-z])\\)?$"), Map.entry("legal2_$1_$2", 2));
 
-    ts = new PatternTypingFilter(ts, repls, flags); // 101
+    ts = new PatternTypingFilter(ts, patMap);
 
     assertTokenStreamContents(ts, new String[]{
             "One", "401(k)", "two", "three", "401k"}, null, null,
@@ -68,20 +64,16 @@ public class TestPatternTypingFilter extends BaseTokenStreamTestCase {
 
     TokenStream ts = new CannedTokenStream(tokenA1, tokenA3, tokenB1);
 
-    //2 (\d+)\(?([a-z])\)? ::: legal2_$1_$2
-    LinkedHashMap<Pattern, String> repls = new LinkedHashMap<>();
-    Map<Pattern, Integer> flags = new HashMap<>();
-    Pattern numHyphen = Pattern.compile("(\\d+)-(\\d+)");
-    repls.put(numHyphen, "$1_hnum_$2");
-    flags.put(numHyphen, 6);
-    Pattern wordHyphen = Pattern.compile("(\\w+)-(\\w+)");
-    repls.put(wordHyphen, "$1_hword_$2");
-    flags.put(wordHyphen, 2);
+    //2 ^(\d+)\(?([a-z])\)?$ ::: legal2_$1_$2
+    LinkedHashMap<Pattern, Map.Entry<String, Integer>> patMap = new LinkedHashMap<>();
 
-    ts = new PatternTypingFilter(ts, repls, flags); // 101
+    patMap.put(Pattern.compile("^(\\d+)-(\\d+)$"), Map.entry("$1_hnum_$2", 6));
+    patMap.put(Pattern.compile("^(\\w+)-(\\w+)$"), Map.entry("$1_hword_$2", 2));
+
+    ts = new PatternTypingFilter(ts, patMap); // 101
 
     assertTokenStreamContents(ts, new String[]{
-            "One","forty-two", "4-2"}, null, null,
+            "One", "forty-two", "4-2"}, null, null,
         new String[]{"word", "forty_hword_two", "4_hnum_2"},
         null, null, null, null, null, false, null,
         new int[]{0, 2, 6});
