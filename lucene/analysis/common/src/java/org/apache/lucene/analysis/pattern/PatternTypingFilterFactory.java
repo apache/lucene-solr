@@ -72,7 +72,7 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
   private final LinkedHashMap<Pattern, Map.Entry<String, Integer>> replacementAndFlagByPattern = new LinkedHashMap<>();
 
   /**
-   * Creates a new PatternTypingFilter
+   * Creates a new PatternTypingFilterFactory
    */
   public PatternTypingFilterFactory(Map<String, String> args) {
     super(args);
