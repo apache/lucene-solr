@@ -722,12 +722,12 @@ public class IndexFetcher {
         markReplicationStop();
         return successfulInstall ? IndexFetchResult.INDEX_FETCH_SUCCESS : IndexFetchResult.INDEX_FETCH_FAILURE;
       } catch (ReplicationHandlerException e) {
-        log.error("User aborted Replication");
+        log.error("User aborted Replication", e);
         return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
       } catch (SolrException e) {
         throw e;
       } catch (InterruptedException e) {
-        throw new InterruptedException("Index fetch interrupted");
+        throw (InterruptedException)(new InterruptedException("Index fetch interrupted").initCause(e));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }

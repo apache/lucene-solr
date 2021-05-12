@@ -21,6 +21,8 @@ New Features
 
 * SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with new Solr Cluster row (janhoy)
 
+* SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
@@ -55,6 +57,9 @@ Improvements
 * SOLR-15337: Avoid XPath in solrconfig.xml parsing (noble)
 
 * SOLR-6152: Pre-populating values into search parameters on the query page of solr admin (jafurrer, daniel6691)
+
+* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
+  It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
 
 Optimizations
 ---------------------
@@ -99,6 +104,7 @@ Other Changes
 * SOLR-15292: An ERROR is logged if SignatureUpdateProcessorFactory is used in SolrCloud cluster in a way that is known to
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
+* SOLR-15377: Improve IndexFetcher's exception logging upon replication errors. (Torsten Bøgh Köster, Christine Poerschke)
 
 ==================  8.8.2 ==================
 

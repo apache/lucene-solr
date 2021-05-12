@@ -28,6 +28,25 @@ Fetch the cluster status including collections, shards, replicas, configuration 
 
 `/admin/collections?action=CLUSTERSTATUS`
 
+Additionally, this command reports a `health` status of each collection and shard, in
+order to make it easier to monitor the operational state of the collections. The
+following health state values are defined, ordered from the best to worst, based on
+the percentage of active replicas (`active`):
+
+`GREEN`::
+`active == 100%`, all replicas are active and there's a shard leader.
+`YELLOW`::
+`100% > active > 50%`, AND there's a shard leader.
+`ORANGE`::
+`50% >= active > 0%`, AND there's a shard leader.
+`RED`::
+No active replicas *OR* there's no shard leader.
+
+The collection health state is reported as the worst state of any shard, e.g. for a
+collection with all shards GREEN except for one YELLOW the collection health will be
+reported as YELLOW.
+
+
 === CLUSTERSTATUS Parameters
 
 `collection`::
@@ -67,6 +86,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
           "shard1":{
             "range":"80000000-ffffffff",
             "state":"active",
+            "health": "GREEN",
             "replicas":{
               "core_node1":{
                 "state":"active",
@@ -82,6 +102,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
           "shard2":{
             "range":"0-7fffffff",
             "state":"active",
+            "health": "GREEN",
             "replicas":{
               "core_node2":{
                 "state":"active",
@@ -100,6 +121,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
         "znodeVersion": 11,
         "autoCreated":"true",
         "configName" : "my_config",
+        "health": "GREEN",
         "aliases":["both_collections"]
       },
       "collection2":{
