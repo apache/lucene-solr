@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -54,10 +55,11 @@ public class PatternTypingFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       for (Map.Entry<Pattern, Map.Entry<String, Integer>> patRep : replacementAndFlagByPattern.entrySet()) {
-        if (patRep.getKey().matcher(termAtt).find()) {
+        Matcher matcher = patRep.getKey().matcher(termAtt);
+        if (matcher.find()) {
           Map.Entry<String, Integer> replAndFlags = patRep.getValue();
           // allow 2nd reset() and find() that occurs inside replaceFirst to avoid excess string creation
-          typeAtt.setType(patRep.getKey().matcher(termAtt).replaceFirst(replAndFlags.getKey()));
+          typeAtt.setType(matcher.replaceFirst(replAndFlags.getKey()));
           flagAtt.setFlags(replAndFlags.getValue());
           return true;
         }
