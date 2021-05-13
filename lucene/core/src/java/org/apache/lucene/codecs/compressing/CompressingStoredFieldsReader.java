@@ -37,6 +37,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_NUMCHUNKS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_META;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
@@ -90,8 +91,9 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final int numDocs;
   private final boolean merging;
   private final BlockState state;
+  private final long numChunks; // number of written blocks
   private final long numDirtyChunks; // number of incomplete compressed blocks written
-  private final long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
+  private final long numDirtyDocs; // cumulative number of docs in incomplete chunks
   private boolean closed;
 
   // used by clone
@@ -106,6 +108,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.compressionMode = reader.compressionMode;
     this.decompressor = reader.decompressor.clone();
     this.numDocs = reader.numDocs;
+    this.numChunks = reader.numChunks;
     this.numDirtyChunks = reader.numDirtyChunks;
     this.numDirtyDocs = reader.numDirtyDocs;
     this.merging = merging;
@@ -186,14 +189,45 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       this.maxPointer = maxPointer;
       this.indexReader = indexReader;
 
-      if (version >= VERSION_META) {
+      if (version >= VERSION_NUMCHUNKS) {
+        numChunks = metaIn.readVLong();
         numDirtyChunks = metaIn.readVLong();
         numDirtyDocs = metaIn.readVLong();
       } else {
-        // Old versions of this format did not record numDirtyDocs. Since bulk
+        if (version >= VERSION_META) {
+          // consume dirty chunks/docs stats we wrote
+          metaIn.readVLong();
+          metaIn.readVLong();
+        }
+        // Old versions of this format did not record these. Since bulk
         // merges are disabled on version increments anyway, we make no effort
-        // to get valid values of numDirtyChunks and numDirtyDocs.
-        numDirtyChunks = numDirtyDocs = -1;
+        // to get valid values for these stats.
+        numChunks = numDirtyChunks = numDirtyDocs = -1;
+      }
+
+      if (numChunks < numDirtyChunks) {
+        throw new CorruptIndexException(
+            "Cannot have more dirty chunks than chunks: numChunks="
+                + numChunks
+                + ", numDirtyChunks="
+                + numDirtyChunks,
+            metaIn);
+      }
+      if ((numDirtyChunks == 0) != (numDirtyDocs == 0)) {
+        throw new CorruptIndexException(
+            "Cannot have dirty chunks without dirty docs or vice-versa: numDirtyChunks="
+                + numDirtyChunks
+                + ", numDirtyDocs="
+                + numDirtyDocs,
+            metaIn);
+      }
+      if (numDirtyDocs < numDirtyChunks) {
+        throw new CorruptIndexException(
+            "Cannot have more dirty chunks than documents within dirty chunks: numDirtyChunks="
+                + numDirtyChunks
+                + ", numDirtyDocs="
+                + numDirtyDocs,
+            metaIn);
       }
 
       if (metaIn != null) {
@@ -713,6 +747,15 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   int getPackedIntsVersion() {
     return packedIntsVersion;
+  }
+
+  long getNumChunks() {
+   if (version != VERSION_CURRENT) {
+      throw new IllegalStateException(
+          "getNumChunks should only ever get called when the reader is on the current version");
+    }
+    assert numChunks >= 0;
+    return numChunks;
   }
 
   @Override

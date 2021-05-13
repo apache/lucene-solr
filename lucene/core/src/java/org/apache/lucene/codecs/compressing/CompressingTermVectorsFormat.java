@@ -41,6 +41,7 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
   private final CompressionMode compressionMode;
   private final int chunkSize;
   private final int blockSize;
+  private final int maxDocsPerChunk;
 
   /**
    * Create a new {@link CompressingTermVectorsFormat}.
@@ -66,11 +67,12 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
    * @param segmentSuffix a suffix to append to files created by this format
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
+   * @param maxDocsPerChunk the maximum number of documents in a single chunk
    * @param blockSize the number of chunks to store in an index block.
    * @see CompressionMode
    */
   public CompressingTermVectorsFormat(String formatName, String segmentSuffix,
-      CompressionMode compressionMode, int chunkSize, int blockSize) {
+      CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockSize) {
     this.formatName = formatName;
     this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
@@ -78,6 +80,7 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
       throw new IllegalArgumentException("chunkSize must be >= 1");
     }
     this.chunkSize = chunkSize;
+    this.maxDocsPerChunk = maxDocsPerChunk;
     if (blockSize < 1) {
       throw new IllegalArgumentException("blockSize must be >= 1");
     }
@@ -93,16 +96,32 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public final TermVectorsWriter vectorsWriter(Directory directory,
-      SegmentInfo segmentInfo, IOContext context) throws IOException {
-    return new CompressingTermVectorsWriter(directory, segmentInfo, segmentSuffix,
-        context, formatName, compressionMode, chunkSize, blockSize);
+  public final TermVectorsWriter vectorsWriter(
+      Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+    return new CompressingTermVectorsWriter(
+        directory,
+        segmentInfo,
+        segmentSuffix,
+        context,
+        formatName,
+        compressionMode,
+        chunkSize,
+        maxDocsPerChunk,
+        blockSize);
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(compressionMode=" + compressionMode
-        + ", chunkSize=" + chunkSize + ", blockSize=" + blockSize + ")";
+    return getClass().getSimpleName()
+        + "(compressionMode="
+        + compressionMode
+        + ", chunkSize="
+        + chunkSize
+        + ", maxDocsPerChunk="
+        + maxDocsPerChunk
+        + ", blockSize="
+        + blockSize
+        + ")";
   }
 
 }
