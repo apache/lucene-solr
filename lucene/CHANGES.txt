@@ -57,7 +57,9 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9827: Speed up merging of stored fields and term vectors for smaller segments.
+  (Daniel Mitterdorfer, Dimitrios Liapis, Adrien Grand, Robert Muir)
 
 Bug Fixes
 ---------------------
