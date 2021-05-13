@@ -185,6 +185,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         numDirtyChunks = metaIn.readVLong();
         numDirtyDocs = metaIn.readVLong();
       } else {
+        if (version >= VERSION_META) {
+          // consume dirty chunks/docs stats we wrote
+          metaIn.readVLong();
+          metaIn.readVLong();
+        }
         // Old versions of this format did not record these. Since bulk
         // merges are disabled on version increments anyway, we make no effort
         // to get valid values for these stats.
