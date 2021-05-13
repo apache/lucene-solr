@@ -40,6 +40,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_META;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_TRACK_DIRTY_CHUNK;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -446,7 +447,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     private void doReset(int docID) throws IOException {
       docBase = fieldsStream.readVInt();
       final int token = fieldsStream.readVInt();
-      chunkDocs = token >>> 1;
+      chunkDocs = version >= VERSION_TRACK_DIRTY_CHUNK ? token >>> 2 : token >>> 1;
       if (contains(docID) == false
           || docBase + chunkDocs > numDocs) {
         throw new CorruptIndexException("Corrupted: docID=" + docID
@@ -623,6 +624,18 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
     assert state.contains(docID);
     return state.document(docID);
+  }
+
+  /** Checks if a given docID was loaded in the current block state. */
+  boolean isLoaded(int docID) {
+    if (merging == false) {
+      throw new IllegalStateException("isLoaded should only ever get called on a merge instance");
+    }
+    if (version != VERSION_CURRENT) {
+      throw new IllegalStateException(
+          "isLoaded should only ever get called when the reader is on the current version");
+    }
+    return state.contains(docID);
   }
 
   @Override

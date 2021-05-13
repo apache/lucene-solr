@@ -54,6 +54,7 @@ Improvements
 * LUCENE-9877: Reduce index size by increasing allowable exceptions in PForUtil from
   3 to 7. (Greg Miller)
 
+* LUCENE-9935: Enable bulk merge for stored fields with index sort. (Robert Muir, Adrien Grand, Nhat Nguyen)
 
 Optimizations
 ---------------------
