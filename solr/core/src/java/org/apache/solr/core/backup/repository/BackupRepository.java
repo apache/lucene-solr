@@ -142,6 +142,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    */
   OutputStream createOutput(URI path) throws IOException;
 
+  // TODO define whether this should also create any nonexistent parent directories. (i.e. is this 'mkdir', or 'mkdir -p')
   /**
    * This method creates a directory at the specified path.
    * If the directory already exist, this will be a no-op.

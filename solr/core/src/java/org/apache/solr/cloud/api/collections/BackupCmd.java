@@ -104,7 +104,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
             try {
               incrementalCopyIndexFiles(backupUri, collectionName, message, results, backupProperties, backupMgr);
             } catch (SolrException e) {
-              log.error("Error happened during incremental backup for collection:{}", collectionName, e);
+              log.error("Error happened during incremental backup for collection: {}", collectionName, e);
               ocmh.cleanBackup(repository, backupUri, backupMgr.getBackupId());
               throw e;
             }
