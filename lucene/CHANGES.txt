@@ -73,6 +73,9 @@ Bug Fixes
 * LUCENE-9887: Fixed parameter use in RadixSelector.
   (liupanfeng via Adrien Grand)
 
+* LUCENE-9958: Fixed performance regression for boolean queries that configure a
+  minimum number of matching clauses. (Adrien Grand, Matt Weber)
+
 Other
 ---------------------
 
