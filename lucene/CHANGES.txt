@@ -58,6 +58,8 @@ Improvements
 Optimizations
 ---------------------
 
+* LUCENE-9932: Performance improvement for BKD index building (neoremind)
+
 * LUCENE-9827: Speed up merging of stored fields and term vectors for smaller segments.
   (Daniel Mitterdorfer, Dimitrios Liapis, Adrien Grand, Robert Muir)
 
