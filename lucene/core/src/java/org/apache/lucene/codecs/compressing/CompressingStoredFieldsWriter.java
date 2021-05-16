@@ -76,7 +76,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int VERSION_OFFHEAP_INDEX = 2;
   /** Version where all metadata were moved to the meta file. */
   static final int VERSION_META = 3;
-  static final int VERSION_TRACK_DIRTY_CHUNK = 4;
+  /** Version where numChunks is explicitly recorded in meta file */
+  static final int VERSION_NUMCHUNKS = 4;
+  static final int VERSION_TRACK_DIRTY_CHUNK = 5;
   static final int VERSION_CURRENT = VERSION_TRACK_DIRTY_CHUNK;
   static final int META_VERSION_START = 0;
 
@@ -95,6 +97,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private int docBase; // doc ID at the beginning of the chunk
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
   
+
+  private long numChunks;
   private long numDirtyChunks; // number of incomplete compressed blocks written
   private long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
 
@@ -224,10 +228,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private void flush(boolean force) throws IOException {
     assert triggerFlush() != force;
+    numChunks++;
     if (force) {
       numDirtyChunks++; // incomplete: we had to force this flush
-      final long expectedChunkDocs = Math.min(maxDocsPerChunk, (long) ((double) chunkSize / bufferedDocs.size() * numBufferedDocs));
-      numDirtyDocs += expectedChunkDocs - numBufferedDocs;
+      numDirtyDocs += numBufferedDocs;
     }
     indexWriter.writeIndex(numBufferedDocs, fieldsStream.getFilePointer());
 
@@ -484,6 +488,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
     indexWriter.finish(numDocs, fieldsStream.getFilePointer(), metaStream);
+    metaStream.writeVLong(numChunks);
     metaStream.writeVLong(numDirtyChunks);
     metaStream.writeVLong(numDirtyDocs);
     CodecUtil.writeFooter(metaStream);
@@ -577,6 +582,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           endChunkPointer = index.getStartPointer(docID);
         }
         fieldsStream.copyBytes(rawDocs, endChunkPointer - rawDocs.getFilePointer());
+        ++numChunks;
         final boolean dirtyChunk = (code & 2) != 0;
         if (dirtyChunk) {
           assert bufferedDocs < maxDocsPerChunk;
@@ -654,9 +660,10 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
    * compression ratio can degrade. This is a safety switch.
    */
   boolean tooDirty(CompressingStoredFieldsReader candidate) {
-    // more than 1% dirty, or more than hard limit of 1024 dirty chunks
-    return candidate.getNumDirtyChunks() > 1024 || 
-           candidate.getNumDirtyDocs() * 100 > candidate.getNumDocs();
+    // A segment is considered dirty only if it has enough dirty docs to make a full block
+    // AND more than 1% blocks are dirty.
+    return candidate.getNumDirtyDocs() > maxDocsPerChunk
+        && candidate.getNumDirtyChunks() * 100 > candidate.getNumChunks();
   }
 
   private enum MergeStrategy {

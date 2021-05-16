@@ -38,8 +38,9 @@ import org.apache.lucene.util.IntBlockPool;
 
 final class SortingTermVectorsConsumer extends TermVectorsConsumer {
 
-  private static final TermVectorsFormat TEMP_TERM_VECTORS_FORMAT = new CompressingTermVectorsFormat(
-      "TempTermVectors", "", SortingStoredFieldsConsumer.NO_COMPRESSION, 8*1024, 10);
+  private static final TermVectorsFormat TEMP_TERM_VECTORS_FORMAT =
+      new CompressingTermVectorsFormat(
+          "TempTermVectors", "", SortingStoredFieldsConsumer.NO_COMPRESSION, 8 * 1024, 128, 10);
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
   SortingTermVectorsConsumer(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Directory directory, SegmentInfo info, Codec codec) {

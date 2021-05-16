@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.SmallFloat;
 

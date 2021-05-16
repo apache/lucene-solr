@@ -31,7 +31,7 @@ public abstract class MSBRadixSorter extends Sorter {
   // locality)
   private static final int LEVEL_THRESHOLD = 8;
   // size of histograms: 256 + 1 to indicate that the string is finished
-  private static final int HISTOGRAM_SIZE = 257;
+  protected static final int HISTOGRAM_SIZE = 257;
   // buckets below this size will be sorted with introsort
   private static final int LENGTH_THRESHOLD = 100;
 
@@ -40,7 +40,7 @@ public abstract class MSBRadixSorter extends Sorter {
   private final int[] endOffsets = new int[HISTOGRAM_SIZE];
   private final int[] commonPrefix;
 
-  private final int maxLength;
+  protected final int maxLength;
 
   /**
    * Sole constructor.
@@ -121,7 +121,7 @@ public abstract class MSBRadixSorter extends Sorter {
     sort(from, to, 0, 0);
   }
 
-  private void sort(int from, int to, int k, int l) {
+  protected void sort(int from, int to, int k, int l) {
     if (to - from <= LENGTH_THRESHOLD || l >= LEVEL_THRESHOLD) {
       introSort(from, to, k);
     } else {
@@ -195,7 +195,7 @@ public abstract class MSBRadixSorter extends Sorter {
   }
 
   /** Return a number for the k-th character between 0 and {@link #HISTOGRAM_SIZE}. */
-  private int getBucket(int i, int k) {
+  protected int getBucket(int i, int k) {
     return byteAt(i, k) + 1;
   }
 
@@ -268,7 +268,7 @@ public abstract class MSBRadixSorter extends Sorter {
    * @param startOffsets start offsets per bucket
    * @param endOffsets end offsets per bucket
    */
-  private void reorder(int from, int to, int[] startOffsets, int[] endOffsets, int k) {
+  protected void reorder(int from, int to, int[] startOffsets, int[] endOffsets, int k) {
     // reorder in place, like the dutch flag problem
     for (int i = 0; i < HISTOGRAM_SIZE; ++i) {
       final int limit = endOffsets[i];
