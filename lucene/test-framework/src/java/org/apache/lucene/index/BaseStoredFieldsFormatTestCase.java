@@ -879,6 +879,9 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     List<String> addedIds = new ArrayList<>();
     Runnable verifyStoreFields =
         () -> {
+          if (addedIds.isEmpty()) {
+            return;
+          }
           try (DirectoryReader reader = maybeWrapWithMergingReader(iw.getReader())) {
             IndexSearcher searcher = new IndexSearcher(reader);
             int iters = TestUtil.nextInt(random(), 1, 10);
