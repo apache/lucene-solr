@@ -76,10 +76,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int VERSION_OFFHEAP_INDEX = 2;
   /** Version where all metadata were moved to the meta file. */
   static final int VERSION_META = 3;
-  /** Version where numChunks is explicitly recorded in meta file */
-  static final int VERSION_NUMCHUNKS = 4;
-  static final int VERSION_TRACK_DIRTY_CHUNK = 5;
-  static final int VERSION_CURRENT = VERSION_TRACK_DIRTY_CHUNK;
+  /** Version where numChunks is explicitly recorded in meta file and a dirty chunk bit is recorded in each chunk */
+  static final int VERSION_NUM_CHUNKS = 4;
+  static final int VERSION_CURRENT = VERSION_NUM_CHUNKS;
   static final int META_VERSION_START = 0;
 
   private final String segment;

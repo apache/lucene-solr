@@ -37,11 +37,10 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_NUMCHUNKS;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_NUM_CHUNKS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_META;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_TRACK_DIRTY_CHUNK;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -190,7 +189,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       this.maxPointer = maxPointer;
       this.indexReader = indexReader;
 
-      if (version >= VERSION_NUMCHUNKS) {
+      if (version >= VERSION_NUM_CHUNKS) {
         numChunks = metaIn.readVLong();
         numDirtyChunks = metaIn.readVLong();
         numDirtyDocs = metaIn.readVLong();
@@ -481,7 +480,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     private void doReset(int docID) throws IOException {
       docBase = fieldsStream.readVInt();
       final int token = fieldsStream.readVInt();
-      chunkDocs = version >= VERSION_TRACK_DIRTY_CHUNK ? token >>> 2 : token >>> 1;
+      chunkDocs = version >= VERSION_NUM_CHUNKS ? token >>> 2 : token >>> 1;
       if (contains(docID) == false
           || docBase + chunkDocs > numDocs) {
         throw new CorruptIndexException("Corrupted: docID=" + docID
