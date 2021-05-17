@@ -28,19 +28,19 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -54,6 +54,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -64,10 +65,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-
 @Slow
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+@LogLevel("org.apache.solr.handler.ReplicationHandler=DEBUG,org.apache.solr.handler.IndexFetcher=DEBUG")
 public class TestPullReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -80,7 +79,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void createTestCluster() throws Exception {
    //  cloudSolrClientMaxStaleRetries
    System.setProperty("cloudSolrClientMaxStaleRetries", "1");
    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
@@ -178,7 +177,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
         for (Slice s:docCollection.getSlices()) {
           // read-only replicas can never become leaders
-          assertFalse(s.getLeader().getType() == Replica.Type.PULL);
+          assertNotSame(s.getLeader().getType(), Replica.Type.PULL);
           List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
           assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()),
               1, shardElectionNodes.size());
@@ -202,27 +201,23 @@ public class TestPullReplica extends SolrCloudTestCase {
   /**
    * Asserts that Update logs don't exist for replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL}
    */
-  private void assertUlogPresence(DocCollection collection) {
+  static void assertUlogPresence(DocCollection collection) {
     for (Slice s:collection.getSlices()) {
       for (Replica r:s.getReplicas()) {
         if (r.getType() == Replica.Type.NRT) {
           continue;
         }
-        SolrCore core = null;
-        try {
-          core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName());
+        try (SolrCore core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName())) {
           assertNotNull(core);
           assertFalse("Update log should not exist for replicas of type Passive but file is present: " + core.getUlogDir(),
               new java.io.File(core.getUlogDir()).exists());
-        } finally {
-          core.close();
         }
       }
     }
   }
 
   @SuppressWarnings("unchecked")
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -238,37 +233,27 @@ public class TestPullReplica extends SolrCloudTestCase {
       numDocs++;
       cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(numDocs), "foo", "bar"));
       cluster.getSolrClient().commit(collectionName);
+      log.info("Committed doc {} to leader", numDocs);
 
       Slice s = docCollection.getSlices().iterator().next();
       try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
         assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       }
+      log.info("Found {} docs in leader, verifying updates make it to {} pull replicas", numDocs, numPullReplicas);
 
-      TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      for (Replica r:s.getReplicas(EnumSet.of(Replica.Type.PULL))) {
-        //TODO: assert replication < REPLICATION_TIMEOUT_SECS
+      List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+      waitForNumDocsInAllReplicas(numDocs, pullReplicas);
+
+      for (Replica r : pullReplicas) {
         try (HttpSolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
-          while (true) {
-            try {
-              assertEquals("Replica " + r.getName() + " not up to date after 10 seconds",
-                  numDocs, pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-              break;
-            } catch (AssertionError e) {
-              if (t.hasTimedOut()) {
-                throw e;
-              } else {
-                Thread.sleep(100);
-              }
-            }
-          }
-          SolrQuery req = new SolrQuery(
-              "qt", "/admin/plugins",
-              "stats", "true");
+          SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
-          assertEquals("Replicas shouldn't process the add document request: " + statsResponse,
-              0L, ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
+          // The adds gauge metric should be null for pull replicas since they don't process adds
+          assertNull("Replicas shouldn't process the add document request: " + statsResponse,
+              ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.adds"));
         }
       }
+
       if (reloaded) {
         break;
       } else {
@@ -306,12 +291,14 @@ public class TestPullReplica extends SolrCloudTestCase {
     assertNumberOfReplicas(2, 0, 1, true, true);
   }
 
+  @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testRemoveAllWriterReplicas() throws Exception {
     doTestNoLeader(true);
   }
 
   @Test
-  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
   }
@@ -458,7 +445,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Also fails if I send the update to the pull replica explicitly
     try (HttpSolrClient pullReplicaClient = getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       expectThrows(SolrException.class, () ->
-        cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
+          pullReplicaClient.add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
       );
     }
     if (removeReplica) {
@@ -499,7 +486,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)), "id:2");
+    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)), "id:2", null, null);
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
   }
 
@@ -542,23 +529,30 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas) throws IOException, SolrServerException, InterruptedException {
-    waitForNumDocsInAllReplicas(numDocs, replicas, "*:*");
+    waitForNumDocsInAllReplicas(numDocs, replicas, "*:*", null, null);
   }
 
-  private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query) throws IOException, SolrServerException, InterruptedException {
+  static void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query, String user, String pass) throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
-      try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
+      String replicaUrl = r.getCoreUrl();
+      try (HttpSolrClient replicaClient = getHttpSolrClient(replicaUrl)) {
         while (true) {
+          QueryRequest req = new QueryRequest(new SolrQuery(query));
+          if (user != null && pass != null) {
+            req.setBasicAuthCredentials(user, pass);
+          }
           try {
-            assertEquals("Replica " + r.getName() + " not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
-                numDocs, replicaClient.query(new SolrQuery(query)).getResults().getNumFound());
+            long numFound = req.process(replicaClient).getResults().getNumFound();
+            assertEquals("Replica " + r.getName() + " (" + replicaUrl + ") not up to date after " + REPLICATION_TIMEOUT_SECS + " seconds",
+                numDocs, numFound);
+            log.info("Replica {} ({}) has all {} docs", r.getName(), replicaUrl, numDocs);
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
               throw e;
             } else {
-              Thread.sleep(100);
+              Thread.sleep(200);
             }
           }
         }
@@ -566,7 +560,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
+  static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
       log.info("Collection not yet deleted");
@@ -584,10 +578,14 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   private DocCollection assertNumberOfReplicas(int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
+    return assertNumberOfReplicas(collectionName, numNrtReplicas, numTlogReplicas, numPullReplicas, updateCollection, activeOnly);
+  }
+
+  static DocCollection assertNumberOfReplicas(String coll, int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
     if (updateCollection) {
-      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
+      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(coll);
     }
-    DocCollection docCollection = getCollectionState(collectionName);
+    DocCollection docCollection = getCollectionState(coll);
     assertNotNull(docCollection);
     assertEquals("Unexpected number of writer replicas: " + docCollection, numNrtReplicas,
         docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
@@ -655,7 +653,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
   }
 
-  private void addReplicaToShard(String shardName, Replica.Type type) throws ClientProtocolException, IOException, SolrServerException {
+  private void addReplicaToShard(String shardName, Replica.Type type) throws IOException, SolrServerException {
     switch (random().nextInt(3)) {
       case 0: // Add replica with SolrJ
         CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, shardName, type).process(cluster.getSolrClient());
