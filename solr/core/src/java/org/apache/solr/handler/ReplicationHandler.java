@@ -1248,6 +1248,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         log.info("Poll disabled");
         return;
       }
+      ExecutorUtil.setServerThreadFlag(true); // so PKI auth works
       try {
         log.debug("Polling for index modifications");
         markScheduledExecutionStart();
@@ -1255,6 +1256,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (pollListener != null) pollListener.onComplete(core, fetchResult);
       } catch (Exception e) {
         log.error("Exception in fetching index", e);
+      } finally {
+        ExecutorUtil.setServerThreadFlag(null);
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(
