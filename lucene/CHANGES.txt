@@ -76,6 +76,10 @@ Bug Fixes
 
 * LUCENE-9958: Fixed performance regression for boolean queries that configure a
   minimum number of matching clauses. (Adrien Grand, Matt Weber)
+  
+* LUCENE-9953: LongValueFacetCounts should count each document at most once when determining
+  the total count for a dimension. Prior to this fix, multi-value docs could contribute a > 1
+  count to the dimension count. (Greg Miller)
 
 Other
 ---------------------

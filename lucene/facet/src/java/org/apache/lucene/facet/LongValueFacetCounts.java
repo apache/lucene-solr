@@ -175,7 +175,9 @@ public class LongValueFacetCounts extends Facets {
       
         for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
           int limit = values.docValueCount();
-          totCount += limit;
+          if (limit > 0) {
+            totCount++;
+          }
           for (int i = 0; i < limit; i++) {
             increment(values.nextValue());
           }
@@ -239,7 +241,9 @@ public class LongValueFacetCounts extends Facets {
         int doc;
         while ((doc = values.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           int limit = values.docValueCount();
-          totCount += limit;
+          if (limit > 0) {
+            totCount++;
+          }
           for (int i = 0; i < limit; i++) {
             increment(values.nextValue());
           }
