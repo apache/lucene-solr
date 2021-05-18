@@ -335,7 +335,10 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
       if (data != null && data.getData() != null) {
         props = ZkNodeProps.load(data.getData());
       }
-    } catch (KeeperException | IOException | NoSuchElementException e) {
+    } catch (KeeperException | NoSuchElementException e) {
+      log.info("Could not obtain overseer's address, skipping.", e);
+      return null;
+    } catch (IOException e) {
       log.warn("Could not obtain overseer's address, skipping.", e);
       return null;
     } catch (InterruptedException e) {
