@@ -70,6 +70,9 @@ Optimizations
 
 * SOLR-15067 ChildDocTransformerFactory uses perSegFilter cache (Bence Szabo via David Smiley)
 
+* SOLR-15315: Optimise contrib/ltr MultipleAdditiveTreesModel by changing recursion to loop in tree traversal.
+  (Suryakant Pandey, Alessandro Benedetti, Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
