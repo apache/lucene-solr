@@ -13,6 +13,9 @@ API Changes
 New Features
 ---------------------
 
+* LUCENE-9575: PatternTypingFilter has been added to allow setting a type attribute on tokens based on
+  a configured set of regular expressions (Gus Heck).
+
 * LUCENE-9572: TypeAsSynonymFilter has been enhanced support ignoring some types, and to allow
   the generated synonyms to copy some or all flags from the original token (Gus Heck).
 
@@ -51,10 +54,15 @@ Improvements
 * LUCENE-9877: Reduce index size by increasing allowable exceptions in PForUtil from
   3 to 7. (Greg Miller)
 
+* LUCENE-9935: Enable bulk merge for stored fields with index sort. (Robert Muir, Adrien Grand, Nhat Nguyen)
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9932: Performance improvement for BKD index building (neoremind)
+
+* LUCENE-9827: Speed up merging of stored fields and term vectors for smaller segments.
+  (Daniel Mitterdorfer, Dimitrios Liapis, Adrien Grand, Robert Muir)
 
 Bug Fixes
 ---------------------
@@ -66,6 +74,9 @@ Bug Fixes
 * LUCENE-9887: Fixed parameter use in RadixSelector.
   (liupanfeng via Adrien Grand)
 
+* LUCENE-9958: Fixed performance regression for boolean queries that configure a
+  minimum number of matching clauses. (Adrien Grand, Matt Weber)
+  
 * LUCENE-9953: LongValueFacetCounts should count each document at most once when determining
   the total count for a dimension. Prior to this fix, multi-value docs could contribute a > 1
   count to the dimension count. (Greg Miller)

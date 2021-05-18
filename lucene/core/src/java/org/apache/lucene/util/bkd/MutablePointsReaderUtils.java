@@ -21,9 +21,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IntroSelector;
 import org.apache.lucene.util.IntroSorter;
-import org.apache.lucene.util.MSBRadixSorter;
 import org.apache.lucene.util.RadixSelector;
 import org.apache.lucene.util.Selector;
+import org.apache.lucene.util.StableMSBRadixSorter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /** Utility APIs for sorting and partitioning buffered points.
@@ -36,12 +36,36 @@ public final class MutablePointsReaderUtils {
   /** Sort the given {@link MutablePointValues} based on its packed value then doc ID. */
   public static void sort(BKDConfig config, int maxDoc,
                           MutablePointValues reader, int from, int to) {
-    final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
-    new MSBRadixSorter(config.packedBytesLength + (bitsPerDocId + 7) / 8) {
+    boolean sortedByDocID = true;
+    int prevDoc = 0;
+    for (int i = from; i < to; ++i) {
+      int doc = reader.getDocID(i);
+      if (doc < prevDoc) {
+        sortedByDocID = false;
+        break;
+      }
+      prevDoc = doc;
+    }
+
+    // No need to tie break on doc IDs if already sorted by doc ID, since we use a stable sort.
+    // This should be a common situation as IndexWriter accumulates data in doc ID order when
+    // index sorting is not enabled.
+    final int bitsPerDocId = sortedByDocID ? 0 : PackedInts.bitsRequired(maxDoc - 1);
+    new StableMSBRadixSorter(config.packedBytesLength + (bitsPerDocId + 7) / 8) {
 
       @Override
       protected void swap(int i, int j) {
         reader.swap(i, j);
+      }
+
+      @Override
+      protected void save(int i, int j) {
+        reader.save(i, j);
+      }
+
+      @Override
+      protected void restore(int i, int j) {
+        reader.restore(i, j);
       }
 
       @Override
@@ -53,41 +77,6 @@ public final class MutablePointsReaderUtils {
           return (reader.getDocID(i) >>> Math.max(0, shift)) & 0xff;
         }
       }
-
-      @Override
-      protected org.apache.lucene.util.Sorter getFallbackSorter(int k) {
-        return new IntroSorter() {
-
-          final BytesRef pivot = new BytesRef();
-          final BytesRef scratch = new BytesRef();
-          int pivotDoc;
-
-          @Override
-          protected void swap(int i, int j) {
-            reader.swap(i, j);
-          }
-
-          @Override
-          protected void setPivot(int i) {
-            reader.getValue(i, pivot);
-            pivotDoc = reader.getDocID(i);
-          }
-
-          @Override
-          protected int comparePivot(int j) {
-            if (k < config.packedBytesLength) {
-              reader.getValue(j, scratch);
-              int cmp = FutureArrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + config.packedBytesLength - k,
-                      scratch.bytes, scratch.offset + k, scratch.offset + k + config.packedBytesLength - k);
-              if (cmp != 0) {
-                return cmp;
-              }
-            }
-            return pivotDoc - reader.getDocID(j);
-          }
-        };
-      }
-
     }.sort(from, to);
   }
 

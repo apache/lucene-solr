@@ -1053,6 +1053,51 @@
           </str>
         </arr>
       </lst>
+      <lst name="request">
+        <lst name="query">
+          <str name="path">/admin/zookeeper/status</str>
+        </lst>
+        <arr name="jsonQueries">
+          <str>
+            .zkStatus.ensembleSize as $value |
+            .zkStatus.mode as $mode |
+            {
+            name         : "solr_zookeeper_ensemble_size",
+            type         : "GAUGE",
+            help         : "See following URL: https://solr.apache.org/guide/cloud-screens.html#zk-status-view",
+            label_names  : [],
+            label_values : [],
+            value        : $value
+            }
+          </str>
+          <str>
+            .zkStatus.details[] as $object |
+            $object.host as $host |
+            $object.ok as $ok |
+            (if $object.clientPort != null and $ok then 1.0 else 0.0 end) as $value |
+            {
+            name         : "solr_zookeeper_nodestatus",
+            type         : "GAUGE",
+            help         : "See following URL: https://solr.apache.org/guide/cloud-screens.html#zk-status-view",
+            label_names  : ["host"],
+            label_values : [$host],
+            value        : $value
+            }
+          </str>
+          <str>
+            .zkStatus.status as $statusText |
+            (if $statusText == "green" then 1.0 else 0.0 end) as $value |
+            {
+            name         : "solr_zookeeper_status",
+            type         : "GAUGE",
+            help         : "See following URL: https://solr.apache.org/guide/cloud-screens.html#zk-status-view",
+            label_names  : ["status"],
+            label_values : [$statusText],
+            value        : $value
+            }
+          </str>
+        </arr>
+      </lst>
     </collections>
 
     <!--

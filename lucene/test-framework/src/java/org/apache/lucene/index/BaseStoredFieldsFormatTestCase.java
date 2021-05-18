@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -43,6 +46,8 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -819,4 +824,131 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     IOUtils.close(iw, ir, everything);
     IOUtils.close(dirs);
   }
+
+  public void testRandomStoredFieldsWithIndexSort() throws Exception {
+    final SortField[] sortFields;
+    if (random().nextBoolean()) {
+      sortFields =
+          new SortField[]{
+              new SortField("sort-1", SortField.Type.LONG),
+              new SortField("sort-2", SortField.Type.INT)
+          };
+    } else {
+      sortFields = new SortField[]{new SortField("sort-1", SortField.Type.LONG)};
+    }
+    List<String> storedFields = new ArrayList<>();
+    int numFields = TestUtil.nextInt(random(), 1, 10);
+    for (int i = 0; i < numFields; i++) {
+      storedFields.add("f-" + i);
+    }
+    FieldType storeType = new FieldType(TextField.TYPE_STORED);
+    storeType.setStored(true);
+    Function<String, Document> documentFactory =
+        id -> {
+          Document doc = new Document();
+          doc.add(new StringField("id", id, random().nextBoolean() ? Store.YES : Store.NO));
+          if (random().nextInt(100) <= 5) {
+            Collections.shuffle(storedFields, random());
+          }
+          for (String fieldName : storedFields) {
+            if (random().nextBoolean()) {
+              String s = TestUtil.randomUnicodeString(random(), 100);
+              doc.add(newField(fieldName, s, storeType));
+            }
+          }
+          for (SortField sortField : sortFields) {
+            doc.add(
+                new NumericDocValuesField(
+                    sortField.getField(), TestUtil.nextInt(random(), 0, 10000)));
+          }
+          return doc;
+        };
+
+    Map<String, Document> docs = new HashMap<>();
+    int numDocs = atLeast(100);
+    for (int i = 0; i < numDocs; i++) {
+      String id = Integer.toString(i);
+      docs.put(id, documentFactory.apply(id));
+    }
+
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 5, 20));
+    iwc.setIndexSort(new Sort(sortFields));
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    List<String> addedIds = new ArrayList<>();
+    Runnable verifyStoreFields =
+        () -> {
+          if (addedIds.isEmpty()) {
+            return;
+          }
+          try (DirectoryReader reader = maybeWrapWithMergingReader(iw.getReader())) {
+            IndexSearcher searcher = new IndexSearcher(reader);
+            int iters = TestUtil.nextInt(random(), 1, 10);
+            for (int i = 0; i < iters; i++) {
+              String testID = addedIds.get(random().nextInt(addedIds.size()));
+              if (VERBOSE) {
+                System.out.println("TEST: test id=" + testID);
+              }
+              TopDocs hits = searcher.search(new TermQuery(new Term("id", testID)), 1);
+              assertEquals(1, hits.totalHits.value);
+              List<IndexableField> expectedFields =
+                  docs.get(testID).getFields().stream()
+                      .filter(f -> f.fieldType().stored())
+                      .collect(Collectors.toList());
+              Document actualDoc = reader.document(hits.scoreDocs[0].doc);
+              assertEquals(expectedFields.size(), actualDoc.getFields().size());
+              for (IndexableField expectedField : expectedFields) {
+                IndexableField[] actualFields = actualDoc.getFields(expectedField.name());
+                assertEquals(1, actualFields.length);
+                assertEquals(expectedField.stringValue(), actualFields[0].stringValue());
+              }
+            }
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        };
+    final List<String> ids = new ArrayList<>(docs.keySet());
+    Collections.shuffle(ids, random());
+    for (String id : ids) {
+      if (random().nextInt(100) < 5) {
+        // add via foreign reader
+        IndexWriterConfig otherIwc = newIndexWriterConfig();
+        otherIwc.setIndexSort(new Sort(sortFields));
+        try (Directory otherDir = newDirectory();
+             RandomIndexWriter otherIw = new RandomIndexWriter(random(), otherDir, otherIwc)) {
+          otherIw.addDocument(docs.get(id));
+          try (DirectoryReader otherReader = otherIw.getReader()) {
+            TestUtil.addIndexesSlowly(iw.w, otherReader);
+          }
+        }
+      } else {
+        // add normally
+        iw.addDocument(docs.get(id));
+      }
+      addedIds.add(id);
+      if (random().nextInt(100) < 5) {
+        String deletingId = addedIds.remove(random().nextInt(addedIds.size()));
+        if (random().nextBoolean()) {
+          iw.deleteDocuments(new TermQuery(new Term("id", deletingId)));
+          addedIds.remove(deletingId);
+        } else {
+          final Document newDoc = documentFactory.apply(deletingId);
+          docs.put(deletingId, newDoc);
+          iw.updateDocument(new Term("id", deletingId), newDoc);
+        }
+      }
+      if (random().nextInt(100) < 5) {
+        verifyStoreFields.run();
+      }
+      if (random().nextInt(100) < 2) {
+        iw.forceMerge(TestUtil.nextInt(random(), 1, 3));
+      }
+    }
+    verifyStoreFields.run();
+    iw.forceMerge(TestUtil.nextInt(random(), 1, 3));
+    verifyStoreFields.run();
+    IOUtils.close(iw, dir);
+  }
+
 }

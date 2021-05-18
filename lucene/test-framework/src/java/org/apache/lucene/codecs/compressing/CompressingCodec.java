@@ -100,8 +100,12 @@ public abstract class CompressingCodec extends FilterCodec {
    */
   public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize, int maxDocsPerChunk, int blockShift) {
     super(name, TestUtil.getDefaultCodec());
-    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
-    this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize, blockShift);
+    this.storedFieldsFormat =
+        new CompressingStoredFieldsFormat(
+            name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
+    this.termVectorsFormat =
+        new CompressingTermVectorsFormat(
+            name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
   }
   
   /**

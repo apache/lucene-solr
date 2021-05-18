@@ -23,6 +23,8 @@ New Features
 
 * SOLR-15300: Report collection and shard "health" state in CLUSTERSTATUS response. (ab, janhoy)
 
+* SOLR-15397: Expose zookeeper status in the Prometheus exporter (janhoy)
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
@@ -50,11 +52,11 @@ Improvements
 
 * SOLR-11233: Add optional JAVA8_GC_LOG_FILE_OPTS for bin/solr. (Pranav Murugappan, Christine Poerschke)
 
-* SOLR-15365: Improved Grafana dashboard for Prometheus Exporter with a new "cluster" row (janhoy)
-
 * SOLR-15155: Let CloudHttp2SolrClient accept an external Http2SolrClient Builder (Tomás Fernández Löbbe)
 
 * SOLR-15337: Avoid XPath in solrconfig.xml parsing (noble)
+
+* SOLR-6152: Pre-populating values into search parameters on the query page of solr admin (jafurrer, daniel6691)
 
 * SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax escaping.
   It was inconsistent with other Solr options.  It did this escaping since 8.0 but not prior.  (David Smiley)
@@ -94,6 +96,9 @@ Bug Fixes
 * SOLR-15317: Correctly handle user principals with whitespace in PKIAuthPlugin (Dominik Dresel, Mike Drob)
 
 * SOLR-15383: Solr Zookeeper status page shows green even when some Zookeepers are not serving requests (janhoy)
+
+* SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
+  allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
 
 Other Changes
 ---------------------
