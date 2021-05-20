@@ -86,7 +86,6 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
     CollectionAdminRequest.Create create =

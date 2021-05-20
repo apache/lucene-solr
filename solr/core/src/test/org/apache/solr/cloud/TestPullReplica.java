@@ -66,7 +66,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-@LogLevel("org.apache.solr.handler.ReplicationHandler=DEBUG,org.apache.solr.handler.IndexFetcher=DEBUG")
+@LogLevel("org.apache.solr.handler.ReplicationHandler=DEBUG;org.apache.solr.handler.IndexFetcher=DEBUG")
 public class TestPullReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -80,7 +80,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createTestCluster() throws Exception {
-   //  cloudSolrClientMaxStaleRetries
    System.setProperty("cloudSolrClientMaxStaleRetries", "1");
    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
 
@@ -127,7 +126,6 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -217,7 +215,6 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("unchecked")
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -226,6 +223,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas", collectionName, clusterShape(1, numPullReplicas + 1));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
     assertEquals(1, docCollection.getSlices().size());
+
+    // ugly but needed to ensure a full PULL replication cycle (every sec) has occurred on the replicas before adding docs
+    Thread.sleep(1500);
 
     boolean reloaded = false;
     int numDocs = 0;
@@ -241,7 +241,8 @@ public class TestPullReplica extends SolrCloudTestCase {
       }
       log.info("Found {} docs in leader, verifying updates make it to {} pull replicas", numDocs, numPullReplicas);
 
-      List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+      List<Replica> pullReplicas =
+          (numDocs == 1) ? restartPullReplica(docCollection, numPullReplicas) : s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
       for (Replica r : pullReplicas) {
@@ -265,6 +266,37 @@ public class TestPullReplica extends SolrCloudTestCase {
       }
     }
     assertUlogPresence(docCollection);
+  }
+
+  private List<Replica> restartPullReplica(DocCollection docCollection, int numPullReplicas) throws Exception {
+    Slice s = docCollection.getSlices().iterator().next();
+    List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+
+    // find a node with a PULL replica that's not hosting the leader
+    JettySolrRunner leaderJetty = cluster.getReplicaJetty(s.getLeader());
+    JettySolrRunner replicaJetty = null;
+    for (Replica r : pullReplicas) {
+      JettySolrRunner jetty = cluster.getReplicaJetty(r);
+      if (!jetty.getNodeName().equals(leaderJetty.getNodeName())) {
+        replicaJetty = jetty;
+        break;
+      }
+    }
+
+    // stop / start the node with a pull replica
+    if (replicaJetty != null) {
+      replicaJetty.stop();
+      cluster.waitForJettyToStop(replicaJetty);
+      waitForState("Expected to see a downed PULL replica", collectionName, clusterStateReflectsActiveAndDownReplicas());
+      replicaJetty.start();
+      waitForState("Expected collection to have recovered with 1 shard and " + (numPullReplicas + 1) + " replicas after restarting " + replicaJetty.getNodeName(),
+          collectionName, clusterShape(1, numPullReplicas + 1));
+      docCollection = assertNumberOfReplicas(1, 0, numPullReplicas, false, true);
+      s = docCollection.getSlices().iterator().next();
+      pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
+    } // else it's ok if all replicas ended up on the same node, we're not testing replica placement here, but skip this part of the test
+
+    return pullReplicas;
   }
 
   public void testAddRemovePullReplica() throws Exception {
@@ -292,13 +324,11 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testRemoveAllWriterReplicas() throws Exception {
     doTestNoLeader(true);
   }
 
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15399")
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
   }
