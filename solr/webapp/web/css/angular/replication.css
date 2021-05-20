@@ -114,8 +114,8 @@ limitations under the License.
 #content #replication #progress #bar #eta
 {
   position: absolute;
-  right: -100px;
-  width: 100px;
+  right: -160px;
+  width: 160px;
 }
 
 #content #replication #progress #bar #bar-info

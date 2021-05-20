@@ -103,6 +103,8 @@ Bug Fixes
 * SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
   allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
 
+* SOLR-15424: Solr replication UI wraps ETA time on top of next line (janhoy)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
