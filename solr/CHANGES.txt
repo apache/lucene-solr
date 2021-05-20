@@ -105,6 +105,8 @@ Bug Fixes
 
 * SOLR-15424: Solr replication UI wraps ETA time on top of next line (janhoy)
 
+* SOLR-15399: IndexFetcher should not issue a local commit for PULL replicas when leader's version is zero (Timothy Potter)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
