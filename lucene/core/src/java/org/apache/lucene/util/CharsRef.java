@@ -85,11 +85,18 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    return stringHashCode(chars, offset, length);
+  }
+
+  /**
+   * @return the hash code of the given char sub-array, calculated by {@link String#hashCode()}
+   *     specification
+   */
+  public static int stringHashCode(char[] chars, int offset, int length) {
+    int end = offset + length;
     int result = 0;
-    final int end = offset + length;
     for (int i = offset; i < end; i++) {
-      result = prime * result + chars[i];
+      result = 31 * result + chars[i];
     }
     return result;
   }
