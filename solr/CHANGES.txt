@@ -103,6 +103,9 @@ Bug Fixes
 * SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
   allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
 
+* SOLR-15418: The V2 API threw errors for GET requests to collection handlers like /select.
+  (David Smiley)
+
 * SOLR-15424: Solr replication UI wraps ETA time on top of next line (janhoy)
 
 * SOLR-15399: IndexFetcher should not issue a local commit for PULL replicas when leader's version is zero (Timothy Potter)
