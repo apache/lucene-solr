@@ -83,6 +83,9 @@ Bug Fixes
   the total count for a dimension. Prior to this fix, multi-value docs could contribute a > 1
   count to the dimension count. (Greg Miller)
 
+* LUCEDNE-9967: Do not throw NullPointerException while trying to handle another exception in
+  ReplicaNode.start (Steven Schlansker)
+
 Other
 ---------------------
 
