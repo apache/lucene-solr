@@ -443,6 +443,9 @@ The port number for the server.
 When `true` use multicast UDP communication, otherwise use UDP unicast. Default is `false`.
 
 === Shard and Cluster Reporters
+[NOTE]
+This functionality is deprecated and will be removed in Solr 9.0.
+
 These two reporters can be used for aggregation of metrics reported from replicas to shard leader (the "shard" reporter),
 and from any local registry to the Overseer node.
 

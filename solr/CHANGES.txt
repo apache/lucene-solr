@@ -119,6 +119,9 @@ Other Changes
 
 * SOLR-15377: Improve IndexFetcher's exception logging upon replication errors. (Torsten Bøgh Köster, Christine Poerschke)
 
+* SOLR-15416: Metrics history handler and metrics history collection (together with its
+  specialized reporters) have been deprecated and will be removed in 9.0. (ab)
+
 ==================  8.8.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

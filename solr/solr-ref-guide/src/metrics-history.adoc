@@ -16,6 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+[NOTE]
+This functionality is now deprecated and will be removed in Solr 9.0.
+
 Solr collects long-term history of certain key metrics both in SolrCloud and in standalone mode.
 
 This information can be used for very simple monitoring and troubleshooting, but also some

@@ -116,7 +116,9 @@ import static org.apache.solr.common.params.CommonParams.ID;
 /**
  * Collects metrics from all nodes in the system on a regular basis in a background thread.
  * @since 7.4
+ * @deprecated this functionality will be removed in Solr 9.0
  */
+@Deprecated
 public class MetricsHistoryHandler extends RequestHandlerBase implements PermissionNameProvider, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
