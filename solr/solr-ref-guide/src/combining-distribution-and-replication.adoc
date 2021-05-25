@@ -23,7 +23,7 @@ The idea is to combine distributed search with replication. As shown in the figu
 Query requests should be load balanced across each of the shard followers. This gives you both increased query handling capacity and fail-over backup if a server goes down.
 
 .A Solr configuration combining both replication and leader-follower distribution.
-image::images/combining-distribution-and-replication/worddav4101c16174820e932b44baa22abcfcd1.png[image,width=312,height=344]
+image::images/combining-distribution-and-replication/distributed-replication.png[image,width=312,height=344]
 
 
 None of the leader shards in this configuration know about each other. You index to each leader, the index is replicated to each follower, and then searches are distributed across the followers, using one follower from each leader/follower shard.
