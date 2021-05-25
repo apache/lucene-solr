@@ -47,10 +47,14 @@ public class TestLinearModel extends TestRerankBase {
   }
 
   public static Map<String,Object> makeFeatureWeights(List<Feature> features) {
+    return makeFeatureWeights(features, 0.1);
+  }
+
+  public static Map<String,Object> makeFeatureWeights(List<Feature> features, Number weight) {
     final Map<String,Object> nameParams = new HashMap<String,Object>();
-    final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
+    final HashMap<String,Number> modelWeights = new HashMap<String,Number>();
     for (final Feature feat : features) {
-      modelWeights.put(feat.getName(), 0.1);
+      modelWeights.put(feat.getName(), weight);
     }
     nameParams.put("weights", modelWeights);
     return nameParams;
