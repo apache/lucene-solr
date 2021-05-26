@@ -18,5 +18,6 @@
 /**
  * This package contains {@link org.rrd4j.core.RrdBackendFactory} implementation
  * that supports storing metrics history in Solr.
+ * @deprecated this functionality will be removed in Solr 9.0
  */
 package org.apache.solr.metrics.rrd;

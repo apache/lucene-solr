@@ -58,7 +58,10 @@ import com.codahale.metrics.MetricFilter;
  *      &lt;str name="filter"&gt;QUERY\./select.*requests&lt;/str&gt;
  *    &lt;/reporter&gt;
  * </pre>
+ *
+ * @deprecated this functionality will be removed in Solr 9.0
  */
+@Deprecated
 public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

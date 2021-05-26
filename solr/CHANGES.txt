@@ -72,6 +72,9 @@ Optimizations
 
 * SOLR-15067 ChildDocTransformerFactory uses perSegFilter cache (Bence Szabo via David Smiley)
 
+* SOLR-15315: Optimise contrib/ltr MultipleAdditiveTreesModel by changing recursion to loop in tree traversal.
+  (Suryakant Pandey, Alessandro Benedetti, Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
@@ -99,6 +102,16 @@ Bug Fixes
 
 * SOLR-15383: Solr Zookeeper status page shows green even when some Zookeepers are not serving requests (janhoy)
 
+* SOLR-11904: Mark ReplicationHandler's polling thread as a Solr server thread so the PKI Interceptor is activated to
+  allow PULL replicas to replicate from security-enabled leaders (Timothy Potter, Torsten Bøgh Köster)
+
+* SOLR-15418: The V2 API threw errors for GET requests to collection handlers like /select.
+  (David Smiley)
+
+* SOLR-15424: Solr replication UI wraps ETA time on top of next line (janhoy)
+
+* SOLR-15399: IndexFetcher should not issue a local commit for PULL replicas when leader's version is zero (Timothy Potter)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
@@ -107,6 +120,9 @@ Other Changes
   be problematic with multiple replicas.  In 9.0 this situation will prevent collection initialization. (hossman)
 
 * SOLR-15377: Improve IndexFetcher's exception logging upon replication errors. (Torsten Bøgh Köster, Christine Poerschke)
+
+* SOLR-15416: Metrics history handler and metrics history collection (together with its
+  specialized reporters) have been deprecated and will be removed in 9.0. (ab)
 
 ==================  8.8.2 ==================
 

@@ -62,7 +62,10 @@ import org.slf4j.LoggerFactory;
  * <p>NOTE: Solr doesn't register instances of this factory in the static
  * registry {@link RrdBackendFactory#registerFactory(RrdBackendFactory)} because
  * it's then impossible to manage its life-cycle.</p>
+ *
+ * @deprecated this functionality will be removed in Solr 9.0
  */
+@Deprecated
 public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

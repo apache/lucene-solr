@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -169,48 +170,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       return feature == null;
     }
 
-    public float score(float[] featureVector) {
-      if (isLeaf()) {
-        return value;
-      }
-
-      // unsupported feature (tree is looking for a feature that does not exist)
-      if  ((featureIndex < 0) || (featureIndex >= featureVector.length)) {
-        return 0f;
-      }
-
-      if (featureVector[featureIndex] <= threshold) {
-        return left.score(featureVector);
-      } else {
-        return right.score(featureVector);
-      }
-    }
-
-    public String explain(float[] featureVector) {
-      if (isLeaf()) {
-        return "val: " + value;
-      }
-
-      // unsupported feature (tree is looking for a feature that does not exist)
-      if  ((featureIndex < 0) || (featureIndex >= featureVector.length)) {
-        return  "'" + feature + "' does not exist in FV, Return Zero";
-      }
-
-      // could store extra information about how much training data supported
-      // each branch and report
-      // that here
-
-      if (featureVector[featureIndex] <= threshold) {
-        String rval = "'" + feature + "':" + featureVector[featureIndex] + " <= "
-            + threshold + ", Go Left | ";
-        return rval + left.explain(featureVector);
-      } else {
-        String rval = "'" + feature + "':" + featureVector[featureIndex] + " > "
-            + threshold + ", Go Right | ";
-        return rval + right.explain(featureVector);
-      }
-    }
-
     @Override
     public String toString() {
       final StringBuilder sb = new StringBuilder();
@@ -227,28 +186,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public RegressionTreeNode() {
-    }
-
-    public void validate() throws ModelException {
-      if (isLeaf()) {
-        if (left != null || right != null) {
-          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left="+left+" and right="+right);
-        }
-        return;
-      }
-      if (null == threshold) {
-        throw new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
-      }
-      if (null == left) {
-        throw new ModelException("MultipleAdditiveTreesModel tree node is missing left");
-      } else {
-        left.validate();
-      }
-      if (null == right) {
-        throw new ModelException("MultipleAdditiveTreesModel tree node is missing right");
-      } else {
-        right.validate();
-      }
     }
 
   }
@@ -272,11 +209,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public float score(float[] featureVector) {
-      return weight.floatValue() * root.score(featureVector);
+      return weight.floatValue() * scoreNode(featureVector, root);
     }
 
     public String explain(float[] featureVector) {
-      return root.explain(featureVector);
+      return explainNode(featureVector, root);
     }
 
     @Override
@@ -298,7 +235,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       if (root == null) {
         throw new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
       } else {
-        root.validate();
+        validateNode(root);
       }
     }
   }
@@ -344,6 +281,87 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
     return score;
   }
+
+  private static float scoreNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+        return regressionTreeNode.value;
+      }
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        return 0f;
+      }
+
+      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        regressionTreeNode = regressionTreeNode.left;
+      } else {
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+  }
+
+  private static void validateNode(RegressionTreeNode regressionTreeNode) throws ModelException {
+    
+    // Create an empty stack and push root to it
+    Stack<RegressionTreeNode> stack = new Stack<RegressionTreeNode>();
+    stack.push(regressionTreeNode);
+
+    while (stack.empty() == false) {
+      RegressionTreeNode topStackNode = stack.pop();
+
+      if (topStackNode.isLeaf()) {
+        if (topStackNode.left != null || topStackNode.right != null) {
+          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=" + topStackNode.left + " and right=" + topStackNode.right);
+        }
+        continue;
+      }
+      if (null == topStackNode.threshold) {
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
+      }
+      if (null == topStackNode.left) {
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing left");
+      } else {
+        stack.push(topStackNode.left);
+      }
+      if (null == topStackNode.right) {
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing right");
+      } else {
+        stack.push(topStackNode.right);
+      }
+    }
+  }
+
+  private static String explainNode(float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    final StringBuilder returnValueBuilder = new StringBuilder();
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+        returnValueBuilder.append("val: " + regressionTreeNode.value);
+        return returnValueBuilder.toString();
+      }
+
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0) || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "' does not exist in FV, Return Zero");
+        return returnValueBuilder.toString();
+      }
+
+      // could store extra information about how much training data supported
+      // each branch and report
+      // that here
+
+      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " <= "
+                + regressionTreeNode.threshold + ", Go Left | ");
+        regressionTreeNode = regressionTreeNode.left;
+      } else {
+        returnValueBuilder.append("'" + regressionTreeNode.feature + "':" + featureVector[regressionTreeNode.featureIndex] + " > "
+                + regressionTreeNode.threshold + ", Go Right | ");
+        regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+
+  }
+
 
   // /////////////////////////////////////////
   // produces a string that looks like:

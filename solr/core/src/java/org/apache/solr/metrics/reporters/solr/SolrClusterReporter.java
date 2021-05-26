@@ -90,7 +90,9 @@ import static org.apache.solr.common.params.CommonParams.ID;
  *       &lt;/reporter&gt;
  * </pre>
  *
+ * @deprecated this functionality will be removed in Solr 9.0
  */
+@Deprecated
 public class SolrClusterReporter extends SolrCoreContainerReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

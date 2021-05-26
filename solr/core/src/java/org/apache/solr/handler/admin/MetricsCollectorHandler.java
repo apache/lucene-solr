@@ -75,7 +75,10 @@ import org.slf4j.LoggerFactory;
  *     &lt;field name="value"&gt;0&lt;/field&gt;
  *   &lt;/doc&gt;
  * </pre>
+ *
+ * @deprecated this class (and the related functionality of {@link MetricsHistoryHandler} willl be removed in Solr 9.0.
  */
+@Deprecated
 public class MetricsCollectorHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

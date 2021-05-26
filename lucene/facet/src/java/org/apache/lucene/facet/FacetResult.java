@@ -27,9 +27,13 @@ public final class FacetResult {
   /** Path whose children were requested. */
   public final String[] path;
 
-  /** Total value for this path (sum of all child counts, or
-   *  sum of all child values), even those not included in
-   *  the topN. */
+  /**
+   * Total number of documents containing a value for this path, even those not included in the
+   * topN. If a document contains multiple values for the same path, it will only be counted once in
+   * this value.
+   */
+  // TODO: This may not hold true for SSDV faceting, where docs can be counted more than
+  // once. We should fix this. See LUCENE-9952
   public final Number value;
 
   /** How many child labels were encountered. */
