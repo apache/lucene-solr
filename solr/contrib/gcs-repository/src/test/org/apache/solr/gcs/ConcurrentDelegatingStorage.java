@@ -28,6 +28,8 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.CopyWriter;
+import com.google.cloud.storage.HmacKey;
+import com.google.cloud.storage.PostPolicyV4;
 import com.google.cloud.storage.ServiceAccount;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageBatch;
@@ -72,6 +74,18 @@ public class ConcurrentDelegatingStorage implements Storage {
 
   @Override
   public synchronized Blob create(BlobInfo blobInfo, InputStream content, BlobWriteOption... options) { return delegate.create(blobInfo, content, options); }
+
+  @Override
+  public Blob createFrom(BlobInfo blobInfo, Path path, BlobWriteOption... blobWriteOptions) throws IOException { return delegate.createFrom(blobInfo, path, blobWriteOptions); }
+
+  @Override
+  public Blob createFrom(BlobInfo blobInfo, Path path, int i, BlobWriteOption... blobWriteOptions) throws IOException { return delegate.createFrom(blobInfo, path, i, blobWriteOptions); }
+
+  @Override
+  public Blob createFrom(BlobInfo blobInfo, InputStream inputStream, BlobWriteOption... blobWriteOptions) throws IOException { return delegate.createFrom(blobInfo, inputStream, blobWriteOptions); }
+
+  @Override
+  public Blob createFrom(BlobInfo blobInfo, InputStream inputStream, int i, BlobWriteOption... blobWriteOptions) throws IOException { return delegate.createFrom(blobInfo, inputStream, i, blobWriteOptions); }
 
   @Override
   public synchronized Bucket get(String bucket, BucketGetOption... options) { return delegate.get(bucket, options); }
@@ -144,6 +158,18 @@ public class ConcurrentDelegatingStorage implements Storage {
 
   @Override
   public synchronized URL signUrl(BlobInfo blobInfo, long duration, TimeUnit unit, SignUrlOption... options) { return delegate.signUrl(blobInfo, duration, unit, options); }
+
+  @Override
+  public PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long l, TimeUnit timeUnit, PostPolicyV4.PostFieldsV4 postFieldsV4, PostPolicyV4.PostConditionsV4 postConditionsV4, PostPolicyV4Option... postPolicyV4Options) { return delegate.generateSignedPostPolicyV4(blobInfo, l, timeUnit, postFieldsV4, postConditionsV4, postPolicyV4Options); }
+
+  @Override
+  public PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long l, TimeUnit timeUnit, PostPolicyV4.PostFieldsV4 postFieldsV4, PostPolicyV4Option... postPolicyV4Options) { return delegate.generateSignedPostPolicyV4(blobInfo, l, timeUnit, postFieldsV4, postPolicyV4Options); }
+
+  @Override
+  public PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long l, TimeUnit timeUnit, PostPolicyV4.PostConditionsV4 postConditionsV4, PostPolicyV4Option... postPolicyV4Options) { return delegate.generateSignedPostPolicyV4(blobInfo, l, timeUnit, postConditionsV4, postPolicyV4Options); }
+
+  @Override
+  public PostPolicyV4 generateSignedPostPolicyV4(BlobInfo blobInfo, long l, TimeUnit timeUnit, PostPolicyV4Option... postPolicyV4Options) { return delegate.generateSignedPostPolicyV4(blobInfo, l, timeUnit, postPolicyV4Options); }
 
   @Override
   public synchronized List<Blob> get(BlobId... blobIds) { return delegate.get(blobIds); }
@@ -222,6 +248,21 @@ public class ConcurrentDelegatingStorage implements Storage {
 
   @Override
   public synchronized List<Acl> listAcls(BlobId blob) { return delegate.listAcls(blob); }
+
+  @Override
+  public HmacKey createHmacKey(ServiceAccount serviceAccount, CreateHmacKeyOption... createHmacKeyOptions) { return delegate.createHmacKey(serviceAccount, createHmacKeyOptions); }
+
+  @Override
+  public Page<HmacKey.HmacKeyMetadata> listHmacKeys(ListHmacKeysOption... listHmacKeysOptions) { return delegate.listHmacKeys(listHmacKeysOptions); }
+
+  @Override
+  public HmacKey.HmacKeyMetadata getHmacKey(String s, GetHmacKeyOption... getHmacKeyOptions) { return delegate.getHmacKey(s, getHmacKeyOptions); }
+
+  @Override
+  public void deleteHmacKey(HmacKey.HmacKeyMetadata hmacKeyMetadata, DeleteHmacKeyOption... deleteHmacKeyOptions) { delegate.deleteHmacKey(hmacKeyMetadata, deleteHmacKeyOptions); }
+
+  @Override
+  public HmacKey.HmacKeyMetadata updateHmacKeyState(HmacKey.HmacKeyMetadata hmacKeyMetadata, HmacKey.HmacKeyState hmacKeyState, UpdateHmacKeyOption... updateHmacKeyOptions) { return delegate.updateHmacKeyState(hmacKeyMetadata, hmacKeyState, updateHmacKeyOptions); }
 
   @Override
   public synchronized Policy getIamPolicy(String bucket, BucketSourceOption... options) {
