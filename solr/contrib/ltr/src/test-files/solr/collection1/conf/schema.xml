@@ -26,8 +26,28 @@
     <field name="description" type="text_general" indexed="true" stored="true"/>
     <field name="keywords" type="text_general" indexed="true" stored="true" multiValued="true"/>
     <field name="popularity" type="int" indexed="true" stored="true" />
+    <field name="dvIntPopularity" type="int" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvLongPopularity" type="long" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvFloatPopularity" type="float" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvDoublePopularity" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvStringPopularity" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvStringPopularities" type="string" indexed="false" docValues="true" stored="false" multiValued="true"/>
     <field name="normHits" type="float" indexed="true" stored="true" />
+
     <field name="isTrendy" type="boolean" indexed="true" stored="true" />
+    <field name="dvIsTrendy" type="boolean" indexed="true" stored="false" docValues="true"/>
+
+    <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
+    <field name="dvLongField" type="long" indexed="false" docValues="true" stored="false" default="-2" multiValued="false"/>
+    <field name="dvFloatField" type="float" indexed="false" docValues="true" stored="false" default="-3" multiValued="false"/>
+    <field name="dvDoubleField" type="double" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvStrNumField" type="string" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvStrBoolField" type="boolean" indexed="false" docValues="true" stored="false" multiValued="false"/>
+    <field name="dvDateField" type="date" indexed="false" docValues="true" stored="false" multiValued="false"/>
+
+    <field name="noDvFloatField" type="float" indexed="false" docValues="false" stored="true" multiValued="false"/>
+    <field name="noDvStrNumField" type="string" indexed="false" docValues="false" stored="true" multiValued="false"/>
+    <field name="noDvDateField" type="date" indexed="false" docValues="false" stored="true" multiValued="false"/>
 
     <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
     <field name="_version_" type="long" indexed="true" stored="true"/>
@@ -40,6 +60,13 @@
 
   <copyField source="title" dest="text"/>
   <copyField source="description" dest="text"/>
+
+  <copyField source="popularity" dest="dvIntPopularity"/>
+  <copyField source="popularity" dest="dvLongPopularity"/>
+  <copyField source="popularity" dest="dvFloatPopularity"/>
+  <copyField source="popularity" dest="dvDoublePopularity"/>
+
+  <copyField source="isTrendy" dest="dvIsTrendy"/>
 
   <types>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
