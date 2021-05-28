@@ -407,7 +407,7 @@ An example configuration using the overall and GCS-client properties can be seen
 ----
 <backup>
   <repository name="gcs_backup" class="org.apache.solr.gcs.GCSBackupRepository" default="false">
-    <str name="bucket">solrBackups</str>
+    <str name="gcsBucket">solrBackups</str>
     <str name="gcsCredentialPath">/local/path/to/credential/file</str>
     <str name="location">/default/gcs/backup/location</str>
 
