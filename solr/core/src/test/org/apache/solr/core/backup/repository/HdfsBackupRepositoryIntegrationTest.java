@@ -93,17 +93,21 @@ public class HdfsBackupRepositoryIntegrationTest extends AbstractBackupRepositor
     }
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
     protected BackupRepository getRepository() {
         HdfsBackupRepository repository = new HdfsBackupRepository();
-        NamedList config = new NamedList();
-        config.add(HdfsDirectoryFactory.HDFS_HOME, hdfsUri + "/solr");
-        repository.init(config);
+        repository.init(getBaseBackupRepositoryConfiguration());
         return repository;
     }
 
     @Override
     protected URI getBaseUri() throws URISyntaxException {
         return new URI(hdfsUri+"/solr/tmp");
+    }
+
+    @Override
+    protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
+        NamedList<Object> config = new NamedList<>();
+        config.add(HdfsDirectoryFactory.HDFS_HOME, hdfsUri + "/solr");
+        return config;
     }
 }

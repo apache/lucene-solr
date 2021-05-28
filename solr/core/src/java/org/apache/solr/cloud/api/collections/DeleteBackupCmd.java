@@ -186,7 +186,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
         repository.delete(incBackupFiles.getShardBackupMetadataDir(),
-                shardBackupIdFileDeletes.stream().map(ShardBackupId::getIdAsString).collect(Collectors.toList()), true);
+                shardBackupIdFileDeletes.stream().map(ShardBackupId::getBackupMetadataFilename).collect(Collectors.toList()), true);
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {

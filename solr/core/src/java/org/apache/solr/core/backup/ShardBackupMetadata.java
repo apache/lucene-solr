@@ -17,6 +17,12 @@
 
 package org.apache.solr.core.backup;
 
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.util.PropertiesInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,12 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.util.PropertiesInputStream;
 
 /**
  * Represents the shard-backup metadata file.

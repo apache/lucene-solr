@@ -1,0 +1,55 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+apply plugin: 'java-library'
+
+description = 'GCS Backup Repository'
+
+dependencies {
+    api project(':solr:core')
+
+    implementation ('com.google.api:api-common') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation ('com.google.api:gax') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation ('com.google.api:gax-httpjson') { transitive = false }
+    implementation ('com.google.cloud:google-cloud-core') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation ('com.google.cloud:google-cloud-core-http') { transitive = false }
+    implementation ('com.google.cloud:google-cloud-storage') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation ('com.google.auth:google-auth-library-oauth2-http') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation ('com.google.auth:google-auth-library-credentials') { transitive = false }
+    implementation ('org.threeten:threetenbp') { transitive = false }
+
+    implementation('com.google.apis:google-api-services-storage') { transitive = false }
+    implementation('com.google.api-client:google-api-client') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('com.google.api.grpc:proto-google-common-protos') { transitive = false }
+    implementation('com.google.api.grpc:proto-google-iam-v1') { transitive = false }
+    implementation('com.google.code.findbugs:jsr305') { transitive = false }
+    implementation('com.google.code.gson:gson') { transitive = false }
+    implementation('com.google.http-client:google-http-client') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('com.google.http-client:google-http-client-appengine') { transitive = false }
+    implementation('com.google.http-client:google-http-client-jackson2') { transitive = false }
+    implementation('com.google.j2objc:j2objc-annotations') { transitive = false }
+    implementation('com.google.oauth-client:google-oauth-client') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('com.google.protobuf:protobuf-java') { transitive = false }
+    implementation('com.google.protobuf:protobuf-java-util') { exclude group: 'com.google.guava', module: 'guava' }
+    implementation('io.grpc:grpc-context') { transitive = false }
+    implementation('io.opencensus:opencensus-api') { transitive = false }
+    implementation('io.opencensus:opencensus-contrib-http-util') { exclude group: 'com.google.guava', module: 'guava' }
+
+    testImplementation("com.google.cloud:google-cloud-nio") { exclude group: 'com.google.guava', module: 'guava' }
+    testImplementation project(':solr:test-framework')
+}

@@ -223,23 +223,198 @@ Request ID to track this action which will be processed asynchronously.
 
 == Backup/Restore Storage Repositories
 
-Solr provides interfaces to plug different storage systems for backing up and restoring. For example, you can have a Solr cluster running on a local filesystem like EXT3 but you can backup the indexes to a HDFS filesystem or vice versa.
+Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
+For example, a Solr cluster running on a local filesystem (e.g. EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
+Solr offers three different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, and `GCSBackupRepository`), and allows users to create plugins for their own storage systems as needed.
 
-The repository interfaces needs to be configured in the `solr.xml` file. While running backup/restore commands we can specify the repository to be used.
+Users can define any number of repositories in their `solr.xml` file.
+The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
+When no `repository` parameter is specified, the local filesystem repository is used as a default.
 
-If no repository is configured then the local filesystem repository will be used automatically.
+Repositories are defined by a `<repository>` tag nested under a `<backup>` parent tag.
+All `<repository>` tags must have a `name` attribute (defines the identifier that users can reference later to select this repository) and a `class` attribute (containing the full Java classname that implements the repository).
+They may also have a boolean `default` attribute, which may be `true` on at most one repository definition.
+Any children under the `<repository>` tag are passed as additional configuration to the repository, allowing repositories to read their own implementation-specific configuration.
 
-Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs.adoc#,HDFS>>:
+Information on each of the repository implementations provided with Solr is provided below.
+
+=== LocalFileSystemRepository
+
+LocalFileSystemRepository stores and retrieves backup files anywhere on the accessible filesystem.
+Files can be stored on "local" disk, or on network-mounted drives that appear local to the filesystem.
+
+WARNING: SolrCloud administrators looking to use LocalFileSystemRepository in tandem with network drives should be careful to make the drive available at the same location on each Solr node.
+Strictly speaking, the mount only needs to be present on the node doing the backup (or restore), and on the node currently serving as the "Overseer".
+However since the "overseer" role often moves from node to node in a cluster, it is generally recommended that backup drives be added to all nodes uniformly.
+
+A LocalFileSystemRepository instance is used as a default by any backup and restore commands that don't explicitly provide a `repository` parameter or have a default specified in `solr.xml`.
+
+LocalFileSystemRepository accepts the following configuration options:
+
+`location`::
+A valid file path (accessible to Solr locally) to use for backup storage and retrieval.  Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
+
+An example configuration using this property can be found below.
+
+[source,xml]
+----
+<backup>
+  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSytemRepository">
+    <str name="location">/solr/backup_data</str>
+  </repository>
+</backup>
+----
+
+
+=== HdfsBackupRepository
+
+Stores and retrieves backup files from HDFS directories.
+
+WARNING: HdfsBackupRepository is deprecated and may be removed or relocated in a subsequent version of Solr.
+
+HdfsBackupRepository accepts the following configuration options:
+
+`solr.hdfs.buffer.size`::
+The size, in bytes, of the buffer used to transfer data to and from HDFS.
+Defaults to 4096 (4KB).
+Better throughput is often attainable with a larger buffer, where memory allows.
+
+`solr.hdfs.home`::
+Required.
+A HDFS URI in the format `hdfs://<host>:<port>/<hdfsBaseFilePath>` that points Solr to the HDFS cluster to store (or retrieve) backup files on.
+
+`solr.hdfs.permissions.umask-mode`::
+A permission umask used when creating files in HDFS.
+
+`location`::
+A valid directory path on the HDFS cluster to use for backup storage and retrieval.  Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands
+
+An example configuration using these properties can be found below:
 
 [source,xml]
 ----
 <backup>
   <repository name="hdfs" class="org.apache.solr.core.backup.repository.HdfsBackupRepository" default="false">
-    <str name="location">${solr.hdfs.default.backup.path}</str>
-    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
-    <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
+    <str name="solr.hdfs.home">hdfs://some_hdfs_host:1234/solr/backup/data</str>
+    <int name="solr.hdfs.buffer.size">8192</int>
+    <str name="solr.hdfs.permissions.umask-mode">0022</str>
+    <str name="location">/default/hdfs/backup/location</str>
   </repository>
 </backup>
 ----
 
-Better throughput might be achieved by increasing buffer size with `<int name="solr.hdfs.buffer.size">262144</int>`. Buffer size is specified in bytes, by default it's 4096 bytes (4KB).
+=== GCSBackupRepository
+
+Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
+
+GCSBackupRepsoitory accepts the following options for overall configuration:
+
+`gcsBucket`::
+The GCS bucket to read and write all backup files to.
+If not specified, GCSBackupRepository will use the value of the `GCS_BUCKET` environment variable.
+If both values are absent, the value `solrBackupsBucket` will be used as a default.
+
+`gcsCredentialPath`::
+A path on the local filesystem (accessible by Solr) to a https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Google Cloud service account key] file.
+If not specified, GCSBackupRepository will use the value of the `GCS_CREDENTIAL_PATH` environment variable.
+If both values are absent, an error will be thrown as GCS requires credentials for most usage.
+
+`location`::
+A valid "directory" path in the given GCS bucket to us for backup strage and retrieval.
+(GCS uses a flat storage model, but Solr's backup functionality names blobs in a way that approximates hierarchical directory storage.)
+Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
+
+In addition to these properties for overall configuration, GCSBackupRepository gives users detailed control over the client used to communicate with GCS.
+These properties are unlikely to interest most users, but may be valuable for those looking to micromanage performance or subject to a flaky network.
+
+GCSBackupRepository accepts the following advanced client-configuration options:
+
+`gcsWriteBufferSizeBytes`::
+The buffer size, in bytes, to use when sending data to GCS.
+16777216 bytes (i.e. 16 MB) is used by default if not specified.
+
+`gcsReadBufferSizeBytes`::
+The buffer size, in bytes, to use when copying data from GCS.
+2097152 bytes (i.e. 2 MB) is used by default if not specified.
+
+`gcsClientHttpConnectTimeoutMillis`::
+The connection timeout, in milliseconds, for all HTTP requests made by the GCS client.
+"0" may be used to request an infinite timeout.
+A negative integer, or not specifying a value at all, will result in a value of 20000 (or 20 seconds).
+
+`gcsClientHttpReadTimeoutMillis`::
+The read timeout, in milliseconds, for reading data on an established connection.
+"0" may be used to request an infinite timeout.
+A negative integer, or not specifying a value at all, will result in a value of 20000 (or 20 seconds).
+
+`gcsClientMaxRetries`::
+The maximum number of times to retry an operation upon failure.
+The GCS client will retry operations until this value is reached, or the time spent across all attempts exceeds `gcsClientMaxRequestTimeoutMillis`.
+"0" may be used to specify that no retries should be done.
+If not specified, this value defaults to 10.
+
+`gcsClientMaxRequestTimeoutMillis`::
+The maximum amount of time to spend on all retries of an operation that has failed.
+The GCS client will retry operations until either this timeout has been reached, or until `gcsClientMaxRetries` attempts have failed.
+If not specified the value 300000 (5 minutes) is used by default.
+
+`gcsClientHttpInitialRetryDelayMillis`::
+The time, in milliseconds, to delay before the first retry of a HTTP request that has failed.
+This value also factors in to subsequent retries - see the `gcsClientHttpRetryDelayMultiplier` description below for more information.
+If `gcsClientMaxRetries` is 0, this property is ignored as no retries are attempted.
+If not specified the value 1000 (1 second) is used by default.
+
+`gcsClientHttpRetryDelayMultiplier`::
+A floating-point multiplier used to scale the delay between each successive retry of a failed HTTP request..
+The greater this number is, the more quickly the retry delay compounds and scales.
++
+Under the covers, the GSC client uses an exponential backoff strategy between retries, governed by the formula: stem:[gcsClientH\t\tpInitialRetryDelayMillis*(gcsClientH\t\tpRetryDelayM\u\l\tiplier)^(retryNum-1)].
+The first retry will have a delay of stem:[gcsClientH\t\tpInitialRetryDelayMillis], the second a delay of stem:[gcsClientH\t\tpInitialRetryDelayMillis * gcsClientH\t\tpRetryDelayM\u\l\tiplier], the third a delay of stem:[gcsClientH\t\tpInitialRetryDelayMillis * gcsClientH\t\tpRetryDelayM\u\l\tiplier^2], and so on.
++
+If not specified the value 1.0 is used by default, ensuring that `gcsClientHttpInitialRetryDelayMillis` is used between each retry attempt.
+
+`gcsClientHttpMaxRetryDelayMillis`::
+The maximum delay, in milliseconds, between retry attempts on a failed HTTP request.
+This is commonly used to cap the exponential growth in retry-delay that occurs over multiple attempts.
+See the `gcsClientHttpRetryDelayMultiplier` description above for more information on how each delay is calculated when not subject to this maximum.
+If not specified the value 30000 (30 seconds) is used by default.
+
+`gcsClientRpcInitialTimeoutMillis`::
+The time, in milliseconds, to wait on a RPC request before timing out.
+This value also factors in to subsequent retries - see the `gcsClientRpcTimeoutMultiplier` description below for more information.
+If `gcsClientMaxRetries` is 0, this property is ignored as no retries are attempted.
+If not specified the value 10000 (10 seconds) is used by default.
+
+`gcsClientRpcTimeoutMultiplier`::
+A floating-point multiplier used to scale the timeout on each successive attempt of a failed RPC request.
+The greater this number is, the more quickly the timeout compounds and scales.
++
+Under the covers, the GSC client uses an exponential backoff strategy for RPC timeouts, governed by the formula: stem:[gcsClientRpcInitialTimeoutMillis*(gcsClientRpcTimeoutM\u\l\tiplier)^(retryNum-1)].
+The first retry will have a delay of stem:[gcsClientRpcInitialTimeoutMillis], the second a delay of stem:[gcsClientRpcInitialTimeoutMillis * gcsClientRpcTimeoutM\u\l\tiplier], the third a delay of stem:[gcsClientRpcInitialTimeoutMillis * gcsClientRpcTimeoutM\u\l\tiplier^2], and so on.
++
+If not specified the value 1.0 is used by default, ensuring that `gcsClientRpcInitialTimeoutMillis` is used on each RPC attempt.
+
+`gcsClientRpcMaxTimeoutMillis`::
+The maximum timeout, in milliseconds, for retry attempts of a failed RPC request.
+This is commonly used to cap the exponential growth in timeout that occurs over multiple attempts.
+See the `gcsClientRpcTimeoutMultiplier` description above for more information on how each timeout is calculated when not subject to this maximum.
+If not specified the value 30000 (30 seconds) is used by default.
+
+
+An example configuration using the overall and GCS-client properties can be seen below:
+
+[source,xml]
+----
+<backup>
+  <repository name="gcs_backup" class="org.apache.solr.gcs.GCSBackupRepository" default="false">
+    <str name="gcsBucket">solrBackups</str>
+    <str name="gcsCredentialPath">/local/path/to/credential/file</str>
+    <str name="location">/default/gcs/backup/location</str>
+
+    <int name="gcsClientMaxRetries">5</int>
+    <int name="gcsClientHttpInitialHttpDelayMillis">1500</int>
+    <double name="gcsClientHttpRetryDelayMultiplier">1.5</double>
+    <int name="gcsClientMaxHttpRetryDelayMillis>10000</int>
+  </repository>
+</backup>
+----

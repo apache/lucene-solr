@@ -597,3 +597,55 @@ Noggit is a  fast streaming JSON parser for java. The code is included
 into Solr codebase.
 
 https://github.com/yonik/noggit
+
+ =========================================================================
+ ==         grpc notice                                                 ==
+ =========================================================================
+ Copyright 2014 The gRPC Authors
+
+ This product contains a modified portion of 'OkHttp', an open source
+ HTTP & SPDY client for Android and Java applications, which can be obtained
+ at:
+
+   * LICENSE:
+     * okhttp/third_party/okhttp/LICENSE (Apache License 2.0)
+   * HOMEPAGE:
+     * https://github.com/square/okhttp
+   * LOCATION_IN_GRPC:
+     * okhttp/third_party/okhttp
+
+ This product contains a modified portion of 'Envoy', an open source
+ cloud-native high-performance edge/middle/service proxy, which can be
+ obtained at:
+
+   * LICENSE:
+     * xds/third_party/envoy/LICENSE (Apache License 2.0)
+   * NOTICE:
+     * xds/third_party/envoy/NOTICE
+   * HOMEPAGE:
+     * https://www.envoyproxy.io
+   * LOCATION_IN_GRPC:
+     * xds/third_party/envoy
+
+ This product contains a modified portion of 'protoc-gen-validate (PGV)',
+ an open source protoc plugin to generate polyglot message validators,
+ which can be obtained at:
+
+   * LICENSE:
+     * xds/third_party/protoc-gen-validate/LICENSE (Apache License 2.0)
+   * NOTICE:
+       * xds/third_party/protoc-gen-validate/NOTICE
+   * HOMEPAGE:
+     * https://github.com/envoyproxy/protoc-gen-validate
+   * LOCATION_IN_GRPC:
+     * xds/third_party/protoc-gen-validate
+
+ This product contains a modified portion of 'udpa',
+ an open source universal data plane API, which can be obtained at:
+
+   * LICENSE:
+     * xds/third_party/udpa/LICENSE (Apache License 2.0)
+   * HOMEPAGE:
+     * https://github.com/cncf/udpa
+   * LOCATION_IN_GRPC:
+     * xds/third_party/udpa

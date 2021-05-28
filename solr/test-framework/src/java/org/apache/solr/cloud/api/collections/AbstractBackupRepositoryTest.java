@@ -17,72 +17,221 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import com.google.common.collect.Lists;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.NoSuchFileException;
-import java.util.Arrays;
-import java.util.HashSet;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.backup.repository.BackupRepository;
-import org.junit.Test;
+import java.util.List;
 
 public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
+
+    private static final boolean IGNORE_NONEXISTENT = true;
+    private static final boolean REPORT_NONEXISTENT = false;
 
     protected abstract BackupRepository getRepository();
 
     protected abstract URI getBaseUri() throws URISyntaxException;
 
+    /**
+     * Provide a base {@link BackupRepository} configuration for use by any tests that call {@link BackupRepository#init(NamedList)} explicitly.
+     *
+     * Useful for setting configuration properties required for specific BackupRepository implementations.
+     */
+    protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
+        return new NamedList<>();
+    }
+
     @Test
-    public void test() throws IOException, URISyntaxException {
+    public void testCanReadProvidedConfigValues() throws Exception {
+        final NamedList<Object> config = getBaseBackupRepositoryConfiguration();
+        config.add("configKey1", "configVal1");
+        config.add("configKey2", "configVal2");
+        config.add("location", "foo");
         try (BackupRepository repo = getRepository()) {
-            URI baseUri = repo.resolve(getBaseUri(), "tmp");
-            if (repo.exists(baseUri)) {
-                repo.deleteDirectory(baseUri);
-            }
-            assertFalse(repo.exists(baseUri));
-            repo.createDirectory(baseUri);
-            assertTrue(repo.exists(baseUri));
-            assertEquals(0, repo.listAll(baseUri).length);
+            repo.init(config);
+            assertEquals("configVal1", repo.getConfigProperty("configKey1"));
+            assertEquals("configVal2", repo.getConfigProperty("configKey2"));
+        }
+    }
 
-            // test nested structure
-            URI tmpFolder = repo.resolve(baseUri, "tmpDir");
-            repo.createDirectory(tmpFolder);
-            assertEquals(repo.getPathType(tmpFolder), BackupRepository.PathType.DIRECTORY);
-            addFile(repo, repo.resolve(tmpFolder, "file1"));
-            addFile(repo, repo.resolve(tmpFolder, "file2"));
-            assertEquals(repo.getPathType(repo.resolve(tmpFolder, "file1")), BackupRepository.PathType.FILE);
-            String[] files = repo.listAll(tmpFolder);
-            assertEquals(new HashSet<>(Arrays.asList("file1", "file2")), new HashSet<>(Arrays.asList(files)));
+    @Test
+    public void testCanChooseDefaultOrOverrideLocationValue() throws Exception {
+        final NamedList<Object> config = getBaseBackupRepositoryConfiguration();
+        config.add(CoreAdminParams.BACKUP_LOCATION, "someLocation");
+        try (BackupRepository repo = getRepository()) {
+            repo.init(config);
+            assertEquals("someLocation", repo.getBackupLocation(null));
+            assertEquals("someOverridingLocation", repo.getBackupLocation("someOverridingLocation"));
+        }
+    }
 
-            URI tmpFolder2 = repo.resolve(tmpFolder, "tmpDir2");
-            repo.createDirectory(tmpFolder2);
-            addFile(repo, repo.resolve(tmpFolder2, "file3"));
-            addFile(repo, repo.resolve(tmpFolder2, "file4"));
-            addFile(repo, repo.resolve(tmpFolder2, "file5"));
-            //2 files + 1 folder
-            assertEquals(3, repo.listAll(tmpFolder).length);
-            // create same directory must be a no-op
-            repo.createDirectory(tmpFolder2);
-            assertEquals(3, repo.listAll(tmpFolder2).length);
-            assertTrue(repo.exists(tmpFolder2));
-            assertTrue(repo.exists(repo.resolve(tmpFolder2, "file3")));
-            try {
-                repo.delete(tmpFolder2, Arrays.asList("file7", "file6"), false);
-                fail("Delete non existence file leads to success");
-            } catch (NoSuchFileException e) {
-                // expected
+    @Test
+    public void testCanDetermineWhetherFilesAndDirectoriesExist() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            // Create 'emptyDir/', 'nonEmptyDir/', and 'nonEmptyDir/file.txt'
+            final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
+            final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
+            final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
+            repo.createDirectory(emptyDirUri);
+            repo.createDirectory(nonEmptyDirUri);
+            addFile(repo, nestedFileUri);
+
+            assertTrue(repo.exists(emptyDirUri));
+            assertTrue(repo.exists(nonEmptyDirUri));
+            assertTrue(repo.exists(nestedFileUri));
+            final URI nonexistedDirUri = repo.resolve(getBaseUri(), "nonexistentDir");
+            assertFalse(repo.exists(nonexistedDirUri));
+        }
+    }
+
+    @Test
+    public void testCanDistinguishBetweenFilesAndDirectories() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
+            final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
+            final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
+            repo.createDirectory(emptyDirUri);
+            repo.createDirectory(nonEmptyDirUri);
+            addFile(repo, nestedFileUri);
+
+            assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(emptyDirUri));
+            assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(nonEmptyDirUri));
+            assertEquals(BackupRepository.PathType.FILE, repo.getPathType(nestedFileUri));
+        }
+    }
+
+    @Test
+    public void testArbitraryFileDataCanBeStoredAndRetrieved() throws Exception {
+        // create a BR
+        // store some binary data in a file
+        // retrieve that binary data
+        // validate that sent == retrieved
+        try (BackupRepository repo = getRepository()) {
+            final URI fileUri = repo.resolve(getBaseUri(), "file.txt");
+            final byte[] storedBytes = new byte[] {'h', 'e', 'l', 'l', 'o'};
+            try (final OutputStream os = repo.createOutput(fileUri)) {
+                os.write(storedBytes);
             }
-            repo.delete(tmpFolder2, Arrays.asList("file7", "file6"), true);
-            repo.delete(tmpFolder2, Arrays.asList("file3", "file4"), true);
-            assertEquals(1, repo.listAll(tmpFolder2).length);
-            assertFalse(repo.exists(repo.resolve(tmpFolder2, "file3")));
-            repo.deleteDirectory(tmpFolder);
-            assertFalse(repo.exists(tmpFolder));
-            assertFalse(repo.exists(repo.resolve(tmpFolder2, "file5")));
-            assertFalse(repo.exists(repo.resolve(tmpFolder, "file1")));
+
+            final int expectedNumBytes = storedBytes.length;
+            final byte[] retrievedBytes = new byte[expectedNumBytes];
+            try (final IndexInput is = repo.openInput(getBaseUri(), "file.txt", new IOContext(IOContext.Context.READ))) {
+                assertEquals(expectedNumBytes, is.length());
+                is.readBytes(retrievedBytes, 0, expectedNumBytes);
+            }
+            assertArrayEquals(storedBytes, retrievedBytes);
+        }
+    }
+
+    // TODO JEGERLOW, create separate test for creation of nested directory when parent doesn't exist
+    @Test
+    public void testCanDeleteEmptyOrFullDirectories() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            // Test deletion of empty and full directories
+            final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
+            final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
+            final URI fileUri = repo.resolve(nonEmptyDirUri, "file.txt");
+            repo.createDirectory(emptyDirUri);
+            repo.createDirectory(nonEmptyDirUri);
+            addFile(repo, fileUri);
+            repo.deleteDirectory(emptyDirUri);
+            repo.deleteDirectory(nonEmptyDirUri);
+            assertFalse(repo.exists(emptyDirUri));
+            assertFalse(repo.exists(nonEmptyDirUri));
+            assertFalse(repo.exists(fileUri));
+
+            // Delete the middle directory in a deeply nested structure (/nest1/nest2/nest3/nest4)
+            final URI level1DeeplyNestedUri = repo.resolve(getBaseUri(), "nest1");
+            final URI level2DeeplyNestedUri = repo.resolve(level1DeeplyNestedUri, "nest2");
+            final URI level3DeeplyNestedUri = repo.resolve(level2DeeplyNestedUri, "nest3");
+            final URI level4DeeplyNestedUri = repo.resolve(level3DeeplyNestedUri, "nest4");
+            repo.createDirectory(level1DeeplyNestedUri);
+            repo.createDirectory(level2DeeplyNestedUri);
+            repo.createDirectory(level3DeeplyNestedUri);
+            repo.createDirectory(level4DeeplyNestedUri);
+            repo.deleteDirectory(level3DeeplyNestedUri);
+            assertTrue(repo.exists(level1DeeplyNestedUri));
+            assertTrue(repo.exists(level2DeeplyNestedUri));
+            assertFalse(repo.exists(level3DeeplyNestedUri));
+            assertFalse(repo.exists(level4DeeplyNestedUri));
+        }
+    }
+
+    @Test
+    public void testDirectoryCreationFailsIfParentDoesntExist() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            final URI nonExistentParentUri = repo.resolve(getBaseUri(), "nonExistentParent");
+            final URI nestedUri = repo.resolve(nonExistentParentUri, "childDirectoryToCreate");
+
+            repo.createDirectory(nestedUri);
+        }
+    }
+
+    @Test
+    public void testCanDeleteIndividualFiles() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            final URI file1Uri = repo.resolve(getBaseUri(), "file1.txt");
+            final URI file2Uri = repo.resolve(getBaseUri(), "file2.txt");
+            final URI file3Uri = repo.resolve(getBaseUri(), "file3.txt");
+            addFile(repo, file1Uri);
+            addFile(repo, file2Uri);
+            addFile(repo, file3Uri);
+
+            // Ensure nonexistent files are handled differently based on boolean flag param
+            final URI nonexistentFileUri = repo.resolve(getBaseUri(), "file4.txt");
+            assertFalse(repo.exists(nonexistentFileUri));
+            repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), IGNORE_NONEXISTENT);
+            expectThrows(IOException.class, () -> {
+               repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), REPORT_NONEXISTENT);
+            });
+
+            // Delete existing files individually and in 'bulk'
+            repo.delete(getBaseUri(), Lists.newArrayList("file1.txt"), REPORT_NONEXISTENT);
+            repo.delete(getBaseUri(), Lists.newArrayList("file2.txt", "file3.txt"), REPORT_NONEXISTENT);
+            assertFalse(repo.exists(file1Uri));
+            assertFalse(repo.exists(file2Uri));
+            assertFalse(repo.exists(file3Uri));
+        }
+    }
+
+    @Test
+    public void testCanListFullOrEmptyDirectories() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            final URI rootUri = repo.resolve(getBaseUri(), "containsOtherDirs");
+            final URI otherDir1Uri = repo.resolve(rootUri, "otherDir1");
+            final URI otherDir2Uri = repo.resolve(rootUri, "otherDir2");
+            final URI otherDir3Uri = repo.resolve(rootUri, "otherDir3");
+            final URI file1Uri = repo.resolve(otherDir3Uri, "file1.txt");
+            final URI file2Uri = repo.resolve(otherDir3Uri, "file2.txt");
+            repo.createDirectory(rootUri);
+            repo.createDirectory(otherDir1Uri);
+            repo.createDirectory(otherDir2Uri);
+            repo.createDirectory(otherDir3Uri);
+            addFile(repo, file1Uri);
+            addFile(repo, file2Uri);
+
+            final List<String> rootChildren = Lists.newArrayList(repo.listAll(rootUri));
+            assertEquals(3, rootChildren.size());
+            assertTrue(rootChildren.contains("otherDir1"));
+            assertTrue(rootChildren.contains("otherDir2"));
+            assertTrue(rootChildren.contains("otherDir3"));
+
+            final String[] otherDir2Children = repo.listAll(otherDir2Uri);
+            assertEquals(0, otherDir2Children.length);
+
+            final List<String> otherDir3Children = Lists.newArrayList(repo.listAll(otherDir3Uri));
+            assertEquals(2, otherDir3Children.size());
+            assertTrue(otherDir3Children.contains("file1.txt"));
+            assertTrue(otherDir3Children.contains("file2.txt"));
         }
     }
 

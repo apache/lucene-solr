@@ -546,6 +546,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             for(Slice slice : getCollectionState(getCollectionName()).getSlices()) {
                 Replica leader = slice.getLeader();
                 final ShardBackupMetadata shardBackupMetadata = getLastShardBackupId(slice.getName());
+                assertNotNull(shardBackupMetadata);
 
                 try (SolrCore solrCore = cluster.getReplicaJetty(leader).getCoreContainer().getCore(leader.getCoreName())) {
                     Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
