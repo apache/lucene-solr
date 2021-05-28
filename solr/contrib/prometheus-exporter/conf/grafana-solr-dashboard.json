@@ -289,7 +289,6 @@
       "steppedLine": false,
       "targets": [
         {
-          "exemplar": true,
           "expr": "count(solr_zookeeper_nodestatus == 1)",
           "format": "time_series",
           "instant": false,
@@ -298,7 +297,6 @@
           "refId": "A"
         },
         {
-          "exemplar": true,
           "expr": "solr_zookeeper_ensemble_size",
           "hide": false,
           "interval": "",
