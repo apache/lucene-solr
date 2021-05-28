@@ -16,30 +16,40 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestKeepCase extends StemmerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     init("keepcase.aff", "keepcase.dic");
   }
-  
+
   public void testPossibilities() {
-    assertStemsTo("drink",   "drink");
-    assertStemsTo("Drink",   "drink");
-    assertStemsTo("DRINK",   "drink");
-    assertStemsTo("drinks",  "drink");
-    assertStemsTo("Drinks",  "drink");
-    assertStemsTo("DRINKS",  "drink");
-    assertStemsTo("walk",    "walk");
-    assertStemsTo("walks",   "walk");
-    assertStemsTo("Walk");
-    assertStemsTo("Walks");
-    assertStemsTo("WALKS");
-    assertStemsTo("test",    "test");
-    assertStemsTo("Test");
-    assertStemsTo("TEST");
+    assertStemsTo("drink", "drink");
+    assertStemsTo("Drink", "drink");
+    assertStemsTo("DRINK", "drink");
+    assertStemsTo("drinks", "drink");
+    assertStemsTo("Drinks", "drink");
+    assertStemsTo("DRINKS", "drink");
+    assertStemsTo("walk", "walk");
+    assertStemsTo("walks", "walk");
+    assertStemsTo("Walk", "walk");
+    assertStemsTo("Walks", "walk");
+    assertStemsTo("WALKS", "walk");
+    assertStemsTo("test", "test");
+    assertStemsTo("Test", "test");
+    assertStemsTo("TEST", "test");
+
+    // dotted stems differ form "hunspell -s", but in a controversial way,
+    // and most importantly stem presence is the same
+    assertStemsTo("baz.", "baz.");
+    assertStemsTo("Baz.", "baz.");
+
+    assertStemsTo("Quux.", "Quux.");
+    assertStemsTo("QUUX.", "Quux.");
+
+    assertStemsTo("Ways", "way", "ways");
+    assertStemsTo("WAYS", "way", "ways");
   }
 }
