@@ -24,7 +24,7 @@
   </description>
 
   <!-- some files for testing that do not have license headers -->
-  <property name="rat.excludes" value="**/*.aff,**/*.dic,**/*.txt,**/charfilter/*.htm*,**/*LuceneResourcesWikiPage.html"/>
+  <property name="rat.excludes" value="**/*.aff,**/*.dic,**/*.wrong,**/*.good,**/*.sug,**/*.txt,**/charfilter/*.htm*,**/*LuceneResourcesWikiPage.html"/>
   <property name="rat.additional-includes" value="src/tools/**"/>
 
   <import file="../analysis-module-build.xml"/>
