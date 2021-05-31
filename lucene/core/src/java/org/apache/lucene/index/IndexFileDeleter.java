@@ -386,10 +386,6 @@ final class IndexFileDeleter implements Closeable {
       }
       commitsToDelete.clear();
 
-      if (firstThrowable != null) {
-        throw IOUtils.rethrowAlways(firstThrowable);
-      }
-
       // Now compact commits to remove deleted ones (preserving the sort):
       size = commits.size();
       int readFrom = 0;
@@ -408,6 +404,10 @@ final class IndexFileDeleter implements Closeable {
       while(size > writeTo) {
         commits.remove(size-1);
         size--;
+      }
+
+      if (firstThrowable != null) {
+        throw IOUtils.rethrowAlways(firstThrowable);
       }
     }
   }
@@ -463,6 +463,13 @@ final class IndexFileDeleter implements Closeable {
     }
   }
 
+  boolean assertCommitsAreNotDeleted(List<CommitPoint> commits) {
+    for (CommitPoint commit : commits) {
+      assert commit.isDeleted() == false : "Commit [" + commit + "] was deleted already";
+    }
+    return true;
+  }
+
   /**
    * Revisits the {@link IndexDeletionPolicy} by calling its
    * {@link IndexDeletionPolicy#onCommit(List)} again with the known commits.
@@ -479,6 +486,7 @@ final class IndexFileDeleter implements Closeable {
     }
 
     if (commits.size() > 0) {
+      assert assertCommitsAreNotDeleted(commits);
       policy.onCommit(commits);
       deleteCommits();
     }
@@ -521,6 +529,7 @@ final class IndexFileDeleter implements Closeable {
       commits.add(new CommitPoint(commitsToDelete, directoryOrig, segmentInfos));
 
       // Tell policy so it can remove commits:
+      assert assertCommitsAreNotDeleted(commits);
       policy.onCommit(commits);
 
       // Decref files for commits that were deleted by the policy:
