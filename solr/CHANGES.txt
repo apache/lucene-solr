@@ -127,6 +127,8 @@ Other Changes
 * SOLR-15416: Metrics history handler and metrics history collection (together with its
   specialized reporters) have been deprecated and will be removed in 9.0. (ab)
 
+* SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
+
 ==================  8.8.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
