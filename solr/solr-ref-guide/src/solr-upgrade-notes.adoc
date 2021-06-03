@@ -41,15 +41,60 @@ for an overview of the main new features of Solr 8.9.
 
 When upgrading to 8.9.x users should be aware of the following major changes from 8.8.
 
-*Embedded Solr Server*
+*Backup and Restore*
 
-* When using EmbeddedSolrServer, it will no longer close CoreContainer instances that were passed to it.
+Solr 8.9 introduces extensive changes to Solr's backup and restore support.
+
+A new backup format has been introduced in Solr 8.9 which replaces the previous snapshot-based backup.
+This new format enables ‘incremental’ backups.
+Repeated backups to a given location will take advantage of the data stored by their predecessors and will only operate on files that have changed since the previous backup.
+This is supported by default, simply by storing each backup file in the same location.
+
+The old and new formats are not compatible, although backups in the old format, a full snapshot of all files, can still be used to restore to Solr for the time-being.
+The old format is officially deprecated, and support for it is likely to be removed in Solr 9.0.
+
+For the time-being the old format can be created by defining a parameter `incremental=false`.
+Again, though, this support is likely to be removed in Solr 9.0.
+
+More documentation on backups is available at <<making-and-restoring-backups.adoc#,Making and Restoring Backups>>.
+
+New Collections API commands for backups:
+
+* LISTBACKUP: Lists information about each backup stored at the specified repository location.
+See <<collection-management.adoc#listbackup,List Backups>> for more details.
+* DELETEBACKUP: Deletes specified backups from the repository. See <<collection-management.adoc#deletebackup,Delete Backups>> for more details.
+
+A new option for backup repository is also available in 8.9, which is to use Google Cloud Storage (GCS).
+This is a contrib (located in `contrib/gcs-repository`).
+See <<making-and-restoring-backups.adoc#gcsbackuprepository,GCSBackupRepository>> for configuration details.
+The Solr community is working to add support for S3 buckets in the near future.
 
 *Nested Docs*
 
-* Child Doc Transformer's `childFilter` param no longer applies query syntax
+Child Doc Transformer's `childFilter` param no longer applies query syntax
 escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
 There was no escaping here prior to 8.0 either.
+
+*Collapse and Expand*
+
+* BlockCollapse: If documents have been (or could be) indexed in a way where documents with the same collapse key have been indexed contiguously in the index, a new "block collapse" provides a significant speed improvement over traditional collapse.
++
+See <<collapse-and-expand-results.adoc#block-collapsing,Block Collapsing>> for details.
+
+* Expand Null Groups: A new parameter `expand.nullGroup` allows an expanded group to be returned containing document with no value in the expanded field. See <<collapse-and-expand-results.adoc#expand-component,Expand Component>> for details.
+
+*In-Place Updates*
+
+A new request parameter `update.partial.requireInPlace=true` allows telling Solr to "fail fast" if all of the necessary conditions are not satisfied to allow an in-place update to succeed.
+See also <<updating-parts-of-documents.adoc#in-place-updates,In-Place Updates>>.
+
+*Metrics History*
+
+The Metrics History feature, which allowed long-term storage and aggregation of Solr's metrics, has been deprecated and will be removed in 9.0.
+
+*Embedded Solr Server*
+
+When using EmbeddedSolrServer, it will no longer close CoreContainer instances that were passed to it.
 
 === Solr 8.8
 
