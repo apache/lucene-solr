@@ -20,7 +20,7 @@
 Solr components can be configured using *resources*: data stored in external files that may be referred to in a location-independent fashion.
 
 Examples of resources include: files needed by schema components, e.g., a stopword list for <<filter-descriptions.adoc#stop-filter,Stop Filter>>; and machine-learned models for <<learning-to-rank.adoc#,Learning to Rank>>.
-_Resources are typically resolved from the configSet_ but there are other options too.
+_Resources are typically resolved from the configset_ but there are other options too.
 
 Solr's resources are generally only loaded initially when the Solr collection or Solr core is loaded.
 After you update a resource, you'll typically need to _reload_ the affected collections (SolrCloud) or the cores (standalone Solr).
@@ -31,7 +31,7 @@ Restarting all affected Solr nodes also works.
 
 <<config-sets.adoc#,Configsets>> are the directories containing solrconfig.xml, the schema, and resources referenced by them.
 In SolrCloud they are in ZooKeeper whereas in standalone they are on the file system.
-In either mode, configSets might be shared or might be dedicated to a configSet.
+In either mode, configsets might be shared or might be dedicated to a configset.
 Prefer to put resources here.
 
 == Resources in Other Places
@@ -41,4 +41,4 @@ This choice may make sense if the resource is too large for a configset in ZooKe
 However it's up to you to somehow ensure that all nodes in your cluster have access to these resources.
 
 Finally, and this is very unusual, resources can also be packaged inside `.jar` files from which they will be referenced.
-That might make sense for default resources wherein a plugin user can override it via placing the same-named file in a configSet.
+That might make sense for default resources wherein a plugin user can override it via placing the same-named file in a configset.

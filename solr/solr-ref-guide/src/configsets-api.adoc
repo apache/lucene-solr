@@ -101,7 +101,7 @@ The configset to be created when the upload is complete. This parameter is requi
 
 `overwrite`::
 If set to `true`, Solr will overwrite an existing configset with the same name (if false, the request will fail).
-If `filePath` is provided, then this option specifies whether the specified file within the configSet should be overwritten if it already exists.
+If `filePath` is provided, then this option specifies whether the specified file within the configset should be overwritten if it already exists.
 Default is `false` when using the v1 API, but `true` when using the v2 API.
 
 `cleanup`::
@@ -109,11 +109,11 @@ When overwriting an existing configset (`overwrite=true`), this parameter tells 
 This parameter cannot be set to true when `filePath` is used.
 
 `filePath`::
-This parameter allows the uploading of a single, non-zipped file to the given path under the configSet in ZooKeeper.
-This functionality respects the `overwrite` parameter, so a request will fail if the given file path already exists in the configSet and overwrite is set to `false`.
+This parameter allows the uploading of a single, non-zipped file to the given path under the configset in ZooKeeper.
+This functionality respects the `overwrite` parameter, so a request will fail if the given file path already exists in the configset and overwrite is set to `false`.
 The `cleanup` parameter cannot be set to true when `filePath` is used.
 
-If uploading an entire configSet, the body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
+If uploading an entire configset, the body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
 Here is an example on how to create the zip file named "myconfig.zip" and upload it as a configset named "myConfigSet":
 
@@ -154,8 +154,8 @@ $ curl -X PUT --header "Content-Type:application/octet-stream" --data-binary @my
     "http://localhost:8983/api/cluster/configs/myConfigSet"
 ----
 
-With this REST API, the default behavior is to overwrite the configSet if it already exists.
-This behavior can be disabled by providing the URL param `overwrite=false`, in which case the request will fail if the configSet already exists.
+With this  API, the default behavior is to overwrite the configset if it already exists.
+This behavior can be disabled with the parameter `overwrite=false`, in which case the request will fail if the configset already exists.
 ====
 --
 
@@ -168,7 +168,7 @@ Here is an example on how to upload a single file to a configset named "myConfig
 [.tab-label]*V1 API*
 
 With the v1 API, the `upload` command must be capitalized as `UPLOAD`.
-The filename to upload is provided via the `filePath` URL param:
+The filename to upload is provided via the `filePath` parameter:
 
 [source,bash]
 ----
@@ -183,7 +183,7 @@ curl -X POST --header "Content-Type:application/octet-stream"
 [.tab-label]*V2 API*
 
 With the v2 API, the name of the configset and file are both provided in the URL.
-They can be substituted in `/cluster/configs/{config_name}/{file_name}`.
+They can be substituted in `/cluster/configs/__config_name__/__file_name__`.
 The filename may be nested and include `/` characters.
 
 [source,bash]
@@ -193,8 +193,8 @@ curl -X PUT --header "Content-Type:application/octet-stream"
     "http://localhost:8983/api/cluster/configs/myConfigSet/solrconfig.xml"
 ----
 
-With this REST API, the default behavior is to overwrite the file if it already exists within the configSet.
-This behavior can be disabled by providing the URL param `overwrite=false`, in which case the request will fail if the file already exists within the configSet.
+With this API, the default behavior is to overwrite the file if it already exists within the configset.
+This behavior can be disabled with the parameter `overwrite=false`, in which case the request will fail if the file already exists within the configset.
 ====
 --
 
@@ -248,7 +248,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
     http://localhost:8983/api/cluster/configs?omitHeader=true
 ----
 
-With the v2 API, ConfigSet properties can also be provided via the `properties` map:
+With the v2 API, configset properties can also be provided via the `properties` map:
 
 [source,bash]
 ----

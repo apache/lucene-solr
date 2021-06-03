@@ -42,7 +42,7 @@ the percentage of active replicas (`active`):
 `RED`::
 No active replicas *OR* there's no shard leader.
 
-The collection health state is reported as the worst state of any shard, e.g. for a
+The collection health state is reported as the worst state of any shard, e.g., for a
 collection with all shards GREEN except for one YELLOW the collection health will be
 reported as YELLOW.
 

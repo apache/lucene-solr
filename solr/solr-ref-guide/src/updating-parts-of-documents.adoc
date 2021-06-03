@@ -129,10 +129,10 @@ Solr offers two solutions to address this:
 
 Furthermore, you _should_ (sometimes _must_) specify the Root document's ID in the `\_root_`
 field of this partial update.  This is how Solr understands that you are updating a child
-document, and not a Root document.  Without it, Solr only guesses that the `\_route_` param is
+document, and not a Root document.  Without it, Solr only guesses that the `\_route_` parameter is
 equivalent, but it may be absent or not equivalent (e.g., when using the `implicit` router).
 
-All of the examples below use `id` prefixes, so no `\_route_` param will be necessary for these examples.
+All of the examples below use `id` prefixes, so no `\_route_` parameter will be necessary for these examples.
 ====
 
 For the upcoming examples, we'll assume an index containing the same documents covered in <<indexing-nested-documents#example-indexing-syntax,Indexing Nested Documents>>:
@@ -229,9 +229,11 @@ Increments a numeric value by a specific amount. Must be specified as a single n
 
 [TIP]
 ====
-.Preventing Atomic Updates that can't be done In-Place
+.Preventing Atomic Updates That Can't be Done In-Place
 
-Since it can be tricky to ensure that all of the neccessary conditions are satisfied to ensure that an udpate can be don In-Place, Solr supports a request parameter option named `update.partial.requireInPlace`.  When set to `true`, and Atomic Update that can not be don In-Place will fail.  Users can specify this option when they would prefer that an update request "fail fast" if it can't be done In-Place.
+Since it can be tricky to ensure that all of the necessary conditions are satisfied to ensure that an update can be done In-Place, Solr supports a request parameter option named `update.partial.requireInPlace`.
+When set to `true`, an atomic update that can not be done In-Place will fail.
+Users can specify this option when they would prefer that an update request "fail fast" if it can't be done In-Place.
 
 ====
 

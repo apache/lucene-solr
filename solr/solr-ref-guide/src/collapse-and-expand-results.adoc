@@ -138,19 +138,19 @@ fq={!collapse cost=1000 field=group_field}
 
 === Block Collapsing
 
-When collapsing on the `\_root_` field, using `nullPolicy=expand` or `nullPolicy=ignore`, the Collapsing Query Parser can take advantage of the fact that all docs with identical field values are adjacent to eachother in the index in a single <<indexing-nested-documents.adoc#,"block" of nested documents>>.  This allows the collapsing logic to be much faster and more memory efficient.
+When collapsing on the `\_root_` field, using `nullPolicy=expand` or `nullPolicy=ignore`, the Collapsing Query Parser can take advantage of the fact that all docs with identical field values are adjacent to each other in the index in a single <<indexing-nested-documents.adoc#,"block" of nested documents>>. This allows the collapsing logic to be much faster and more memory efficient.
 
 The default collapsing logic must keep track of all group head documents -- for all groups encountered so far -- until it has evaluated all documents, because each document it considers may become the new group head of any group.
 
 When collapsing on the `\_root_` field however, the logic knows that as it scans over the index, it will never encounter any new documents in a group that it has previously processed.
 
-This more efficient logic can also be used with other `collapseField` values, via the `hint=block` local param.  This can be useful when you have deeply nested documents and you'd like to collapse on a field that does not contain identical values for all documents with a common `\_root_` but is a unique & identical value for sets of contiguious documents under a common `\_root_`.  For example: searching for "grand child" documents and collapsing on a field that is unique per "child document"
+This more efficient logic can also be used with other `collapseField` values, via the `hint=block` local param.  This can be useful when you have deeply nested documents and you'd like to collapse on a field that does not contain identical values for all documents with a common `\_root_` but is a unique and identical value for sets of contiguous documents under a common `\_root_`.  For example: searching for "grand child" documents and collapsing on a field that is unique per "child document"
 
 [CAUTION]
 ====
-Specifing `hint=block` when collapsing on a field that is not unique per contiguious block of documents is not supported and may fail in unexpected ways; including the possibility of silently returning incorrect results.
+Specifing `hint=block` when collapsing on a field that is not unique per contiguous block of documents is not supported and may fail in unexpected ways; including the possibility of silently returning incorrect results.
 
-The implementation does not offer any safeguards against missuse on an unsupported field, since doing so would require the the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
+The implementation does not offer any safeguards against misuse on an unsupported field, since doing so would require the the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
 ====
 
 == Expand Component
@@ -210,4 +210,7 @@ Overrides the main query (`q`), determines which documents to include in the mai
 Overrides main filter queries (`fq`), determines which documents to include in the main group. The default is to use the main filter queries.
 
 `expand.nullGroup`::
-Indicates if an expanded group can be returned containing documents with no value in the expanded field.  This option only _enables_ support for returning a "null" expanded group: As with all expanded groups, it will only exist if the main group includes corresponding documents for it to expand (Via `collapse` using either `nullPolicy=collapse` or `nullPolicy=expand`; Or via `expand.q`) _and_ documents are found that belong in this expanded group.  The default value is `false`
+Indicates if an expanded group can be returned containing documents with no value in the expanded field.
+This option only _enables_ support for returning a "null" expanded group.
+As with all expanded groups, it will only exist if the main group includes corresponding documents for it to expand (via `collapse` using either `nullPolicy=collapse` or `nullPolicy=expand`; or via `expand.q`) _and_ documents are found that belong in this expanded group.
+The default value is `false`.

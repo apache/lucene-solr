@@ -145,7 +145,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 
 In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers.adoc#block-mask,`of` parameter>> to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
-By changing the `of` param to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.
+By changing the `of` parameter to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.
 In the query below, we search for all descendants of `skus` (using an `of` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
 
 [source,curl]
@@ -171,7 +171,7 @@ Note that in the above example, the `/` characters in the `\_nest_path_` were "d
 * One level of `\` escaping is necessary to prevent the `/` from being interpreted as a {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Regexp_Searches[Regex Query]
 * An additional level of "escaping the escape character" is necessary because the `of` local parameter is a quoted string; so we need a second `\` to ensure the first `\` is preserved and passed as is to the query parser.
 
-(You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param)
+(You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param).
 
 You may find it more convenient to use <<local-parameters-in-queries#parameter-dereferencing,parameter references>> in conjunction with <<other-parsers#other-parsers,other parsers>> that do not treat `/` as a special character to express the same query in a more verbose form:
 
@@ -235,7 +235,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 
 In this example we've used `\*:* -\_nest_path_:*` as our <<other-parsers#block-mask,`which` parameter>> to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
-By changing the `which` param to match ancestors at specific `\_nest_path_` levels, we can change the type of ancestors we return.  In the query below, we search for `skus` (using an `which` param that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) that are the ancestors of `manuals` with exactly `1` page:
+By changing the `which` parameter to match ancestors at specific `\_nest_path_` levels, we can change the type of ancestors we return.  In the query below, we search for `skus` (using an `which` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) that are the ancestors of `manuals` with exactly `1` page:
 
 [source,curl]
 ----

@@ -195,7 +195,7 @@ Query will be routed to nodes with same defined system properties as the current
 
 Examples:
 
-* Prefer stable routing (keyed to client "sessionId" param) among otherwise equivalent replicas:
+* Prefer stable routing (keyed to client "sessionId" parameter) among otherwise equivalent replicas:
    `shards.preference=replica.base:stable:hash:sessionId&sessionId=abc123`
 
 * Prefer PULL replicas:

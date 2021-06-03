@@ -83,7 +83,7 @@ Lucene works hard to insure one major version back-compatability, thus Solr 8x f
 If you have *not* changed your schema as part of an upgrade from one minor release to another (such as, from 7.x to a later 7.x release), you can often skip reindexing your documents. However, when upgrading to a major release, you should plan to reindex your documents.
 
 [NOTE]
-You must always re-index your corpus when upgrading an index produced with a Solr version more than X-1 old. For instance, if you're upgrading to Solr 8x, an index ever used by Solr 6x must be deleted and re-ingested as outlined below. A marker is written identifying the version of Lucene used to ingest the first document. That marker is preserved in the index forever unless the index is entirely deleted. If Lucene finds a marker more than X-1 major versions old, it will refuse to open the index.
+You must always reindex your corpus when upgrading an index produced with a Solr version more than X-1 old. For instance, if you're upgrading to Solr 8x, an index ever used by Solr 6x must be deleted and re-ingested as outlined below. A marker is written identifying the version of Lucene used to ingest the first document. That marker is preserved in the index forever unless the index is entirely deleted. If Lucene finds a marker more than X-1 major versions old, it will refuse to open the index.
 
 == Reindexing Strategies
 
