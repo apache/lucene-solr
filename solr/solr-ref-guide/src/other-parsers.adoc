@@ -173,7 +173,7 @@ When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segment
 [#block-mask]
 === Block Masks: The `of` and `which` local params
 
-The purpose of the "Block Mask" query specified as either an `of` or `which` param (depending on the parser used) is to identy the set of all documents in the index which should be treated as "parents" _(or their ancestors)_ and which documents should be treated as "children".  This is important because in the "on disk" index, the relationships are flattened into "blocks" of documents, so the `of` / `which` params are needed to serve as a "mask" against the flat document blocks to identify the boundaries of every hierarchical relationship.
+The purpose of the "Block Mask" query specified as either an `of` or `which` parameter (depending on the parser used) is to identy the set of all documents in the index which should be treated as "parents" _(or their ancestors)_ and which documents should be treated as "children".  This is important because in the "on disk" index, the relationships are flattened into "blocks" of documents, so the `of` / `which` params are needed to serve as a "mask" against the flat document blocks to identify the boundaries of every hierarchical relationship.
 
 In the example queries above, we were able to use a very simple Block Mask of `doc_type:parent` because our data is very simple: every document is either a `parent` or a `child`  So this query string easily distinguishes _all_ of our documents.
 
@@ -184,7 +184,7 @@ A common mistake is to try and use a `which` parameter that is more restrictive 
 q={!parent which="title:join"}comments:support
 ----
 
-This type of query will frequently not work the way you might expect.  Since the `which` param only identifies _some_ of the "parent" documents, the resulting query can match "parent" documents it should not, because it will mistakenly identify all documents which do _not_ match the `which="title:join"` Block Mask as children of the next "parent" document in the index (that does match this Mask).
+This type of query will frequently not work the way you might expect.  Since the `which` parameter only identifies _some_ of the "parent" documents, the resulting query can match "parent" documents it should not, because it will mistakenly identify all documents which do _not_ match the `which="title:join"` Block Mask as children of the next "parent" document in the index (that does match this Mask).
 
 A similar problematic situation can arise when mixing parent/child documents with "simple" documents that have no children _and do not match the query used to identify 'parent' documents_.  For example, if we add the following document to our existing parent/child example documents:
 
@@ -648,7 +648,7 @@ The hash range query parser uses a special cache to improve the speedup of the q
 == Join Query Parser
 
 The Join query parser allows users to run queries that normalize relationships between documents.
-Solr runs a subquery of the user's choosing (the `v` param), identifies all the values that matching documents have in a field of interest (the `from` param), and then returns documents where those values are contained in a second field of interest (the `to` param).
+Solr runs a subquery of the user's choosing (the `v` parameter), identifies all the values that matching documents have in a field of interest (the `from` parameter), and then returns documents where those values are contained in a second field of interest (the `to` parameter).
 
 In practice, these semantics are much like "inner queries" in a SQL engine.
 As an example, consider the Solr query below:
@@ -1118,7 +1118,7 @@ The non-unary operators (everything but `NOT`) support both infix `(a AND b AND 
 
 `SwitchQParser` is a `QParserPlugin` that acts like a "switch" or "case" statement.
 
-The primary input string is trimmed and then prefixed with `case.` for use as a key to lookup a "switch case" in the parser's local params. If a matching local param is found the resulting param value will then be parsed as a subquery, and returned as the parse result.
+The primary input string is trimmed and then prefixed with `case.` for use as a key to lookup a "switch case" in the parser's local params. If a matching local param is found the resulting parameter value will then be parsed as a subquery, and returned as the parse result.
 
 The `case` local param can be optionally be specified as a switch case to match missing (or blank) input strings. The `default` local param can optionally be specified as a default case to use if the input string does not match any other switch case local params. If default is not specified, then any input which does not match a switch case local param will result in a syntax error.
 

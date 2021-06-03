@@ -289,7 +289,7 @@ one product. A basket with just butter and one other item more strongly recommen
 
 The `maxDocFreq` parameter can be used to limit the graph "walk" to only include baskets that appear in
 the index a certain number of times. Since each occurrence of a basket ID in the index is a link to a product,
-limiting the document frequency of the basket ID will limit the out-degree of the basket. The `maxDocFreq` param is
+limiting the document frequency of the basket ID will limit the out-degree of the basket. The `maxDocFreq` parameter is
 applied per shard. If there is a single shard or documents are co-located by basket ID then the `maxDocFreq` will
 be an exact count. Otherwise, it will return baskets with a max size of numShards * maxDocFreq.
 
@@ -739,4 +739,3 @@ This score give us a good indication of where to begin our *root cause analysis*
   }
 }
 ----
-

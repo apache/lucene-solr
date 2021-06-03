@@ -224,7 +224,7 @@ Request ID to track this action which will be processed asynchronously.
 == Backup/Restore Storage Repositories
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
-For example, a Solr cluster running on a local filesystem (e.g. EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
+For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
 Solr offers three different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, and `GCSBackupRepository`), and allows users to create plugins for their own storage systems as needed.
 
 Users can define any number of repositories in their `solr.xml` file.
@@ -331,16 +331,16 @@ GCSBackupRepository accepts the following advanced client-configuration options:
 
 `gcsWriteBufferSizeBytes`::
 The buffer size, in bytes, to use when sending data to GCS.
-16777216 bytes (i.e. 16 MB) is used by default if not specified.
+`16777216` bytes (i.e., 16 MB) is used by default if not specified.
 
 `gcsReadBufferSizeBytes`::
 The buffer size, in bytes, to use when copying data from GCS.
-2097152 bytes (i.e. 2 MB) is used by default if not specified.
+`2097152` bytes (i.e., 2 MB) is used by default if not specified.
 
 `gcsClientHttpConnectTimeoutMillis`::
 The connection timeout, in milliseconds, for all HTTP requests made by the GCS client.
 "0" may be used to request an infinite timeout.
-A negative integer, or not specifying a value at all, will result in a value of 20000 (or 20 seconds).
+A negative integer, or not specifying a value at all, will result in a value of `20000` (or 20 seconds).
 
 `gcsClientHttpReadTimeoutMillis`::
 The read timeout, in milliseconds, for reading data on an established connection.

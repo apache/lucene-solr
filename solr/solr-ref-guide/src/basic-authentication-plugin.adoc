@@ -213,7 +213,7 @@ QueryResponse rsp = req.process(solrClient);
 
 While this is method is simple, it can often be inconvenient to ensure the credentials are provided everywhere they're needed.  It also doesn't work with the many `SolrClient` methods which don't consume `SolrRequest` objects.
 
-=== Per-Client credentials
+=== Per-Client Credentials
 Http2SolrClient supports setting the credentials at the client level when building it. This will ensure all requests issued with this particular client get the Basic Authentication headers set.
 
 [source,java]

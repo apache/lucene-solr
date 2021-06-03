@@ -38,8 +38,8 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
 
 [CAUTION]
 ====
-.Re-Indexing Considerations
-With the exception of in-place updates, Solr must internally re-index an entire nested document tree
+.Reindexing Considerations
+With the exception of in-place updates, Solr must internally reindex an entire nested document tree
 if there are updates to it.  For some applications this may
 result in a lot of extra indexing overhead that may not be worth the performance gains at query
 time versus other modeling approaches.
