@@ -71,6 +71,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -654,6 +655,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
         if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
             && !updateKey.equals(Overseer.QUEUE_OPERATION)
+            && !updateKey.equals(CommonAdminParams.ASYNC)
             && updateEntry.getValue() != null // handled below in a separate conditional
             && !updateEntry.getValue().equals(collection.get(updateKey))) {
           areChangesVisible = false;

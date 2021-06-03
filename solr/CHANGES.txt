@@ -22,7 +22,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15311: Support async parameter in MODIFYCOLLECTION
+  (Nazerke Seidan, Christine Poerschke, David Smiley)
 
 Other Changes
 ---------------------

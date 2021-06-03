@@ -260,6 +260,7 @@ The attributes that can be modified are:
 * policy
 * withCollection
 * readOnly
+* async
 * other custom properties that use a `property.` prefix
 
 See the <<create,CREATE action>> section above for details on these attributes.
