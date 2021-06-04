@@ -309,6 +309,22 @@ public class TestStringValueFacetCounts extends FacetTestCase {
 
       FacetResult facetResult = facets.getTopChildren(topN, "field");
 
+      assertEquals("field", facetResult.dim);
+      assertEquals(0, facetResult.path.length);
+      assertEquals(expectedTotalDocsWithValue, facetResult.value);
+      assertEquals(expectedLabelCount, facetResult.childCount);
+
+      // getAllDims should return a singleton list with the same results as getTopChildren
+      List<FacetResult> allDims = facets.getAllDims(topN);
+      assertEquals(1, allDims.size());
+      assertEquals(facetResult, allDims.get(0));
+
+      // This is a little strange, but we request all labels at this point so that when we
+      // secondarily sort by label value in order to compare to the expected results, we have
+      // all the values. See LUCENE-9991:
+      int maxTopN = expectedCountsSorted.size();
+      facetResult = facets.getTopChildren(maxTopN, "field");
+
       // also sort expected labels by count, value (these will be sorted by count, ord -- but since
       // we have no insight into the ordinals assigned to the values, we resort)
       Arrays.sort(
@@ -321,12 +337,7 @@ public class TestStringValueFacetCounts extends FacetTestCase {
             return cmp;
           });
 
-      assertEquals("field", facetResult.dim);
-      assertEquals(0, facetResult.path.length);
-      assertEquals(expectedTotalDocsWithValue, facetResult.value);
-      assertEquals(expectedLabelCount, facetResult.childCount);
-
-      for (int i = 0; i < Math.min(topN, expectedCountsSorted.size()); i++) {
+      for (int i = 0; i < Math.min(topN, maxTopN); i++) {
         String expectedKey = expectedCountsSorted.get(i).getKey();
         int expectedValue = expectedCountsSorted.get(i).getValue();
         assertEquals(expectedKey, facetResult.labelValues[i].label);
@@ -334,11 +345,6 @@ public class TestStringValueFacetCounts extends FacetTestCase {
         // make sure getSpecificValue reports the same count
         assertEquals(expectedValue, facets.getSpecificValue("field", expectedKey));
       }
-
-      // getAllDims should return a singleton list with the same results as getTopChildren
-      List<FacetResult> allDims = facets.getAllDims(topN);
-      assertEquals(1, allDims.size());
-      assertEquals(facetResult, allDims.get(0));
 
       // execute a "drill down" query on one of the values at random and make sure the total hits
       // match the expected count provided by faceting
