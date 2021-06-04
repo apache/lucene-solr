@@ -89,6 +89,8 @@ Bug Fixes
 * LUCEDNE-9967: Do not throw NullPointerException while trying to handle another exception in
   ReplicaNode.start (Steven Schlansker)
 
+* LUCENE-9991: Fix edge case failure in TestStringValueFacetCounts (Greg Miller)
+
 Other
 ---------------------
 
