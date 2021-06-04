@@ -102,6 +102,8 @@ Other
 * LUCENE-9836: Migrate Maven tasks to use "maven-resolver-ant-tasks"
   instead of the no longer maintained "maven-ant-tasks".  (Uwe Schindler)
 
+* LUCENE-9985: Upgrade jetty to 9.4.41 (janhoy)
+
 ======================= Lucene 8.8.2 =======================
 
 Bug Fixes

@@ -129,6 +129,8 @@ Other Changes
 
 * SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
 
+* SOLR-15316: Upgrade Jetty to 9.4.41.v20210516 (janhoy, Mike Drob)
+
 ==================  8.8.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
