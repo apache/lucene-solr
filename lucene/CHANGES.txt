@@ -7,7 +7,9 @@ http://s.apache.org/luceneversions
 
 API Changes
 ---------------------
-(No changes)
+
+* LUCENE-9962: DrillSideways allows sub-classes to provide "drill down" FacetsCollectors. They
+  may provide a null collector if they choose to bypass "drill down" facet collection. (Greg Miller)
 
 New Features
 ---------------------
@@ -15,7 +17,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9944: Allow DrillSideways users to provide their own CollectorManager without also requiring
+  them to provide an ExecutorService. (Greg Miller)
 
 Optimizations
 ---------------------
@@ -23,7 +27,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9988: Fix DrillSideways correctness bug introduced in LUCENE-9944 (Greg Miller)
 
 Other
 ---------------------

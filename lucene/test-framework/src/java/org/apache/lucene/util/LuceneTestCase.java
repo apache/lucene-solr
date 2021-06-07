@@ -1905,8 +1905,20 @@ public abstract class LuceneTestCase extends Assert {
    * {@link AssertingIndexSearcher} instance.
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap, boolean wrapWithAssertions) {
+    return newSearcher(r, maybeWrap, wrapWithAssertions, rarely());
+  }
+
+  /**
+   * Create a new searcher over the reader. If <code>
+   * maybeWrap</code> is true, this searcher might wrap the reader with one that returns null for
+   * getSequentialSubReaders. If <code>wrapWithAssertions</code> is true, this searcher might be an
+   * {@link AssertingIndexSearcher} instance. The searcher will use threads if <code>useThreads
+   * </code> is set to true.
+   */
+  public static IndexSearcher newSearcher(
+      IndexReader r, boolean maybeWrap, boolean wrapWithAssertions, boolean useThreads) {
     Random random = random();
-    if (usually()) {
+    if (useThreads == false) {
       if (maybeWrap) {
         try {
           r = maybeWrapReader(r);
