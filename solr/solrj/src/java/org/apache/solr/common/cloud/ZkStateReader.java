@@ -112,7 +112,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String LIVE_QUERY_NODES_ZKNODE = "/live_query_nodes";
-  public static final String SOLR_QUERY_AGGREGATOR = "QueryAggregator";
+  public static final String SOLR_QUERY_AGGREGATOR = "SolrQueryAggregator";
   public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
   public static final String CLUSTER_PROPS = "/clusterprops.json";
@@ -338,6 +338,8 @@ public class ZkStateReader implements SolrCloseable {
   private volatile boolean closed = false;
 
   private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet();
+
+  private final boolean isQueryAggregatorNode = Boolean.getBoolean(SOLR_QUERY_AGGREGATOR);
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -595,7 +597,6 @@ public class ZkStateReader implements SolrCloseable {
   private void constructState(Set<String> changedCollections) {
 
     Set<String> liveNodes = this.liveNodes; // volatile read
-
     // Legacy clusterstate is authoritative, for backwards compatibility.
     // To move a collection's state to format2, first create the new state2 format node, then remove legacy entry.
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>(legacyCollectionStates);
@@ -757,6 +758,12 @@ public class ZkStateReader implements SolrCloseable {
     cloudCollectionsListeners.remove(cloudCollectionsListener);
   }
 
+  public boolean hasCollection(String collection) {
+    if (lazyCollectionStates.containsKey(collection))
+      return true;
+    throw new SolrException(ErrorCode.NOT_FOUND, "Could not find collection : " + collection);
+  }
+
   private void notifyNewCloudCollectionsListener(CloudCollectionsListener listener) {
     listener.onChange(Collections.emptySet(), lastFetchedCollectionSet.get());
   }
@@ -798,8 +805,10 @@ public class ZkStateReader implements SolrCloseable {
     @Override
     public synchronized DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
+
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
         boolean shouldFetch = true;
+
         if (cachedDocCollection != null) {
           Stat freshStats = null;
           try {

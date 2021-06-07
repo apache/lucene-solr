@@ -872,42 +872,44 @@ public class CoreContainer {
         SolrMetricManager.mkName("coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
-      List<CoreDescriptor> cds = coresLocator.discover(this);
-      cds = CoreSorter.sortCores(this, cds);
-      checkForDuplicateCoreNames(cds);
-      status |= CORE_DISCOVERY_COMPLETE;
+      if (!isQueryAggregator) {
+        List<CoreDescriptor> cds = coresLocator.discover(this);
+        cds = CoreSorter.sortCores(this, cds);
+        checkForDuplicateCoreNames(cds);
+        status |= CORE_DISCOVERY_COMPLETE;
 
-      for (final CoreDescriptor cd : cds) {
-        if (cd.isTransient() || !cd.isLoadOnStartup()) {
-          solrCores.addCoreDescriptor(cd);
-        } else if (asyncSolrCoreLoad) {
-          solrCores.markCoreAsLoading(cd);
-        }
-        if (cd.isLoadOnStartup()) {
-          futures.add(coreLoadExecutor.submit(() -> {
-            SolrCore core;
-            try {
-              if (zkSys.getZkController() != null) {
-                zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+        for (final CoreDescriptor cd : cds) {
+          if (cd.isTransient() || !cd.isLoadOnStartup()) {
+            solrCores.addCoreDescriptor(cd);
+          } else if (asyncSolrCoreLoad) {
+            solrCores.markCoreAsLoading(cd);
+          }
+          if (cd.isLoadOnStartup()) {
+            futures.add(coreLoadExecutor.submit(() -> {
+              SolrCore core;
+              try {
+                if (zkSys.getZkController() != null) {
+                  zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+                }
+                solrCores.waitAddPendingCoreOps(cd.getName());
+                core = createFromDescriptor(cd, false, false);
+              } finally {
+                solrCores.removeFromPendingOps(cd.getName());
+                if (asyncSolrCoreLoad) {
+                  solrCores.markCoreAsNotLoading(cd);
+                }
               }
-              solrCores.waitAddPendingCoreOps(cd.getName());
-              core = createFromDescriptor(cd, false, false);
-            } finally {
-              solrCores.removeFromPendingOps(cd.getName());
-              if (asyncSolrCoreLoad) {
-                solrCores.markCoreAsNotLoading(cd);
+              try {
+                zkSys.registerInZk(core, true, false);
+              } catch (RuntimeException e) {
+                SolrException.log(log, "Error registering SolrCore", e);
               }
-            }
-            try {
-              zkSys.registerInZk(core, true, false);
-            } catch (RuntimeException e) {
-              SolrException.log(log, "Error registering SolrCore", e);
-            }
-            return core;
-          }));
+              return core;
+            }));
+          }
         }
+
       }
-
 
       // Start the background thread
       backgroundCloser = new CloserThread(this, solrCores, cfg);
@@ -1052,7 +1054,7 @@ public class CoreContainer {
   public void shutdown() {
 
     ZkController zkController = getZkController();
-    if (zkController != null) {
+    if (!isQueryAggregator() && zkController != null) {
       OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
       overseerCollectionQueue.allowOverseerPendingTasksToComplete();
     }
@@ -1530,19 +1532,18 @@ public class CoreContainer {
   }
 
   SolrCore createProxyCore(String collectionName) {
-    DocCollection collection = getCollection(collectionName);
 
-    if (collection == null) {
+    if (!hasCollection(collectionName)) {
       return null;
     }
 
     Map<String, String> coreProps = new HashMap<>();
     coreProps.put(CoreAdminParams.CORE_NODE_NAME, this.getHostName());
-    coreProps.put(CoreAdminParams.COLLECTION, collection.getName());
+    coreProps.put(CoreAdminParams.COLLECTION, collectionName);
 
     CoreDescriptor ret = new CoreDescriptor(
-        collection.getName(),
-        Paths.get(this.getSolrHome() + "/" + collection.getName()),
+        collectionName,
+        Paths.get(this.getSolrHome() + "/" + collectionName),
         coreProps, this.getContainerProperties(), this.getZkController());
 
     try {
@@ -2288,6 +2289,10 @@ public class CoreContainer {
   private DocCollection getCollection(String collectionName) {
     DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(collectionName);
     return coll;
+  }
+
+  private boolean hasCollection(String collectionName) {
+    return getZkController().getZkStateReader().hasCollection(collectionName);
   }
 
   /**
