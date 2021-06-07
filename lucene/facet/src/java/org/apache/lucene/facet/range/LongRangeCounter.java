@@ -16,123 +16,65 @@
  */
 package org.apache.lucene.facet.range;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Comparator;
 
-/** Counts how many times each range was seen;
- *  per-hit it's just a binary search ({@link #add})
- *  against the elementary intervals, and in the end we
- *  rollup back to the original ranges. */
+/**
+ * Counter for numeric ranges. Works for both single- and multi-valued cases (assuming you use it
+ * correctly).
+ *
+ * <p>Usage notes: When counting a document field that only has a single value, callers should call
+ * addSingleValued() with the value. Whenever a document field has multiple values, callers should
+ * call startMultiValuedDoc() at the beginning of processing the document, followed by
+ * addMultiValued() with each value before finally calling endMultiValuedDoc() at the end of
+ * processing the document. The call to endMultiValuedDoc() will respond with a boolean indicating
+ * whether-or-not the specific document matched against at least one of the ranges being counted.
+ * Finally, after processing all documents, the caller should call finish(). This final call will
+ * ensure the contents of the user-provided {@code countBuffer} contains accurate counts (each index
+ * corresponding to the provided {@code LongRange} in {@code ranges}). The final call to finish()
+ * will also report how many additional documents did not match against any ranges. The combination
+ * of the endMultiValuedDoc() boolean responses and the number reported by finish() communicates the
+ * total number of missing documents. Note that the call to finish() will not report any documents
+ * already reported missing by endMultiValuedDoc().
+ */
+abstract class LongRangeCounter {
 
-final class LongRangeCounter {
+  /** accumulated counts for all of the ranges */
+  private final int[] countBuffer;
 
-  final LongRangeNode root;
-  final long[] boundaries;
-  final int[] leafCounts;
+  /**
+   * for multi-value docs, we keep track of the last elementary interval we've counted so we can use
+   * that as a lower-bound when counting subsequent values. this takes advantage of the fact that
+   * values within a given doc are sorted.
+   */
+  protected int multiValuedDocLastSeenElementaryInterval;
 
-  // Used during rollup
-  private int leafUpto;
-  private int missingCount;
-
-  public LongRangeCounter(LongRange[] ranges) {
-    // Maps all range inclusive endpoints to int flags; 1
-    // = start of interval, 2 = end of interval.  We need to
-    // track the start vs end case separately because if a
-    // given point is both, then it must be its own
-    // elementary interval:
-    Map<Long,Integer> endsMap = new HashMap<>();
-
-    endsMap.put(Long.MIN_VALUE, 1);
-    endsMap.put(Long.MAX_VALUE, 2);
-
-    for(LongRange range : ranges) {
-      Integer cur = endsMap.get(range.min);
-      if (cur == null) {
-        endsMap.put(range.min, 1);
-      } else {
-        endsMap.put(range.min, cur.intValue() | 1);
-      }
-      cur = endsMap.get(range.max);
-      if (cur == null) {
-        endsMap.put(range.max, 2);
-      } else {
-        endsMap.put(range.max, cur.intValue() | 2);
-      }
-    }
-
-    List<Long> endsList = new ArrayList<>(endsMap.keySet());
-    Collections.sort(endsList);
-
-    // Build elementaryIntervals (a 1D Venn diagram):
-    List<InclusiveRange> elementaryIntervals = new ArrayList<>();
-    int upto0 = 1;
-    long v = endsList.get(0);
-    long prev;
-    if (endsMap.get(v) == 3) {
-      elementaryIntervals.add(new InclusiveRange(v, v));
-      prev = v+1;
+  static LongRangeCounter create(LongRange[] ranges, int[] countBuffer) {
+    if (hasOverlappingRanges(ranges)) {
+      return new OverlappingLongRangeCounter(ranges, countBuffer);
     } else {
-      prev = v;
+      return new ExclusiveLongRangeCounter(ranges, countBuffer);
     }
-
-    while (upto0 < endsList.size()) {
-      v = endsList.get(upto0);
-      int flags = endsMap.get(v);
-      //System.out.println("  v=" + v + " flags=" + flags);
-      if (flags == 3) {
-        // This point is both an end and a start; we need to
-        // separate it:
-        if (v > prev) {
-          elementaryIntervals.add(new InclusiveRange(prev, v-1));
-        }
-        elementaryIntervals.add(new InclusiveRange(v, v));
-        prev = v+1;
-      } else if (flags == 1) {
-        // This point is only the start of an interval;
-        // attach it to next interval:
-        if (v > prev) {
-          elementaryIntervals.add(new InclusiveRange(prev, v-1));
-        }
-        prev = v;
-      } else {
-        assert flags == 2;
-        // This point is only the end of an interval; attach
-        // it to last interval:
-        elementaryIntervals.add(new InclusiveRange(prev, v));
-        prev = v+1;
-      }
-      //System.out.println("    ints=" + elementaryIntervals);
-      upto0++;
-    }
-
-    // Build binary tree on top of intervals:
-    root = split(0, elementaryIntervals.size(), elementaryIntervals);
-
-    // Set outputs, so we know which range to output for
-    // each node in the tree:
-    for(int i=0;i<ranges.length;i++) {
-      root.addOutputs(i, ranges[i]);
-    }
-
-    // Set boundaries (ends of each elementary interval):
-    boundaries = new long[elementaryIntervals.size()];
-    for(int i=0;i<boundaries.length;i++) {
-      boundaries[i] = elementaryIntervals.get(i).end;
-    }
-
-    leafCounts = new int[boundaries.length];
-
-    //System.out.println("ranges: " + Arrays.toString(ranges));
-    //System.out.println("intervals: " + elementaryIntervals);
-    //System.out.println("boundaries: " + Arrays.toString(boundaries));
-    //System.out.println("root:\n" + root);
   }
 
-  public void add(long v) {
-    //System.out.println("add v=" + v);
+  protected LongRangeCounter(int[] countBuffer) {
+    // We'll populate the user-provided count buffer with range counts:
+    this.countBuffer = countBuffer;
+  }
+
+  /** Start processing a new doc. It's unnecessary to call this for single-value cases. */
+  void startMultiValuedDoc() {
+    multiValuedDocLastSeenElementaryInterval = -1;
+  }
+
+  /**
+   * Finish processing a new doc. Returns whether-or-not the document contributed a count to at
+   * least one range. It's unnecessary to call this for single-value cases.
+   */
+  abstract boolean endMultiValuedDoc();
+
+  /** Count a single valued doc */
+  void addSingleValued(long v) {
 
     // NOTE: this works too, but it's ~6% slower on a simple
     // test with a high-freq TermQuery w/ range faceting on
@@ -149,82 +91,134 @@ final class LongRangeCounter {
     // are guaranteed to find a match because the last
     // boundary is Long.MAX_VALUE:
 
+    long[] boundaries = boundaries();
+
     int lo = 0;
     int hi = boundaries.length - 1;
     while (true) {
       int mid = (lo + hi) >>> 1;
-      //System.out.println("  cycle lo=" + lo + " hi=" + hi + " mid=" + mid + " boundary=" + boundaries[mid] + " to " + boundaries[mid+1]);
       if (v <= boundaries[mid]) {
         if (mid == 0) {
-          leafCounts[0]++;
+          processSingleValuedHit(mid);
           return;
         } else {
           hi = mid - 1;
         }
-      } else if (v > boundaries[mid+1]) {
+      } else if (v > boundaries[mid + 1]) {
         lo = mid + 1;
       } else {
-        leafCounts[mid+1]++;
-        //System.out.println("  incr @ " + (mid+1) + "; now " + leafCounts[mid+1]);
+        processSingleValuedHit(mid + 1);
         return;
       }
     }
   }
 
-  /** Fills counts corresponding to the original input
-   *  ranges, returning the missing count (how many hits
-   *  didn't match any ranges). */
-  public int fillCounts(int[] counts) {
-    //System.out.println("  rollup");
-    missingCount = 0;
-    leafUpto = 0;
-    rollup(root, counts, false);
-    return missingCount;
-  }
+  /** Count a multi-valued doc value */
+  void addMultiValued(long v) {
 
-  private int rollup(LongRangeNode node, int[] counts, boolean sawOutputs) {
-    int count;
-    sawOutputs |= node.outputs != null;
-    if (node.left != null) {
-      count = rollup(node.left, counts, sawOutputs);
-      count += rollup(node.right, counts, sawOutputs);
-    } else {
-      // Leaf:
-      count = leafCounts[leafUpto];
-      leafUpto++;
-      if (!sawOutputs) {
-        // This is a missing count (no output ranges were
-        // seen "above" us):
-        missingCount += count;
+    if (rangeCount() == 0) {
+      return; // don't bother if there aren't any requested ranges
+    }
+
+    long[] boundaries = boundaries();
+
+    // First check if we've "advanced" beyond the last elementary interval we counted for this doc.
+    // If we haven't, there's no sense doing anything else:
+    if (multiValuedDocLastSeenElementaryInterval != -1
+        && v <= boundaries[multiValuedDocLastSeenElementaryInterval]) {
+      return;
+    }
+
+    // Also check if we've already counted the last elementary interval. If so, there's nothing
+    // else to count for this doc:
+    final int nextCandidateElementaryInterval = multiValuedDocLastSeenElementaryInterval + 1;
+    if (nextCandidateElementaryInterval == boundaries.length) {
+      return;
+    }
+
+    // Binary search in the range of the next candidate interval up to the last interval:
+    int lo = nextCandidateElementaryInterval;
+    int hi = boundaries.length - 1;
+    while (true) {
+      int mid = (lo + hi) >>> 1;
+      if (v <= boundaries[mid]) {
+        if (mid == nextCandidateElementaryInterval) {
+          processMultiValuedHit(mid);
+          multiValuedDocLastSeenElementaryInterval = mid;
+          return;
+        } else {
+          hi = mid - 1;
+        }
+      } else if (v > boundaries[mid + 1]) {
+        lo = mid + 1;
+      } else {
+        int idx = mid + 1;
+        processMultiValuedHit(idx);
+        multiValuedDocLastSeenElementaryInterval = idx;
+        return;
       }
     }
-    if (node.outputs != null) {
-      for(int rangeIndex : node.outputs) {
-        counts[rangeIndex] += count;
+  }
+
+  /**
+   * Finish processing all documents. This will return the number of docs that didn't contribute to
+   * any ranges (that weren't already reported when calling endMultiValuedDoc()).
+   */
+  abstract int finish();
+
+  /** Provide boundary information for elementary intervals (max inclusive value per interval) */
+  protected abstract long[] boundaries();
+
+  /** Process a single-value "hit" against an elementary interval. */
+  protected abstract void processSingleValuedHit(int elementaryIntervalNum);
+
+  /** Process a multi-value "hit" against an elementary interval. */
+  protected abstract void processMultiValuedHit(int elementaryIntervalNum);
+
+  /** Increment the specified range by one. */
+  protected final void increment(int rangeNum) {
+    countBuffer[rangeNum]++;
+  }
+
+  /** Increment the specified range by the specified count. */
+  protected final void increment(int rangeNum, int count) {
+    countBuffer[rangeNum] += count;
+  }
+
+  /** Number of ranges requested by the caller. */
+  protected final int rangeCount() {
+    return countBuffer.length;
+  }
+
+  /** Determine whether-or-not any requested ranges overlap */
+  private static boolean hasOverlappingRanges(LongRange[] ranges) {
+    if (ranges.length == 0) {
+      return false;
+    }
+
+    // Copy before sorting so we don't mess with the caller's original ranges:
+    LongRange[] sortedRanges = new LongRange[ranges.length];
+    System.arraycopy(ranges, 0, sortedRanges, 0, ranges.length);
+    Arrays.sort(sortedRanges, Comparator.comparingLong(r -> r.min));
+
+    long previousMax = sortedRanges[0].max;
+    for (int i = 1; i < sortedRanges.length; i++) {
+      // Ranges overlap if the next min is <= the previous max (note that LongRange models
+      // closed ranges, so equal limit points are considered overlapping):
+      if (sortedRanges[i].min <= previousMax) {
+        return true;
       }
+      previousMax = sortedRanges[i].max;
     }
-    //System.out.println("  rollup node=" + node.start + " to " + node.end + ": count=" + count);
-    return count;
+
+    return false;
   }
 
-  private static LongRangeNode split(int start, int end, List<InclusiveRange> elementaryIntervals) {
-    if (start == end-1) {
-      // leaf
-      InclusiveRange range = elementaryIntervals.get(start);
-      return new LongRangeNode(range.start, range.end, null, null, start);
-    } else {
-      int mid = (start + end) >>> 1;
-      LongRangeNode left = split(start, mid, elementaryIntervals);
-      LongRangeNode right = split(mid, end, elementaryIntervals);
-      return new LongRangeNode(left.start, right.end, left, right, -1);
-    }
-  }
+  protected static final class InclusiveRange {
+    final long start;
+    final long end;
 
-  private static final class InclusiveRange {
-    public final long start;
-    public final long end;
-
-    public InclusiveRange(long start, long end) {
+    InclusiveRange(long start, long end) {
       assert end >= start;
       this.start = start;
       this.end = end;
@@ -233,83 +227,6 @@ final class LongRangeCounter {
     @Override
     public String toString() {
       return start + " to " + end;
-    }
-  }
-
-  /** Holds one node of the segment tree. */
-  public static final class LongRangeNode {
-    final LongRangeNode left;
-    final LongRangeNode right;
-
-    // Our range, inclusive:
-    final long start;
-    final long end;
-
-    // If we are a leaf, the index into elementary ranges that
-    // we point to:
-    final int leafIndex;
-
-    // Which range indices to output when a query goes
-    // through this node:
-    List<Integer> outputs;
-
-    public LongRangeNode(long start, long end, LongRangeNode left, LongRangeNode right, int leafIndex) {
-      this.start = start;
-      this.end = end;
-      this.left = left;
-      this.right = right;
-      this.leafIndex = leafIndex;
-    }
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      toString(sb, 0);
-      return sb.toString();
-    }
-
-    static void indent(StringBuilder sb, int depth) {
-      for(int i=0;i<depth;i++) {
-        sb.append("  ");
-      }
-    }
-
-    /** Recursively assigns range outputs to each node. */
-    void addOutputs(int index, LongRange range) {
-      if (start >= range.min && end <= range.max) {
-        // Our range is fully included in the incoming
-        // range; add to our output list:
-        if (outputs == null) {
-          outputs = new ArrayList<>();
-        }
-        outputs.add(index);
-      } else if (left != null) {
-        assert right != null;
-        // Recurse:
-        left.addOutputs(index, range);
-        right.addOutputs(index, range);
-      }
-    }
-
-    void toString(StringBuilder sb, int depth) {
-      indent(sb, depth);
-      if (left == null) {
-        assert right == null;
-        sb.append("leaf: ").append(start).append(" to ").append(end);
-      } else {
-        sb.append("node: ").append(start).append(" to ").append(end);
-      }
-      if (outputs != null) {
-        sb.append(" outputs=");
-        sb.append(outputs);
-      }
-      sb.append('\n');
-
-      if (left != null) {
-        assert right != null;
-        left.toString(sb, depth+1);
-        right.toString(sb, depth+1);
-      }
     }
   }
 }

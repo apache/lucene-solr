@@ -15,7 +15,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9946: Support for multi-value fields in LongRangeFacetCounts and
+  DoubleRangeFacetCounts. (Greg Miller)
 
 Optimizations
 ---------------------
