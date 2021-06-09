@@ -29,6 +29,33 @@ Other
 ---------------------
 (No changes)
 
+======================= Lucene 8.10.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+* LUCENE-9965: Added QueryProfilerIndexSearcher and ProfilerCollector to support debugging
+  query execution strategy and timing. (Jack Conradson, Julie Tibshirani)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
+
 ======================= Lucene 8.9.0 =======================
 
 API Changes
