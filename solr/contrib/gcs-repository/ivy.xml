@@ -34,7 +34,6 @@
     <dependency org="com.google.cloud" name="google-cloud-core" rev="${/com.google.cloud/google-cloud-core}" conf="compile"/>
     <dependency org="com.google.cloud" name="google-cloud-core-http" rev="${/com.google.cloud/google-cloud-core-http}" conf="compile"/>
     <dependency org="com.google.cloud" name="google-cloud-storage" rev="${/com.google.cloud/google-cloud-storage}" conf="compile"/>
-    <dependency org="com.google.code.findbugs" name="jsr305" rev="${/com.google.code.findbugs/jsr305}" conf="compile"/>
     <dependency org="com.google.code.gson" name="gson" rev="${/com.google.code.gson/gson}" conf="compile"/>
     <dependency org="com.google.errorprone" name="error_prone_annotations" rev="${/com.google.errorprone/error_prone_annotations}" conf="compile"/>
     <dependency org="com.google.http-client" name="google-http-client" rev="${/com.google.http-client/google-http-client}" conf="compile"/>
