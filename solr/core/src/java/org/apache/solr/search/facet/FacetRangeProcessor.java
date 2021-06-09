@@ -20,10 +20,12 @@ package org.apache.solr.search.facet;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.*;
+import org.apache.solr.schema.AbstractEnumField.EnumMapping;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.SyntaxError;
@@ -146,6 +148,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final FieldType ft = sf.getType();
 
     if (ft.getNumberType() != null) {
+      if (ft instanceof AbstractEnumField) {
+        return new EnumCalc(sf);
+      } 
       switch (ft.getNumberType()) {
         case FLOAT:
           return new FloatCalc(sf);
@@ -171,22 +176,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   private static Calc getCalcForField(SchemaField sf) {
     final FieldType ft = sf.getType();
     if (ft instanceof TrieField || ft.isPointField()) {
-      switch (ft.getNumberType()) {
-        case FLOAT:
-          return new FloatCalc(sf);
-        case DOUBLE:
-          return new DoubleCalc(sf);
-        case INTEGER:
-          return new IntCalc(sf);
-        case LONG:
-          return new LongCalc(sf);
-        case DATE:
-          return new DateCalc(sf, null);
-        default:
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "Unable to range facet on numeric field of unexpected type:" + sf.getName());
-      }
+      return getNumericCalc(sf);
     } else if (ft instanceof CurrencyFieldType) {
       return new CurrencyCalc(sf);
     } else if (ft instanceof DateRangeField) {
@@ -199,7 +189,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private void createRangeList() throws IOException {
+  private void createRangeList() {
 
     rangeList = new ArrayList<>();
     otherList = new ArrayList<>(3);
@@ -286,7 +276,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Expected Map for range but got " + obj.getClass().getSimpleName() + " = " + obj);
       }
-      @SuppressWarnings({"unchecked"})
       Range range;
       @SuppressWarnings({"unchecked"})
       Map<String, Object> interval = (Map<String, Object>) obj;
@@ -771,6 +760,28 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     @Override
     public Long parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap) {
       return ((Number) value).longValue() + Long.parseLong(gap);
+    }
+  }
+
+  private static class EnumCalc extends Calc {
+
+    private final EnumMapping mapping;
+    public EnumCalc(final SchemaField f) {
+      super(f);
+      mapping = ((AbstractEnumField)field.getType()).getEnumMapping();
+    }
+    @Override
+    public EnumFieldValue bitsToValue(long bits) {
+      Integer val = (int)bits;
+      return new EnumFieldValue(val, mapping.intValueToStringValue(val));
+    }
+    @Override
+    protected EnumFieldValue parseStr(String rawval) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot perform range faceting over Enum fields!");
+    }
+    @Override
+    protected EnumFieldValue parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot perform range faceting over Enum fields!");
     }
   }
 

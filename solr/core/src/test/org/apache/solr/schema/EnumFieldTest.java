@@ -18,13 +18,18 @@ package org.apache.solr.schema;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrQueryParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -571,6 +576,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
     }
   }
   
+  @SuppressWarnings("unchecked")
   @Test
   public void testFacetEnumSearch() throws Exception {
     assumeFalse("This requires docValues",
@@ -592,6 +598,19 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam),
         "//*[@name='facets']/int/text()=6",
-        "//*[@name='allBuckets']/long/text()=6");
+        "//*[@name='allBuckets']/long/text()=6",
+        "//*[@name='buckets']/lst[int[@name='count'][.='2']][str[@name='val'][.='Critical']]",
+        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='Not Available']]",
+        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='Low']]",
+        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='Medium']]",
+        "//*[@name='buckets']/lst[int[@name='count'][.='1']][str[@name='val'][.='High']]");
+    
+    try (SolrQueryRequest req = req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam, "wt", "json")) {
+      SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT),req);
+      List<NamedList<?>> buckets = (List<NamedList<?>>) ((NamedList<?>)((NamedList<?>)rsp.getValues().get("facets")).get("severity")).get("buckets");
+      for (NamedList<?> bucket : buckets) {
+        assertTrue("Bucket value must be instance of EnumFieldVale!", bucket.get("val") instanceof EnumFieldValue);
+      }
+    }
   }
 }

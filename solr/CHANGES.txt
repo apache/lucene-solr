@@ -89,7 +89,10 @@ Bug Fixes
   (David Smiley)
 
 * SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
-  (Thomas Wöckinger, David Smiley)
+  (Thomas Wöckinger via David Smiley)
+
+* SOLR-15457: Fix JSON Faceting on EnumFieldType -- returned values should not be internal ordinals.
+  (Thomas Wöckinger via David Smiley)
 
 * SOLR-15216: Fix for Invalid Reference to data.followers in Admin UI. (Dean Pearce)
 
