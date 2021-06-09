@@ -84,6 +84,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.rrd.SolrRrdBackendFactory;
@@ -461,7 +462,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   }
 
   private void collectGlobalMetrics() {
-    if (!amIOverseerLeader()) {
+    if (Boolean.getBoolean(CoreContainer.SOLR_QUERY_AGGREGATOR) || !amIOverseerLeader()) {
       return;
     }
     Set<String> nodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
