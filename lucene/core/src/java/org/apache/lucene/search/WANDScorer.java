@@ -216,7 +216,9 @@ final class WANDScorer extends Scorer {
       }
       assert maxScoreSum == leadMaxScore : maxScoreSum + " " + leadMaxScore;
 
-      assert minCompetitiveScore == 0 || tailMaxScore < minCompetitiveScore;
+      assert minCompetitiveScore == 0
+          || tailMaxScore < minCompetitiveScore
+          || tailSize < minShouldMatch;
       assert doc <= upTo;
     }
 
