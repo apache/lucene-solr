@@ -41,7 +41,7 @@ class FindHyperlinks(HTMLParser):
   def handle_starttag(self, tag, attrs):
     # NOTE: I don't think 'a' should be in here. But try debugging 
     # NumericRangeQuery.html. (Could be javadocs bug, it's a generic type...)
-    if tag not in ('link', 'meta', 'frame', 'br', 'hr', 'p', 'li', 'img', 'col', 'a'):
+    if tag not in ('link', 'meta', 'frame', 'br', 'wbr', 'hr', 'p', 'li', 'img', 'col', 'a'):
       self.stack.append(tag)
     if tag == 'a':
       name = None
