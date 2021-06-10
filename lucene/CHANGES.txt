@@ -28,7 +28,7 @@ Bug Fixes
 
 Other
 ---------------------
-(No changes)
+* LUCENE-9976: Fix WANDScorer assertion error. (Zach Chen, Adrien Grand, Dawid Weiss)
 
 ======================= Lucene 8.9.0 =======================
 
@@ -132,6 +132,8 @@ Other
   instead of the no longer maintained "maven-ant-tasks".  (Uwe Schindler)
 
 * LUCENE-9985: Upgrade jetty to 9.4.41 (janhoy)
+
+* LUCENE-9976: Fix WANDScorer assertion error. (Zach Chen, Adrien Grand, Dawid Weiss)
 
 ======================= Lucene 8.8.2 =======================
 
