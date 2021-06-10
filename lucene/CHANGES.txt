@@ -106,6 +106,8 @@ Other
 
 * LUCENE-9985: Upgrade jetty to 9.4.41 (janhoy)
 
+* LUCENE-9976: Fix WANDScorer assertion error. (Zach Chen, Adrien Grand, Dawid Weiss)
+
 ======================= Lucene 8.8.2 =======================
 
 Bug Fixes
