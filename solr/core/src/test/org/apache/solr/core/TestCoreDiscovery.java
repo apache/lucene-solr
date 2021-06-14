@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -155,8 +154,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     CoreContainer cc = init();
     try {
 
-      TestLazyCores.checkInCores(cc, "core1");
-      TestLazyCores.checkNotInCores(cc, Arrays.asList("lazy1", "core2"));
+      TestLazyCores.checkLoadedCores(cc, "core1");
+      TestLazyCores.checkCoresNotLoaded(cc, "lazy1", "core2");
 
       // force loading of core2 and lazy1 by getting them from the CoreContainer
       try (SolrCore core1 = cc.getCore("core1");
@@ -174,7 +173,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         assertEquals("solrconfig-minimal.xml", desc.getConfigName());
         assertEquals("schema-tiny.xml", desc.getSchemaName());
 
-        TestLazyCores.checkInCores(cc, "core1", "core2", "lazy1");
+        TestLazyCores.checkLoadedCores(cc, "core1", "core2", "lazy1");
         // Can we persist an existing core's properties?
 
         // Insure we can persist a new properties file if we want.

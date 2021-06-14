@@ -18,7 +18,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
 
 Bug Fixes
 ---------------------
