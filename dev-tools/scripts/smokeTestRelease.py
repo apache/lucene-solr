@@ -450,7 +450,7 @@ def versionToTuple(version, name):
     versionTuple = versionTuple[:-2] + ('100',)
   elif versionTuple[-1].lower()[:2] == 'rc':
     versionTuple = versionTuple[:-2] + (versionTuple[-1][2:],)
-  return versionTuple
+  return tuple(int(x) if x is not None and x.isnumeric() else x for x in versionTuple)
 
 
 reUnixPath = re.compile(r'\b[a-zA-Z_]+=(?:"(?:\\"|[^"])*"' + '|(?:\\\\.|[^"\'\\s])*' + r"|'(?:\\'|[^'])*')" \
