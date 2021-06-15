@@ -1,0 +1,486 @@
+<html>
+
+	<!-- 
+	
+	/**
+	 * Licensed to the Apache Software Foundation (ASF) under one or more
+	 * contributor license agreements.  See the NOTICE file distributed with
+	 * this work for additional information regarding copyright ownership.
+	 * The ASF licenses this file to You under the Apache License, Version 2.0
+	 * (the "License"); you may not use this file except in compliance with
+	 * the License.  You may obtain a copy of the License at
+	 * <p/>
+	 * http://www.apache.org/licenses/LICENSE-2.0
+	 * <p/>
+	 * Unless required by applicable law or agreed to in writing, software
+	 * distributed under the License is distributed on an "AS IS" BASIS,
+	 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	 * See the License for the specific language governing permissions and
+	 * limitations under the License.
+	 */
+	
+	 -->
+
+	<head>
+		<title>Solr Nightly Benchmarks</title>
+        <link rel="shortcut icon" type="image/png" href="images/solr_logo_rgb.png" />
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.js"></script>
+        <link rel="stylesheet" src="http://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css" />
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+	</head>
+	<body>
+        <nav class="navbar navbar-inverse">
+            <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#"><img src="images/solr_black_logo.png" width="85px" height="55px" style="margin-top:-17px;margin-left:-16px;"/></a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                   <li><a href="MergedViewStandalone.html"><span class="glyphicon glyphicon-scale">&nbsp;</span>Solr Standalone Metrics</a></li>
+                   <li><a href="MergedViewCloud.html"><span class="glyphicon glyphicon-scale">&nbsp;</span>Solr Cloud Metrics</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                <li id="ReloadButton" class="hidden"><input type="button" onclick="location.reload();" class="btn btn-success" value="New Metrics Available" style="margin-top:8px;" /></li>
+                <li>&nbsp;&nbsp;&nbsp;</li>
+                <li><div id="green" style="width:20px;height:20px;display:none;margin-top:14px"><img width="20px" height="20px" src="images/working2.gif"/></div></li>
+                <li><a href="https://lucene.apache.org/solr/guide/" target="_blank"><span class="glyphicon glyphicon-book">&nbsp;</span>Solr Wiki</a></li>
+                <li><a href="https://issues.apache.org/jira/browse/SOLR/" target="_blank"><span class="glyphicon glyphicon-edit">&nbsp;</span>Solr JIRA</a></li>
+                <li><input type="button" class="btn btn-warning" data-toggle="modal" data-target="#envDetails" value="Environment Details" style="margin-top:8px;"/></li>
+                </ul>
+            </div>
+            </div>
+        </nav>
+
+                <!-- Modal -->
+                <div id="noDataError" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Data Unavailable</h4>
+                            </div>
+                            <div class="modal-body">
+                            The benchmark data is not available yet. Perhaps this is a fresh installation?
+                            Please wait for the benchmark cycle to complete and data to become available.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Modal -->
+                <div id="envDetails" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Test Environment Details</h4>
+                            </div>
+                            <div class="modal-body"  id="testEnvironmentDetails">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Modal -->
+                <div id="memProfile" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Profile</h4>
+                            </div>
+                            <div class="modal-body">
+
+                                <ul class="nav nav-tabs">
+                                    <li id="HeapMemoryUsageTab" role="presentation" class="active"><a href="#">Heap Space</a></li>
+                                    <li id="ProcessCPULoadTab" role="presentation"><a href="#">CPU Load</a></li>
+                                    <li id="TestEnvTab" role="presentation"><a href="#">Environment Details</a></li>
+                                    <li id="LatencyTab" role="presentation"><a href="#">Latency</a></li>
+                                    
+                                </ul>
+                                <br/>
+                                <div id="memTabBody">
+                                        <div id="memProfileGraph"></div><br/>
+                                        <div id="memProfileStats" style="width:100%;height:35px; text-align:center">&nbsp;</div>
+                                </div>
+                                <div id="cpuTabBody" class="hidden">
+                                        <div id="cpuProfileGraph"></div><br/>
+                                        <div id="cpuProfileStats" style="width:100%;height:35px; text-align:center">&nbsp;</div>
+                                </div>
+                                <div id="testEnvTabBody" class="hidden">
+                                </div>
+                                <div id="LatencyTabBody" class="hidden">
+                                
+	                                  <table class="table table-striped">
+									    <thead>
+									      <tr>
+									        <th>Query Time</th>
+									        <th>Metric</th>
+									      </tr>
+									    </thead>
+									    <tbody>
+									      <tr>
+									        <td>75th Percentile</td>
+									        <td id="75thQTime">XX.XX</td>
+									      </tr>
+									      <tr>
+									        <td>95th Percentile</td>
+									        <td id="95thQTime">XX.XX</td>
+									      </tr>
+									      <tr>
+									        <td>99th Percentile</td>
+									        <td id="99thQTime">XX.XX</td>
+									      </tr>
+									      <tr>
+									        <td>99.9th Percentile</td>
+									        <td id="99.9thQTime">XX.XX</td>
+									      </tr>
+									    </tbody>
+									  </table>
+                                
+                                </div>
+                                
+                                
+                            </div>
+                            <div class="modal-footer">
+                                <span class="pull-left">For more information (file changes etc.) please: <a id="memProfileFileChangeListLink" href="#" target="_blank">click here</a></span>
+                                <button type="button" class="btn btn-success" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+    
+                <div class="container-fluid">
+
+                    <div class="row">
+
+                            <div class="col-xs-9 cols-md-9 col-lg-9">
+
+                                <div class="panel panel-info" style="height:87%">
+                                    <div class="panel-heading">Text Sorting Query - QPS</div>
+	                                    <div class="panel-body" style="width:95%; height:90%;">                                                              
+								                   <div class="row">
+						                           		<div class="col-xs-12 cols-md-12 col-lg-12">
+							                           		<span style="transform:rotate(-90deg);
+									                   		margin-top:28%;width:2%;float:left;">
+																	Queries/Second
+							                           		</span>	
+						                                   <div id="graphdiv2" style="width:100%;height:100%;"></div> 
+					                           			</div>
+					                           	   </div>
+								                   <div class="row">
+						                           		<div class="col-xs-12 cols-md-12 col-lg-12" style="text-align:center;">
+						                           		Date/Time
+					                           			</div>
+													</div>				                           	   
+    	                                </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xs-3 cols-md-3 col-lg-3">
+
+                                <div class="panel panel-success" style="height:50%">
+                                    <div class="panel-heading">Test Information</div>
+	                                    <div class="panel-body" id="testRuntimeInformation">
+		                                    <div id="testCommitInformation" style=" white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;">
+	                                    </div>                                        
+                                    </div>
+                                </div>
+
+                                <div class="panel panel-danger" style="height:34%">
+                                    <div class="panel-heading">Graph Information</div>
+                                    <div class="panel-body">
+                                        <span class="text-muted">X-Axis: Date/Time | Y-Axis: Queries Per Second</span><br/><br/>
+                                        <div id="pointData"></div>
+                                        <div id="welcomeMessage">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
+                                    </div>
+                                </div>
+
+                            </div>
+
+                    </div>
+
+                </div>
+
+	</body>
+
+    <script type="text/javascript">
+
+	    var fileData;
+	    var commitID;
+	    var testID;
+	    var point;
+	    var row_;
+	    var dataPresent = true;
+
+	    $(document).ready(function () {
+
+	                        $("#ReloadButton").hide();
+
+                            $.ajax({
+
+                                    type: "GET",
+                                    url: "data/text_sorting_query_standalone.csv",
+                                    dataType: "text",
+                                    success: function(data) {
+	                                    fileData = data.split("\n");
+                                    },
+		                            error: function() {
+		                            	dataPresent = false;
+		                            }
+
+
+                            });
+
+                            setTimeout(function () {  
+                            	
+                            	if (!dataPresent) {
+                            		$("#noDataError").modal();
+                            	}
+                            	
+                            }, 2000);
+
+                            $.ajax({
+
+                                type: "GET",
+                                url: "data/testEnv.csv",
+                                dataType: "text",
+                                success: function (data) {
+                                    document.getElementById("testEnvironmentDetails").innerHTML = data;
+                                }
+
+                            });
+
+
+                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/text_sorting_query_standalone.csv", {
+                                labelsDiv: document.getElementById('pointData'), visibility: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F','#00FFFF'],
+
+                                 highlightCallback: function (e, x, pts, row) {
+                                	 
+                                	 row_ = row;
+                                     commitID = fileData[(row + 1)].split(",")[2].trim();
+                                     testID = fileData[(row + 1)].split(",")[1].trim();
+				                      				
+				                                     $.ajax({
+				
+				                                         type: "GET",
+				                                         url: "data/" + testID + "_" + commitID + "_COMMIT_INFORMATION_dump.csv",
+				                                         dataType: "text",
+				                                         success: function(data) {
+				                                        	 document.getElementById("testCommitInformation").innerHTML = data;
+				                                         }
+				
+					                                 });
+				                                     
+				                     				 document.getElementById("welcomeMessage").innerHTML = "";
+                     
+                                                },
+                                  
+                                  pointClickCallback: function(e, p) {
+                                	  				 point = p.name;
+                                                     $('#memProfile').modal();
+                                                     document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
+
+                                                     setTimeout(function () {
+                                                    	 
+                                                    	 if (p.name.includes("QPS")) {
+
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_SORTED_TEXT_QUERY_STANDALONE_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_SORTED_TEXT_QUERY_STANDALONE_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData[(row_ + 1)].split(",")[6].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData[(row_ + 1)].split(",")[7].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData[(row_ + 1)].split(",")[8].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData[(row_ + 1)].split(",")[9].trim();
+
+                                                    	 }   
+                                                    	 
+                                                     }, 250);
+
+                                                }
+
+                            });
+
+                            $("#HeapMemoryUsageTab").click(function () {
+
+                                if ($("#HeapMemoryUsageTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+                                    $("#ProcessCPULoadTab").removeClass("active");
+                                    $("#TestEnvTab").removeClass("active");
+                                    $("#LatencyTab").removeClass("active");
+
+                                    $("#cpuTabBody").hide();
+                                    $("#testEnvTabBody").hide();
+                                    $("#LatencyTabBody").hide();
+
+                                    $("#memTabBody").show("slow");
+                                    $("#HeapMemoryUsageTab").addClass("active");
+
+                               	 if (point.includes("QPS")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_SORTED_TEXT_QUERY_STANDALONE_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } 
+
+                                }
+
+                            });
+
+                            $("#ProcessCPULoadTab").click(function () {
+
+                                if ($("#ProcessCPULoadTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+
+                                    if ($("#cpuTabBody").hasClass("hidden")) {
+                                        $("#cpuTabBody").removeClass("hidden");
+                                    }
+
+                                    $("#HeapMemoryUsageTab").removeClass("active");
+                                    $("#TestEnvTab").removeClass("active");
+                                    $("#LatencyTab").removeClass("active");
+
+                                    $("#memTabBody").hide();
+                                    $("#testEnvTabBody").hide();
+                                    $("#LatencyTabBody").hide();
+
+                                    $("#cpuTabBody").show("slow");
+                                    $("#ProcessCPULoadTab").addClass("active");
+
+                               	 if (point.includes("QPS")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_SORTED_TEXT_QUERY_STANDALONE_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } 
+
+                                }
+
+                            });
+
+                            $("#TestEnvTab").click(function () {
+
+                                if ($("#TestEnvTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+
+                                    if ($("#testEnvTabBody").hasClass("hidden")) {
+                                        $("#testEnvTabBody").removeClass("hidden");
+                                    }
+
+                                    $("#HeapMemoryUsageTab").removeClass("active");
+                                    $("#ProcessCPULoadTab").removeClass("active");
+                                    $("#LatencyTab").removeClass("active");
+
+                                    $("#memTabBody").hide();
+                                    $("#cpuTabBody").hide();
+                                    $("#LatencyTabBody").hide();
+
+                                    $("#testEnvTabBody").show("slow");
+                                    $("#TestEnvTab").addClass("active");
+
+                                    $.ajax({
+
+                                        type: "GET",
+                                        url: "data/" + testID + "_" + commitID + "_TEST_ENV_FILE_dump.csv",
+                                        dataType: "text",
+                                        success: function (data) {
+                                            document.getElementById("testEnvTabBody").innerHTML = data;
+                                        }
+
+                                    });
+                                    
+                                }
+
+                            });
+
+                            $("#LatencyTab").click(function () {
+
+                                if ($("#LatencyTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+
+                                    if ($("#LatencyTabBody").hasClass("hidden")) {
+                                        $("#LatencyTabBody").removeClass("hidden");
+                                    }
+
+                                    $("#HeapMemoryUsageTab").removeClass("active");
+                                    $("#ProcessCPULoadTab").removeClass("active");
+                                    $("#TestEnvTab").removeClass("active");                                    
+
+                                    $("#memTabBody").hide();
+                                    $("#cpuTabBody").hide();
+                                    $("#testEnvTabBody").hide();
+                                    
+                                    $("#LatencyTabBody").show("slow");
+                                    $("#LatencyTab").addClass("active");
+
+                                    //
+                                    
+                                }
+
+                            });
+
+                            var wasRunning = false;
+
+                            setInterval(function () {
+
+                                                    $.ajax({
+
+                                                        type: "GET",
+                                                        url: "iamalive.txt",
+                                                        dataType: "text",
+                                                        success: function (data) {
+
+                                                        	if(!$("#ReloadButton").hasClass("hidden")) {
+                                                            			$("#ReloadButton").addClass("hidden");
+                                                        	}
+                                                        	
+                                                            $("#ReloadButton").hide();
+                                                            $("#green").show();
+                                                            wasRunning = true;
+
+                                                        },
+
+                                                        error: function (data) {
+                                                            $("#green").hide();
+
+                                                            if (wasRunning) {
+                                                                wasRunning = false;
+                                                                setTimeout(function () {}, 1000);
+                                                                $("#ReloadButton").removeClass("hidden");
+                                                                $("#ReloadButton").fadeIn("slow");
+                                                            }
+                                                        }
+
+                                                    });
+
+                            }, 3000);
+
+
+        });
+
+    </script>
+
+
+</html>

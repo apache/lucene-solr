@@ -1,0 +1,313 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.tests.nightlybenchmarks;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.ws.rs.core.MediaType;
+
+import org.apache.log4j.Logger;
+import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+
+enum TestType {
+
+	STANDALONE_CREATE_COLLECTION, 
+	STANDALONE_INDEXING_THROUGHPUT_SERIAL,
+
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, 
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, 
+	STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3,
+
+	STANDALONE_PARTIAL_UPDATE_THROUGHPUT_CONCURRENT_1, 
+	STANDALONE_PARTIAL_UPDATE_THROUGHPUT_CONCURRENT_2, 
+	STANDALONE_PARTIAL_UPDATE_THROUGHPUT_CONCURRENT_3,
+	
+	CLOUD_CREATE_COLLECTION,
+
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R, 
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R, 
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_2N2S1R, 
+	CLOUD_INDEXING_THROUGHPUT_SERIAL_4N2S2R,
+
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T,
+
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T,
+
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, 
+	CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T,
+
+	TERM_NUMERIC_QUERY_CLOUD_2T, 
+	TERM_NUMERIC_QUERY_CLOUD_4T, 
+	TERM_NUMERIC_QUERY_CLOUD_6T, 
+	TERM_NUMERIC_QUERY_CLOUD_8T, 
+
+	TERM_NUMERIC_QUERY_STANDALONE_2T, 
+	TERM_NUMERIC_QUERY_STANDALONE_4T, 
+	TERM_NUMERIC_QUERY_STANDALONE_6T, 
+	TERM_NUMERIC_QUERY_STANDALONE_8T, 
+	
+	RANGE_NUMERIC_QUERY_CLOUD_2T, 
+	RANGE_NUMERIC_QUERY_CLOUD_4T, 
+	RANGE_NUMERIC_QUERY_CLOUD_6T, 
+	RANGE_NUMERIC_QUERY_CLOUD_8T, 
+	
+	RANGE_NUMERIC_QUERY_STANDALONE_2T,	
+	RANGE_NUMERIC_QUERY_STANDALONE_4T, 
+	RANGE_NUMERIC_QUERY_STANDALONE_6T, 
+	RANGE_NUMERIC_QUERY_STANDALONE_8T, 	
+	
+	GT_NUMERIC_QUERY_CLOUD_2T, 
+	GT_NUMERIC_QUERY_CLOUD_4T, 
+	GT_NUMERIC_QUERY_CLOUD_6T, 
+	GT_NUMERIC_QUERY_CLOUD_8T, 
+	
+	GT_NUMERIC_QUERY_STANDALONE_2T, 
+	GT_NUMERIC_QUERY_STANDALONE_4T, 
+	GT_NUMERIC_QUERY_STANDALONE_6T, 
+	GT_NUMERIC_QUERY_STANDALONE_8T, 
+	
+	LT_NUMERIC_QUERY_CLOUD_2T, 
+	LT_NUMERIC_QUERY_CLOUD_4T, 
+	LT_NUMERIC_QUERY_CLOUD_6T, 
+	LT_NUMERIC_QUERY_CLOUD_8T, 
+	
+	LT_NUMERIC_QUERY_STANDALONE_2T, 
+	LT_NUMERIC_QUERY_STANDALONE_4T, 
+	LT_NUMERIC_QUERY_STANDALONE_6T, 
+	LT_NUMERIC_QUERY_STANDALONE_8T, 
+	
+	AND_NUMERIC_QUERY_CLOUD_2T, 
+	AND_NUMERIC_QUERY_CLOUD_4T, 
+	AND_NUMERIC_QUERY_CLOUD_6T, 
+	AND_NUMERIC_QUERY_CLOUD_8T, 
+	
+	AND_NUMERIC_QUERY_STANDALONE_2T, 
+	AND_NUMERIC_QUERY_STANDALONE_4T, 
+	AND_NUMERIC_QUERY_STANDALONE_6T, 
+	AND_NUMERIC_QUERY_STANDALONE_8T, 
+	
+	OR_NUMERIC_QUERY_CLOUD_2T, 
+	OR_NUMERIC_QUERY_CLOUD_4T, 
+	OR_NUMERIC_QUERY_CLOUD_6T, 
+	OR_NUMERIC_QUERY_CLOUD_8T, 
+	
+	OR_NUMERIC_QUERY_STANDALONE_2T, 
+	OR_NUMERIC_QUERY_STANDALONE_4T, 
+	OR_NUMERIC_QUERY_STANDALONE_6T, 
+	OR_NUMERIC_QUERY_STANDALONE_8T, 
+	
+	SORTED_NUMERIC_QUERY_CLOUD_2T,
+	SORTED_NUMERIC_QUERY_CLOUD_4T,
+	SORTED_NUMERIC_QUERY_CLOUD_6T,
+	SORTED_NUMERIC_QUERY_CLOUD_8T,
+	
+	SORTED_NUMERIC_QUERY_STANDALONE_2T, 
+	SORTED_NUMERIC_QUERY_STANDALONE_4T, 
+	SORTED_NUMERIC_QUERY_STANDALONE_6T, 
+	SORTED_NUMERIC_QUERY_STANDALONE_8T, 
+	
+	TEXT_TERM_QUERY_CLOUD_2T, 
+	TEXT_TERM_QUERY_CLOUD_4T, 
+	TEXT_TERM_QUERY_CLOUD_6T, 
+	TEXT_TERM_QUERY_CLOUD_8T, 
+	
+	TEXT_TERM_QUERY_STANDALONE_2T, 
+	TEXT_TERM_QUERY_STANDALONE_4T, 
+	TEXT_TERM_QUERY_STANDALONE_6T, 
+	TEXT_TERM_QUERY_STANDALONE_8T, 
+	
+	TEXT_PHRASE_QUERY_CLOUD_2T, 
+	TEXT_PHRASE_QUERY_CLOUD_4T, 
+	TEXT_PHRASE_QUERY_CLOUD_6T, 
+	TEXT_PHRASE_QUERY_CLOUD_8T, 
+	
+	TEXT_PHRASE_QUERY_STANDALONE_2T, 
+	TEXT_PHRASE_QUERY_STANDALONE_4T, 
+	TEXT_PHRASE_QUERY_STANDALONE_6T, 
+	TEXT_PHRASE_QUERY_STANDALONE_8T, 
+	
+	SORTED_TEXT_QUERY_CLOUD_2T, 
+	SORTED_TEXT_QUERY_CLOUD_4T, 
+	SORTED_TEXT_QUERY_CLOUD_6T, 
+	SORTED_TEXT_QUERY_CLOUD_8T, 
+	
+	SORTED_TEXT_QUERY_STANDALONE_2T,
+	SORTED_TEXT_QUERY_STANDALONE_4T,
+	SORTED_TEXT_QUERY_STANDALONE_6T,
+	SORTED_TEXT_QUERY_STANDALONE_8T,
+	
+	HIGHLIGHTING_QUERY_CLOUD_2T,
+	HIGHLIGHTING_QUERY_CLOUD_4T,
+	HIGHLIGHTING_QUERY_CLOUD_6T,
+	HIGHLIGHTING_QUERY_CLOUD_8T,
+	
+	HIGHLIGHTING_QUERY_STANDALONE_2T,
+	HIGHLIGHTING_QUERY_STANDALONE_4T,
+	HIGHLIGHTING_QUERY_STANDALONE_6T,
+	HIGHLIGHTING_QUERY_STANDALONE_8T,
+	
+	PARTIAL_UPDATE_THROUGHPUT_CLOUD,
+	PARTIAL_UPDATE_THROUGHPUT_STANDALONE,
+
+	CLASSIC_TERM_FACETING_QUERY_STANDALONE_2T,
+	CLASSIC_TERM_FACETING_QUERY_STANDALONE_4T,
+	CLASSIC_TERM_FACETING_QUERY_STANDALONE_6T,
+	CLASSIC_TERM_FACETING_QUERY_STANDALONE_8T,
+
+	CLASSIC_RANGE_FACETING_QUERY_STANDALONE_2T,
+	CLASSIC_RANGE_FACETING_QUERY_STANDALONE_4T,
+	CLASSIC_RANGE_FACETING_QUERY_STANDALONE_6T,
+	CLASSIC_RANGE_FACETING_QUERY_STANDALONE_8T,
+
+	JSON_TERM_FACETING_QUERY_STANDALONE_2T,
+	JSON_TERM_FACETING_QUERY_STANDALONE_4T,
+	JSON_TERM_FACETING_QUERY_STANDALONE_6T,
+	JSON_TERM_FACETING_QUERY_STANDALONE_8T,
+
+	JSON_RANGE_FACETING_QUERY_STANDALONE_2T,
+	JSON_RANGE_FACETING_QUERY_STANDALONE_4T,
+	JSON_RANGE_FACETING_QUERY_STANDALONE_6T,
+	JSON_RANGE_FACETING_QUERY_STANDALONE_8T,
+
+	CLASSIC_TERM_FACETING_QUERY_CLOUD_2T,
+	CLASSIC_TERM_FACETING_QUERY_CLOUD_4T,
+	CLASSIC_TERM_FACETING_QUERY_CLOUD_6T,
+	CLASSIC_TERM_FACETING_QUERY_CLOUD_8T,
+
+	CLASSIC_RANGE_FACETING_QUERY_CLOUD_2T,
+	CLASSIC_RANGE_FACETING_QUERY_CLOUD_4T,
+	CLASSIC_RANGE_FACETING_QUERY_CLOUD_6T,
+	CLASSIC_RANGE_FACETING_QUERY_CLOUD_8T,
+
+	JSON_TERM_FACETING_QUERY_CLOUD_2T,
+	JSON_TERM_FACETING_QUERY_CLOUD_4T,
+	JSON_TERM_FACETING_QUERY_CLOUD_6T,
+	JSON_TERM_FACETING_QUERY_CLOUD_8T,
+
+	JSON_RANGE_FACETING_QUERY_CLOUD_2T,
+	JSON_RANGE_FACETING_QUERY_CLOUD_4T,
+	JSON_RANGE_FACETING_QUERY_CLOUD_6T,
+	JSON_RANGE_FACETING_QUERY_CLOUD_8T
+	
+}
+
+/**
+ * This class provides the implementation for metric collector.
+ * @author Vivek Narang
+ *
+ */
+public class MetricCollector extends Thread {
+	
+	public final static Logger logger = Logger.getLogger(BenchmarkAppConnector.class);
+	public static String metricsURL;
+
+	public TestType testType;
+	public String commitID;
+	public String port;
+
+	/**
+	 * An enum defining metric types.
+	 */
+	public enum MetricType {
+		MEM_ESTIMATION, CPU_ESTIMATION
+	}
+
+	/**
+	 * An enum defining metric sub-types.
+	 */
+	public enum MetricSubType {
+		MEMORY_HEAP_USED, PROCESS_CPU_LOAD
+	}
+
+	/**
+	 * Constructor.
+	 * 
+	 * @param commitID
+	 * @param testType
+	 * @param port
+	 */
+	public MetricCollector(String commitID, TestType testType, String port) {
+		this.testType = testType;
+		this.commitID = commitID;
+		this.port = port;
+	}
+
+	/**
+	 * A method invoked by the running metric estimation thread.
+	 */
+	public void run() {
+
+		while (true) {
+			try {
+
+				String response = Util.getResponse(
+						"http://localhost:" + this.port + "/solr/admin/metrics?wt=json&group=jvm",
+						MediaType.APPLICATION_JSON);
+				JSONObject jsonObject = (JSONObject) JSONValue.parse(response);
+
+				Date dNow = new Date();
+				SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				BenchmarkAppConnector.writeToWebAppDataFile(
+						Util.TEST_ID + "_" + this.commitID + "_" + MetricType.MEM_ESTIMATION + "_" + testType
+								+ "_dump.csv",
+						ft.format(dNow) + ", " + Util.TEST_ID + ", "
+								+ (Double.parseDouble(
+										((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
+												.get("memory.heap.used").toString())
+										/ (1024 * 1024)),
+						false, FileType.MEMORY_HEAP_USED);
+				BenchmarkAppConnector.writeToWebAppDataFile(
+						Util.TEST_ID + "_" + this.commitID + "_" + MetricType.CPU_ESTIMATION + "_" + testType
+								+ "_dump.csv",
+						ft.format(dNow) + ", " + Util.TEST_ID + ", "
+								+ (Double.parseDouble(
+										((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm"))
+												.get("os.processCpuLoad").toString())
+										* 100),
+						false, FileType.PROCESS_CPU_LOAD);
+
+				Thread.sleep(Integer.parseInt(Util.METRIC_ESTIMATION_PERIOD));
+			} catch (InterruptedException e) {
+				logger.error(e.getMessage());
+				throw new RuntimeException(e.getMessage());
+			} catch (NumberFormatException e) {
+				logger.error(e.getMessage());
+				throw new RuntimeException(e.getMessage());
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+				throw new RuntimeException(e.getMessage());
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+				throw new RuntimeException(e.getMessage());
+			}
+		}
+
+	}
+}
