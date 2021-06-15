@@ -19,6 +19,10 @@ Improvements
 * LUCENE-9946: Support for multi-value fields in LongRangeFacetCounts and
   DoubleRangeFacetCounts. (Greg Miller)
 
+* LUCENE-9965: Added QueryProfilerIndexSearcher and ProfilerCollector to support debugging
+  query execution strategy and timing. (Jack Conradson, Julie Tibshirani)
+
+
 Optimizations
 ---------------------
 (No changes)
@@ -29,7 +33,7 @@ Bug Fixes
 
 Other
 ---------------------
-(No changes)
+* LUCENE-9976: Fix WANDScorer assertion error. (Zach Chen, Adrien Grand, Dawid Weiss)
 
 ======================= Lucene 8.9.0 =======================
 
@@ -133,6 +137,8 @@ Other
   instead of the no longer maintained "maven-ant-tasks".  (Uwe Schindler)
 
 * LUCENE-9985: Upgrade jetty to 9.4.41 (janhoy)
+
+* LUCENE-9976: Fix WANDScorer assertion error. (Zach Chen, Adrien Grand, Dawid Weiss)
 
 ======================= Lucene 8.8.2 =======================
 

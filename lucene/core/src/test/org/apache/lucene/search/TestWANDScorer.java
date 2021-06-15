@@ -289,6 +289,55 @@ public class TestWANDScorer extends LuceneTestCase {
     }
   }
 
+  public void testBasicsWithDisjunctionAndMinShouldMatchAndTailSizeCondition() throws Exception {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter w =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()))) {
+        for (String[] values :
+            Arrays.asList(
+                new String[] {"A", "B"}, // 0
+                new String[] {"A"}, // 1
+                new String[] {}, // 2
+                new String[] {"A", "B", "C"}, // 3
+                // 2 "B"s here and the non constant score term query below forces the
+                // tailMaxScore >= minCompetitiveScore && tailSize < minShouldMatch condition
+                new String[] {"B", "B"}, // 4
+                new String[] {"B", "C"} // 5
+                )) {
+          Document doc = new Document();
+          for (String value : values) {
+            doc.add(new StringField("foo", value, Store.NO));
+          }
+          w.addDocument(doc);
+        }
+
+        w.forceMerge(1);
+      }
+
+      try (IndexReader reader = DirectoryReader.open(dir)) {
+        IndexSearcher searcher = newSearcher(reader);
+
+        Query query =
+            new BooleanQuery.Builder()
+                .add(new TermQuery(new Term("foo", "A")), Occur.SHOULD)
+                .add(new TermQuery(new Term("foo", "B")), Occur.SHOULD)
+                .add(new TermQuery(new Term("foo", "C")), Occur.SHOULD)
+                .setMinimumNumberShouldMatch(2)
+                .build();
+
+        Scorer scorer =
+            searcher
+                .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
+                .scorer(searcher.getIndexReader().leaves().get(0));
+
+        assertEquals(0, scorer.iterator().nextDoc());
+        scorer.setMinCompetitiveScore(scorer.score());
+
+        assertEquals(3, scorer.iterator().nextDoc());
+      }
+    }
+  }
+
   public void testBasicsWithDisjunctionAndMinShouldMatchAndNonScoringMode() throws Exception {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w =
