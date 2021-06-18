@@ -47,12 +47,11 @@ class SortedDocValuesWriter extends DocValuesWriter<SortedDocValues> {
   private int[] finalSortedValues;
   private int[] finalOrdMap;
 
-  public SortedDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public SortedDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed, ByteBlockPool pool) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     hash = new BytesRefHash(
-        new ByteBlockPool(
-            new ByteBlockPool.DirectTrackingAllocator(iwBytesUsed)),
+            pool,
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
     pending = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);

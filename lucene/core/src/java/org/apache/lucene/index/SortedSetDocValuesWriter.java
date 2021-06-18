@@ -55,12 +55,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
   private int[] finalOrdMap;
 
 
-  SortedSetDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  SortedSetDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed, ByteBlockPool pool) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     hash = new BytesRefHash(
-        new ByteBlockPool(
-            new ByteBlockPool.DirectTrackingAllocator(iwBytesUsed)),
+            pool,
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
     pending = PackedLongValues.packedBuilder(PackedInts.COMPACT);

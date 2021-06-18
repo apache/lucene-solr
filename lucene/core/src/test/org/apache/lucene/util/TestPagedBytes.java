@@ -83,6 +83,7 @@ public class TestPagedBytes extends LuceneTestCase {
       final BytesRef slice = new BytesRef();
       for(int iter2=0;iter2<100;iter2++) {
         final int pos = random.nextInt(numBytes-1);
+        assertEquals(answer[pos], reader.getByte(pos));
         final int len = random.nextInt(Math.min(blockSize+1, numBytes - pos));
         reader.fillSlice(slice, pos, len);
         for(int byteUpto=0;byteUpto<len;byteUpto++) {

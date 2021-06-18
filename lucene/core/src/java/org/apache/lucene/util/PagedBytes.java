@@ -98,7 +98,18 @@ public final class PagedBytes implements Accountable {
         System.arraycopy(blocks[1+index], 0, b.bytes, blockSize-offset, length-(blockSize-offset));
       }
     }
-    
+
+    /**
+     * Get the byte at the given offset.
+     *
+     * @lucene.internal
+     */
+    public byte getByte(long o) {
+      final int index = (int) (o >> blockBits);
+      final int offset = (int) (o & blockMask);
+      return blocks[index][offset];
+    }
+
     /**
      * Reads length as 1 or 2 byte vInt prefix, starting at <i>start</i>.
      * <p>

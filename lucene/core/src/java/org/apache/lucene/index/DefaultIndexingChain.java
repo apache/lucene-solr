@@ -65,6 +65,8 @@ final class DefaultIndexingChain extends DocConsumer {
 
   // Writes postings and term vectors:
   final TermsHash termsHash;
+  // Shared pool for doc-value terms
+  final ByteBlockPool docValuesBytePool;
   // Writes stored fields
   final StoredFieldsConsumer storedFieldsConsumer;
   final TermVectorsConsumer termVectorsWriter;
@@ -107,6 +109,7 @@ final class DefaultIndexingChain extends DocConsumer {
       termVectorsWriter = new SortingTermVectorsConsumer(intBlockAllocator, byteBlockAllocator, directory, segmentInfo, indexWriterConfig.getCodec());
     }
     termsHash = new FreqProxTermsWriter(intBlockAllocator, byteBlockAllocator, bytesUsed, termVectorsWriter);
+    docValuesBytePool = new ByteBlockPool(byteBlockAllocator);
   }
 
   private void onAbortingException(Throwable th) {
@@ -590,7 +593,7 @@ final class DefaultIndexingChain extends DocConsumer {
   }
 
   /** Called from processDocument to index one field's point */
-  private void indexPoint(int docID, PerField fp, IndexableField field) {
+  private void indexPoint(int docID, PerField fp, IndexableField field) throws IOException {
     int pointDimensionCount = field.fieldType().pointDimensionCount();
     int pointIndexDimensionCount = field.fieldType().pointIndexDimensionCount();
 
@@ -605,7 +608,7 @@ final class DefaultIndexingChain extends DocConsumer {
     fp.fieldInfo.setPointDimensions(pointDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
 
     if (fp.pointValuesWriter == null) {
-      fp.pointValuesWriter = new PointValuesWriter(byteBlockAllocator, bytesUsed, fp.fieldInfo);
+      fp.pointValuesWriter = new PointValuesWriter(bytesUsed, fp.fieldInfo);
     }
     fp.pointValuesWriter.addPackedValue(docID, field.binaryValue());
   }
@@ -702,7 +705,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
       case SORTED:
         if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new SortedDocValuesWriter(fp.fieldInfo, bytesUsed);
+          fp.docValuesWriter = new SortedDocValuesWriter(fp.fieldInfo, bytesUsed, docValuesBytePool);
         }
         ((SortedDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
         break;
@@ -716,7 +719,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
       case SORTED_SET:
         if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new SortedSetDocValuesWriter(fp.fieldInfo, bytesUsed);
+          fp.docValuesWriter = new SortedSetDocValuesWriter(fp.fieldInfo, bytesUsed, docValuesBytePool);
         }
         ((SortedSetDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
         break;

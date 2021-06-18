@@ -31,7 +31,7 @@ public class PackedLongValues extends LongValues implements Accountable {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(PackedLongValues.class);
 
-  static final int DEFAULT_PAGE_SIZE = 1024;
+  static final int DEFAULT_PAGE_SIZE = 256;
   static final int MIN_PAGE_SIZE = 64;
   // More than 1M doesn't really makes sense with these appending buffers
   // since their goal is to try to have small numbers of bits per value
