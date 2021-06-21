@@ -28,7 +28,6 @@ Bug Fixes
 
 Other
 ---------------------
-* LUCENE-9976: Fix WANDScorer assertion error. (Zach Chen, Adrien Grand, Dawid Weiss)
 
 ======================= Lucene 8.9.0 =======================
 
