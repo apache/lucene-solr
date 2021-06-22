@@ -46,16 +46,17 @@ final public class MinimizationOperations {
   /**
    * Minimizes (and determinizes if not already deterministic) the given
    * automaton using Hopcroft's algorithm.
-   * @param maxDeterminizedStates maximum number of states determinizing the
-   *  automaton can result in.  Set higher to allow more complex queries and
-   *  lower to prevent memory exhaustion.
+   * @param determinizeWorkLimit maximum effort to spend determinizing the automaton. Set higher to
+   *        allow more complex queries and lower to prevent memory exhaustion. Use {@link
+   *        Operations#DEFAULT_DETERMINIZE_WORK_LIMIT} as a decent default if you don't otherwise know
+   *        what to specify.
    */
-  public static Automaton minimize(Automaton a, int maxDeterminizedStates) {
+  public static Automaton minimize(Automaton a, int determinizeWorkLimit) {
     if (a.getNumStates() == 0 || (a.isAccept(0) == false && a.getNumTransitions(0) == 0)) {
       // Fastmatch for common case
       return new Automaton();
     }
-    a = Operations.determinize(a, maxDeterminizedStates);
+    a = Operations.determinize(a, determinizeWorkLimit);
     //a.writeDot("adet");
     if (a.getNumTransitions(0) == 1) {
       Transition t = new Transition();

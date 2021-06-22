@@ -39,10 +39,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.search.DocIdSetIterator;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -54,9 +56,10 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 final public class Operations {
   /**
-   * Default maximum number of states that {@link Operations#determinize} should create.
+   * Default maximum effort that {@link Operations#determinize} should spend before giving up and
+   * throwing {@link TooComplexToDeterminizeException}.
    */
-  public static final int DEFAULT_MAX_DETERMINIZED_STATES = 10000;
+  public static final int DEFAULT_DETERMINIZE_WORK_LIMIT = 10000;
 
   /**
    * Maximum level of recursion allowed in recursive operations.
@@ -288,12 +291,12 @@ final public class Operations {
    * <p>
    * Complexity: linear in number of states if already deterministic and
    *  exponential otherwise.
-   * @param maxDeterminizedStates maximum number of states determinizing the
-   *  automaton can result in.  Set higher to allow more complex queries and
-   *  lower to prevent memory exhaustion.
+   * @param determinizeWorkLimit maximum effort to spend determinizing the automaton. Set higher to
+   *     allow more complex queries and lower to prevent memory exhaustion. {@link
+   *     #DEFAULT_DETERMINIZE_WORK_LIMIT} is a good starting default.
    */
-  static public Automaton complement(Automaton a, int maxDeterminizedStates) {
-    a = totalize(determinize(a, maxDeterminizedStates));
+  static public Automaton complement(Automaton a, int determinizeWorkLimit) {
+    a = totalize(determinize(a, determinizeWorkLimit));
     int numStates = a.getNumStates();
     for (int p=0;p<numStates;p++) {
       a.setAccept(p, !a.isAccept(p));
@@ -309,15 +312,21 @@ final public class Operations {
    * <p>
    * Complexity: quadratic in number of states if a2 already deterministic and
    *  exponential in number of a2's states otherwise.
+   *
+   * @param a1 the initial automaton
+   * @param a2 the automaton to subtract
+   * @param determinizeWorkLimit maximum effort to spend determinizing the automaton. Set higher to
+   *        allow more complex queries and lower to prevent memory exhaustion. {@link
+   *        #DEFAULT_DETERMINIZE_WORK_LIMIT} is a good starting default.
    */
-  static public Automaton minus(Automaton a1, Automaton a2, int maxDeterminizedStates) {
+  static public Automaton minus(Automaton a1, Automaton a2, int determinizeWorkLimit) {
     if (Operations.isEmpty(a1) || a1 == a2) {
       return Automata.makeEmpty();
     }
     if (Operations.isEmpty(a2)) {
       return a1;
     }
-    return intersection(a1, complement(a2, maxDeterminizedStates));
+    return intersection(a1, complement(a2, determinizeWorkLimit));
   }
   
   /**
@@ -658,15 +667,15 @@ final public class Operations {
    * Determinizes the given automaton.
    * <p>
    * Worst case complexity: exponential in number of states.
-   * @param maxDeterminizedStates Maximum number of states created when
-   *   determinizing.  Higher numbers allow this operation to consume more
-   *   memory but allow more complex automatons.  Use
-   *   DEFAULT_MAX_DETERMINIZED_STATES as a decent default if you don't know
-   *   how many to allow.
-   * @throws TooComplexToDeterminizeException if determinizing a creates an
-   *   automaton with more than maxDeterminizedStates
+   * @param workLimit Maximum amount of "work" that the powerset construction will spend before
+   *     throwing {@link TooComplexToDeterminizeException}. Higher numbers allow this operation to
+   *     consume more memory and CPU but allow more complex automatons. Use {@link
+   *     #DEFAULT_DETERMINIZE_WORK_LIMIT} as a decent default if you don't otherwise know what to
+   *     specify.
+   * @throws TooComplexToDeterminizeException if determinizing requires more than {@code workLimit}
+   *     "effort"
    */
-  public static Automaton determinize(Automaton a, int maxDeterminizedStates) {
+  public static Automaton determinize(Automaton a, int workLimit) {
     if (a.isDeterministic()) {
       // Already determinized
       return a;
@@ -703,9 +712,26 @@ final public class Operations {
 
     Transition t = new Transition();
 
+    long effortSpent = 0;
+
+    // LUCENE-9981: approximate conversion from what used to be a limit on number of states, to
+    // maximum "effort":
+    long effortLimit = workLimit * (long) 10;
+
     while (worklist.size() > 0) {
+      // TODO (LUCENE-9983): these int sets really do not need to be sorted, and we are paying
+      // a high (unecessary) price for that!  really we just need a low-overhead Map<int,int>
+      // that implements equals/hash based only on the keys (ignores the values).  fixing this
+      // might be a bigspeedup for determinizing complex automata
       SortedIntSet.FrozenIntSet s = worklist.removeFirst();
-      //System.out.println("det: pop set=" + s);
+
+      // LUCENE-9981: we more carefully aggregate the net work this automaton is costing us, instead
+      // of (overly simplistically) counting number
+      // of determinized states:
+      effortSpent += s.values.length;
+      if (effortSpent >= effortLimit) {
+        throw new TooComplexToDeterminizeException(a, workLimit);
+      }
 
       // Collate all outgoing transitions by min/1+max:
       for(int i=0;i<s.values.length;i++) {
@@ -742,9 +768,6 @@ final public class Operations {
           Integer q = newstate.get(statesSet);
           if (q == null) {
             q = b.createState();
-            if (q >= maxDeterminizedStates) {
-              throw new TooComplexToDeterminizeException(a, maxDeterminizedStates);
-            }
             final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
             //System.out.println("  make new state=" + q + " -> " + p + " accCount=" + accCount);
             worklist.add(p);
@@ -1051,62 +1074,85 @@ final public class Operations {
   
   /**
    * Returns the longest string that is a prefix of all accepted strings and
-   * visits each state at most once.  The automaton must be deterministic.
+   * visits each state at most once. The automaton must not have dead states.
+   * If this automaton has already been converted to UTF-8 (e.g. using
+   * {@link UTF32ToUTF8}) then you should use {@link #getCommonPrefixBytesRef} instead.
    * 
+   * @throws IllegalArgumentException if the automaton has dead states reachable from the initial
+   *     state.
    * @return common prefix, which can be an empty (length 0) String (never null)
    */
   public static String getCommonPrefix(Automaton a) {
-    if (a.isDeterministic() == false) {
-      throw new IllegalArgumentException("input automaton must be deterministic");
+    if (hasDeadStatesFromInitial(a)) {
+      throw new IllegalArgumentException("input automaton has dead states");
     }
-    StringBuilder b = new StringBuilder();
-    HashSet<Integer> visited = new HashSet<>();
-    int s = 0;
-    boolean done;
-    Transition t = new Transition();
-    do {
-      done = true;
-      visited.add(s);
-      if (a.isAccept(s) == false && a.getNumTransitions(s) == 1) {
-        a.getTransition(s, 0, t);
-        if (t.min == t.max && !visited.contains(t.dest)) {
-          b.appendCodePoint(t.min);
-          s = t.dest;
-          done = false;
+    if (isEmpty(a)) {
+      return "";
+    }
+    StringBuilder builder = new StringBuilder();
+    Transition scratch = new Transition();
+    FixedBitSet visited = new FixedBitSet(a.getNumStates());
+    FixedBitSet current = new FixedBitSet(a.getNumStates());
+    FixedBitSet next = new FixedBitSet(a.getNumStates());
+    current.set(0); // start with initial state
+    algorithm:
+    while (true) {
+      int label = -1;
+      // do a pass, stepping all current paths forward once
+      for (int state = current.nextSetBit(0);
+           state != DocIdSetIterator.NO_MORE_DOCS;
+           state =
+             state + 1 >= current.length()
+             ? DocIdSetIterator.NO_MORE_DOCS
+             : current.nextSetBit(state + 1)) {
+        visited.set(state);
+        // if it is an accept state, we are done
+        if (a.isAccept(state)) {
+          break algorithm;
+        }
+        for (int transition = 0; transition < a.getNumTransitions(state); transition++) {
+          a.getTransition(state, transition, scratch);
+          if (label == -1) {
+            label = scratch.min;
+          }
+          // either a range of labels, or label that doesn't match all the other paths this round
+          if (scratch.min != scratch.max || scratch.min != label) {
+            break algorithm;
+          }
+          // mark target state for next iteration
+          next.set(scratch.dest);
         }
       }
-    } while (!done);
+      assert label != -1 : "we should not get here since we checked no dead-end states up front!?";
 
-    return b.toString();
+      // add the label to the prefix
+      builder.appendCodePoint(label);
+      // swap "current" with "next", clear "next"
+      FixedBitSet tmp = current;
+      current = next;
+      next = tmp;
+      next.clear(0, next.length());
+    }
+    return builder.toString();
   }
   
-  // TODO: this currently requites a determinized machine,
-  // but it need not -- we can speed it up by walking the
-  // NFA instead.  it'd still be fail fast.
   /**
    * Returns the longest BytesRef that is a prefix of all accepted strings and
-   * visits each state at most once.  The automaton must be deterministic.
+   * visits each state at most once.
    * 
-   * @return common prefix, which can be an empty (length 0) BytesRef (never null)
+   * @return common prefix, which can be an empty (length 0) BytesRef (never null), and might
+   *     possibly include a UTF-8 fragment of a full Unicode character
    */
   public static BytesRef getCommonPrefixBytesRef(Automaton a) {
+    String prefix = getCommonPrefix(a);
     BytesRefBuilder builder = new BytesRefBuilder();
-    HashSet<Integer> visited = new HashSet<>();
-    int s = 0;
-    boolean done;
-    Transition t = new Transition();
-    do {
-      done = true;
-      visited.add(s);
-      if (a.isAccept(s) == false && a.getNumTransitions(s) == 1) {
-        a.getTransition(s, 0, t);
-        if (t.min == t.max && !visited.contains(t.dest)) {
-          builder.append((byte) t.min);
-          s = t.dest;
-          done = false;
-        }
+    for (int i = 0; i < prefix.length(); i++) {
+      char ch = prefix.charAt(i);
+      if (ch > 255) {
+        throw new IllegalStateException("automaton is not binary");
       }
-    } while (!done);
+      builder.append((byte) ch);
+    }
 
     return builder.get();
   }
@@ -1143,16 +1189,13 @@ final public class Operations {
 
   /**
    * Returns the longest BytesRef that is a suffix of all accepted strings.
-   * Worst case complexity: exponential in number of states (this calls
-   * determinize).
-   * @param maxDeterminizedStates maximum number of states determinizing the
-   *  automaton can result in.  Set higher to allow more complex queries and
-   *  lower to prevent memory exhaustion.
+   * Worst case complexity: quadratic with the number of states+transitions.
+   *
    * @return common suffix, which can be an empty (length 0) BytesRef (never null)
    */
-  public static BytesRef getCommonSuffixBytesRef(Automaton a, int maxDeterminizedStates) {
+  public static BytesRef getCommonSuffixBytesRef(Automaton a) {
     // reverse the language of the automaton, then reverse its common prefix.
-    Automaton r = Operations.determinize(reverse(a), maxDeterminizedStates);
+    Automaton r = removeDeadStates(reverse(a));
     BytesRef ref = getCommonPrefixBytesRef(r);
     reverseBytes(ref);
     return ref;

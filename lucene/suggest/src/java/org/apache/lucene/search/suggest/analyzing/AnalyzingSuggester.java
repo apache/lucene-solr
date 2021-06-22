@@ -63,7 +63,7 @@ import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.fst.Util.TopResults;
 import org.apache.lucene.util.fst.Util;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_DETERMINIZE_WORK_LIMIT;
 
 /**
  * Suggester that first analyzes the surface form, adds the
@@ -875,7 +875,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
 
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
-    automaton = Operations.determinize(automaton, DEFAULT_MAX_DETERMINIZED_STATES);
+    automaton = Operations.determinize(automaton, DEFAULT_DETERMINIZE_WORK_LIMIT);
     return automaton;
   }
 
