@@ -494,10 +494,10 @@ public class TestQueryParser extends QueryParserTestBase {
     assertEquals(expected, qp.parse("\"中国\"~3^2"));
   }
 
-  /** LUCENE-6677: make sure wildcard query respects maxDeterminizedStates. */
-  public void testWildcardMaxDeterminizedStates() throws Exception {
+  /** LUCENE-6677: make sure wildcard query respects determinizeWorkLimit. */
+  public void testWildcardDeterminizeWorkLimit() throws Exception {
     QueryParser qp = new QueryParser(FIELD, new MockAnalyzer(random()));
-    qp.setMaxDeterminizedStates(10);
+    qp.setDeterminizeWorkLimit(1);
     expectThrows(TooComplexToDeterminizeException.class, () -> {
       qp.parse("a*aaaaaaa");
     });

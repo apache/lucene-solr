@@ -76,7 +76,7 @@ public class RegexpQuery extends AutomatonQuery {
    */
   public RegexpQuery(Term term, int flags) {
     this(term, flags, defaultProvider,
-      Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+      Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
   }
 
   /**
@@ -84,12 +84,13 @@ public class RegexpQuery extends AutomatonQuery {
    * 
    * @param term regular expression.
    * @param flags optional RegExp syntax features from {@link RegExp}
-   * @param maxDeterminizedStates maximum number of states that compiling the
-   *  automaton for the regexp can result in.  Set higher to allow more complex
-   *  queries and lower to prevent memory exhaustion.
+   * @param determinizeWorkLimit maximum effort to spend while compiling the automaton from this
+   *        regexp. Set higher to allow more complex queries and lower to prevent memory exhaustion.
+   *        Use {@link Operations#DEFAULT_DETERMINIZE_WORK_LIMIT} as a decent default if you don't
+   *        otherwise know what to specify.
    */
-  public RegexpQuery(Term term, int flags, int maxDeterminizedStates) {
-    this(term, flags, defaultProvider, maxDeterminizedStates);
+  public RegexpQuery(Term term, int flags, int determinizeWorkLimit) {
+    this(term, flags, defaultProvider, determinizeWorkLimit);
   }
 
   /**
@@ -100,10 +101,13 @@ public class RegexpQuery extends AutomatonQuery {
    *  automaton for the regexp can result in.  Set higher to allow more complex
    *  queries and lower to prevent memory exhaustion.
    * @param match_flags boolean 'or' of match behavior options such as case insensitivity
-   * @param maxDeterminizedStates maximum number of states that compiling the
+   * @param determinizeWorkLimit maximum effort to spend while compiling the automaton from this
+   *     regexp. Set higher to allow more complex queries and lower to prevent memory exhaustion.
+   *     Use {@link Operations#DEFAULT_DETERMINIZE_WORK_LIMIT} as a decent default if you don't
+   *     otherwise know what to specify.
    */
-  public RegexpQuery(Term term, int syntax_flags, int match_flags, int maxDeterminizedStates) {
-    this(term, syntax_flags, match_flags, defaultProvider, maxDeterminizedStates);
+  public RegexpQuery(Term term, int syntax_flags, int match_flags, int determinizeWorkLimit) {
+    this(term, syntax_flags, match_flags, defaultProvider, determinizeWorkLimit);
   }
   
   /**
@@ -112,13 +116,14 @@ public class RegexpQuery extends AutomatonQuery {
    * @param term regular expression.
    * @param syntax_flags optional RegExp features from {@link RegExp}
    * @param provider custom AutomatonProvider for named automata
-   * @param maxDeterminizedStates maximum number of states that compiling the
-   *  automaton for the regexp can result in.  Set higher to allow more complex
-   *  queries and lower to prevent memory exhaustion.
+   * @param determinizeWorkLimit maximum effort to spend while compiling the automaton from this
+   *        regexp. Set higher to allow more complex queries and lower to prevent memory exhaustion.
+   *        Use {@link Operations#DEFAULT_DETERMINIZE_WORK_LIMIT} as a decent default if you don't
+   *        otherwise know what to specify.
    */
   public RegexpQuery(Term term, int syntax_flags, AutomatonProvider provider,
-      int maxDeterminizedStates) {
-    this(term, syntax_flags, 0, provider, maxDeterminizedStates);
+      int determinizeWorkLimit) {
+    this(term, syntax_flags, 0, provider, determinizeWorkLimit);
   }
   
   /**
@@ -128,15 +133,16 @@ public class RegexpQuery extends AutomatonQuery {
    * @param syntax_flags optional RegExp features from {@link RegExp}
    * @param match_flags boolean 'or' of match behavior options such as case insensitivity
    * @param provider custom AutomatonProvider for named automata
-   * @param maxDeterminizedStates maximum number of states that compiling the
-   *  automaton for the regexp can result in.  Set higher to allow more complex
-   *  queries and lower to prevent memory exhaustion.
+   * @param determinizeWorkLimit maximum effort to spend while compiling the automaton from this
+   *        regexp. Set higher to allow more complex queries and lower to prevent memory exhaustion.
+   *        Use {@link Operations#DEFAULT_DETERMINIZE_WORK_LIMIT} as a decent default if you don't
+   *        otherwise know what to specify.
    */
   public RegexpQuery(Term term, int syntax_flags, int match_flags, AutomatonProvider provider,
-      int maxDeterminizedStates) {
+      int determinizeWorkLimit) {
     super(term,
           new RegExp(term.text(), syntax_flags, match_flags).toAutomaton(
-                       provider, maxDeterminizedStates), maxDeterminizedStates);
+                       provider, determinizeWorkLimit), determinizeWorkLimit);
   }
 
   /** Returns the regexp of this query wrapped in a Term. */

@@ -1247,7 +1247,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             Automata.makeChar(factory.getMarkerChar()),
             Automata.makeAnyString());
         // subtract these away
-        automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+        automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
       }
       return new AutomatonQuery(term, automaton) {
         // override toString so it's completely transparent

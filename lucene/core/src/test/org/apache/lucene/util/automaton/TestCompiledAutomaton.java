@@ -31,14 +31,14 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestCompiledAutomaton extends LuceneTestCase {
 
-  private CompiledAutomaton build(int maxDeterminizedStates, String... strings) {
+  private CompiledAutomaton build(int determinizeWorkLimit, String... strings) {
     final List<BytesRef> terms = new ArrayList<>();
     for(String s : strings) {
       terms.add(new BytesRef(s));
     }
     Collections.sort(terms);
     final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
-    return new CompiledAutomaton(a, true, false, maxDeterminizedStates, false);
+    return new CompiledAutomaton(a, true, false, determinizeWorkLimit, false);
   }
 
   private void testFloor(CompiledAutomaton c, String input, String expected) {
@@ -53,8 +53,8 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     }
   }
 
-  private void testTerms(int maxDeterminizedStates, String[] terms) throws Exception {
-    final CompiledAutomaton c = build(maxDeterminizedStates, terms);
+  private void testTerms(int determinizeWorkLimit, String[] terms) throws Exception {
+    final CompiledAutomaton c = build(determinizeWorkLimit, terms);
     final BytesRef[] termBytes = new BytesRef[terms.length];
     for(int idx=0;idx<terms.length;idx++) {
       termBytes[idx] = new BytesRef(terms[idx]);
@@ -109,7 +109,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    CompiledAutomaton c = build(Operations.DEFAULT_MAX_DETERMINIZED_STATES,
+    CompiledAutomaton c = build(Operations.DEFAULT_DETERMINIZE_WORK_LIMIT,
       "fob", "foo", "goo");
     testFloor(c, "goo", "goo");
     testFloor(c, "ga", "foo");
