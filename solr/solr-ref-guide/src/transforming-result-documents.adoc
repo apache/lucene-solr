@@ -133,7 +133,7 @@ Note that this transformer can be used even when the query used to match the res
 q=book_title:Solr&fl=id,[child childFilter=doc_type:chapter limit=100]
 ----
 
-If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original psuedo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of <<indexing-nested-documents#indexing-anonymous-children,anonymous children>>.
+If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original pseudo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of <<indexing-nested-documents#indexing-anonymous-children,anonymous children>>.
 
 `childFilter`::
 A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.
@@ -161,7 +161,7 @@ When a `\_nest_path_` field is defined, the `childFilter` option supports an exp
 
 *This syntax is triggered by including a `/` seperated path structure prior to a query that includes a `:` character.*
 
-When the "path" begins with a `/` character, it restricts matches to documents that have that exist "path" of nested psuedo-field documents, starting at the Root document of the block (even if the document being transformed is not a Root level document)
+When the "path" begins with a `/` character, it restricts matches to documents that have that exist "path" of nested pseudo-field documents, starting at the Root document of the block (even if the document being transformed is not a Root level document)
 
 Some Examples:
 
