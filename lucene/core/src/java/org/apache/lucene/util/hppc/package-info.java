@@ -14,38 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util.automaton;
 
-import java.util.Arrays;
-
-final class FrozenIntSet extends IntSet {
-  final int[] values;
-  final int state;
-  final long hashCode;
-
-  FrozenIntSet(int[] values, long hashCode, int state) {
-    this.values = values;
-    this.state = state;
-    this.hashCode = hashCode;
-  }
-
-  @Override
-  int[] getArray() {
-    return values;
-  }
-
-  @Override
-  int size() {
-    return values.length;
-  }
-
-  @Override
-  long longHashCode() {
-    return hashCode;
-  }
-
-  @Override
-  public String toString() {
-    return Arrays.toString(values);
-  }
-}
+/** package holding hppc related classes. */
+package org.apache.lucene.util.hppc;
