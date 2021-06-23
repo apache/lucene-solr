@@ -89,7 +89,8 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
     }
   }
 
-  private int getValue(int ordinal) {
+  /** Get the count for this ordinal. */
+  protected int getValue(int ordinal) {
     if (sparseValues != null) {
       return sparseValues.get(ordinal);
     } else {

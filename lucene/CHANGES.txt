@@ -7,7 +7,10 @@ http://s.apache.org/luceneversions
 
 API Changes
 ---------------------
-(No changes)
+
+* LUCENE-9902: Change the getValue method from IntTaxonomyFacets to be protected instead of private.
+  Users can now access the count of an ordinal directly without constructing an extra FacetLabel.
+  Also use variable length arguments for the getOrdinal call in TaxonomyReader. (Gautam Worah)
 
 New Features
 ---------------------
