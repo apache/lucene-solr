@@ -2284,13 +2284,13 @@ class CloserThread extends Thread {
           // any cores to close.
         }
       }
-      for (SolrCore removeMe = solrCores.getCoreToClose();
-           removeMe != null && !container.isShutDown();
-           removeMe = solrCores.getCoreToClose()) {
+
+      SolrCore core;
+      while (!container.isShutDown() && (core = solrCores.getCoreToClose()) != null) {
         try {
-          removeMe.close();
+          core.close();
         } finally {
-          solrCores.removeFromPendingOps(removeMe.getName());
+          solrCores.removeFromPendingOps(core.getName());
         }
       }
     }

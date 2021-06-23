@@ -170,7 +170,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     }
     Automaton automaton = ((AutomatonQuery) q).getAutomaton();
     String prefix = Operations.getCommonPrefix(Operations.determinize(automaton,
-      Operations.DEFAULT_MAX_DETERMINIZED_STATES));
+      Operations.DEFAULT_DETERMINIZE_WORK_LIMIT));
     return prefix.length() > 0 && prefix.charAt(0) == '\u0001';
   }
 

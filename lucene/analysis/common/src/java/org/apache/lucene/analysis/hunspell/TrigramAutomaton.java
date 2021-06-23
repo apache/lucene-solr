@@ -59,7 +59,7 @@ class TrigramAutomaton {
 
     automaton =
         new CharacterRunAutomaton(
-            Operations.determinize(builder.finish(), Operations.DEFAULT_MAX_DETERMINIZED_STATES));
+            Operations.determinize(builder.finish(), Operations.DEFAULT_DETERMINIZE_WORK_LIMIT));
 
     state2Score = new int[automaton.getSize()];
     for (Map.Entry<String, Integer> entry : substringCounts.entrySet()) {

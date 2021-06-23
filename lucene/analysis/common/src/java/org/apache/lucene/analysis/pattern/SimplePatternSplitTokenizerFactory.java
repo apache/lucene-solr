@@ -34,7 +34,9 @@ import org.apache.lucene.util.automaton.RegExp;
  * <br>
  * <ul>
  * <li>"pattern" (required) is the regular expression, according to the syntax described at {@link RegExp}</li>
- * <li>"maxDeterminizedStates" (optional, default 10000) the limit on total state count for the determined automaton computed from the regexp</li>
+ * <li>"determinizeWorkLimit" (optional, default {@link
+ *      Operations#DEFAULT_DETERMINIZE_WORK_LIMIT}) the limit on total effort to determinize the
+ *      automaton computed from the regexp
  * </ul>
  * <p>
  * The pattern matches the characters that should split tokens, like {@code String.split}, and the
@@ -64,13 +66,14 @@ public class SimplePatternSplitTokenizerFactory extends TokenizerFactory {
 
   public static final String PATTERN = "pattern";
   private final Automaton dfa;
-  private final int maxDeterminizedStates;
+  private final int determinizeWorkLimit;
  
   /** Creates a new SimpleSplitPatternTokenizerFactory */
   public SimplePatternSplitTokenizerFactory(Map<String,String> args) {
     super(args);
-    maxDeterminizedStates = getInt(args, "maxDeterminizedStates", Operations.DEFAULT_MAX_DETERMINIZED_STATES);
-    dfa = Operations.determinize(new RegExp(require(args, PATTERN)).toAutomaton(), maxDeterminizedStates);
+    determinizeWorkLimit =
+        getInt(args, "determinizeWorkLimit", Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
+    dfa = Operations.determinize(new RegExp(require(args, PATTERN)).toAutomaton(), determinizeWorkLimit);
     if (args.isEmpty() == false) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

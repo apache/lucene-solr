@@ -59,7 +59,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
    * Represents the default separator between tokens.
    */
   public final static int SEP_LABEL = TokenStreamToAutomaton.POS_SEP;
-  public final static int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+  public static final int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_DETERMINIZE_WORK_LIMIT;
   public final static Character DEFAULT_TOKEN_SEPARATOR = SEP_LABEL;
   public final static boolean DEFAULT_PRESERVE_SEP = true;
   public final static boolean DEFAULT_PRESERVE_POSITION_INCREMENTS = true;

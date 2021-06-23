@@ -66,7 +66,7 @@ public final class SimplePatternTokenizer extends Tokenizer {
 
   /** See {@link RegExp} for the accepted syntax. */
   public SimplePatternTokenizer(String regexp) {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, regexp, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, regexp, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
   }
 
   /** Runs a pre-built automaton. */
@@ -75,7 +75,7 @@ public final class SimplePatternTokenizer extends Tokenizer {
   }
 
   /** See {@link RegExp} for the accepted syntax. */
-  public SimplePatternTokenizer(AttributeFactory factory, String regexp, int maxDeterminizedStates) {
+  public SimplePatternTokenizer(AttributeFactory factory, String regexp, int determinizeWorkLimit) {
     this(factory, new RegExp(regexp).toAutomaton());
   }
 
@@ -89,7 +89,7 @@ public final class SimplePatternTokenizer extends Tokenizer {
       throw new IllegalArgumentException("please determinize the incoming automaton first");
     }
 
-    runDFA = new CharacterRunAutomaton(dfa, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+    runDFA = new CharacterRunAutomaton(dfa, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
   }
 
   @Override

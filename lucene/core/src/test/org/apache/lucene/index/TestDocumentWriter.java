@@ -18,14 +18,29 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.function.Function;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -295,4 +310,57 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
     reader.close();
   }
+
+  /** Make sure that every new field doesn't increment memory usage by more than 16kB */
+  private void doTestRAMUsage(Function<String, IndexableField> fieldSupplier) throws IOException {
+    try (Directory dir = newDirectory();
+        IndexWriter w =
+            new IndexWriter(
+                dir,
+                newIndexWriterConfig()
+                .setMaxBufferedDocs(10)
+                .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH))) {
+      Document doc = new Document();
+      final int numFields = 100;
+      for (int i = 0; i < numFields; ++i) {
+        doc.add(fieldSupplier.apply("f" + i));
+      }
+      w.addDocument(doc);
+      assertTrue(w.hasChangesInRam());
+      assertTrue(w.ramBytesUsed() < numFields * 16384L);
+    }
+  }
+
+  public void testRAMUsageStored() throws IOException {
+    doTestRAMUsage(field -> new StoredField(field, new BytesRef("Lucene")));
+  }
+
+  public void testRAMUsageIndexed() throws IOException {
+    doTestRAMUsage(field -> new StringField(field, new BytesRef("Lucene"), Store.NO));
+  }
+
+  public void testRAMUsagePoint() throws IOException {
+    doTestRAMUsage(field -> new IntPoint(field, 42));
+  }
+
+  public void testRAMUsageNumericDocValue() throws IOException {
+    doTestRAMUsage(field -> new NumericDocValuesField(field, 42));
+  }
+
+  public void testRAMUsageSortedDocValue() throws IOException {
+    doTestRAMUsage(field -> new SortedDocValuesField(field, new BytesRef("Lucene")));
+  }
+
+  public void testRAMUsageBinaryDocValue() throws IOException {
+    doTestRAMUsage(field -> new BinaryDocValuesField(field, new BytesRef("Lucene")));
+  }
+
+  public void testRAMUsageSortedNumericDocValue() throws IOException {
+    doTestRAMUsage(field -> new SortedNumericDocValuesField(field, 42));
+  }
+
+  public void testRAMUsageSortedSetDocValue() throws IOException {
+    doTestRAMUsage(field -> new SortedSetDocValuesField(field, new BytesRef("Lucene")));
+  }
+
 }

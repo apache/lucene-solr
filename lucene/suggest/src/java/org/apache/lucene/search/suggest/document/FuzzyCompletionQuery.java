@@ -88,7 +88,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   private final int nonFuzzyPrefix;
   private final int minFuzzyLength;
   private final boolean unicodeAware;
-  private final int maxDeterminizedStates;
+  private final int determinizeWorkLimit;
 
   /**
    * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, BitsProducer)}
@@ -103,16 +103,16 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
    * int, boolean, int, int, boolean, int)}
    * with defaults for <code>maxEdits</code>, <code>transpositions</code>,
    * <code>nonFuzzyPrefix</code>, <code>minFuzzyLength</code>,
-   * <code>unicodeAware</code> and <code>maxDeterminizedStates</code>
+   * <code>unicodeAware</code> and <code>deteminizeWorkLimit</code>
    *
    * See {@link #DEFAULT_MAX_EDITS}, {@link #DEFAULT_TRANSPOSITIONS},
    * {@link #DEFAULT_NON_FUZZY_PREFIX}, {@link #DEFAULT_MIN_FUZZY_LENGTH},
-   * {@link #DEFAULT_UNICODE_AWARE} and {@link Operations#DEFAULT_MAX_DETERMINIZED_STATES}
+   * {@link #DEFAULT_UNICODE_AWARE} and {@link Operations#DEFAULT_DETERMINIZE_WORK_LIMIT}
    * for defaults
    */
   public FuzzyCompletionQuery(Analyzer analyzer, Term term, BitsProducer filter) {
     this(analyzer, term, filter, DEFAULT_MAX_EDITS, DEFAULT_TRANSPOSITIONS, DEFAULT_NON_FUZZY_PREFIX,
-        DEFAULT_MIN_FUZZY_LENGTH, DEFAULT_UNICODE_AWARE, Operations.DEFAULT_MAX_DETERMINIZED_STATES
+        DEFAULT_MIN_FUZZY_LENGTH, DEFAULT_UNICODE_AWARE, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT
     );
   }
 
@@ -128,18 +128,19 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
    * @param nonFuzzyPrefix prefix length where edits are not allowed
    * @param minFuzzyLength minimum prefix length before any edits are allowed
    * @param unicodeAware treat prefix as unicode rather than bytes
-   * @param maxDeterminizedStates maximum automaton states allowed for {@link LevenshteinAutomata}
+   * @param determinizeWorkLimit maximum effort allowed to determinize the {@link
+   *     LevenshteinAutomata}
    */
   public FuzzyCompletionQuery(Analyzer analyzer, Term term, BitsProducer filter, int maxEdits,
                               boolean transpositions, int nonFuzzyPrefix, int minFuzzyLength,
-                              boolean unicodeAware, int maxDeterminizedStates) {
+                              boolean unicodeAware, int determinizeWorkLimit) {
     super(analyzer, term, filter);
     this.maxEdits = maxEdits;
     this.transpositions = transpositions;
     this.nonFuzzyPrefix = nonFuzzyPrefix;
     this.minFuzzyLength = minFuzzyLength;
     this.unicodeAware = unicodeAware;
-    this.maxDeterminizedStates = maxDeterminizedStates;
+    this.determinizeWorkLimit = determinizeWorkLimit;
   }
 
   @Override
@@ -152,7 +153,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
     Automaton automaton = toLevenshteinAutomata(originalAutomata, refs);
     if (unicodeAware) {
       Automaton utf8automaton = new UTF32ToUTF8().convert(automaton);
-      utf8automaton = Operations.determinize(utf8automaton, maxDeterminizedStates);
+      utf8automaton = Operations.determinize(utf8automaton, determinizeWorkLimit);
       automaton = utf8automaton;
     }
     // TODO Accumulating all refs is bad, because the resulting set may be very big.
@@ -196,7 +197,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
       Automaton a = Operations.union(subs);
       // TODO: we could call toLevenshteinAutomata() before det?
       // this only happens if you have multiple paths anyway (e.g. synonyms)
-      return Operations.determinize(a, maxDeterminizedStates);
+      return Operations.determinize(a, determinizeWorkLimit);
     }
   }
 
@@ -235,11 +236,9 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
     return unicodeAware;
   }
 
-  /**
-   * Get the maximum number of determinized states permitted
-   */
-  public int getMaxDeterminizedStates() {
-    return maxDeterminizedStates;
+  /** Get the maximum effort to use determinizing */
+  public int getDeterminizeWorkLimit() {
+    return determinizeWorkLimit;
   }
 
   @Override
