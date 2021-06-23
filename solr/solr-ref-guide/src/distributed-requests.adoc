@@ -192,6 +192,11 @@ Applied after sorting by inherent replica attributes, this property defines a fa
 `node.sysprop`::
 Query will be routed to nodes with same defined system properties as the current one. For example, if you start Solr nodes on different racks, you'll want to identify those nodes by a <<configuring-solrconfig-xml.adoc#jvm-system-properties,system property>> (e.g., `-Drack=rack1`). Then, queries can contain `shards.preference=node.sysprop:sysprop.rack`, to make sure you always hit shards with the same value of `rack`.
 
+`replica.leader`::
+Prefer replicas based on their leader status, set to either `true` or `false`. Consider a shard with two `TLOG` replicas and four `PULL` replicas (six replicas in total, one of which is the leader).
+With `shards.preference=replica.leader:false`, 5 out of 6 replicas will be preferred. Contrast this with `shards.preference=replica.type:PULL` where only 4 of 6 replicas will be preferred.
+Note that the non-leader `TLOG` replica behaves like a `PULL` replica from a search perspective; it pulls index updates from the leader just like a `PULL` replica and does not perform soft-commits.
+The difference is that the non-leader `TLOG` replica also captures updates in its TLOG, so that it is a candidate to replace the current leader if it is lost.
 
 Examples:
 
@@ -215,5 +220,8 @@ Examples:
 
 * Prefer local replicas, and among them PULL replicas when available TLOG otherwise:
    `shards.preference=replica.location:local,replica.type:PULL,replica.type:TLOG`
+
+* Prefer any replica that is not a leader:
+    `shards.preference=replica.leader:false`
 
 Note that if you provide the settings in a query string, they need to be properly URL-encoded.

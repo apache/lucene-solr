@@ -112,6 +112,10 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
             lhs = hasCoreUrlPrefix(left, preferenceRule.value);
             rhs = hasCoreUrlPrefix(right, preferenceRule.value);
             break;
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER:
+            lhs = hasLeaderStatus(left, preferenceRule.value);
+            rhs = hasLeaderStatus(right, preferenceRule.value);
+            break;
           case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
             if (sysPropsCache == null) {
               throw new IllegalArgumentException("Unable to get the NodesSysPropsCacher on sorting replicas by preference:"+ preferenceRule.value);
@@ -161,12 +165,21 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       return s.startsWith(prefix);
     }
   }
+
   private static boolean hasReplicaType(Object o, String preferred) {
     if (!(o instanceof Replica)) {
       return false;
     }
     final String s = ((Replica)o).getType().toString();
     return s.equalsIgnoreCase(preferred);
+  }
+
+  private static boolean hasLeaderStatus(Object o, String status) {
+    if (!(o instanceof Replica)) {
+      return false;
+    }
+    final boolean leaderStatus = ((Replica) o).isLeader();
+    return leaderStatus == Boolean.parseBoolean(status);
   }
 
   public List<PreferenceRule> getSortRules() {

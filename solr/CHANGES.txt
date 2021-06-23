@@ -10,7 +10,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+* SOLR-15472: New shards.preference option for preferring replicas based on their leader status, i.e.
+  `shards.preference=replica.leader:false` would prefer non-leader replicas. (wei wang via Timothy Potter)
 
 Improvements
 ---------------------

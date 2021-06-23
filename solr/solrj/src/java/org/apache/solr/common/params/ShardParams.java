@@ -66,6 +66,9 @@ public interface ShardParams {
   /** Replica location sort rule */
   String SHARDS_PREFERENCE_REPLICA_LOCATION = "replica.location";
 
+  /** Replica leader status sort rule, value= true/false */
+  String SHARDS_PREFERENCE_REPLICA_LEADER = "replica.leader";
+
   /** Node with same system property sort rule */
   String SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP = "node.sysprop";
 
