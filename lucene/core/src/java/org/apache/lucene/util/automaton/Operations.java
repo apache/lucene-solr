@@ -1,9 +1,9 @@
 /*
  * dk.brics.automaton
- * 
+ *
  * Copyright (c) 2001-2009 Anders Moeller
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -14,7 +14,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -48,10 +48,11 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.hppc.BitMixer;
 
 /**
  * Automata operations.
- * 
+ *
  * @lucene.experimental
  */
 final public class Operations {
@@ -173,7 +174,7 @@ final public class Operations {
     result.finishState();
     return result;
   }
-  
+
   /**
    * Returns an automaton that accepts the Kleene star (zero or more
    * concatenated repetitions) of the language of the given automaton. Never
@@ -229,7 +230,7 @@ final public class Operations {
     as.add(repeat(a));
     return concatenate(as);
   }
-  
+
   /**
    * Returns an automaton that accepts between <code>min</code> and
    * <code>max</code> (including both) concatenated repetitions of the language
@@ -284,7 +285,7 @@ final public class Operations {
 
     return result;
   }
-  
+
   /**
    * Returns a (deterministic) automaton that accepts the complement of the
    * language of the given automaton.
@@ -303,7 +304,7 @@ final public class Operations {
     }
     return removeDeadStates(a);
   }
-  
+
   /**
    * Returns a (deterministic) automaton that accepts the intersection of the
    * language of <code>a1</code> and the complement of the language of
@@ -328,7 +329,7 @@ final public class Operations {
     }
     return intersection(a1, complement(a2, determinizeWorkLimit));
   }
-  
+
   /**
    * Returns an automaton that accepts the intersection of the languages of the
    * given automata. Never modifies the input automata languages.
@@ -517,7 +518,7 @@ final public class Operations {
     for(Automaton a : l) {
       result.copy(a);
     }
-    
+
     // Add epsilon transition from new initial state
     int stateOffset = 1;
     for(Automaton a : l) {
@@ -691,13 +692,14 @@ final public class Operations {
     //System.out.println("DET:");
     //a.writeDot("/l/la/lucene/core/detin.dot");
 
-    SortedIntSet.FrozenIntSet initialset = new SortedIntSet.FrozenIntSet(0, 0);
+    // Same initial values and state will always have the same hashCode
+    FrozenIntSet initialset = new FrozenIntSet(new int[] { 0 }, BitMixer.mix(0) + 1, 0);
 
     // Create state 0:
     b.createState();
 
-    ArrayDeque<SortedIntSet.FrozenIntSet> worklist = new ArrayDeque<>();
-    Map<SortedIntSet.FrozenIntSet,Integer> newstate = new HashMap<>();
+    ArrayDeque<FrozenIntSet> worklist = new ArrayDeque<>();
+    Map<IntSet,Integer> newstate = new HashMap<>();
 
     worklist.add(initialset);
 
@@ -707,8 +709,8 @@ final public class Operations {
     // like Set<Integer,PointTransitions>
     final PointTransitionSet points = new PointTransitionSet();
 
-    // like SortedMap<Integer,Integer>
-    final SortedIntSet statesSet = new SortedIntSet(5);
+    // like HashMap<Integer,Integer>, maps state to its count
+    final StateSet statesSet = new StateSet(5);
 
     Transition t = new Transition();
 
@@ -723,7 +725,7 @@ final public class Operations {
       // a high (unecessary) price for that!  really we just need a low-overhead Map<int,int>
       // that implements equals/hash based only on the keys (ignores the values).  fixing this
       // might be a bigspeedup for determinizing complex automata
-      SortedIntSet.FrozenIntSet s = worklist.removeFirst();
+      FrozenIntSet s = worklist.removeFirst();
 
       // LUCENE-9981: we more carefully aggregate the net work this automaton is costing us, instead
       // of (overly simplistically) counting number
@@ -760,15 +762,13 @@ final public class Operations {
 
         final int point = points.points[i].point;
 
-        if (statesSet.upto > 0) {
+        if (statesSet.size() > 0) {
           assert lastPoint != -1;
 
-          statesSet.computeHash();
-          
           Integer q = newstate.get(statesSet);
           if (q == null) {
             q = b.createState();
-            final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
+            final FrozenIntSet p = statesSet.freeze(q);
             //System.out.println("  make new state=" + q + " -> " + p + " accCount=" + accCount);
             worklist.add(p);
             b.setAccept(q, accCount > 0);
@@ -807,7 +807,7 @@ final public class Operations {
         points.points[i].starts.next = 0;
       }
       points.reset();
-      assert statesSet.upto == 0: "upto=" + statesSet.upto;
+      assert statesSet.size() == 0: "size=" + statesSet.size();
     }
 
     Automaton result = b.finish();
@@ -831,7 +831,7 @@ final public class Operations {
       // Apparently common case: it accepts the damned empty string
       return false;
     }
-    
+
     ArrayDeque<Integer> workList = new ArrayDeque<>();
     BitSet seen = new BitSet(a.getNumStates());
     workList.add(0);
@@ -855,7 +855,7 @@ final public class Operations {
 
     return true;
   }
-  
+
   /**
    * Returns true if the given automaton accepts all strings.  The automaton must be minimized.
    */
@@ -877,7 +877,7 @@ final public class Operations {
     }
     return false;
   }
-  
+
   /**
    * Returns true if the given string is accepted by the automaton.  The input must be deterministic.
    * <p>
@@ -1048,7 +1048,7 @@ final public class Operations {
     }
     return isFinite(new Transition(), a, 0, new BitSet(a.getNumStates()), new BitSet(a.getNumStates()), 0);
   }
-  
+
   /**
    * Checks whether there is a loop containing state. (This is sufficient since
    * there are never transitions to dead states.)
@@ -1071,13 +1071,13 @@ final public class Operations {
     visited.set(state);
     return true;
   }
-  
+
   /**
    * Returns the longest string that is a prefix of all accepted strings and
    * visits each state at most once. The automaton must not have dead states.
    * If this automaton has already been converted to UTF-8 (e.g. using
    * {@link UTF32ToUTF8}) then you should use {@link #getCommonPrefixBytesRef} instead.
-   * 
+   *
    * @throws IllegalArgumentException if the automaton has dead states reachable from the initial
    *     state.
    * @return common prefix, which can be an empty (length 0) String (never null)
@@ -1135,11 +1135,11 @@ final public class Operations {
     }
     return builder.toString();
   }
-  
+
   /**
    * Returns the longest BytesRef that is a prefix of all accepted strings and
    * visits each state at most once.
-   * 
+   *
    * @return common prefix, which can be an empty (length 0) BytesRef (never null), and might
    *     possibly include a UTF-8 fragment of a full Unicode character
    */
@@ -1200,7 +1200,7 @@ final public class Operations {
     reverseBytes(ref);
     return ref;
   }
-  
+
   private static void reverseBytes(BytesRef ref) {
     if (ref.length <= 1) return;
     int num = ref.length >> 1;
