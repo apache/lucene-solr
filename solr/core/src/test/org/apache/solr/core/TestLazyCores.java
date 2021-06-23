@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +49,9 @@ import org.junit.Test;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
+  /** Transient core cache max size defined in the test solr.xml */
+  private static final int TRANSIENT_CORE_CACHE_MAX_SIZE = 4;
+
   private File solrHomeDirectory;
 
   @BeforeClass
@@ -65,7 +67,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         CoreDescriptor.CORE_LOADONSTARTUP, loadOnStartup);
   }
 
-  private static CoresLocator testCores = new ReadOnlyCoresLocator() {
+  private static final CoresLocator testCores = new ReadOnlyCoresLocator() {
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
       return ImmutableList.of(
@@ -101,9 +103,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     try {
 
       // NOTE: This checks the initial state for loading, no need to do this elsewhere.
-      checkInCores(cc, "collection1", "collection2", "collection5");
-      checkNotInCores(cc, Arrays.asList("collection3", "collection4", "collection6", "collection7",
-          "collection8", "collection9"));
+      checkLoadedCores(cc, "collection1", "collection2", "collection5");
+      checkCoresNotLoaded(cc, "collection3", "collection4", "collection6", "collection7",
+          "collection8", "collection9");
 
       SolrCore core1 = cc.getCore("collection1");
       assertFalse("core1 should not be transient", core1.getCoreDescriptor().isTransient());
@@ -178,7 +180,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     CoreContainer cc = init();
     try {
       // Make sure Lazy4 isn't loaded. Should be loaded on the get
-      checkNotInCores(cc, Arrays.asList("collection4"));
+      checkCoresNotLoaded(cc, "collection4");
       SolrCore core4 = cc.getCore("collection4");
 
       checkSearch(core4);
@@ -191,7 +193,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           , "//result[@numFound='0']"
       );
 
-      checkInCores(cc, "collection1", "collection2", "collection4", "collection5");
+      checkLoadedCores(cc, "collection1", "collection2", "collection4", "collection5");
 
       core4.close();
       collection1.close();
@@ -206,8 +208,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     try {
       // First check that all the cores that should be loaded at startup actually are.
 
-      checkInCores(cc, "collection1", "collection2", "collection5");
-      checkNotInCores(cc, Arrays.asList("collection3", "collection4", "collection6", "collection7", "collection8", "collection9"));
+      checkLoadedCores(cc, "collection1", "collection2", "collection5");
+      checkCoresNotLoaded(cc, "collection3", "collection4", "collection6", "collection7", "collection8", "collection9");
 
       // By putting these in non-alpha order, we're also checking that we're  not just seeing an artifact.
       SolrCore core1 = cc.getCore("collection1");
@@ -216,29 +218,34 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       SolrCore core2 = cc.getCore("collection2");
       SolrCore core5 = cc.getCore("collection5");
 
-      checkInCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5");
-      checkNotInCores(cc, Arrays.asList("collection6", "collection7", "collection8", "collection9"));
+      checkLoadedCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5");
+      checkCoresNotLoaded(cc, "collection6", "collection7", "collection8", "collection9");
 
       // map should be full up, add one more and verify
       SolrCore core6 = cc.getCore("collection6");
-      checkInCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
+      checkLoadedCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
           "collection6");
-      checkNotInCores(cc, Arrays.asList("collection7", "collection8", "collection9"));
+      checkCoresNotLoaded(cc, "collection7", "collection8", "collection9");
 
       SolrCore core7 = cc.getCore("collection7");
-      checkInCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
+      checkLoadedCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
           "collection6", "collection7");
-      checkNotInCores(cc, Arrays.asList("collection8", "collection9"));
+      checkCoresNotLoaded(cc, "collection8", "collection9");
 
       SolrCore core8 = cc.getCore("collection8");
-      checkInCores(cc, "collection1", "collection2", "collection4", "collection5", "collection6",
+      checkLoadedCores(cc, "collection1", "collection4", "collection5", "collection8");
+      checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, "collection2", "collection3", "collection6",
           "collection7", "collection8");
-      checkNotInCores(cc, Arrays.asList("collection3", "collection9"));
+      checkCoresNotLoaded(cc, "collection9");
+      checkSomeCoresNotLoaded(cc, 5 - TRANSIENT_CORE_CACHE_MAX_SIZE, "collection2", "collection3",
+          "collection6", "collection7");
 
       SolrCore core9 = cc.getCore("collection9");
-      checkInCores(cc, "collection1", "collection4", "collection5", "collection6", "collection7",
-          "collection8", "collection9");
-      checkNotInCores(cc, Arrays.asList("collection2", "collection3"));
+      checkLoadedCores(cc, "collection1", "collection4", "collection5", "collection9");
+      checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, "collection2", "collection3", "collection6",
+          "collection7", "collection8", "collection9");
+      checkSomeCoresNotLoaded(cc, 6 - TRANSIENT_CORE_CACHE_MAX_SIZE, "collection2", "collection3",
+          "collection6", "collection7", "collection8");
 
       // verify that getting metrics from an unloaded core doesn't cause exceptions (SOLR-12541)
       try (MetricsHandler handler = new MetricsHandler(h.getCoreContainer())) {
@@ -412,13 +419,15 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       final SolrCore c4 = cc.getCore("core4");
       final SolrCore c5 = cc.getCore("core5");
 
-      checkNotInCores(cc, Arrays.asList("core1", "collection2", "collection3", "collection4", "collection6"
-          , "collection7", "collection8", "collection9"));
+      checkCoresNotLoaded(cc, "collection2", "collection3", "collection4", "collection6",
+          "collection7", "collection8", "collection9");
+      checkSomeCoresNotLoaded(cc, 5 - TRANSIENT_CORE_CACHE_MAX_SIZE, "core1", "core2", "core3", "core4", "core5");
 
-      checkInCores(cc, "collection1", "collection5", "core2", "core3", "core4", "core5");
+      checkLoadedCores(cc, "collection1", "collection5");
+      checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, "core1", "core2", "core3", "core4", "core5");
 
       // While we're at it, a test for SOLR-5366, unloading transient core that's been unloaded b/c it's
-      // transient generates a "too many closes" errorl
+      // transient generates a "too many closes" error
 
       class TestThread extends Thread {
         
@@ -480,10 +489,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     
     try {
       // first, did the two good cores load successfully?
-      checkInCores(cc, "core1", "core2");
+      checkLoadedCores(cc, "core1", "core2");
 
       // Did the bad cores fail to load?
-      checkNotInCores(cc, Collections.emptyList(), Arrays.asList("badSchema1", "badSchema2", "badConfig1", "badConfig2"));
+      checkFailedCores(cc, "badSchema1", "badSchema2", "badConfig1", "badConfig2");
 
       //  Can we still search the "good" cores even though there were core init failures?
       SolrCore core1 = cc.getCore("core1");
@@ -524,7 +533,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       SolrCore bs2 = cc.getCore("badSchema2");
 
       // all the cores should be found in the list now.
-      checkInCores(cc, "core1", "core2", "badSchema1", "badSchema2", "badConfig1", "badConfig2");
+      checkLoadedCores(cc, "core1", "core2", "badSchema1", "badSchema2", "badConfig1", "badConfig2");
 
       // Did we clear out the errors by putting good files in place? And the cores that never were bad should be OK too.
       checkStatus(cc, true, "core1");
@@ -661,67 +670,77 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  public static void checkNotInCores(CoreContainer cc, List<String> nameCheck) {
-    checkNotInCores(cc, nameCheck, Collections.emptyList());
+  public static void checkCoresNotLoaded(CoreContainer cc, String... coreNames) {
+    checkSomeCoresNotLoaded(cc, coreNames.length, coreNames);
   }
-  public static void checkNotInCores(CoreContainer cc, List<String> nameCheck, List<String> namesBad) {
-    Collection<String> loadedNames = cc.getLoadedCoreNames();
-    for (String name : nameCheck) {
-      assertFalse("core " + name + " was found in the list of cores", loadedNames.contains(name));
-      assertFalse(cc.isLoaded(name));
+
+  public static void checkSomeCoresNotLoaded(CoreContainer cc, int numNotLoaded, String... coreNames) {
+    Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
+    List<String> notLoadedCoreNames = new ArrayList<>();
+    for (String coreName : coreNames) {
+      if (!loadedCoreNames.contains(coreName)) {
+        notLoadedCoreNames.add(coreName);
+      }
     }
-    
-    // There was a problem at one point exacerbated by the poor naming conventions. So parallel to loaded cores, there
-    // should be the ability to get the core _names_ that are loaded as well as all the core names _possible_
-    //
-    // the names above should only contain loaded core names. Every name in names should be in allNames, but none of 
-    // the names in nameCheck should be loaded and thus should not be in names.
-    
+    assertEquals("Expected " + numNotLoaded + " not loaded cores but found " + notLoadedCoreNames.size()
+            + ", coreNames=" + Arrays.asList(coreNames)
+            + ", notLoadedCoreNames=" + notLoadedCoreNames
+            + ", loadedCoreNames=" + loadedCoreNames,
+        numNotLoaded, notLoadedCoreNames.size());
+
+    // All transient cores are listed in allCoreNames.
+    Collection<String> allCoreNames = cc.getAllCoreNames();
+    for (String coreName : coreNames) {
+      assertTrue("Core " + coreName + " should have been found in the list of all known core names",
+          allCoreNames.contains(coreName));
+    }
+
+    checkCoreNamesAndDescriptors(cc);
+  }
+
+  private static void checkCoreNamesAndDescriptors(CoreContainer cc) {
     Collection<String> allNames = cc.getAllCoreNames();
-    // Every core that has not failed to load should be in coreDescriptors.
     List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
 
+    // Every core that has not failed to load should be in coreDescriptors.
     assertEquals("There should be as many coreDescriptors as coreNames", allNames.size(), descriptors.size());
-    assertEquals(allNames.size(), cc.getNumAllCores());
     for (CoreDescriptor desc : descriptors) {
-      assertTrue("Name should have a corresponding descriptor", allNames.contains(desc.getName()));
-      assertNotNull(cc.getCoreDescriptor(desc.getName()));
+      assertTrue("Each coreName should have a corresponding coreDescriptor", allNames.contains(desc.getName()));
     }
-    
-    // First check that all loaded cores are in allNames.
-    for (String name : loadedNames) {                                                                                        
+
+    // All loaded cores are in allNames.
+    for (String name : cc.getLoadedCoreNames()) {
       assertTrue("Loaded core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
-      assertNotNull(cc.getCoreDescriptor(name));
-      assertTrue(cc.isLoaded(name));
     }
-
-    // Unloaded cores should be in allNames.
-    for (String name : nameCheck) {
-      assertTrue("Not-currently-loaded core " + name + " should have been found in the list of all possible core names",
-          allNames.contains(name));
-      assertNotNull(cc.getCoreDescriptor(name));
-    }
-
-    // Failed cores should not be in coreDescriptors.
-    for (String name : namesBad) {
-      assertFalse("Failed core " + name + " should have been found in the list of all possible core names",
-          allNames.contains(name));
-      assertNull(cc.getCoreDescriptor(name));
-      assertFalse(cc.isLoaded(name));
-    }
-
   }
 
-  public static void checkInCores(CoreContainer cc, String... nameCheck) {
-    Collection<String> loadedNames = cc.getLoadedCoreNames();
-    
-    assertEquals("There whould be exactly as many loaded cores as loaded names returned. ", 
-        loadedNames.size(), nameCheck.length);
-    
-    for (String name : nameCheck) {
-      assertTrue("core " + name + " was not found in the list of cores", loadedNames.contains(name));
+  private static void checkFailedCores(CoreContainer cc, String... failedCoreNames) {
+    // Failed cores should not be in allCoreNames.
+    Collection<String> allNames = cc.getAllCoreNames();
+    for (String name : failedCoreNames) {
+      assertFalse("Failed core " + name + " should not have been found in the list of all possible core names",
+          allNames.contains(name));
     }
+  }
+
+  public static void checkLoadedCores(CoreContainer cc, String... coreNames) {
+    checkSomeLoadedCores(cc, coreNames.length, coreNames);
+  }
+
+  public static void checkSomeLoadedCores(CoreContainer cc, int numLoaded, String... coreNames) {
+    Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
+    List<String> loadedListedCoreNames = new ArrayList<>();
+    for (String coreName : coreNames) {
+      if (loadedCoreNames.contains(coreName)) {
+        loadedListedCoreNames.add(coreName);
+      }
+    }
+    assertEquals("Expected " + numLoaded + " loaded cores but found " + loadedListedCoreNames.size()
+            + ", coreNames=" + Arrays.asList(coreNames)
+            + ", loadedListedCoreNames=" + loadedListedCoreNames
+            + ", loadedCoreNames=" + loadedCoreNames,
+        numLoaded, loadedListedCoreNames.size());
   }
 
   private void addLazy(SolrCore core, String... fieldValues) throws IOException {
@@ -806,13 +825,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  // Insure that when a core is aged out of the transient cache, any uncommitted docs are preserved.
+  // Insure that when a core is evicted from the transient cache, any uncommitted docs are preserved.
   // Note, this needs FS-based indexes to persist!
   // Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
     CoreContainer cc = init();
-    String[] coreList = new String[]{
+    String[] transientCoreNames = new String[]{
         "collection2",
         "collection3",
         "collection6",
@@ -822,37 +841,44 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     };
     try {
       // First, go through all the transient cores and add some docs. DO NOT COMMIT!
-      // The aged-out core should commit the docs when it gets closed.
+      // The evicted core should commit the docs when it gets closed.
       List<SolrCore> openCores = new ArrayList<>();
-      for (String coreName : coreList) {
+      for (String coreName : transientCoreNames) {
         SolrCore core = cc.getCore(coreName);
         openCores.add(core);
         add10(core);
       }
       
-      // Just proving that some cores have been aged out.
-      checkNotInCores(cc, Arrays.asList("collection2", "collection3"));
+      // Just proving that some cores have been evicted to respect transient core cache max size.
+      checkSomeCoresNotLoaded(cc, transientCoreNames.length - TRANSIENT_CORE_CACHE_MAX_SIZE, transientCoreNames);
 
       // Close our get of all cores above.
       for (SolrCore core : openCores) core.close();
       openCores.clear();
-      
-      // We still should have 6, 7, 8, 9 loaded, their reference counts have NOT dropped to zero 
-      checkInCores(cc, "collection1", "collection5",
-          "collection6", "collection7", "collection8", "collection9");
 
-      for (String coreName : coreList) {
-        // The point of this test is to insure that when cores are aged out and re-opened
-        // that the docs are there, so insure that the core we're testing is gone, gone, gone. 
-        checkNotInCores(cc, Arrays.asList(coreName));
-        
-        // Load the core up again.
-        SolrCore core = cc.getCore(coreName);
-        openCores.add(core);
-        
-        // Insure docs are still there.
-        check10(core);
+      // We still should have 4 transient cores loaded, their reference counts have NOT dropped to zero
+      checkLoadedCores(cc, "collection1", "collection5");
+      checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, transientCoreNames);
+
+      Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
+      int notLoadedCoreCount = 0;
+      for (String coreName : transientCoreNames) {
+        // The point of this test is to insure that when cores are evicted and re-opened
+        // that the docs are there, so insure that the core we're testing is gone, gone, gone.
+        if (!loadedCoreNames.contains(coreName)) {
+          notLoadedCoreCount++;
+          checkCoresNotLoaded(cc, coreName);
+
+          // Load the core up again.
+          SolrCore core = cc.getCore(coreName);
+          openCores.add(core);
+          checkLoadedCores(cc, coreName);
+
+          // Insure docs are still there.
+          check10(core);
+        }
       }
+      assertEquals(transientCoreNames.length - TRANSIENT_CORE_CACHE_MAX_SIZE, notLoadedCoreCount);
       for (SolrCore core : openCores) core.close();
     } finally {
       cc.shutdown();

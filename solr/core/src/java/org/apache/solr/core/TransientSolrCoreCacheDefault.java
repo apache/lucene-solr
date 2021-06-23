@@ -18,101 +18,112 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Cache of the most frequently accessed transient cores. Keeps track of all the registered
+ * transient cores descriptors, including the cores in the cache as well as all the others.
+ */
 public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private int cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
-
-  protected CoreContainer coreContainer;
-
-  protected final Map<String, CoreDescriptor> transientDescriptors = new LinkedHashMap<>();
-
-  //WARNING! The _only_ place you put anything into the list of transient cores is with the putTransientCore method!
-  protected Map<String, SolrCore> transientCores = new LinkedHashMap<>(); // For "lazily loaded" cores
+  protected final CoreContainer coreContainer;
 
   /**
-   * @param container The enclosing CoreContainer. It allows us to access everything we need.
+   * "Lazily loaded" cores cache with limited size. When the max size is reached, the least
+   * accessed core is evicted to make room for a new core.
+   */
+  protected final Cache<String, SolrCore> transientCores;
+
+  /**
+   * Unlimited map of all the descriptors for all the registered transient cores, including the
+   * cores in the {@link #transientCores} as well as all the others.
+   */
+  protected final Map<String, CoreDescriptor> transientDescriptors;
+
+  /**
+   * @param container The enclosing CoreContainer.
    */
   public TransientSolrCoreCacheDefault(final CoreContainer container) {
     this.coreContainer = container;
+    int cacheMaxSize = getConfiguredCacheMaxSize(coreContainer);
 
-    NodeConfig cfg = container.getNodeConfig();
-    if (cfg.getTransientCachePluginInfo() == null) {
-      // Still handle just having transientCacheSize defined in the body of solr.xml  not in a transient handler clause.
-      // deprecate this for 7.0?
-      this.cacheSize = cfg.getTransientCacheSize();
-    } else {
-      @SuppressWarnings({"rawtypes"})
-      NamedList args = cfg.getTransientCachePluginInfo().initArgs;
-      Object obj = args.get("transientCacheSize");
-      if (obj != null) {
-        this.cacheSize = (int) obj;
-      }
-    }
-    doInit();
-  }
-  // This just moves the 
-  private void doInit() {
-    NodeConfig cfg = coreContainer.getNodeConfig();
-    if (cfg.getTransientCachePluginInfo() == null) {
-      // Still handle just having transientCacheSize defined in the body of solr.xml not in a transient handler clause.
-      this.cacheSize = cfg.getTransientCacheSize();
-    } else {
-      @SuppressWarnings({"rawtypes"})
-      NamedList args = cfg.getTransientCachePluginInfo().initArgs;
-      Object obj = args.get("transientCacheSize");
-      if (obj != null) {
-        this.cacheSize = (int) obj;
-      }
-    }
-
-    log.info("Allocating transient cache for {} transient cores", cacheSize);
-    // it's possible for cache
-    if (cacheSize < 0) { // Trap old flag
-      cacheSize = Integer.MAX_VALUE;
-    }
     // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
     // adding cores as they're opened. This blows up with the marker value of -1.
-    transientCores = new LinkedHashMap<String, SolrCore>(Math.min(cacheSize, 1000), 0.75f, true) {
-      @Override
-      protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
-        if (size() > cacheSize) {
-          SolrCore coreToClose = eldest.getValue();
-          if (log.isInfoEnabled()) {
-            log.info("Closing transient core [{}]", coreToClose.getName());
-          }
-          coreContainer.queueCoreToClose(coreToClose);
-          return true;
-        }
-        return false;
-      }
-    };
+    int initialCapacity = Math.min(cacheMaxSize, 1024);
+    log.info("Allocating transient core cache for max {} cores with initial capacity of {}", cacheMaxSize, initialCapacity);
+    Caffeine<String, SolrCore> transientCoresCacheBuilder =
+        Caffeine.newBuilder()
+            .initialCapacity(initialCapacity)
+            // Use the current thread to queue evicted cores for closing. This ensures the
+            // cache max size is respected (with a different thread the max size would be
+            // respected asynchronously only eventually).
+            .executor(Runnable::run)
+            .removalListener(
+                (coreName, core, cause) -> {
+                  if (core != null && cause.wasEvicted()) {
+                    if (log.isInfoEnabled()) {
+                      log.info("Closing transient core [{}] evicted from the cache", core.getName());
+                    }
+                    coreContainer.queueCoreToClose(core);
+                  }
+                });
+    if (cacheMaxSize != Integer.MAX_VALUE) {
+      transientCoresCacheBuilder.maximumSize(cacheMaxSize);
+    }
+    transientCores = transientCoresCacheBuilder.build();
+
+    transientDescriptors = new LinkedHashMap<>(initialCapacity);
   }
 
+  private int getConfiguredCacheMaxSize(CoreContainer container) {
+    int configuredCacheMaxSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
+    NodeConfig cfg = container.getNodeConfig();
+    if (cfg.getTransientCachePluginInfo() == null) {
+      // Still handle just having transientCacheSize defined in the body of solr.xml
+      // not in a transient handler clause.
+      configuredCacheMaxSize = cfg.getTransientCacheSize();
+    } else {
+      NamedList<?> args = cfg.getTransientCachePluginInfo().initArgs;
+      Object obj = args.get("transientCacheSize");
+      if (obj != null) {
+        configuredCacheMaxSize = (int) obj;
+      }
+    }
+    if (configuredCacheMaxSize < 0) { // Trap old flag
+      configuredCacheMaxSize = Integer.MAX_VALUE;
+    }
+    return configuredCacheMaxSize;
+  }
   
   @Override
   public Collection<SolrCore> prepareForShutdown() {
-    // Returna copy of the values
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    List<SolrCore> ret = new ArrayList(transientCores.values());
-    transientCores.clear();
+    // Return a copy of the values.
+    List<SolrCore> ret = new ArrayList<>(transientCores.asMap().values());
+    transientCores.invalidateAll();
+    transientCores.cleanUp();
     return ret;
   }
 
   @Override
-  public CoreContainer getContainer() { return this.coreContainer; }
+  public CoreContainer getContainer() { return coreContainer; }
 
   @Override
   public SolrCore addCore(String name, SolrCore core) {
-    return transientCores.put(name, core);
+    return transientCores.asMap().put(name, core);
   }
 
   @Override
@@ -122,38 +133,29 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   
   @Override
   public Set<String> getLoadedCoreNames() {
-    return Collections.unmodifiableSet(transientCores.keySet());
+    return Collections.unmodifiableSet(transientCores.asMap().keySet());
   }
 
-  // Remove a core from the internal structures, presumably it 
-  // being closed. If the core is re-opened, it will be re-added by CoreContainer.
   @Override
   public SolrCore removeCore(String name) {
-    return transientCores.remove(name);
+    return transientCores.asMap().remove(name);
   }
 
-  // Get the core associated with the name. Return null if you don't want this core to be used.
   @Override
   public SolrCore getCore(String name) {
-    return transientCores.get(name);
+    return name == null ? null : transientCores.getIfPresent(name);
   }
 
   @Override
   public boolean containsCore(String name) {
-    return transientCores.containsKey(name);
+    return name != null && transientCores.asMap().containsKey(name);
   }
 
-  // These methods allow the implementation to maintain control over the core descriptors.
-
-
-  // This method will only be called during core discovery at startup.
   @Override
   public void addTransientDescriptor(String rawName, CoreDescriptor cd) {
     transientDescriptors.put(rawName, cd);
   }
 
-  // This method is used when opening cores and the like. If you want to change a core's descriptor, override this
-  // method and return the current core descriptor.
   @Override
   public CoreDescriptor getTransientDescriptor(String name) {
     return transientDescriptors.get(name);
@@ -169,11 +171,9 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     return transientDescriptors.remove(name);
   }
 
-  // For custom implementations to communicate arbitrary information as necessary.
   @Override
   public int getStatus(String coreName) { return 0; } //no_op for default handler.
 
   @Override
   public void setStatus(String coreName, int status) {} //no_op for default handler.
-
 }

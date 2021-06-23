@@ -116,7 +116,10 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
   @Override
   public String toString() {
-    return subSources.stream().map(Object::toString).collect(Collectors.joining(",", "or(", ")"));
+    return subSources.stream()
+        .map(Object::toString)
+        .sorted()
+        .collect(Collectors.joining(",", "or(", ")"));
   }
 
   @Override

@@ -42,7 +42,7 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.Operations;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_DETERMINIZE_WORK_LIMIT;
 
 public class TestAutomatonQuery extends LuceneTestCase {
   private Directory directory;
@@ -124,7 +124,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     assertAutomatonHits(0, Operations.intersection(Automata
         .makeChar('a'), Automata.makeChar('b')));
     assertAutomatonHits(1, Operations.minus(Automata.makeCharRange('a', 'b'), 
-        Automata.makeChar('a'), DEFAULT_MAX_DETERMINIZED_STATES));
+        Automata.makeChar('a'), DEFAULT_DETERMINIZE_WORK_LIMIT));
   }
 
   /**

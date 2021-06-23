@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -923,7 +923,7 @@ class GeoStandardPath extends GeoBasePath {
     /** End point of the segment */
     public final GeoPoint end;
     /** Place to keep any complete segment distances we've calculated so far */
-    public final Map<DistanceStyle,Double> fullDistanceCache = new HashMap<DistanceStyle,Double>();
+    public final Map<DistanceStyle,Double> fullDistanceCache = new ConcurrentHashMap<DistanceStyle,Double>();
     /** Normalized plane connecting the two points and going through world center */
     public final Plane normalizedConnectingPlane;
     /** Cutoff plane parallel to connecting plane representing one side of the path segment */
@@ -1018,14 +1018,12 @@ class GeoStandardPath extends GeoBasePath {
      *@return the distance metric, in aggregation form.
      */
     public double fullPathDistance(final DistanceStyle distanceStyle) {
-      synchronized (fullDistanceCache) {
-        Double dist = fullDistanceCache.get(distanceStyle);
-        if (dist == null) {
-          dist = distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, end.x, end.y, end.z));
-          fullDistanceCache.put(distanceStyle, dist);
-        }
-        return dist.doubleValue();
+      Double dist = fullDistanceCache.get(distanceStyle);
+      if (dist == null) {
+        dist = distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, end.x, end.y, end.z));
+        fullDistanceCache.put(distanceStyle, dist);
       }
+      return dist.doubleValue();
     }
   
     /** Check if point is within this segment.

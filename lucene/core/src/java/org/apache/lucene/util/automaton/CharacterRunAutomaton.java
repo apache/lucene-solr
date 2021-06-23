@@ -22,21 +22,22 @@ package org.apache.lucene.util.automaton;
  */
 public class CharacterRunAutomaton extends RunAutomaton {
   /**
-   * Construct with a default number of maxDeterminizedStates.
+   * Construct with a default determinizeWorkLimit..
    */
   public CharacterRunAutomaton(Automaton a) {
-    this(a, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+    this(a, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
   }
 
   /**
-   * Construct specifying maxDeterminizedStates.
+   * Constructor specifying determinizeWorkLimit.
    * @param a Automaton to match
-   * @param maxDeterminizedStates maximum number of states that the automaton
-   *   can have once determinized.  If more states are required to determinize
-   *   it then a TooComplexToDeterminizeException is thrown.
+   * @param determinizeWorkLimit maximum effort to spend determinizing the automataon. If more
+   *        effort is required then a TooComplexToDeterminizeException is thrown. Use {@link
+   *        Operations#DEFAULT_DETERMINIZE_WORK_LIMIT} as a decent default if you don't otherwise know
+   *        what to specify.
    */ 
-  public CharacterRunAutomaton(Automaton a, int maxDeterminizedStates) {
-    super(a, Character.MAX_CODE_POINT+1, maxDeterminizedStates);
+  public CharacterRunAutomaton(Automaton a, int determinizeWorkLimit) {
+    super(a, Character.MAX_CODE_POINT+1, determinizeWorkLimit);
   }
 
   /**

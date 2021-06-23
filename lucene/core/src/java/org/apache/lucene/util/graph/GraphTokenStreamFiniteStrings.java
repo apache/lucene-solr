@@ -38,7 +38,7 @@ import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_DETERMINIZE_WORK_LIMIT;
 
 /**
  * Consumes a TokenStream and creates an {@link Automaton} where the transition labels are terms from
@@ -80,7 +80,7 @@ public final class GraphTokenStreamFiniteStrings {
 
   public GraphTokenStreamFiniteStrings(TokenStream in) throws IOException {
     Automaton aut = build(in);
-    this.det = Operations.removeDeadStates(Operations.determinize(aut, DEFAULT_MAX_DETERMINIZED_STATES));
+    this.det = Operations.removeDeadStates(Operations.determinize(aut, DEFAULT_DETERMINIZE_WORK_LIMIT));
   }
 
   /**

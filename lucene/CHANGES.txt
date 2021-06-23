@@ -24,6 +24,17 @@ Improvements
 * LUCENE-9965: Added QueryProfilerIndexSearcher and ProfilerCollector to support debugging
   query execution strategy and timing. (Jack Conradson, Julie Tibshirani)
 
+* LUCENE-9981: Operations.getCommonSuffix/Prefix(Automaton) is now much more
+  efficient, from a worst case exponential down to quadratic cost in the
+  number of states + transitions in the Automaton.  These methods no longer
+  use the costly determinize method, removing the risk of
+  TooComplexToDeterminizeException (Robert Muir, Mike McCandless)
+
+* LUCENE-9981: Operations.determinize now throws TooComplexToDeterminizeException
+  based on too much "effort" spent determinizing rather than a precise state
+  count on the resulting returned automaton, to better handle adversarial
+  cases like det(rev(regexp("(.*a){2000}"))) that spend lots of effort but
+  result in smallish eventual returned automata.  (Robert Muir, Mike McCandless)
 
 Optimizations
 ---------------------
@@ -36,7 +47,6 @@ Bug Fixes
 
 Other
 ---------------------
-* LUCENE-9976: Fix WANDScorer assertion error. (Zach Chen, Adrien Grand, Dawid Weiss)
 
 ======================= Lucene 8.9.0 =======================
 
