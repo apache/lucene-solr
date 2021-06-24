@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.facet.range;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
@@ -95,6 +97,103 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     FacetResult result = facets.getTopChildren(10, "field");
     assertEquals("dim=field path=[] value=22 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
+                 result.toString());
+
+    r.close();
+    d.close();
+  }
+
+  public void testBasicLongMultiValued() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    // just index the same value twice each time and make sure we don't double count
+    SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("field", 0L);
+    SortedNumericDocValuesField field2 = new SortedNumericDocValuesField("field", 0L);
+    doc.add(field1);
+    doc.add(field2);
+    for (long l = 0; l < 100; l++) {
+      field1.setLongValue(l);
+      field2.setLongValue(l);
+      w.addDocument(doc);
+    }
+
+    // Also add Long.MAX_VALUE
+    field1.setLongValue(Long.MAX_VALUE);
+    field2.setLongValue(Long.MAX_VALUE);
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets =
+        new LongRangeFacetCounts(
+            "field",
+            fc,
+            new LongRange("less than 10", 0L, true, 10L, false),
+            new LongRange("less than or equal to 10", 0L, true, 10L, true),
+            new LongRange("over 90", 90L, false, 100L, false),
+            new LongRange("90 or above", 90L, true, 100L, false),
+            new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, true));
+
+    FacetResult result = facets.getTopChildren(10, "field");
+    assertEquals(
+        "dim=field path=[] value=22 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
+        result.toString());
+
+    r.close();
+    d.close();
+  }
+
+  public void testBasicLongMultiValuedMixedSegmentTypes() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("field", 0L);
+    SortedNumericDocValuesField field2 = new SortedNumericDocValuesField("field", 0L);
+    // write docs as two segments (50 in each). the first segment will contain a mix of single- and
+    // multi-value cases, while the second segment will be all single values.
+    for (int l = 0; l < 100; l++) {
+      field1.setLongValue(l);
+      field2.setLongValue(l);
+      Document doc = new Document();
+      doc.add(field1);
+      if (l == 0) {
+        doc.add(field2);
+      } else if (l < 50) {
+        if (random().nextBoolean()) {
+          doc.add(field2);
+        }
+      }
+      w.addDocument(doc);
+      if (l == 50) {
+        w.commit();
+      }
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets =
+        new LongRangeFacetCounts(
+            "field",
+            fc,
+            new LongRange("less than 10", 0L, true, 10L, false),
+            new LongRange("less than or equal to 10", 0L, true, 10L, true),
+            new LongRange("over 90", 90L, false, 100L, false),
+            new LongRange("90 or above", 90L, true, 100L, false),
+            new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, true));
+
+    FacetResult result = facets.getTopChildren(10, "field");
+    assertEquals(
+        "dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
                  result.toString());
     
     r.close();
@@ -221,6 +320,63 @@ public class TestRangeFacetCounts extends FacetTestCase {
     assertEquals("dim=field path=[] value=41 childCount=4\n  0-10 (11)\n  10-20 (11)\n  20-30 (11)\n  30-40 (11)\n",
                  result.toString());
     
+    r.close();
+    d.close();
+  }
+
+  public void testEmptyRangesSingleValued() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
+    doc.add(field);
+    for (long l = 0; l < 100; l++) {
+      field.setLongValue(l);
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets = new LongRangeFacetCounts("field", fc);
+
+    FacetResult result = facets.getTopChildren(10, "field");
+    assertEquals("dim=field path=[] value=0 childCount=0\n", result.toString());
+
+    r.close();
+    d.close();
+  }
+
+  public void testEmptyRangesMultiValued() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("field", 0L);
+    SortedNumericDocValuesField field2 = new SortedNumericDocValuesField("field", 0L);
+    doc.add(field1);
+    doc.add(field2);
+    for (long l = 0; l < 100; l++) {
+      field1.setLongValue(l);
+      field2.setLongValue(l);
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets = new LongRangeFacetCounts("field", fc);
+
+    FacetResult result = facets.getTopChildren(10, "field");
+    assertEquals("dim=field path=[] value=0 childCount=0\n", result.toString());
+
     r.close();
     d.close();
   }
@@ -357,7 +513,96 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IOUtils.close(r, d);
   }
 
-  public void testRandomLongs() throws Exception {
+  public void testBasicDoubleMultiValued() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    // index the same value twice and make sure we don't double count
+    SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("field", 0);
+    SortedNumericDocValuesField field2 = new SortedNumericDocValuesField("field", 0);
+    doc.add(field1);
+    doc.add(field2);
+    for (long l = 0; l < 100; l++) {
+      field1.setLongValue(NumericUtils.doubleToSortableLong(l));
+      field2.setLongValue(NumericUtils.doubleToSortableLong(l));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+
+    FacetsCollector fc = new FacetsCollector();
+
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+    Facets facets =
+            new DoubleRangeFacetCounts(
+                    "field",
+                    fc,
+                    new DoubleRange("less than 10", 0.0, true, 10.0, false),
+                    new DoubleRange("less than or equal to 10", 0.0, true, 10.0, true),
+                    new DoubleRange("over 90", 90.0, false, 100.0, false),
+                    new DoubleRange("90 or above", 90.0, true, 100.0, false),
+                    new DoubleRange("over 1000", 1000.0, false, Double.POSITIVE_INFINITY, false));
+
+    assertEquals(
+            "dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+            facets.getTopChildren(10, "field").toString());
+    w.close();
+    IOUtils.close(r, d);
+  }
+
+  public void testBasicDoubleMultiValuedMixedSegmentTypes() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("field", 0L);
+    SortedNumericDocValuesField field2 = new SortedNumericDocValuesField("field", 0L);
+    // write docs as two segments (50 in each). the first segment will contain a mix of single- and
+    // multi-value cases, while the second segment will be all single values.
+    for (int l = 0; l < 100; l++) {
+      field1.setLongValue(NumericUtils.doubleToSortableLong(l));
+      field2.setLongValue(NumericUtils.doubleToSortableLong(l));
+      Document doc = new Document();
+      doc.add(field1);
+      if (l == 0) {
+        doc.add(field2);
+      } else if (l < 50) {
+        if (random().nextBoolean()) {
+          doc.add(field2);
+        }
+      }
+      w.addDocument(doc);
+      if (l == 50) {
+        w.commit();
+      }
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets =
+            new DoubleRangeFacetCounts(
+                    "field",
+                    fc,
+                    new DoubleRange("less than 10", 0.0, true, 10.0, false),
+                    new DoubleRange("less than or equal to 10", 0.0, true, 10.0, true),
+                    new DoubleRange("over 90", 90.0, false, 100.0, false),
+                    new DoubleRange("90 or above", 90.0, true, 100.0, false),
+                    new DoubleRange("over 1000", 1000.0, false, Double.POSITIVE_INFINITY, false));
+
+    FacetResult result = facets.getTopChildren(10, "field");
+    assertEquals(
+            "dim=field path=[] value=21 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (0)\n",
+            result.toString());
+
+    r.close();
+    d.close();
+  }
+
+  public void testRandomLongsSingleValued() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
@@ -504,7 +749,166 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IOUtils.close(r, dir);
   }
 
-  public void testRandomDoubles() throws Exception {
+  public void testRandomLongsMultiValued() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    int numDocs = atLeast(1000);
+    if (VERBOSE) {
+      System.out.println("TEST: numDocs=" + numDocs);
+    }
+    long[][] values = new long[numDocs][];
+    long minValue = Long.MAX_VALUE;
+    long maxValue = Long.MIN_VALUE;
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numVals = RandomNumbers.randomIntBetween(random(), 1, 50);
+      if (random().nextInt(10) == 0) {
+        numVals = 1; // make sure we have ample testing of single-value cases
+      }
+      values[i] = new long[numVals];
+      for (int j = 0; j < numVals; j++) {
+        long v = random().nextLong();
+        values[i][j] = v;
+        doc.add(new SortedNumericDocValuesField("field", v));
+        doc.add(new LongPoint("field", v));
+        minValue = Math.min(minValue, v);
+        maxValue = Math.max(maxValue, v);
+      }
+      w.addDocument(doc);
+    }
+    IndexReader r = w.getReader();
+
+    IndexSearcher s = newSearcher(r, false);
+    FacetsConfig config = new FacetsConfig();
+
+    int numIters = atLeast(10);
+    for (int iter = 0; iter < numIters; iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
+      int numRange = TestUtil.nextInt(random(), 1, 100);
+      LongRange[] ranges = new LongRange[numRange];
+      int[] expectedCounts = new int[numRange];
+      long minAcceptedValue = Long.MAX_VALUE;
+      long maxAcceptedValue = Long.MIN_VALUE;
+      for (int rangeID = 0; rangeID < numRange; rangeID++) {
+        long min;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          LongRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            min = prevRange.min;
+          } else {
+            min = prevRange.max;
+          }
+        } else {
+          min = random().nextLong();
+        }
+        long max;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          LongRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            max = prevRange.min;
+          } else {
+            max = prevRange.max;
+          }
+        } else {
+          max = random().nextLong();
+        }
+
+        if (min > max) {
+          long x = min;
+          min = max;
+          max = x;
+        }
+        boolean minIncl;
+        boolean maxIncl;
+
+        // NOTE: max - min >= 0 is here to handle the common overflow case!
+        if (max - min >= 0 && max - min < 2) {
+          // If max == min or max == min+1, we always do inclusive, else we might pass an empty
+          // range and hit exc from LongRange's ctor:
+          minIncl = true;
+          maxIncl = true;
+        } else {
+          minIncl = random().nextBoolean();
+          maxIncl = random().nextBoolean();
+        }
+        ranges[rangeID] = new LongRange("r" + rangeID, min, minIncl, max, maxIncl);
+        if (VERBOSE) {
+          System.out.println("  range " + rangeID + ": " + ranges[rangeID]);
+        }
+
+        // Do "slow but hopefully correct" computation of
+        // expected count:
+        for (int i = 0; i < numDocs; i++) {
+          for (int j = 0; j < values[i].length; j++) {
+            boolean accept = true;
+            if (minIncl) {
+              accept &= values[i][j] >= min;
+            } else {
+              accept &= values[i][j] > min;
+            }
+            if (maxIncl) {
+              accept &= values[i][j] <= max;
+            } else {
+              accept &= values[i][j] < max;
+            }
+            if (accept) {
+              expectedCounts[rangeID]++;
+              minAcceptedValue = Math.min(minAcceptedValue, values[i][j]);
+              maxAcceptedValue = Math.max(maxAcceptedValue, values[i][j]);
+              break; // ensure each doc can contribute at most 1 count to each range
+            }
+          }
+        }
+      }
+
+      FacetsCollector sfc = new FacetsCollector();
+      s.search(new MatchAllDocsQuery(), sfc);
+      Query fastMatchQuery;
+      if (random().nextBoolean()) {
+        if (random().nextBoolean()) {
+          fastMatchQuery = LongPoint.newRangeQuery("field", minValue, maxValue);
+        } else {
+          fastMatchQuery = LongPoint.newRangeQuery("field", minAcceptedValue, maxAcceptedValue);
+        }
+      } else {
+        fastMatchQuery = null;
+      }
+      Facets facets = new LongRangeFacetCounts("field", null, sfc, fastMatchQuery, ranges);
+      FacetResult result = facets.getTopChildren(10, "field");
+      assertEquals(numRange, result.labelValues.length);
+      for (int rangeID = 0; rangeID < numRange; rangeID++) {
+        if (VERBOSE) {
+          System.out.println("  range " + rangeID + " expectedCount=" + expectedCounts[rangeID]);
+        }
+        LabelAndValue subNode = result.labelValues[rangeID];
+        assertEquals("r" + rangeID, subNode.label);
+        assertEquals(expectedCounts[rangeID], subNode.value.intValue());
+
+        LongRange range = ranges[rangeID];
+
+        // Test drill-down:
+        DrillDownQuery ddq = new DrillDownQuery(config);
+        if (random().nextBoolean()) {
+          ddq.add("field", LongPoint.newRangeQuery("field", range.min, range.max));
+        } else {
+          ddq.add(
+              "field",
+              SortedNumericDocValuesField.newSlowRangeQuery("field", range.min, range.max));
+        }
+        assertEquals(expectedCounts[rangeID], s.count(ddq));
+      }
+    }
+
+    w.close();
+    IOUtils.close(r, dir);
+  }
+
+  public void testRandomDoublesSingleValued() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
@@ -648,6 +1052,162 @@ public class TestRangeFacetCounts extends FacetTestCase {
     IOUtils.close(r, dir);
   }
 
+  public void testRandomDoublesMultiValued() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    int numDocs = atLeast(1000);
+    double[][] values = new double[numDocs][];
+    double minValue = Double.POSITIVE_INFINITY;
+    double maxValue = Double.NEGATIVE_INFINITY;
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numVals = RandomNumbers.randomIntBetween(random(), 1, 50);
+      if (random().nextInt(10) == 0) {
+        numVals = 1; // make sure we have ample testing of single-value cases
+      }
+      values[i] = new double[numVals];
+      for (int j = 0; j < numVals; j++) {
+        double v = random().nextDouble();
+        values[i][j] = v;
+        doc.add(new SortedNumericDocValuesField("field", Double.doubleToLongBits(v)));
+        doc.add(new DoublePoint("field", v));
+        minValue = Math.min(minValue, v);
+        maxValue = Math.max(maxValue, v);
+      }
+      w.addDocument(doc);
+    }
+    IndexReader r = w.getReader();
+
+    IndexSearcher s = newSearcher(r, false);
+    FacetsConfig config = new FacetsConfig();
+
+    int numIters = atLeast(10);
+    for (int iter = 0; iter < numIters; iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
+      int numRange = TestUtil.nextInt(random(), 1, 5);
+      DoubleRange[] ranges = new DoubleRange[numRange];
+      int[] expectedCounts = new int[numRange];
+      double minAcceptedValue = Double.POSITIVE_INFINITY;
+      double maxAcceptedValue = Double.NEGATIVE_INFINITY;
+      for (int rangeID = 0; rangeID < numRange; rangeID++) {
+        double min;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          DoubleRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            min = prevRange.min;
+          } else {
+            min = prevRange.max;
+          }
+        } else {
+          min = random().nextDouble();
+        }
+        double max;
+        if (rangeID > 0 && random().nextInt(10) == 7) {
+          // Use an existing boundary:
+          DoubleRange prevRange = ranges[random().nextInt(rangeID)];
+          if (random().nextBoolean()) {
+            max = prevRange.min;
+          } else {
+            max = prevRange.max;
+          }
+        } else {
+          max = random().nextDouble();
+        }
+
+        if (min > max) {
+          double x = min;
+          min = max;
+          max = x;
+        }
+
+        boolean minIncl;
+        boolean maxIncl;
+
+        long minAsLong = NumericUtils.doubleToSortableLong(min);
+        long maxAsLong = NumericUtils.doubleToSortableLong(max);
+        // NOTE: maxAsLong - minAsLong >= 0 is here to handle the common overflow case!
+        if (maxAsLong - minAsLong >= 0 && maxAsLong - minAsLong < 2) {
+          minIncl = true;
+          maxIncl = true;
+        } else {
+          minIncl = random().nextBoolean();
+          maxIncl = random().nextBoolean();
+        }
+        ranges[rangeID] = new DoubleRange("r" + rangeID, min, minIncl, max, maxIncl);
+
+        // Do "slow but hopefully correct" computation of
+        // expected count:
+        for (int i = 0; i < numDocs; i++) {
+          for (int j = 0; j < values[i].length; j++) {
+            boolean accept = true;
+            if (minIncl) {
+              accept &= values[i][j] >= min;
+            } else {
+              accept &= values[i][j] > min;
+            }
+            if (maxIncl) {
+              accept &= values[i][j] <= max;
+            } else {
+              accept &= values[i][j] < max;
+            }
+            if (accept) {
+              expectedCounts[rangeID]++;
+              minAcceptedValue = Math.min(minAcceptedValue, values[i][j]);
+              maxAcceptedValue = Math.max(maxAcceptedValue, values[i][j]);
+              break; // ensure each doc can contribute at most 1 count to each range
+            }
+          }
+        }
+      }
+
+      FacetsCollector sfc = new FacetsCollector();
+      s.search(new MatchAllDocsQuery(), sfc);
+      Query fastMatchFilter;
+      if (random().nextBoolean()) {
+        if (random().nextBoolean()) {
+          fastMatchFilter = DoublePoint.newRangeQuery("field", minValue, maxValue);
+        } else {
+          fastMatchFilter = DoublePoint.newRangeQuery("field", minAcceptedValue, maxAcceptedValue);
+        }
+      } else {
+        fastMatchFilter = null;
+      }
+      Facets facets = new DoubleRangeFacetCounts("field", null, sfc, fastMatchFilter, ranges);
+      FacetResult result = facets.getTopChildren(10, "field");
+      assertEquals(numRange, result.labelValues.length);
+      for (int rangeID = 0; rangeID < numRange; rangeID++) {
+        if (VERBOSE) {
+          System.out.println("  range " + rangeID + " expectedCount=" + expectedCounts[rangeID]);
+        }
+        LabelAndValue subNode = result.labelValues[rangeID];
+        assertEquals("r" + rangeID, subNode.label);
+        assertEquals(expectedCounts[rangeID], subNode.value.intValue());
+
+        DoubleRange range = ranges[rangeID];
+
+        // Test drill-down:
+        DrillDownQuery ddq = new DrillDownQuery(config);
+        if (random().nextBoolean()) {
+          ddq.add("field", DoublePoint.newRangeQuery("field", range.min, range.max));
+        } else {
+          ddq.add(
+              "field",
+              SortedNumericDocValuesField.newSlowRangeQuery(
+                  "field", Double.doubleToLongBits(range.min), Double.doubleToLongBits(range.max)));
+        }
+
+        assertEquals(expectedCounts[rangeID], s.count(ddq));
+      }
+    }
+
+    w.close();
+    IOUtils.close(r, dir);
+  }
+
   // LUCENE-5178
   public void testMissingValues() throws Exception {
     Directory d = newDirectory();
@@ -680,6 +1240,50 @@ public class TestRangeFacetCounts extends FacetTestCase {
     
     assertEquals("dim=field path=[] value=16 childCount=5\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n",
                  facets.getTopChildren(10, "field").toString());
+
+    w.close();
+    IOUtils.close(r, d);
+  }
+
+  public void testMissingValuesMultiValued() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    // index the same field twice to test multi-valued logic
+    SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("field", 0L);
+    SortedNumericDocValuesField field2 = new SortedNumericDocValuesField("field", 0L);
+    doc.add(field1);
+    doc.add(field2);
+    for (long l = 0; l < 100; l++) {
+      if (l % 5 == 0) {
+        // Every 5th doc is missing the value:
+        w.addDocument(new Document());
+        continue;
+      }
+      field1.setLongValue(l);
+      field2.setLongValue(l);
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+
+    FacetsCollector fc = new FacetsCollector();
+
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+    Facets facets =
+            new LongRangeFacetCounts(
+                    "field",
+                    fc,
+                    new LongRange("less than 10", 0L, true, 10L, false),
+                    new LongRange("less than or equal to 10", 0L, true, 10L, true),
+                    new LongRange("over 90", 90L, false, 100L, false),
+                    new LongRange("90 or above", 90L, true, 100L, false),
+                    new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, false));
+
+    assertEquals(
+            "dim=field path=[] value=16 childCount=5\n  less than 10 (8)\n  less than or equal to 10 (8)\n  over 90 (8)\n  90 or above (8)\n  over 1000 (0)\n",
+            facets.getTopChildren(10, "field").toString());
 
     w.close();
     IOUtils.close(r, d);
