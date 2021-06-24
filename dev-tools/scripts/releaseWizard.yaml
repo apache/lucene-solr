@@ -283,7 +283,7 @@ groups:
     - http://www.apache.org/dev/release-publishing.html
     - http://www.apache.org/legal/release-policy.html
     - http://www.apache.org/dev/release-signing.html
-    - https://wiki.apache.org/lucene-java/ReleaseTodo
+    - https://cwiki.apache.org/confluence/display/LUCENE/ReleaseTodo
   - !Todo
     id: tools
     title: Necessary tools are installed
@@ -1689,7 +1689,8 @@ groups:
       . In the `Tools` menu, start a bulk change - operation="Edit issues"
       . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
       . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version }}
-      . On the bottom of the form, uncheck the box that says `Send mail for this update`
+      . On the bottom of the form, uncheck the box that says `Send mail for this update`. If you are not a PMC member, you may not
+         see this option, ask help from a PMC member to complete this step.
       . Click `Next`, review the changes and click `Confirm`
 
       *Solr*
@@ -1698,7 +1699,8 @@ groups:
       . In the `Tools` menu, start a bulk change - operation="Edit issues"
       . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
       . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version }}
-      . On the bottom of the form, uncheck the box that says `Send mail for this update`
+      . On the bottom of the form, uncheck the box that says `Send mail for this update`. If you are not a PMC member, you may not
+         see this option, ask help from a PMC member to complete this step.
       . Click `Next`, review the changes and click `Confirm`
     links:
     - https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
@@ -1715,7 +1717,8 @@ groups:
       . In the `Tools` menu, start a bulk change, select all issues and click `Next`
       . Select operation="Edit issues" and click `Next`
       . Click the checkbox next to `Change security level` and choose `None` in the dropdown.
-      . On the bottom of the form, uncheck the box that says `Send mail for this update`
+      . On the bottom of the form, uncheck the box that says `Send mail for this update`. If you are not a PMC member, you may not
+         see this option, ask help from a PMC member to complete this step.
       . Click `Next`, review the changes and click `Confirm`
     links:
     - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+level+=+%22Public%22
