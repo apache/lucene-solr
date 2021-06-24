@@ -19,6 +19,7 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -65,12 +66,15 @@ class DrillSidewaysQuery extends Query {
       FacetsCollectorManager[] drillSidewaysCollectorManagers,
       Query[] drillDownQueries,
       boolean scoreSubDocsAtOnce) {
+    // Note that the "managed" facet collector lists are synchronized here since bulkScorer()
+    // can be invoked concurrently and needs to remain thread-safe. We're OK with synchronizing
+    // on the whole list as contention is expected to remain very low:
     this(
         baseQuery,
         drillDownCollectorManager,
         drillSidewaysCollectorManagers,
-        new ArrayList<>(),
-        new ArrayList<>(),
+        Collections.synchronizedList(new ArrayList<>()),
+        Collections.synchronizedList(new ArrayList<>()),
         drillDownQueries,
         scoreSubDocsAtOnce);
   }
