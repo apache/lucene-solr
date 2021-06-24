@@ -28,4 +28,6 @@ public class Constants {
     public static Boolean[] BOOLEANS = new Boolean[] { Boolean.FALSE, Boolean.TRUE };
 
     public static final int DEFAULT_MAXIMUM_DOCUMENTS = Integer.MAX_VALUE;
+
+    public static final String PARALLEL_TASK_THREAD_NAME_PREFIX = "ParallelTaskThread";
 }
