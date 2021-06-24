@@ -8,6 +8,9 @@ http://s.apache.org/luceneversions
 API Changes
 ---------------------
 
+* LUCENE-9962: DrillSideways allows sub-classes to provide "drill down" FacetsCollectors. They
+  may provide a null collector if they choose to bypass "drill down" facet collection. (Greg Miller)
+
 * LUCENE-9902: Change the getValue method from IntTaxonomyFacets to be protected instead of private.
   Users can now access the count of an ordinal directly without constructing an extra FacetLabel.
   Also use variable length arguments for the getOrdinal call in TaxonomyReader. (Gautam Worah)
@@ -18,6 +21,9 @@ New Features
 
 Improvements
 ---------------------
+
+* LUCENE-9944: Allow DrillSideways users to provide their own CollectorManager without also requiring
+  them to provide an ExecutorService. (Greg Miller)
 
 * LUCENE-9946: Support for multi-value fields in LongRangeFacetCounts and
   DoubleRangeFacetCounts. (Greg Miller)
@@ -45,7 +51,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9988: Fix DrillSideways correctness bug introduced in LUCENE-9944 (Greg Miller)
 
 Other
 ---------------------
