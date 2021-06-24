@@ -25,6 +25,9 @@ Improvements
 * LUCENE-9944: Allow DrillSideways users to provide their own CollectorManager without also requiring
   them to provide an ExecutorService. (Greg Miller)
 
+* LUCENE-9946: Support for multi-value fields in LongRangeFacetCounts and
+  DoubleRangeFacetCounts. (Greg Miller)
+
 * LUCENE-9965: Added QueryProfilerIndexSearcher and ProfilerCollector to support debugging
   query execution strategy and timing. (Jack Conradson, Julie Tibshirani)
 
