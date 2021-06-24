@@ -11,6 +11,10 @@ API Changes
 * LUCENE-9962: DrillSideways allows sub-classes to provide "drill down" FacetsCollectors. They
   may provide a null collector if they choose to bypass "drill down" facet collection. (Greg Miller)
 
+* LUCENE-9902: Change the getValue method from IntTaxonomyFacets to be protected instead of private.
+  Users can now access the count of an ordinal directly without constructing an extra FacetLabel.
+  Also use variable length arguments for the getOrdinal call in TaxonomyReader. (Gautam Worah)
+
 New Features
 ---------------------
 (No changes)
@@ -35,6 +39,8 @@ Improvements
   count on the resulting returned automaton, to better handle adversarial
   cases like det(rev(regexp("(.*a){2000}"))) that spend lots of effort but
   result in smallish eventual returned automata.  (Robert Muir, Mike McCandless)
+
+* LUCENE-9983: Stop sorting determinize powersets unnecessarily. (Patrick Zhai)
 
 Optimizations
 ---------------------
