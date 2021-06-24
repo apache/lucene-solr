@@ -104,8 +104,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         )
     );
 
-    // replicaType and replicaBase combined rule param
-    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
+    // replica leader status, replicaType and replicaBase combined rule param
+    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER + ":true," +
+        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
 
