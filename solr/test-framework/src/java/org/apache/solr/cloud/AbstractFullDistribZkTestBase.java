@@ -1732,25 +1732,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void destroyServers() throws Exception {
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
     
-    customThreadPool.submit(() -> Collections.singleton(commonCloudSolrClient).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(commonCloudSolrClient));
     
-    customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
     
     customThreadPool.submit(() -> coreClients.parallelStream().forEach(c -> {
       IOUtils.closeQuietly(c);
     }));
 
-    customThreadPool.submit(() -> Collections.singletonList(controlClientCloud).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
 
-    customThreadPool.submit(() -> Collections.singletonList(cloudClient).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(cloudClient));
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     

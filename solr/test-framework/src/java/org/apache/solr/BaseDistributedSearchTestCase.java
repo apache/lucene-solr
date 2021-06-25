@@ -414,9 +414,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected void destroyServers() throws Exception {
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
     
-    customThreadPool.submit(() -> Collections.singleton(controlClient).parallelStream().forEach(c -> {
-      IOUtils.closeQuietly(c);
-    }));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
 
     customThreadPool.submit(() -> {
       try {
