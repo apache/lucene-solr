@@ -111,6 +111,7 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
+import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.sql.CalciteSolrDriver;
 import org.apache.solr.logging.LogWatcher;
@@ -713,7 +714,12 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
 
-    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    Set<Class> whiteList = null;
+    if(isQueryAggregator) {
+      whiteList = new HashSet<>();
+      whiteList.add(SearchHandler.class);
+    }
+    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig(), whiteList);
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 

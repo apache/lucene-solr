@@ -276,7 +276,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // backcompat create it now in case any third party tests expect initCoreDataDir to be
     // non-null after calling setupTestCases()
     initAndGetDataDir();
-
+    System.setProperty("EnableJMX", "true");
     System.setProperty("solr.zkclienttimeout", "90000");
 
     System.setProperty("solr.httpclient.retries", "1");

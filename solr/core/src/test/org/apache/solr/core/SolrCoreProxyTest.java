@@ -17,9 +17,17 @@
 
 package org.apache.solr.core;
 
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -31,6 +39,8 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.SearchHandler;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.junit.After;
@@ -106,6 +116,7 @@ public class SolrCoreProxyTest extends AbstractFullDistribZkTestBase {
       verifyCoreReloadAfterSchemaConfigUpdate(collectionName);
       verifyCollectionShardSplit(collectionName);
       verifyCollectionListenerInstalled(collectionName);
+      verifyMetrics(collectionName);
       ClusterState postSplitClusterState = queryNodeContainer.getZkController().getClusterState();
 
       log.info("restarting zookeeper================================ ");
@@ -145,6 +156,75 @@ public class SolrCoreProxyTest extends AbstractFullDistribZkTestBase {
       System.clearProperty("solr.test.sys.prop2");
     }
   }
+
+  private void verifyMetrics(String collectionName) {
+    CoreContainer queryAggregatorContainer = getQueryNodeContainer();
+    SolrMetricManager smm = queryAggregatorContainer.getMetricManager();
+
+    verifyOpMetrics(smm);
+    verifyNoOpMetrics(collectionName, queryAggregatorContainer, smm);
+  }
+
+  private void verifyOpMetrics(SolrMetricManager smm) {
+    SearchHandler sh = new SearchHandler();
+
+    Meter noOpmeter = smm.meter(sh, "testregistry", "testmetric", "query");
+    assertTrue(!(noOpmeter.getClass().toString().contains("NoOpMeter")));
+
+    Histogram histogram = smm.histogram(sh, "testregistry", "testhitogram", "query");
+    assertTrue(!(histogram.getClass().toString().contains("NoOpHistogram")));
+
+    Timer timer = smm.timer(sh, "testregistry", "testtimer", "query");
+    assertTrue(!(timer.getClass().toString().contains("NoOpTimer")));
+
+    Counter counter = smm.counter(sh, "testregistry", "testcounter", "query");
+    assertTrue(!(counter.getClass().toString().contains("NoOpCounter")));
+
+    smm.registerGauge(sh, "testregistry", new Gauge<Long>() {
+
+      @Override
+      public Long getValue() {
+        return (long)9;
+      }
+    }, "gauge", false,"testgauge", "query");
+
+    Map<String, Metric> metricMap = smm.getMetrics("testregistry", MetricFilter.contains("testgauge"));
+    assertTrue(metricMap.size() == 1);
+    SolrMetricManager.GaugeWrapper<Long> gw = (SolrMetricManager.GaugeWrapper<Long> )metricMap.get("query.testgauge");
+    assertTrue(!gw.getGauge().getClass().toString().contains("NoOpGauge"));
+  }
+
+  private void verifyNoOpMetrics(String collectionName, CoreContainer queryAggregatorContainer, SolrMetricManager smm) {
+    SolrCore core = queryAggregatorContainer.getCore(collectionName);
+
+    Meter noOpmeter = smm.meter(core, "testregistry", "testmetric", "core");
+    assertTrue((noOpmeter.getClass().toString().contains("NoOpMeter")));
+
+    Histogram histogram = smm.histogram(core, "testregistry", "testhitogram", "core");
+    assertTrue((histogram.getClass().toString().contains("NoOpHistogram")));
+
+    Timer timer = smm.timer(core, "testregistry", "testtimer", "core");
+    assertTrue((timer.getClass().toString().contains("NoOpTimer")));
+
+    Counter counter = smm.counter(core, "testregistry", "testcounter", "core");
+    assertTrue((counter.getClass().toString().contains("NoOpCounter")));
+
+    smm.registerGauge(core, "testregistry", new Gauge<Long>() {
+
+      @Override
+      public Long getValue() {
+        return (long)9;
+      }
+    }, "gauge", false,"testgauge2", "core");
+
+    Map<String, Metric> metricMap = smm.getMetrics("testregistry", MetricFilter.contains("testgauge2"));
+    assertTrue(metricMap.size() == 1);
+    SolrMetricManager.GaugeWrapper<Long> gw = (SolrMetricManager.GaugeWrapper<Long> )metricMap.get("core.testgauge2");
+    assertTrue(gw.getGauge().getClass().toString().contains("NoOpGauge"));
+
+    core.close();
+  }
+
 
   private void verifyCoreReloadAfterSchemaConfigUpdate(final String collection) throws Exception {
     CoreContainer queryAggregatorContainer = getQueryNodeContainer();
