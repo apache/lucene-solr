@@ -297,7 +297,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
         () -> {
           solrClient.request(getProxyRequest("localHostAnyGroup","bar", "[ff01::114]", DEAD_HOST_2));
     });
-    assertTrue(e.getMessage().contains(getExpectedHostExMsg("localHostAnyGroup")));
   }
 
   @Test
