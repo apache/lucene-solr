@@ -181,6 +181,40 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
   }
 
+  private static HashMap<URLListWrapper, URLClassLoader> classLoaderCache = new HashMap<>();
+
+  private static class URLListWrapper {
+    private final int hashcode;
+    private final List<URL> urls;
+
+    public URLListWrapper(List<URL> urls) {
+      if (urls == null) {
+        urls = Collections.<URL>emptyList();
+      }
+
+      Collections.sort(urls, new Comparator<URL>() {
+        @Override
+        public int compare(URL o1, URL o2) {
+          return o1.toString().compareTo(o2.toString());
+        }
+      });
+      this.urls = urls;
+      this.hashcode = urls.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      URLListWrapper that = (URLListWrapper) o;
+      return hashCode() == that.hashCode() && urls.equals(that.urls);
+    }
+
+    @Override
+    public int hashCode() {
+      return hashcode;
+    }
+  }
   /**
    * Adds URLs to the ResourceLoader's internal classloader.  This method <b>MUST</b>
    * only be called prior to using this ResourceLoader to get any resources, otherwise
@@ -190,7 +224,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * @param urls    the URLs of files to add
    */
   synchronized void addToClassLoader(List<URL> urls) {
-    URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
+    URLListWrapper urlsKey = new URLListWrapper(urls);
+    URLClassLoader newLoader = null;
+    synchronized (classLoaderCache) {
+      if (!classLoaderCache.containsKey(urlsKey)) {
+        newLoader = addURLsToClassLoader(classLoader, urls);
+        reloadLuceneSPI();
+        classLoaderCache.put(urlsKey, newLoader);
+      } else {
+        newLoader = classLoaderCache.get(urlsKey);
+      }
+    }
+
     if (newLoader == classLoader) {
       return; // short-circuit
     }
@@ -895,6 +940,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   @Override
   public void close() throws IOException {
     IOUtils.close(classLoader);
+    classLoaderCache.clear();
   }
   public List<SolrInfoBean> getInfoMBeans(){
     return Collections.unmodifiableList(infoMBeans);
