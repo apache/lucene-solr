@@ -132,8 +132,7 @@ public abstract class MultiTermQuery extends Query {
    * 
    * <p>
    * This rewrite method only uses the top scoring terms so it will not overflow
-   * the boolean max clause count. It is the default rewrite method for
-   * {@link FuzzyQuery}.
+   * the boolean max clause count.
    * 
    * @see #setRewriteMethod
    */
