@@ -242,7 +242,7 @@ public class LongValueFacetCounts extends Facets {
   /** Returns the specified top number of facets, sorted by count. */
   public FacetResult getTopChildrenSortByCount(int topN) {
     PriorityQueue<Entry> pq =
-        new PriorityQueue<>(Math.min(topN, counts.length + hashCounts.size())) {
+        new PriorityQueue<Entry>(Math.min(topN, counts.length + hashCounts.size())) {
           @Override
           protected boolean lessThan(Entry a, Entry b) {
             // sort by count descending, breaking ties by value ascending:
