@@ -50,10 +50,10 @@ generate such IDs; you can let Solr populate them automatically.  It will concat
 parent with a separator and path information that should be unique.  Try it out for yourself!
 
 [#example-indexing-syntax]
-== Example Indexing Syntax: Psuedo-Fields
+== Example Indexing Syntax: Pseudo-Fields
 
 This example shows what it looks like to index two root "product" documents, each containing two
-different types of child documents specified in "psuedo-fields": "skus" and "manuals".  Two of the "sku" type documents have their own nested child "manuals" documents...
+different types of child documents specified in "pseudo-fields": "skus" and "manuals".  Two of the "sku" type documents have their own nested child "manuals" documents...
 
 [NOTE]
 ====
@@ -424,7 +424,7 @@ This simplified approach was common in older versions of Solr, and can still be 
 This approach should *NOT* be used when schemas include a `\_nest_path_` field, as the existence of that field triggers assumptions and changes in behavior in various query time functionality, such as the <<searching-nested-documents.adoc#child-doc-transformer,[child]>>, that will not work when nested documents do not have any intrinsic "nested path" information.
 
 The results of indexing anonymous nested children with a "Root-Only" schema are similar to what
-happens if you attempt to index "psuedo field" nested documents using a "Root-Only" schema.
+happens if you attempt to index "pseudo field" nested documents using a "Root-Only" schema.
 Notably: since there is no nested path information for the
 <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer to use to reconstruct the structure of a nest
 of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:

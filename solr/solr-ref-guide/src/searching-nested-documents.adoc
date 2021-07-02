@@ -53,7 +53,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=descr
   }}
 ----
 
-The same query with the addition of the `[child]` transformer is shown below.  Note that the `numFound` has not changed, we are still matching the same set of documents, but when returning those documents the nested children are also returned as psuedo-fields.
+The same query with the addition of the `[child]` transformer is shown below.  Note that the `numFound` has not changed, we are still matching the same set of documents, but when returning those documents the nested children are also returned as pseudo-fields.
 
 [source,curl]
 ----
