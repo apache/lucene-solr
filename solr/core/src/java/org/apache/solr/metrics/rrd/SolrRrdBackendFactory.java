@@ -65,7 +65,6 @@ import org.slf4j.LoggerFactory;
  *
  * @deprecated this functionality will be removed in Solr 9.0
  */
-@Deprecated
 public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
