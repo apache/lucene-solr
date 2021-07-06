@@ -23,6 +23,8 @@ import org.apache.calcite.util.Pair;
 
 import java.util.*;
 
+import static org.apache.solr.handler.sql.SolrAggregate.solrAggMetricId;
+
 /**
  * Relational expression that uses Solr calling convention.
  */
@@ -84,9 +86,8 @@ interface SolrRel extends RelNode {
       column = this.fieldMappings.getOrDefault(column, column);
       this.metricPairs.add(new Pair<>(metric, column));
 
-      String metricIdentifier = metric.toLowerCase(Locale.ROOT) + "(" + column + ")";
       if(outName != null) {
-        this.addFieldMapping(outName, metricIdentifier, true);
+        this.addFieldMapping(outName, solrAggMetricId(metric, column), true);
       }
     }
 

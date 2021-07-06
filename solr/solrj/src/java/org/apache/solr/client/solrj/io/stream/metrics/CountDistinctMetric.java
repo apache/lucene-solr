@@ -26,10 +26,17 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class CountDistinctMetric extends Metric {
 
+    public static final String COUNT_DISTINCT = "countDist";
+    public static final String APPROX_COUNT_DISTINCT = "hll";
+
     private String columnName;
 
     public CountDistinctMetric(String columnName){
-        init("countDist", columnName);
+        this(columnName, false);
+    }
+
+    public CountDistinctMetric(String columnName, boolean isApproximate){
+        init(isApproximate ? APPROX_COUNT_DISTINCT : COUNT_DISTINCT, columnName);
     }
 
     public CountDistinctMetric(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -58,7 +65,7 @@ public class CountDistinctMetric extends Metric {
     }
 
     public Metric newInstance() {
-        return new MeanMetric(columnName, outputLong);
+        return new CountDistinctMetric(columnName);
     }
 
     public String[] getColumns() {
@@ -66,8 +73,8 @@ public class CountDistinctMetric extends Metric {
     }
 
     public Number getValue() {
-       //No op for now
-       return null;
+        //No op for now
+        return null;
     }
 
     @Override
