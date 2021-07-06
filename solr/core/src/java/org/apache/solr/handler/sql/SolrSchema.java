@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
@@ -93,6 +94,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
     String zk = this.properties.getProperty("zk");
     CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
+    // Send the Luke request using the server identity vs. the logged in user
+    PKIAuthenticationPlugin.withServerIdentity(true);
     try {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
@@ -100,6 +103,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
       return lukeResponse.getFieldInfo();
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      PKIAuthenticationPlugin.withServerIdentity(false);
     }
   }
 

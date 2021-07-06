@@ -66,6 +66,15 @@ The `/sql` handler is the front end of the Parallel SQL interface. All SQL queri
 
 By default, the `/sql` request handler is configured as an implicit handler, meaning that it is always enabled in every Solr installation and no further configuration is required.
 
+==== Authorization for SQL Requests
+
+If your Solr cluster is configured to use the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization Plugin>>,
+then you need to grant `GET` and `POST` permission on the `/sql`, `/select`, and `/export` endpoints for all collections you intend to execute SQL queries against.
+The `/select` endpoint is used for `LIMIT` queries, whereas the `/export` handler is used for queries without a `LIMIT`, so in most cases, you'll want to grant access to both.
+If you're using a worker collection for the `/sql` handler, then you only need to grant access to the `/sql` endpoint for the worker collection and not the collections in the data tier.
+Behind the scenes, the SQL handler also sends requests using the internal Solr server identity to the `/admin/luke` endpoint to get schema metadata for a collection.
+Consequently, you do not need to grant explicit permission to the `/admin/luke` endpoint for users to execute SQL queries.
+
 [IMPORTANT]
 ====
 As described below in the section <<Best Practices>>, you may want to set up a separate collection for parallelized SQL queries. If you have high cardinality fields and a large amount of data, please be sure to review that section and consider using a separate collection.
@@ -254,7 +263,7 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 * IN, LIKE, BETWEEN support the NOT keyword to find rows where the condition is not true, such as `fielda NOT LIKE 'day%'`
 * String literals must be wrapped in single-quotes; double-quotes indicate database objects and not a string literal.
 * A simplistic LIKE can be used with an asterisk wildcard, such as `field = 'sam*'`; this is Solr specific and not part of the SQL standard.
-* When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets. For example, `b_is <= 2 AND b_is >= 5` appears to Calcite to be disjoint sets, which they are from a single-valued field perspective. However, this may not be the case with multi-valued fields, as Solr might match documents. The work-around is to use Solr query syntax directly inside of an equals expression wrapped in parens: `b_is = '(+[5 TO *] +[* TO 2])'`
+* When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets. For example, +++b_is \<= 2 AND b_is >= 5+++ appears to Calcite to be disjoint sets, which they are from a single-valued field perspective. However, this may not be the case with multi-valued fields, as Solr might match documents. The work-around is to use Solr query syntax directly inside of an equals expression wrapped in parens: `b_is = '(+[5 TO *] +[* TO 2])'`
 
 === ORDER BY Clause
 
