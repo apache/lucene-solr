@@ -66,6 +66,15 @@ The `/sql` handler is the front end of the Parallel SQL interface. All SQL queri
 
 By default, the `/sql` request handler is configured as an implicit handler, meaning that it is always enabled in every Solr installation and no further configuration is required.
 
+==== Authorization for SQL Requests
+
+If your Solr cluster is configured to use the <<rule-based-authorization-plugin.adoc#,Rule-based Authorization Plugin>>,
+then you need to grant `GET` and `POST` permission on the `/sql`, `/select`, and `/export` endpoints for all collections you intend to execute SQL queries against.
+The `/select` endpoint is used for `LIMIT` queries, whereas the `/export` handler is used for queries without a `LIMIT`, so in most cases, you'll want to grant access to both.
+If you're using a worker collection for the `/sql` handler, then you only need to grant access to the `/sql` endpoint for the worker collection and not the collections in the data tier.
+Behind the scenes, the SQL handler also sends requests using the internal Solr server identity to the `/admin/luke` endpoint to get schema metadata for a collection.
+Consequently, you do not need to grant explicit permission to the `/admin/luke` endpoint for users to execute SQL queries.
+
 [IMPORTANT]
 ====
 As described below in the section <<Best Practices>>, you may want to set up a separate collection for parallelized SQL queries. If you have high cardinality fields and a large amount of data, please be sure to review that section and consider using a separate collection.
