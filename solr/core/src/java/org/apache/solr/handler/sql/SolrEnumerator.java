@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -88,6 +89,11 @@ class SolrEnumerator implements Enumerator<Object> {
         return this.getRealVal(val);
       }
       return val;
+    }
+
+    if (clazz.equals(Date.class)) {
+      // make sure the val returned is a Date as Avatica cannot deal with string values for Timestamp fields
+      val = tuple.getDate(field.getKey());
     }
 
     if(val instanceof ArrayList) {
