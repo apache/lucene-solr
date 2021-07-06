@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -475,7 +476,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
 
-    assert (tuples.size() == 8);
+    assertEquals(tuples.toString(), 8, tuples.size());
 
     Tuple tuple;
 
@@ -526,7 +527,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuples = getTuples(sParams, baseUrl);
 
-    assert (tuples.size() == 2);
+
+    assertEquals(tuples.toString(), 2, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("Str_s").equals("c"));
@@ -903,8 +905,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         "stmt", "select distinct str_s, field_i from collection1 where str_s = 'a'");
 
     tuples = getTuples(sParams, baseUrl);
-
-    assert (tuples.size() == 2);
+    Assert.assertEquals (tuples.toString(), 2, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("str_s").equals("a"));
@@ -1175,7 +1176,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // The sort by and order by match and no limit is applied. All the Tuples should be returned in
     // this scenario.
 
-    assert (tuples.size() == 3);
+    assertEquals(tuples.toString(), 3, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("str_s").equals("c"));
@@ -2103,10 +2104,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex IS NOT NULL", 8);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex > '2021-06-02'", 6);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex <= '2021-06-01'", 1);
-    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-06-03' AND '2021-06-05'", 4);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex > '2021-06-04 04:00:00'", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-06-04 04:00:00'", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = CAST('2021-06-04 04:04:00' as TIMESTAMP)", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-06-03' AND '2021-06-05'", 4);
   }
 
   @Test

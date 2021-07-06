@@ -127,6 +127,9 @@
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
 
     <!-- SQL Parser -->
+    <dependency org="com.esri.geometry" name="esri-geometry-api" rev="${/com.esri.geometry/esri-geometry-api}" conf="compile"/>
+    <dependency org="org.apiguardian" name="apiguardian-api" rev="${/org.apiguardian/apiguardian-api}" conf="compile"/>
+    <dependency org="org.checkerframework" name="checker-qual" rev="${/org.checkerframework/checker-qual}" conf="compile"/>
     <dependency org="org.apache.calcite" name="calcite-core" rev="${/org.apache.calcite/calcite-core}" conf="compile"/>
     <dependency org="org.apache.calcite" name="calcite-linq4j" rev="${/org.apache.calcite/calcite-linq4j}" conf="compile"/>
     <dependency org="org.apache.calcite.avatica" name="avatica-core" rev="${/org.apache.calcite.avatica/avatica-core}" conf="compile"/>
