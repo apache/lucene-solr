@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
@@ -91,15 +92,19 @@ public interface ParallelMetricsRollup {
       if (next instanceof SumMetric) {
         // sum of sums
         nextRollup = new SumMetric(next.getIdentifier());
+        nextRollup.outputLong = next.outputLong;
       } else if (next instanceof MinMetric) {
         // min of mins
         nextRollup = new MinMetric(next.getIdentifier());
+        nextRollup.outputLong = next.outputLong;
       } else if (next instanceof MaxMetric) {
         // max of max
         nextRollup = new MaxMetric(next.getIdentifier());
+        nextRollup.outputLong = next.outputLong;
       } else if (next instanceof CountMetric) {
         // sum of counts
         nextRollup = new SumMetric(next.getIdentifier());
+        nextRollup.outputLong = next.outputLong;
         count = (CountMetric) next;
       } else if (next instanceof MeanMetric) {
         // WeightedSumMetric must have a count to compute the weighted avg. rollup from ...
@@ -118,6 +123,10 @@ public interface ParallelMetricsRollup {
         } else {
           return Optional.empty(); // can't properly rollup mean metrics w/o a count (reqd by WeightedSumMetric)
         }
+      } else if (next instanceof CountDistinctMetric) {
+        // rollup of count distinct is the max across the tiers
+        nextRollup = new MaxMetric(next.getIdentifier());
+        nextRollup.outputLong = next.outputLong;
       } else {
         return Optional.empty(); // can't parallelize this expr!
       }
