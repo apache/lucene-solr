@@ -240,16 +240,21 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |= |Equals |`fielda = 10` |`fielda:10`
 |<> |Does not equal |`fielda <> 10` |`-fielda:10`
 |!= |Does not equal |`fielda != 10` |`-fielda:10`
-|> |Greater than |`fielda > 10` | `fielda:{10 TO *]`
-|>= |Greater than or equals |`fielda >= 10` | `fielda:[10 TO *]`
-|< |Less than |`fielda < 10` | `fielda:[* TO 10}`
-|\<= |Less than or equals |`fielda \<= 10` | `fielda:[* TO 10]`
+|> |Greater than |`fielda > 10` |`fielda:{10 TO *]`
+|>= |Greater than or equals |`fielda >= 10` |`fielda:[10 TO *]`
+|< |Less than |`fielda < 10` |`fielda:[* TO 10}`
+|\<= |Less than or equals |`fielda \<= 10` |`fielda:[* TO 10]`
+|IN |Specify multiple values (shorthand for multiple OR clasues) |`fielda IN (10,20,30)` |`(fielda:10 OR fielda:20 OR fielda:30)`
+|LIKE |Wildcard match on string or text fields |`fielda LIKE 'day%'` |`{!complexphrase}fielda:"day*"`
+|BETWEEN |Range match |`fielda BETWEEN 2 AND 4` |`fielda: [2 TO 4]`
+|IS NULL |Match columns with null value |`fielda IS NULL` |`(*:* -field:*)`
+|IS NOT NULL |Match columns with value |`fielda IS NOT NULL` |`field:*`
 |===
 
-Some operators that are not supported are BETWEEN, LIKE and IN. However, there are workarounds for BETWEEN and LIKE.
-
-* BETWEEN can be supported with a range query, such as `field = [50 TO 100]`.
-* A simplistic LIKE can be used with a wildcard, such as `field = 'sam*'`.
+* IN, LIKE, BETWEEN support the NOT keyword to find rows where the condition is not true, such as `fielda NOT LIKE 'day%'`
+* String literals must be wrapped in single-quotes; double-quotes indicate database objects and not a string literal.
+* A simplistic LIKE can be used with an asterisk wildcard, such as `field = 'sam*'`; this is Solr specific and not part of the SQL standard.
+* When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets. For example, `b_is <= 2 AND b_is >= 5` appears to Calcite to be disjoint sets, which they are from a single-valued field perspective. However, this may not be the case with multi-valued fields, as Solr might match documents. The work-around is to use Solr query syntax directly inside of an equals expression wrapped in parens: `b_is = '(+[5 TO *] +[* TO 2])'`
 
 === ORDER BY Clause
 
