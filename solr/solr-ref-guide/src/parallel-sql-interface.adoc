@@ -275,6 +275,20 @@ If the `ORDER BY` clause contains the exact fields in the `GROUP BY` clause, the
 
 Order by fields are case sensitive.
 
+==== OFFSET with FETCH
+
+Queries that specify an `ORDER BY` clause may also use the `OFFSET` (0-based index) and `FETCH` operators to page through results; `OFFSET` without `FETCH` is not supported and generates an exception.
+For example, the following query requests the second page of 10 results:
+[source,sql]
+----
+ORDER BY ... OFFSET 10 FETCH NEXT 10 ROWS ONLY
+----
+Paging with SQL suffers the same performance penalty of paging in Solr queries using `start` and `rows` where the distributed query must
+over-fetch `OFFSET` + `LIMIT` documents from each shard and then sort the results from each shard to generate the page of results returned to the client.
+Consequently, this feature should only be used for small OFFSET / FETCH sizes, such as paging up to 10,000 documents per shard. Solr SQL does not enforce any hard limits but the deeper you go into the results,
+each subsequent page request takes longer and consumes more resources. Solr's `cursorMark` feature for deep paging is not supported in SQL; use a SQL query without a `LIMIT` to stream large result sets through the `/export` handler instead.
+SQL `OFFSET` is not intended for deep-paging type use cases.
+
 === LIMIT Clause
 
 Limits the result set to the specified size. In the example above the clause `LIMIT 100` will limit the result set to 100 records.

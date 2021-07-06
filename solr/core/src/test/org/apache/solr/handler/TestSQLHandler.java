@@ -17,8 +17,8 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1903,21 +1903,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(final SolrParams params, String baseUrl) throws IOException {
-    //log.info("Tuples from params: {}", params);
-    TupleStream tupleStream = new SolrStream(baseUrl, params);
-
-    tupleStream.open();
-    List<Tuple> tuples = new ArrayList<>();
-    for (; ; ) {
-      Tuple t = tupleStream.read();
-      //log.info(" ... {}", t.fields);
-      if (t.EOF) {
-        break;
-      } else {
-        tuples.add(t);
+    List<Tuple> tuples = new LinkedList<>();
+    try (TupleStream tupleStream = new SolrStream(baseUrl, params)) {
+      tupleStream.open();
+      for (; ; ) {
+        Tuple t = tupleStream.read();
+        if (t.EOF) {
+          break;
+        } else {
+          tuples.add(t);
+        }
       }
     }
-    tupleStream.close();
     return tuples;
   }
 
@@ -2170,5 +2167,64 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   private String max(String type) {
     return String.format(Locale.ROOT, "max(%s) as max_%s", type, type);
+  }
+
+  @Test
+  public void testOffsetAndFetch() throws Exception {
+    new UpdateRequest()
+        .add("id", "01")
+        .add("id", "02")
+        .add("id", "03")
+        .add("id", "04")
+        .add("id", "05")
+        .add("id", "06")
+        .add("id", "07")
+        .add("id", "08")
+        .add("id", "09")
+        .add("id", "10")
+        .add("id", "11")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    final int numDocs = 11;
+
+    List<Tuple> results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 0 FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("11", results.get(0).getString("id"));
+    assertEquals("10", results.get(1).getString("id"));
+    assertEquals("09", results.get(2).getString("id"));
+    assertEquals("08", results.get(3).getString("id"));
+    assertEquals("07", results.get(4).getString("id"));
+
+    // no explicit offset, but defaults to 0 if using FETCH!
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("11", results.get(0).getString("id"));
+    assertEquals("10", results.get(1).getString("id"));
+    assertEquals("09", results.get(2).getString("id"));
+    assertEquals("08", results.get(3).getString("id"));
+    assertEquals("07", results.get(4).getString("id"));
+
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5 FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("06", results.get(0).getString("id"));
+    assertEquals("05", results.get(1).getString("id"));
+    assertEquals("04", results.get(2).getString("id"));
+    assertEquals("03", results.get(3).getString("id"));
+    assertEquals("02", results.get(4).getString("id"));
+
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 10 FETCH NEXT 5 ROWS ONLY", 1);
+    assertEquals("01", results.get(0).getString("id"));
+
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC LIMIT "+numDocs, numDocs);
+
+    for (int i=0; i < numDocs; i++) {
+      results = expectResults("SELECT id FROM $ALIAS ORDER BY id ASC OFFSET "+i+" FETCH NEXT 1 ROW ONLY", 1);
+      String id = results.get(0).getString("id");
+      if (id.startsWith("0")) id = id.substring(1);
+      assertEquals(i+1, Integer.parseInt(id));
+    }
+
+    // just past the end of the results
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET "+numDocs+" FETCH NEXT 5 ROWS ONLY", 0);
+
+    // Solr doesn't support OFFSET w/o LIMIT
+    expectThrows(IOException.class, () -> expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5", 5));
   }
 }

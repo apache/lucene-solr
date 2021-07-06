@@ -34,6 +34,7 @@ enum SolrMethod {
                        List.class,
                        String.class,
                        String.class,
+                       String.class,
                        String.class);
 
   public final Method method;

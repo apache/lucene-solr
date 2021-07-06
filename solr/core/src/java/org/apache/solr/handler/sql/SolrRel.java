@@ -40,6 +40,7 @@ interface SolrRel extends RelNode {
     String havingPredicate;
     boolean negativeQuery;
     String limitValue = null;
+    String offsetValue = null;
     final List<Pair<String, String>> orders = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
     final List<Pair<String, String>> metricPairs = new ArrayList<>();
@@ -96,6 +97,10 @@ interface SolrRel extends RelNode {
 
     void setLimit(String limit) {
       limitValue = limit;
+    }
+
+    void setOffset(String offset) {
+      this.offsetValue = offset;
     }
 
     void visitChild(int ordinal, RelNode input) {
