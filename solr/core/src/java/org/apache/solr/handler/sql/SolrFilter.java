@@ -16,9 +16,11 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -33,12 +35,16 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 
 /**
  * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in Solr.
  */
 class SolrFilter extends Filter implements SolrRel {
+
+  private static final Pattern CALCITE_TIMESTAMP_REGEX = Pattern.compile("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$");
+
   SolrFilter(
       RelOptCluster cluster,
       RelTraitSet traitSet,
@@ -119,9 +125,10 @@ class SolrFilter extends Filter implements SolrRel {
       String fieldName = gte.getKey();
       String query = null;
       if (fieldName.equals(lte.getKey()) && compareRexLiteral(gte.right, lte.right) < 0) {
-        query = fieldName + ":[" + gte.getValue() + " TO " + lte.getValue() + "]";
+        query = fieldName + ":[" + toSolrLiteral(gte.getValue()) + " TO " + toSolrLiteral(lte.getValue()) + "]";
         this.negativeQuery = false; // so we don't get *:* AND range
       }
+
       return query;
     }
 
@@ -208,36 +215,39 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       Pair<String, RexLiteral> binaryTranslated = getFieldValuePair(node);
+      final String key = binaryTranslated.getKey();
+      RexLiteral value = binaryTranslated.getValue();
       switch (kind) {
         case EQUALS:
-          String terms = binaryTranslated.getValue().toString().trim();
-          terms = terms.replace("'", "");
+          SqlTypeName fieldTypeName = ((RexCall) node).getOperands().get(0).getType().getSqlTypeName();
+          String terms = toSolrLiteralForEquals(value, fieldTypeName).trim();
+
           boolean wrappedQuotes = false;
           if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
             terms = "\"" + terms + "\"";
             wrappedQuotes = true;
           }
 
-          String clause = binaryTranslated.getKey() + ":" + terms;
+          String clause = key + ":" + terms;
           if (terms.contains("*") && wrappedQuotes) {
             clause = "{!complexphrase}" + clause;
           }
           this.negativeQuery = false;
           return clause;
         case NOT_EQUALS:
-          return "-(" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue() + ")";
+          return "-(" + key + ":" + toSolrLiteral(value) + ")";
         case LESS_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " })";
+          return "(" + key + ": [ * TO " + toSolrLiteral(value) + " })";
         case LESS_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " ])";
+          return "(" + key + ": [ * TO " + toSolrLiteral(value) + " ])";
         case GREATER_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": { " + binaryTranslated.getValue() + " TO * ])";
+          return "(" + key + ": { " + toSolrLiteral(value) + " TO * ])";
         case GREATER_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue() + " TO * ])";
+          return "(" + key + ": [ " + toSolrLiteral(value) + " TO * ])";
         case LIKE:
           return translateLike(node, false);
         case IS_NOT_NULL:
@@ -246,6 +256,39 @@ class SolrFilter extends Filter implements SolrRel {
         default:
           throw new AssertionError("cannot translate " + node);
       }
+    }
+
+    // translate to a literal string value for Solr queries, such as translating a
+    // Calcite timestamp value into an ISO-8601 formatted timestamp that Solr likes
+    private String toSolrLiteral(RexLiteral literal) {
+      Object value2 = literal.getValue2();
+      SqlTypeName typeName = literal.getTypeName();
+      final String solrLiteral;
+      if (value2 instanceof Long && (typeName == SqlTypeName.TIMESTAMP || typeName == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE)) {
+        // return as an ISO-8601 timestamp
+        solrLiteral = Instant.ofEpochMilli((Long) value2).toString();
+      } else {
+        solrLiteral = value2.toString();
+      }
+      return solrLiteral;
+    }
+
+    // special case handling for expressions like: WHERE timestamp = '2021-06-04 04:00:00'
+    // Calcite passes the right hand side as a string instead of as a Long
+    private String toSolrLiteralForEquals(RexLiteral literal, SqlTypeName fieldTypeName) {
+      Object value2 = literal.getValue2();
+      final String solrLiteral;
+      // oddly, for = criteria with a timestamp field, Calcite passes us a String instead of a Long as it does with other operators like >
+      if (value2 instanceof String && fieldTypeName == SqlTypeName.TIMESTAMP && CALCITE_TIMESTAMP_REGEX.matcher((String) value2).matches()) {
+        String timestamp = ((String) value2).replace(' ', 'T').replace("'", "");
+        if (Character.isDigit(timestamp.charAt(timestamp.length() - 1))) {
+          timestamp += "Z";
+        }
+        solrLiteral = timestamp;
+      } else {
+        solrLiteral = toSolrLiteral(literal);
+      }
+      return solrLiteral;
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {

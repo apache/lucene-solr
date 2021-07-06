@@ -41,6 +41,31 @@
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
 
+  <!-- Used to test proper type handling for custom field types based on built-in type classes -->
+  <fieldType name="stringx" class="solr.StrField" docValues="true"/>
+  <fieldType name="tintx" class="solr.TrieIntField" docValues="true"/>
+  <fieldType name="pintx" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="tfloatx" class="solr.TrieFloatField" docValues="true"/>
+  <fieldType name="pfloatx" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="tlongx" class="solr.TrieLongField" docValues="true"/>
+  <fieldType name="plongx" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="tdoublex" class="solr.TrieDoubleField" docValues="true"/>
+  <fieldType name="pdoublex" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pdatex" class="solr.DatePointField" docValues="true"/>
+  <field name="stringx" type="stringx" indexed="true" stored="true"/>
+  <field name="tintx" type="tintx" indexed="true" stored="true"/>
+  <field name="pintx" type="pintx" indexed="true" stored="true"/>
+  <field name="pintxs" type="pintx" indexed="true" stored="true" multiValued="true"/>
+  <field name="tfloatx" type="tfloatx" indexed="true" stored="true"/>
+  <field name="pfloatx" type="pfloatx" indexed="true" stored="true"/>
+  <field name="tlongx" type="tlongx" indexed="true" stored="true"/>
+  <field name="plongx" type="plongx" indexed="true" stored="true"/>
+  <field name="tdoublex" type="tdoublex" indexed="true" stored="true"/>
+  <field name="pdoublex" type="pdoublex" indexed="true" stored="true"/>
+  <field name="textx" type="text" indexed="true" stored="true"/>
+  <field name="pdatex" type="pdatex" indexed="true" stored="true"/>
+  <field name="pdatexs" type="pdatex" indexed="true" stored="true" multiValued="true"/>
+
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
