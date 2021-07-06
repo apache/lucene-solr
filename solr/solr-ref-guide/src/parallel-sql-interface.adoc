@@ -263,7 +263,7 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 * IN, LIKE, BETWEEN support the NOT keyword to find rows where the condition is not true, such as `fielda NOT LIKE 'day%'`
 * String literals must be wrapped in single-quotes; double-quotes indicate database objects and not a string literal.
 * A simplistic LIKE can be used with an asterisk wildcard, such as `field = 'sam*'`; this is Solr specific and not part of the SQL standard.
-* When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets. For example, +++b_is <= 2 AND b_is >= 5+++ appears to Calcite to be disjoint sets, which they are from a single-valued field perspective. However, this may not be the case with multi-valued fields, as Solr might match documents. The work-around is to use Solr query syntax directly inside of an equals expression wrapped in parens: `b_is = '(+[5 TO *] +[* TO 2])'`
+* When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets. For example, +++b_is \<= 2 AND b_is >= 5+++ appears to Calcite to be disjoint sets, which they are from a single-valued field perspective. However, this may not be the case with multi-valued fields, as Solr might match documents. The work-around is to use Solr query syntax directly inside of an equals expression wrapped in parens: `b_is = '(+[5 TO *] +[* TO 2])'`
 
 === ORDER BY Clause
 
