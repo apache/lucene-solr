@@ -634,7 +634,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
     for(Metric metric: metrics) {
       String func = metric.getFunctionName();
-      if(!func.equals("count") && !func.equals("per") && !func.equals("std")) {
+      if(!func.equals("count") && !func.equals("per") && !func.equals("std") && !func.equals("countDist")) {
         if (!json.contains(metric.getIdentifier())) {
           return false;
         }
@@ -764,6 +764,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
             buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
           } else if (identifier.startsWith("std(")) {
             buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+          } else if (identifier.startsWith("countDist(")) {
+            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
           } else {
             buf.append('"').append(facetKey).append("\":\"").append(identifier).append('"');
           }

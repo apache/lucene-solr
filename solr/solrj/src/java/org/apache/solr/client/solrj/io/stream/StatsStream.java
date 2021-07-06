@@ -296,6 +296,8 @@ public class StatsStream extends TupleStream implements Expressible  {
           buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
         } else if(identifier.startsWith("std(")) {
           buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+        } else if (identifier.startsWith("countDist(")) {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
         } else {
           buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
         }
