@@ -24,13 +24,7 @@ import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
@@ -119,6 +113,7 @@ public class Lang {
         .withFunctionName("per", PercentileMetric.class)
         .withFunctionName("std", StdMetric.class)
         .withFunctionName("count", CountMetric.class)
+        .withFunctionName("countDist", CountDistinctMetric.class)
 
             // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)

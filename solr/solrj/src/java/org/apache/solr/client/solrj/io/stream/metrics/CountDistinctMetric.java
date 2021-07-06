@@ -73,8 +73,8 @@ public class CountDistinctMetric extends Metric {
     }
 
     public Number getValue() {
-       //No op for now
-       return null;
+        //No op for now
+        return null;
     }
 
     @Override
