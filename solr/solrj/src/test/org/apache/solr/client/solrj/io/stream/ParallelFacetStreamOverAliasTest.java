@@ -40,14 +40,24 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.client.solrj.io.stream.FacetStream.TIERED_PARAM;
 
 /**
  * Verify auto-plist with rollup over a facet expression when using collection alias over multiple collections.
@@ -63,6 +73,8 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   private static final int NUM_DOCS_PER_COLLECTION = 40;
   private static final int NUM_SHARDS_PER_COLLECTION = 4;
   private static final int CARDINALITY = 10;
+  private static final int BUCKET_SIZE_LIMIT = Math.max(CARDINALITY * 2, 100);
+
   private static final RandomGenerator rand = new JDKRandomGenerator(5150);
   private static List<String> listOfCollections;
   private static SolrClientCache solrClientCache;
@@ -169,7 +181,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         "  q=\"*:*\", \n" +
         "  buckets=\"a_i\", \n" +
         "  bucketSorts=\"a_i asc\", \n" +
-        "  bucketSizeLimit=100, \n" +
+        "  bucketSizeLimit=" + BUCKET_SIZE_LIMIT + ", \n" +
         "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
         ")\n";
 
@@ -191,7 +203,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         "  q=\"*:*\", \n" +
         "  buckets=\"a_i,b_i\", \n" + /* two dimensions here ~ doubles the number of tuples */
         "  bucketSorts=\"sum(a_d) desc\", \n" +
-        "  bucketSizeLimit=100, \n" +
+        "  bucketSizeLimit=" + BUCKET_SIZE_LIMIT + ", \n" +
         "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
         ")\n";
 
@@ -200,7 +212,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelFacetSortByDimensions() throws Exception {
-
     // notice we're sorting the stream by a metric, but internally, that doesn't work for parallelization
     // so the rollup has to sort by dimensions and then apply a final re-sort once the parallel streams are merged
     String facetExprTmpl = "" +
@@ -210,11 +221,47 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         "  q=\"*:*\", \n" +
         "  buckets=\"a_i,b_i\", \n" +
         "  bucketSorts=\"a_i asc, b_i asc\", \n" +
-        "  bucketSizeLimit=100, \n" +
+        "  bucketSizeLimit=" + BUCKET_SIZE_LIMIT + ", \n" +
         "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
         ")\n";
 
     compareTieredStreamWithNonTiered(facetExprTmpl, 2);
+  }
+
+  @Test
+  public void testParallelStats() throws Exception {
+    Metric[] metrics = new Metric[]{
+        new CountMetric(),
+        new CountDistinctMetric("a_i"),
+        new SumMetric("b_i"),
+        new MinMetric("a_i"),
+        new MaxMetric("a_i"),
+        new MeanMetric("a_d")
+    };
+
+    String zkHost = cluster.getZkServer().getZkAddress();
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.add(CommonParams.Q, "*:*");
+    solrParams.add(TIERED_PARAM, "true");
+
+    // tiered stats stream
+    StatsStream statsStream = new StatsStream(zkHost, ALIAS_NAME, solrParams, metrics);
+    statsStream.setStreamContext(streamContext);
+    List<Tuple> tieredTuples = getTuples(statsStream);
+    assertEquals(1, tieredTuples.size());
+    assertNotNull(statsStream.parallelizedStream);
+
+    solrParams = new ModifiableSolrParams();
+    solrParams.add(CommonParams.Q, "*:*");
+    solrParams.add(TIERED_PARAM, "false");
+    statsStream = new StatsStream(zkHost, ALIAS_NAME, solrParams, metrics);
+    statsStream.setStreamContext(streamContext);
+    // tiered should match non-tiered results
+    assertListOfTuplesEquals(tieredTuples, getTuples(statsStream));
+    assertNull(statsStream.parallelizedStream);
   }
 
   // execute the provided expression with tiered=true and compare to results of tiered=false
@@ -249,7 +296,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     assertTrue(stream instanceof FacetStream);
     FacetStream facetStream = (FacetStream) stream;
     TupleStream[] parallelStreams = facetStream.parallelize(listOfCollections);
-    assertEquals(2, parallelStreams.length);
+    assertEquals(NUM_COLLECTIONS, parallelStreams.length);
     assertTrue(parallelStreams[0] instanceof FacetStream);
 
     Optional<Metric[]> rollupMetrics = facetStream.getRollupMetrics(facetStream.getMetrics().toArray(new Metric[0]));

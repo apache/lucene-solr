@@ -66,7 +66,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private static final long serialVersionUID = 1;
 
   // allow client apps to disable the auto-plist via system property if they want to turn it off globally
-  private static final boolean defaultTieredEnabled =
+  static final boolean defaultTieredEnabled =
       Boolean.parseBoolean(System.getProperty("solr.facet.stream.tiered", "false"));
 
   static final String TIERED_PARAM = "tiered";
@@ -937,7 +937,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
    * @return A mapping of fields produced by the rollup stream to their output name.
    */
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>();
+    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
     for (Bucket b : buckets) {
       String key = b.toString();
       map.put(key, key);
