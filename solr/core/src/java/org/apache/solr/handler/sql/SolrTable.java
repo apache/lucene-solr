@@ -86,7 +86,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   
   private Enumerable<Object> query(final Properties properties) {
     return query(properties, Collections.emptyList(), null, Collections.emptyList(), Collections.emptyList(),
-        Collections.emptyList(), null, null, null);
+        Collections.emptyList(), null, null, null, null);
   }
 
   /** Executes a Solr query on the underlying table.
@@ -104,7 +104,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                    final List<Pair<String, String>> metricPairs,
                                    final String limit,
                                    final String negativeQuery,
-                                   final String havingPredicate) {
+                                   final String havingPredicate,
+                                   final String offset) {
     // SolrParams should be a ModifiableParams instead of a map
     boolean mapReduce = "map_reduce".equals(properties.getProperty("aggregationMode"));
     boolean negative = Boolean.parseBoolean(negativeQuery);
@@ -125,7 +126,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     String zk = properties.getProperty("zk");
     try {
       if (metricPairs.isEmpty() && buckets.isEmpty()) {
-        tupleStream = handleSelect(zk, collection, q, fields, orders, limit);
+        tupleStream = handleSelect(zk, collection, q, fields, orders, limit, offset);
       } else {
         if(buckets.isEmpty()) {
           tupleStream = handleStats(zk, collection, q, metricPairs, fields);
@@ -257,7 +258,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
                                    String query,
                                    List<Map.Entry<String, Class>> fields,
                                    List<Pair<String, String>> orders,
-                                   String limit) throws IOException {
+                                   String limit,
+                                   String offset) throws IOException {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.Q, query);
@@ -276,25 +278,43 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     String fl = getFields(fields);
 
-    if(orders.size() > 0) {
+    if (!orders.isEmpty()) {
       params.add(SORT, getSort(orders));
     } else {
-      if(limit == null) {
+      if (limit == null) {
         params.add(SORT, "_version_ desc");
         fl = fl+",_version_";
       } else {
         params.add(SORT, "score desc");
-        if(fl.indexOf("score") == -1) {
+        if (!fl.contains("score")) {
           fl = fl + ",score";
         }
       }
     }
 
     params.add(CommonParams.FL, fl);
-
+    
+    if (offset != null && limit == null) {
+      throw new IOException("OFFSET without LIMIT not supported by Solr! Specify desired limit using 'FETCH NEXT <LIMIT> ROWS ONLY'");
+    }
+    
     if (limit != null) {
-      params.add(CommonParams.ROWS, limit);
-      return new LimitStream(new CloudSolrStream(zk, collection, params), Integer.parseInt(limit));
+      int limitInt = Integer.parseInt(limit);
+      // if there's an offset, then we need to fetch offset + limit rows from each shard and then sort accordingly
+      LimitStream limitStream;
+      if (offset != null) {
+        int offsetInt = Integer.parseInt(offset);
+        int rows = limitInt + offsetInt;
+        params.add(CommonParams.START, "0"); // tricky ... we need all rows up to limit + offset
+        params.add(CommonParams.ROWS, String.valueOf(rows));
+        // re-sort all the streams back from the shards
+        StreamComparator streamSorter = new MultipleFieldComparator(getComps(orders));
+        limitStream = new LimitStream(new SortStream(new CloudSolrStream(zk, collection, params), streamSorter), limitInt, offsetInt);
+      } else {
+        params.add(CommonParams.ROWS, limit);
+        limitStream = new LimitStream(new CloudSolrStream(zk, collection, params), limitInt);
+      }
+      return limitStream;
     } else {
       params.add(CommonParams.QT, "/export");
       return new CloudSolrStream(zk, collection, params);
@@ -864,8 +884,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
      */
     @SuppressWarnings({"rawtypes","UnusedDeclaration"})
     public Enumerable<Object> query(List<Map.Entry<String, Class>> fields, String query, List<Pair<String, String>> order,
-                                    List<String> buckets, List<Pair<String, String>> metricPairs, String limit, String negativeQuery, String havingPredicate) {
-      return getTable().query(getProperties(), fields, query, order, buckets, metricPairs, limit, negativeQuery, havingPredicate);
+                                    List<String> buckets, List<Pair<String, String>> metricPairs, String limit, String negativeQuery, String havingPredicate, String offset) {
+      return getTable().query(getProperties(), fields, query, order, buckets, metricPairs, limit, negativeQuery, havingPredicate, offset);
     }
   }
 
