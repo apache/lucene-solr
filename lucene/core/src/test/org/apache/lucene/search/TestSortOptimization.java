@@ -38,7 +38,7 @@ import java.io.IOException;
 import static org.apache.lucene.search.SortField.FIELD_DOC;
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
 
-public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
+public class TestSortOptimization extends LuceneTestCase {
 
   public void testLongSortOptimization() throws IOException {
 
@@ -319,6 +319,69 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
 
     reader.close();
     dir.close();
+  }
+
+  /**
+   * Test that a search with sort on [_doc, other fields] across multiple indices doesn't miss any
+   * documents.
+   */
+  public void testDocSortOptimizationMultipleIndices() throws IOException {
+    final int numIndices = 3;
+    final int numDocsInIndex = atLeast(50);
+    Directory[] dirs = new Directory[numIndices];
+    IndexReader[] readers = new IndexReader[numIndices];
+    for (int i = 0; i < numIndices; i++) {
+      dirs[i] = newDirectory();
+      try (IndexWriter writer = new IndexWriter(dirs[i], new IndexWriterConfig())) {
+        for (int docID = 0; docID < numDocsInIndex; docID++) {
+          final Document doc = new Document();
+          doc.add(new NumericDocValuesField("my_field", docID * numIndices + i));
+          writer.addDocument(doc);
+        }
+        writer.flush();
+      }
+      readers[i] = DirectoryReader.open(dirs[i]);
+    }
+
+    final int size = 7;
+    final int totalHitsThreshold = 7;
+    final Sort sort = new Sort(FIELD_DOC, new SortField("my_field", SortField.Type.LONG));
+    TopFieldDocs[] topDocs = new TopFieldDocs[numIndices];
+    int curNumHits;
+    FieldDoc after = null;
+    long collectedDocs = 0;
+    long totalDocs = 0;
+    int numHits = 0;
+    do {
+      for (int i = 0; i < numIndices; i++) {
+        IndexSearcher searcher = newSearcher(readers[i]);
+        final TopFieldCollector collector =
+                TopFieldCollector.create(sort, size, after, totalHitsThreshold);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        topDocs[i] = collector.topDocs();
+        for (int docID = 0; docID < topDocs[i].scoreDocs.length; docID++) {
+          topDocs[i].scoreDocs[docID].shardIndex = i;
+        }
+        collectedDocs += topDocs[i].totalHits.value;
+        totalDocs += numDocsInIndex;
+      }
+      TopFieldDocs mergedTopDcs = TopDocs.merge(sort, size, topDocs);
+      curNumHits = mergedTopDcs.scoreDocs.length;
+      numHits += curNumHits;
+      if (curNumHits > 0) {
+        after = (FieldDoc) mergedTopDcs.scoreDocs[curNumHits - 1];
+      }
+    } while (curNumHits > 0);
+
+    for (int i = 0; i < numIndices; i++) {
+      readers[i].close();
+      dirs[i].close();
+    }
+
+    final int expectedNumHits = numDocsInIndex * numIndices;
+    assertEquals(expectedNumHits, numHits);
+    // check that the optimization was run, as very few docs were collected
+    assertTrue(collectedDocs < totalDocs);
   }
 
   public void testDocSortOptimizationWithAfter() throws IOException {
