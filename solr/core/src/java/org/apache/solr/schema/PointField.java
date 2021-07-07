@@ -298,7 +298,10 @@ public abstract class PointField extends NumericFieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    return getNumericSort(field, getNumberType(), top);
+    SortField sf = getNumericSort(field, getNumberType(), top);
+    // if indexed=true, points can be used for skipping over non competitive docs.
+    sf.setCanUsePoints();
+    return sf;
   }
   
 }
