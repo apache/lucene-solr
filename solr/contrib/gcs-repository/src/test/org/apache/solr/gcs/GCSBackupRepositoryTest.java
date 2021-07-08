@@ -38,7 +38,7 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     // Locale langs unsupported by google-cloud-nio's 'Storage' drop-in.  May need added to as Jenkins finds fails.
     // (Note that the issue here is in the test-stub, actual GCS use is fine with these locales).
     private static final List<String> INCOMPATIBLE_LOCALE_LANGS = Lists.newArrayList("ar", "dz", "uz", "ne", "mzn", "pa",
-            "sd", "mr", "ig", "as", "fa", "my", "bn", "lrc", "ur", "ks", "th", "ckb", "ja", "ps");
+            "sd", "mr", "ig", "as", "fa", "my", "bn", "lrc", "ur", "ks", "th", "ckb", "ja", "ps", "hi");
 
     @BeforeClass
     public static void ensureCompatibleLocale() {
