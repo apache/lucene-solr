@@ -468,7 +468,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     if (node.isNumber()) {
       return node.numberValue();
     } else {
-      LOGGER.warn("node {} does not have a number at the path {}.", originalNode, Arrays.toString(names));
+      LOGGER.debug("node {} does not have a number at the path {}.", originalNode, Arrays.toString(names));
       return INVALID_NUMBER;
     }
   }

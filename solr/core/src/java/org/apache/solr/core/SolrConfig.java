@@ -882,7 +882,6 @@ public class SolrConfig implements MapSerializable {
 
     if (!urls.isEmpty()) {
       loader.addToClassLoader(urls);
-      loader.reloadLuceneSPI();
     }
   }
 

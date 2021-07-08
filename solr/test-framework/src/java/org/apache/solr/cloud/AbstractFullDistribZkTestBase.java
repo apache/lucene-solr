@@ -116,7 +116,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeFullSolrCloudTest() {

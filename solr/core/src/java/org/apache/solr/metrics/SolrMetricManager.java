@@ -116,7 +116,10 @@ public class SolrMetricManager {
   private final MetricRegistry.MetricSupplier<Timer> timerSupplier;
   private final MetricRegistry.MetricSupplier<Histogram> histogramSupplier;
 
+  private final Set<Class> whiteList;
+
   public SolrMetricManager() {
+    whiteList = null;
     metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     counterSupplier = MetricSuppliers.counterSupplier(null, null);
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
@@ -124,8 +127,9 @@ public class SolrMetricManager {
     histogramSupplier = MetricSuppliers.histogramSupplier(null, null);
   }
 
-  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
+  public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig, Set<Class> whiteList) {
     this.metricsConfig = metricsConfig;
+    this.whiteList = whiteList;
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
@@ -662,7 +666,11 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).meter(name, meterSupplier);
+    MetricRegistry.MetricSupplier<Meter> meterMetricSupplier = meterSupplier;
+    if (ignoreMetrics(info)) {
+      meterMetricSupplier = MetricSuppliers.NoOpMeterSupplier.INSTANCE;
+    }
+    return registry(registry).meter(name, meterMetricSupplier);
   }
 
   /**
@@ -679,7 +687,11 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).timer(name, timerSupplier);
+    MetricRegistry.MetricSupplier<Timer> timerMetricSupplier = timerSupplier;
+    if (ignoreMetrics(info)) {
+      timerMetricSupplier = MetricSuppliers.NoOpTimerSupplier.INSTANCE;
+    }
+    return registry(registry).timer(name, timerMetricSupplier);
   }
 
   /**
@@ -696,7 +708,11 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).counter(name, counterSupplier);
+    MetricRegistry.MetricSupplier<Counter> counterMetricSupplier = counterSupplier;
+    if (ignoreMetrics(info)) {
+      counterMetricSupplier = MetricSuppliers.NoOpCounterSupplier.INSTANCE;
+    }
+    return registry(registry).counter(name, counterMetricSupplier);
   }
 
   /**
@@ -713,7 +729,11 @@ public class SolrMetricManager {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).histogram(name, histogramSupplier);
+    MetricRegistry.MetricSupplier<Histogram> histogramMetricSupplier = histogramSupplier;
+    if (ignoreMetrics(info)) {
+      histogramMetricSupplier = MetricSuppliers.NoOpHistogramSupplier.INSTANCE;
+    }
+    return registry(registry).histogram(name, histogramMetricSupplier);
   }
 
   /**
@@ -773,7 +793,7 @@ public class SolrMetricManager {
   }
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
-    if (!metricsConfig.isEnabled()) {
+    if (!metricsConfig.isEnabled() || ignoreMetrics(info)) {
       gauge = MetricSuppliers.getNoOpGauge(gauge);
     }
     registerMetric(info, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
@@ -1053,6 +1073,15 @@ public class SolrMetricManager {
     } finally {
       reportersLock.unlock();
     }
+  }
+
+  private boolean ignoreMetrics(SolrInfoBean info) {
+    if (whiteList != null && !whiteList.isEmpty()) {
+      if (info == null || !whiteList.contains(info.getClass())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

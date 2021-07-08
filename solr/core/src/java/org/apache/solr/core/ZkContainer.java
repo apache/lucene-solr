@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
+import org.apache.solr.cloud.QueryAggregatorZKController;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
@@ -129,14 +130,25 @@ public class ZkContainer {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
-        zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config,
-            new CurrentCoreDescriptorProvider() {
+        if (cc.isQueryAggregator()) {
+          zkController = new QueryAggregatorZKController(cc, zookeeperHost, zkClientConnectTimeout, config,
+              new CurrentCoreDescriptorProvider() {
 
-              @Override
-              public List<CoreDescriptor> getCurrentDescriptors() {
-                return cc.getCores().stream().map(SolrCore::getCoreDescriptor).collect(Collectors.toList());
-              }
-            });
+                @Override
+                public List<CoreDescriptor> getCurrentDescriptors() {
+                  return cc.getCores().stream().map(SolrCore::getCoreDescriptor).collect(Collectors.toList());
+                }
+              });
+        } else {
+          zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config,
+              new CurrentCoreDescriptorProvider() {
+
+                @Override
+                public List<CoreDescriptor> getCurrentDescriptors() {
+                  return cc.getCores().stream().map(SolrCore::getCoreDescriptor).collect(Collectors.toList());
+                }
+              });
+        }
 
 
         if (zkRun != null) {
