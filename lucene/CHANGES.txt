@@ -52,6 +52,9 @@ Optimizations
   particular in the case of many fields and many indexing threads.
   (Adrien Grand)
 
+* LUCENE-10022: Rewrite empty DisjunctionMaxQuery to MatchNoDocsQuery.
+  (David Harsha via Julie Tibshirani)
+
 Bug Fixes
 ---------------------
 
