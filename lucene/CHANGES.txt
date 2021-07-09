@@ -47,7 +47,10 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9996: Improved memory efficiency of IndexWriter's RAM buffer, in
+  particular in the case of many fields and many indexing threads.
+  (Adrien Grand)
 
 Bug Fixes
 ---------------------
