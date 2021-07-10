@@ -16,17 +16,23 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 
-import java.util.*;
+import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.APPROX_COUNT_DISTINCT;
+import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric.COUNT_DISTINCT;
 
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Aggregate} relational expression in Solr.
@@ -41,49 +47,56 @@ class SolrAggregate extends Aggregate implements SolrRel {
       SqlStdOperatorTable.AVG
   );
 
+  // Returns the Solr agg metric identifier (includes column) for the SQL metric
+  static String solrAggMetricId(String metric, String column) {
+    // CountDistinctMetric's getIdentifer returns "countDist" but all others return a lowercased value
+    String funcName = COUNT_DISTINCT.equals(metric) ? COUNT_DISTINCT : metric.toLowerCase(Locale.ROOT);
+    return String.format(Locale.ROOT, "%s(%s)", funcName, column);
+  }
+
   SolrAggregate(
       RelOptCluster cluster,
       RelTraitSet traitSet,
+      List<RelHint> hints,
       RelNode child,
-      boolean indicator,
       ImmutableBitSet groupSet,
       List<ImmutableBitSet> groupSets,
       List<AggregateCall> aggCalls) {
-    super(cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls);
+    super(cluster, traitSet, hints, child, groupSet, groupSets, aggCalls);
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
+  }
+
+  @Override
+  public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets,
+      List<AggregateCall> aggCalls) {
+    return new SolrAggregate(getCluster(), traitSet, hints,input, groupSet, groupSets, aggCalls);
   }
 
   @Override
   public Aggregate copy(RelTraitSet traitSet, RelNode input,
                         boolean indicator, ImmutableBitSet groupSet,
                         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
-    return new SolrAggregate(getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls);
+    return new SolrAggregate(getCluster(), traitSet, hints, input, groupSet, groupSets, aggCalls);
   }
 
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
 
     final List<String> inNames = SolrRules.solrFieldNames(getInput().getRowType());
-
-
-    for(Pair<AggregateCall, String> namedAggCall : getNamedAggCalls()) {
+    for (Pair<AggregateCall, String> namedAggCall : getNamedAggCalls()) {
 
       AggregateCall aggCall = namedAggCall.getKey();
-
       Pair<String, String> metric = toSolrMetric(implementor, aggCall, inNames);
-      implementor.addReverseAggMapping(namedAggCall.getValue(), metric.getKey().toLowerCase(Locale.ROOT)+"("+metric.getValue()+")");
-      implementor.addMetricPair(namedAggCall.getValue(), metric.getKey(), metric.getValue());
-      /*
-      if(aggCall.getName() == null) {
-        System.out.println("AGG:"+namedAggCall.getValue()+":"+ aggCall.getAggregation().getName() + "(" + inNames.get(aggCall.getArgList().get(0)) + ")");
-        implementor.addFieldMapping(namedAggCall.getValue(),
-          aggCall.getAggregation().getName() + "(" + inNames.get(aggCall.getArgList().get(0)) + ")");
-      }
-      */
+
+      boolean isDistinct = SqlStdOperatorTable.COUNT.equals(aggCall.getAggregation()) && aggCall.isDistinct();
+      // map the SQL COUNT to either countDist or hll for distinct ops, otherwise, the metric names map over directly
+      String metricKey = isDistinct ? (aggCall.isApproximate() ? APPROX_COUNT_DISTINCT : COUNT_DISTINCT) : metric.getKey();
+      implementor.addReverseAggMapping(namedAggCall.getValue(), solrAggMetricId(metricKey, metric.getValue()));
+      implementor.addMetricPair(namedAggCall.getValue(), metricKey, metric.getValue());
     }
 
-    for(int group : getGroupSet()) {
+    for (int group : getGroupSet()) {
       String inName = inNames.get(group);
       implementor.addBucket(inName);
     }
@@ -101,7 +114,7 @@ class SolrAggregate extends Aggregate implements SolrRel {
       case 1:
         String inName = inNames.get(args.get(0));
         String name = implementor.fieldMappings.getOrDefault(inName, inName);
-        if(SUPPORTED_AGGREGATIONS.contains(aggregation)) {
+        if (SUPPORTED_AGGREGATIONS.contains(aggregation)) {
           return new Pair<>(aggregation.getName(), name);
         }
       default:

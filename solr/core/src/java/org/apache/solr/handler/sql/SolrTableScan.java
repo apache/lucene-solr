@@ -20,6 +20,7 @@ import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.List;
@@ -73,9 +74,7 @@ class SolrTableScan extends TableScan implements SolrRel {
       planner.addRule(rule);
     }
 
-    for (RelOptRule rule : SolrRules.CONSTANT_REDUCTION_RULES) {
-      planner.addRule(rule);
-    }
+    planner.removeRule(CoreRules.FILTER_REDUCE_EXPRESSIONS); // prevent AND NOT from being reduced away, see SOLR-15461
   }
 
   public void implement(Implementor implementor) {

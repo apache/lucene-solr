@@ -23,6 +23,8 @@ import org.apache.calcite.util.Pair;
 
 import java.util.*;
 
+import static org.apache.solr.handler.sql.SolrAggregate.solrAggMetricId;
+
 /**
  * Relational expression that uses Solr calling convention.
  */
@@ -40,6 +42,7 @@ interface SolrRel extends RelNode {
     String havingPredicate;
     boolean negativeQuery;
     String limitValue = null;
+    String offsetValue = null;
     final List<Pair<String, String>> orders = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
     final List<Pair<String, String>> metricPairs = new ArrayList<>();
@@ -83,9 +86,8 @@ interface SolrRel extends RelNode {
       column = this.fieldMappings.getOrDefault(column, column);
       this.metricPairs.add(new Pair<>(metric, column));
 
-      String metricIdentifier = metric.toLowerCase(Locale.ROOT) + "(" + column + ")";
       if(outName != null) {
-        this.addFieldMapping(outName, metricIdentifier, true);
+        this.addFieldMapping(outName, solrAggMetricId(metric, column), true);
       }
     }
 
@@ -96,6 +98,10 @@ interface SolrRel extends RelNode {
 
     void setLimit(String limit) {
       limitValue = limit;
+    }
+
+    void setOffset(String offset) {
+      this.offsetValue = offset;
     }
 
     void visitChild(int ordinal, RelNode input) {

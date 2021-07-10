@@ -32,11 +32,18 @@ class LimitStream extends TupleStream {
 
   private final TupleStream stream;
   private final int limit;
+  private final int offset;
   private int count;
 
   LimitStream(TupleStream stream, int limit) {
+    this(stream, limit, 0);
+  }
+
+  LimitStream(TupleStream stream, int limit, int offset) {
     this.stream = stream;
     this.limit = limit;
+    this.offset = offset > 0 ? offset : 0;
+    this.count = 0;
   }
 
   public void open() throws IOException {
@@ -75,8 +82,20 @@ class LimitStream extends TupleStream {
   }
 
   public Tuple read() throws IOException {
-    ++count;
-    if(count > limit) {
+
+    if (count == 0 && offset > 0) {
+      // skip offset # of sorted tuples (indexes 0 to offset-1) so that the first tuple returned
+      while (count < offset) {
+        ++count; // don't increment until after the compare ...
+        Tuple skip = stream.read();
+        if (skip.EOF) {
+          return skip;
+        }
+      }
+    }
+
+    // done once we've reached the tuple after limit + offset
+    if (++count > (limit + offset)) {
       return Tuple.EOF();
     }
 

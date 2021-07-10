@@ -58,6 +58,7 @@ public class CountMetric extends Metric {
   private void init(String functionName, String columnName){
     this.columnName = columnName;
     this.isAllColumns = "*".equals(this.columnName);
+    this.outputLong = true;
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }

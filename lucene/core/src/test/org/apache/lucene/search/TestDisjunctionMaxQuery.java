@@ -22,6 +22,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -526,6 +527,13 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     assertEquals(bq.clauses().size(), 2);
     assertEquals(bq.clauses().get(0), new BooleanClause(sub1, BooleanClause.Occur.SHOULD));
     assertEquals(bq.clauses().get(1), new BooleanClause(sub2, BooleanClause.Occur.SHOULD));
+  }
+
+  public void testRewriteEmpty() throws Exception {
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(Collections.emptyList(), 0.0f);
+    Query rewritten = s.rewrite(q);
+    Query expected = new MatchNoDocsQuery();
+    assertEquals(expected, rewritten);
   }
 
   public void testRandomTopDocs() throws Exception {

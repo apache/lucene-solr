@@ -13,9 +13,24 @@ New Features
 * SOLR-15472: New shards.preference option for preferring replicas based on their leader status, i.e.
   `shards.preference=replica.leader:false` would prefer non-leader replicas. (wei wang via Timothy Potter)
 
+* SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
+
 Improvements
 ---------------------
-(No changes)
+* SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)
+
+* SOLR-15451: SolrSchema (for Parallel SQL) should use PKI principal for internal request to /admin/luke to get table metadata (Timothy Potter)
+
+* SOLR-15456: Get field type info from luke for custom fields instead of defaulting to String in Parallel SQL (Timothy Potter)
+
+* SOLR-15461: Upgrade Apache Calcite to 1.27.0. (Mark Miller, Timothy Potter)
+
+* SOLR-15489: Implement OFFSET & FETCH for LIMIT SQL queries (Timothy Potter)
+
+* SOLR-15475: Implement COUNT and APPROX_COUNT_DISTINCT aggregation functions for Parallel SQL (Timothy Potter)
+
+* SOLR-15499: StatsStream implement ParallelMetricsRollup to allow for tiered computation of SQL metrics
+  over collection aliases backed by many collections, potentially with many shards in each (Timothy Potter)
 
 Optimizations
 ---------------------
@@ -29,6 +44,8 @@ Bug Fixes
 Other Changes
 ---------------------
 * SOLR-15355: Upgrade Hadoop from 3.2.0 to 3.2.2. (Antoine Gruzelle via David Smiley)
+
+* SOLR-15502: Remove MetricsCollectorHandler deprecated warning from the logs. (Bernd Wahlen, ab)
 
 ==================  8.9.0 ==================
 

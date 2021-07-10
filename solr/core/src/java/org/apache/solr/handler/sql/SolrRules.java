@@ -26,9 +26,6 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalSort;
-import org.apache.calcite.rel.rules.AggregateValuesRule;
-import org.apache.calcite.rel.rules.ReduceExpressionsRule;
-import org.apache.calcite.rel.rules.ValuesReduceRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -53,17 +50,6 @@ class SolrRules {
       SolrFilterRule.FILTER_RULE,
       SolrProjectRule.PROJECT_RULE,
       SolrAggregateRule.AGGREGATE_RULE,
-  };
-
-  static final RelOptRule[] CONSTANT_REDUCTION_RULES = {
-      ReduceExpressionsRule.PROJECT_INSTANCE,
-      ReduceExpressionsRule.FILTER_INSTANCE,
-      ReduceExpressionsRule.CALC_INSTANCE,
-      ReduceExpressionsRule.JOIN_INSTANCE,
-      ValuesReduceRule.FILTER_INSTANCE,
-      ValuesReduceRule.PROJECT_FILTER_INSTANCE,
-      ValuesReduceRule.PROJECT_INSTANCE,
-      AggregateValuesRule.INSTANCE
   };
 
   static List<String> solrFieldNames(final RelDataType rowType) {
@@ -238,8 +224,8 @@ class SolrRules {
       return new SolrAggregate(
           rel.getCluster(),
           traitSet,
+          agg.getHints(),
           convert(agg.getInput(), traitSet.simplify()),
-          agg.indicator,
           agg.getGroupSet(),
           agg.getGroupSets(),
           agg.getAggCallList());

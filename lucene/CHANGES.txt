@@ -50,12 +50,21 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9996: Improved memory efficiency of IndexWriter's RAM buffer, in
+  particular in the case of many fields and many indexing threads.
+  (Adrien Grand)
+
+* LUCENE-10022: Rewrite empty DisjunctionMaxQuery to MatchNoDocsQuery.
+  (David Harsha via Julie Tibshirani)
 
 Bug Fixes
 ---------------------
 
 * LUCENE-9988: Fix DrillSideways correctness bug introduced in LUCENE-9944 (Greg Miller)
+
+* LUCENE-10020: DocComparator should not skip docs with the same docID on
+  multiple sorts with search after (Mayya Sharipova, Julie Tibshirani)
 
 * LUCENE-9964: Duplicate long values in a document field should only be counted once when using SortedNumericDocValuesFields
   (Gautam Worah)

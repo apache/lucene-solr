@@ -17,17 +17,19 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -41,6 +43,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -48,14 +51,18 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+import static org.apache.solr.client.solrj.io.stream.FacetStream.TIERED_PARAM;
+import static org.apache.solr.client.solrj.io.stream.FacetStream.defaultTieredEnabled;
+
 /**
  * @since 6.6.0
  */
-public class StatsStream extends TupleStream implements Expressible  {
+public class StatsStream extends TupleStream implements Expressible, ParallelMetricsRollup  {
 
   private static final long serialVersionUID = 1;
 
-
+  // use a single "*" rollup bucket
+  private static final Bucket[] STATS_BUCKET = new Bucket[]{new Bucket("*")};
 
   private Metric[] metrics;
   private Tuple tuple;
@@ -66,6 +73,7 @@ public class StatsStream extends TupleStream implements Expressible  {
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
   private StreamContext context;
+  protected transient TupleStream parallelizedStream;
 
   public StatsStream(String zkHost,
                      String collection,
@@ -213,20 +221,33 @@ public class StatsStream extends TupleStream implements Expressible  {
 
   public void open() throws IOException {
 
+    @SuppressWarnings({"unchecked"})
+    Map<String, List<String>> shardsMap = (Map<String, List<String>>)context.get("shards");
+
+    // Parallelize the stats stream across multiple collections for an alias using plist if possible
+    if (shardsMap == null && params.getBool(TIERED_PARAM, defaultTieredEnabled)) {
+      ClusterStateProvider clusterStateProvider = cache.getCloudSolrClient(zkHost).getClusterStateProvider();
+      final List<String> resolved = clusterStateProvider != null ? clusterStateProvider.resolveAlias(collection) : null;
+      if (resolved != null && resolved.size() > 1) {
+        Optional<TupleStream> maybeParallelize = openParallelStream(context, resolved, metrics);
+        if (maybeParallelize.isPresent()) {
+          this.parallelizedStream = maybeParallelize.get();
+          return; // we're using a plist to parallelize the facet operation
+        } // else, there's a metric that we can't rollup over the plist results safely ... no plist for you!
+      }
+    }
+
     String json = getJsonFacetString(metrics);
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams(params);
     paramsLoc.set("json.facet", json);
     paramsLoc.set("rows", "0");
 
-    @SuppressWarnings({"unchecked"})
-    Map<String, List<String>> shardsMap = (Map<String, List<String>>)context.get("shards");
     if(shardsMap == null) {
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
       try {
-        @SuppressWarnings({"rawtypes"})
-        NamedList response = cloudSolrClient.request(request, collection);
+        NamedList<?> response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);
       } catch (Exception e) {
         throw new IOException(e);
@@ -243,8 +264,7 @@ public class StatsStream extends TupleStream implements Expressible  {
 
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       try {
-        @SuppressWarnings({"rawtypes"})
-        NamedList response = client.request(request);
+        NamedList<?> response = client.request(request);
         getTuples(response, metrics);
       } catch (Exception e) {
         throw new IOException(e);
@@ -268,6 +288,10 @@ public class StatsStream extends TupleStream implements Expressible  {
   }
 
   public Tuple read() throws IOException {
+    if (parallelizedStream != null) {
+      return parallelizedStream.read();
+    }
+
     if(index == 0) {
       ++index;
       return tuple;
@@ -296,6 +320,8 @@ public class StatsStream extends TupleStream implements Expressible  {
           buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
         } else if(identifier.startsWith("std(")) {
           buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
+        } else if (identifier.startsWith("countDist(")) {
+          buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
         } else {
           buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
         }
@@ -304,17 +330,16 @@ public class StatsStream extends TupleStream implements Expressible  {
     }
   }
 
-  private void getTuples(@SuppressWarnings({"rawtypes"})NamedList response,
+  private void getTuples(NamedList<?> response,
                          Metric[] metrics) {
 
     this.tuple = new Tuple();
-    @SuppressWarnings({"rawtypes"})
-    NamedList facets = (NamedList)response.get("facets");
+    NamedList<?> facets = (NamedList<?>)response.get("facets");
     fillTuple(tuple, facets, metrics);
   }
 
   private void fillTuple(Tuple t,
-                         @SuppressWarnings({"rawtypes"})NamedList nl,
+                         NamedList<?> nl,
                          Metric[] _metrics) {
 
     if(nl == null) {
@@ -352,5 +377,32 @@ public class StatsStream extends TupleStream implements Expressible  {
   @Override
   public StreamComparator getStreamSort() {
     return null;
+  }
+
+  @Override
+  public TupleStream[] parallelize(List<String> partitions) throws IOException {
+    final ModifiableSolrParams withoutTieredParam = new ModifiableSolrParams(params);
+    withoutTieredParam.remove(TIERED_PARAM); // each individual request is not tiered
+
+    TupleStream[] streams = new TupleStream[partitions.size()];
+    for (int p = 0; p < streams.length; p++) {
+      streams[p] = new StatsStream(zkHost, partitions.get(p), withoutTieredParam, metrics);
+    }
+    return streams;
+  }
+
+  @Override
+  public TupleStream getSortedRollupStream(ParallelListStream plist, Metric[] rollupMetrics) throws IOException {
+    return new SelectStream(new HashRollupStream(plist, STATS_BUCKET, rollupMetrics), getRollupSelectFields(rollupMetrics));
+  }
+
+  // Map the rollup metric to the original metric name so that we can project out the correct field names in the tuple
+  protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
+    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
+    for (Metric m : rollupMetrics) {
+      String[] cols = m.getColumns();
+      map.put(m.getIdentifier(), cols != null && cols.length > 0 ? cols[0] : "*");
+    }
+    return map;
   }
 }

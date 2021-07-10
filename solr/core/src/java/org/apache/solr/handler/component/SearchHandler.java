@@ -300,19 +300,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    if (req.getCore().getCircuitBreakerManager().isEnabled()) {
+    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+    if (circuitBreakerManager.isEnabled()) {
       List<CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
         RTimerTree subt = timer.sub("circuitbreaker");
         rb.setTimer(subt);
 
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
 
         rb.getTimer().stop();
       } else {
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
       }
 

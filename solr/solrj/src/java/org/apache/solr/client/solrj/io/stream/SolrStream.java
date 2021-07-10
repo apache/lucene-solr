@@ -125,9 +125,11 @@ public class SolrStream extends TupleStream {
     try {
       SolrParams requestParams = loadParams(params);
       if (!distrib) {
-        ((ModifiableSolrParams) requestParams).add("distrib","false");
+        ((ModifiableSolrParams) requestParams).add("distrib", "false");
       }
       tupleStreamParser = constructParser(requestParams);
+    } catch (IOException ioe) {
+      throw ioe;
     } catch (Exception e) {
       throw new IOException("params " + params, e);
     }
@@ -309,12 +311,34 @@ public class SolrStream extends TupleStream {
 
     NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
-    this.closeableHttpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
+    CloseableHttpResponse httpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
+
+    final int statusCode = httpResponse.getStatusLine().getStatusCode();
+    if (statusCode != 200) {
+      String errMsg = consumeStreamAsErrorMessage(stream);
+      httpResponse.close();
+      throw new IOException("Query to '" + query.getPath() + "?" + query.getParams() + "' failed due to: (" + statusCode + ") " + errMsg);
+    }
+
+    this.closeableHttpResponse = httpResponse;
     if (CommonParams.JAVABIN.equals(wt)) {
       return new JavabinTupleStreamParser(stream, true);
     } else {
       InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
       return new JSONTupleStream(reader);
     }
+  }
+
+  private String consumeStreamAsErrorMessage(InputStream stream) throws IOException {
+    StringBuilder errMsg = new StringBuilder();
+    int r;
+    char[] ach = new char[1024];
+    if (stream != null) {
+      try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+        while ((r = reader.read(ach)) != -1)
+          errMsg.append(ach, 0, r);
+      }
+    }
+    return errMsg.toString();
   }
 }

@@ -17,8 +17,10 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -31,16 +33,18 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
-@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class TestSQLHandler extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -72,6 +76,16 @@ public class TestSQLHandler extends SolrCloudTestCase {
     }
   }
 
+  public static SolrParams mapParams(String... vals) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    assertEquals("Parameters passed in here must be in pairs!", 0, (vals.length % 2));
+    for (int idx = 0; idx < vals.length; idx += 2) {
+      params.add(vals[idx], vals[idx + 1]);
+    }
+
+    return params;
+  }
+
   @Before
   public void cleanIndex() throws Exception {
     new UpdateRequest()
@@ -98,7 +112,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         "stmt",
         "select id, field_i, str_s, field_f, field_d, field_l from collection1 where (text_t='(XXXX)' OR text_t='XXXX') AND text_t='XXXX' order by field_i desc");
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     List<Tuple> tuples = getTuples(sParams, baseUrl);
 
     assert (tuples.size() == 8);
@@ -317,7 +331,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   }
 
-
   @Test
   public void testWhere() throws Exception {
 
@@ -332,7 +345,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     // Equals
     SolrParams sParams = mapParams(CommonParams.QT, "/sql",
@@ -349,7 +362,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     sParams = mapParams(CommonParams.QT, "/sql",
         "stmt", "select id from collection1 where id <> 1 order by id asc limit 10");
 
-    tuples = getTuples(sParams,baseUrl);
+    tuples = getTuples(sParams, baseUrl);
 
     assertEquals(7, tuples.size());
 
@@ -456,14 +469,14 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "Text_t", "XXXX XXXX", "Str_s", "c", "Field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select id, Field_i, Str_s from collection1 where Text_t='XXXX' order by Field_i desc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
 
-    assert (tuples.size() == 8);
+    assertEquals(tuples.toString(), 8, tuples.size());
 
     Tuple tuple;
 
@@ -514,7 +527,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     tuples = getTuples(sParams, baseUrl);
 
-    assert (tuples.size() == 2);
+
+    assertEquals(tuples.toString(), 2, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("Str_s").equals("c"));
@@ -556,7 +570,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
@@ -729,7 +743,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   }
 
-
   @Test
   public void testSelectDistinct() throws Exception {
 
@@ -744,7 +757,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s asc, field_i asc");
@@ -892,8 +905,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         "stmt", "select distinct str_s, field_i from collection1 where str_s = 'a'");
 
     tuples = getTuples(sParams, baseUrl);
-
-    assert (tuples.size() == 2);
+    Assert.assertEquals (tuples.toString(), 2, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("str_s").equals("a"));
@@ -919,7 +931,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s asc, field_i asc");
 
@@ -1098,7 +1110,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "9", "text_t", "XXXX XXXY", "str_s", "d", "field_i", "70")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
@@ -1164,7 +1176,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // The sort by and order by match and no limit is applied. All the Tuples should be returned in
     // this scenario.
 
-    assert (tuples.size() == 3);
+    assertEquals(tuples.toString(), 3, tuples.size());
 
     tuple = tuples.get(0);
     assert (tuple.get("str_s").equals("c"));
@@ -1303,7 +1315,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "stmt",
         "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
@@ -1441,7 +1453,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // Test zero hits
     sParams = mapParams(CommonParams.QT, "/sql",
         "stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
-         "min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
+            "min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
 
     tuples = getTuples(sParams, baseUrl);
 
@@ -1487,7 +1499,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
@@ -1590,7 +1602,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select id, str_s from collection1 where text_t='XXXX' order by field_iff desc");
@@ -1632,7 +1644,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getException().contains("No match found for function signature blah"));
   }
 
-
   @Test
   public void testTimeSeriesGroupingFacet() throws Exception {
 
@@ -1648,7 +1659,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
@@ -1751,7 +1762,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
@@ -1843,23 +1854,22 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   }
 
-
   public boolean assertLong(Tuple tuple, String fieldName, long l) throws Exception {
-    long lv = (long)tuple.get(fieldName);
-    if(lv != l) {
-      throw new Exception("Longs not equal:"+l+" : "+lv);
+    long lv = (long) tuple.get(fieldName);
+    if (lv != l) {
+      throw new Exception("Longs not equal:" + l + " : " + lv);
     }
 
     return true;
   }
 
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
-    String actual = (String)tuple.get(fieldName);
+    String actual = (String) tuple.get(fieldName);
 
-    if( (null == expected && null != actual) ||
+    if ((null == expected && null != actual) ||
         (null != expected && null == actual) ||
-        (null != expected && !expected.equals(actual))){
-      throw new Exception("Longs not equal:"+expected+" : "+actual);
+        (null != expected && !expected.equals(actual))) {
+      throw new Exception("Longs not equal:" + expected + " : " + actual);
     }
 
     return true;
@@ -1867,25 +1877,25 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   public boolean assertDouble(Tuple tuple, String fieldName, double d) throws Exception {
     double dv = tuple.getDouble(fieldName);
-    if(dv != d) {
-      throw new Exception("Doubles not equal:"+d+" : "+dv);
+    if (dv != d) {
+      throw new Exception("Doubles not equal:" + d + " : " + dv);
     }
 
     return true;
   }
 
-  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"}) List<Map> maps, int... ids) throws Exception {
+    if (maps.size() != ids.length) {
+      throw new Exception("Expected id count != actual map count:" + ids.length + ":" + maps.size());
     }
 
-    int i=0;
-    for(int val : ids) {
+    int i = 0;
+    for (int val : ids) {
       @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
-      String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
+      String tip = (String) t.get("id");
+      if (!tip.equals(Integer.toString(val))) {
+        throw new Exception("Found value:" + tip + " expecting:" + val);
       }
       ++i;
     }
@@ -1893,32 +1903,19 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   protected List<Tuple> getTuples(final SolrParams params, String baseUrl) throws IOException {
-    //log.info("Tuples from params: {}", params);
-    TupleStream tupleStream = new SolrStream(baseUrl, params);
-
-    tupleStream.open();
-    List<Tuple> tuples = new ArrayList<>();
-    for (;;) {
-      Tuple t = tupleStream.read();
-      //log.info(" ... {}", t.fields);
-      if (t.EOF) {
-        break;
-      } else {
-        tuples.add(t);
+    List<Tuple> tuples = new LinkedList<>();
+    try (TupleStream tupleStream = new SolrStream(baseUrl, params)) {
+      tupleStream.open();
+      for (; ; ) {
+        Tuple t = tupleStream.read();
+        if (t.EOF) {
+          break;
+        } else {
+          tuples.add(t);
+        }
       }
     }
-    tupleStream.close();
     return tuples;
-  }
-
-  public static SolrParams mapParams(String... vals) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    assertEquals("Parameters passed in here must be in pairs!", 0, (vals.length % 2));
-    for (int idx = 0; idx < vals.length; idx += 2) {
-      params.add(vals[idx], vals[idx + 1]);
-    }
-
-    return params;
   }
 
   protected Tuple getTuple(TupleStream tupleStream) throws IOException {
@@ -1928,4 +1925,346 @@ public class TestSQLHandler extends SolrCloudTestCase {
     return t;
   }
 
+  @Test
+  public void testIn() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "text_t", "foobar", "str_s", "a")
+        .add("id", "2", "text_t", "foobaz", "str_s", "b")
+        .add("id", "3", "text_t", "foobaz", "str_s", "c")
+        .add("id", "4", "text_t", "foobaz", "str_s", "d")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    SolrParams sParams = mapParams(CommonParams.QT, "/sql",
+        "stmt",
+        "select id from collection1 where str_s IN ('a','b','c')");
+
+    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    List<Tuple> tuples = getTuples(sParams, baseUrl);
+    assertEquals(3, tuples.size());
+  }
+
+  private String sqlUrl() {
+    return cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+  }
+
+  private List<Tuple> expectResults(String sql, final int expectedCount) throws Exception {
+    String sqlStmt = sql.replace("$ALIAS", COLLECTIONORALIAS);
+    SolrParams params = mapParams(CommonParams.QT, "/sql", "stmt", sqlStmt);
+    List<Tuple> tuples = getTuples(params, sqlUrl());
+    assertEquals(expectedCount, tuples.size());
+    return tuples;
+  }
+
+  @Test
+  public void testColIsNotNull() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "b_s", "foobar")
+        .add("id", "2", "b_s", "foobaz")
+        .add("id", "3")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s IS NOT NULL", 2);
+  }
+
+  @Test
+  public void testColIsNull() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "b_s", "foobar")
+        .add("id", "2")
+        .add("id", "3", "b_s", "foobaz")
+        .add("id", "4")
+        .add("id", "5", "b_s", "bazbar")
+        .add("id", "6")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT id FROM $ALIAS WHERE b_s IS NULL", 3);
+  }
+
+  @Test
+  public void testLike() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo")
+        .add("id", "5", "a_s", "hello-5", "b_s", "foo")
+        .add("id", "6", "a_s", "world-6", "b_s", "bar")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'h_llo-%'", 3);
+
+    // not technically valid SQL but we support it for legacy purposes, see: SOLR-15463
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s='world-*'", 3);
+
+    // no results
+    expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE '%MATCHNONE%'", 0);
+
+    // like but without wildcard, should still work
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE 'foo'", 5);
+
+    // NOT LIKE
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s NOT LIKE 'f%'", 1);
+
+    // leading wildcard
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '%oo'", 5);
+
+    // user supplied parens around arg, no double-quotes ...
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(fo%)'", 5);
+
+    expectResults("SELECT b_s FROM $ALIAS WHERE b_s LIKE '(ba*)'", 1);
+  }
+
+  @Test
+  public void testBetween() throws Exception {
+    new UpdateRequest()
+        .add(withMultiValuedField("b_is", Arrays.asList(1, 5), "id", "1", "a_i", "1"))
+        .add(withMultiValuedField("b_is", Arrays.asList(2, 6), "id", "2", "a_i", "2"))
+        .add(withMultiValuedField("b_is", Arrays.asList(3, 7), "id", "3", "a_i", "3"))
+        .add(withMultiValuedField("b_is", Arrays.asList(4, 8), "id", "4", "a_i", "4"))
+        .add(withMultiValuedField("b_is", Arrays.asList(5, 9), "id", "5", "a_i", "5"))
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT a_i FROM $ALIAS WHERE a_i BETWEEN 2 AND 4", 3);
+    expectResults("SELECT a_i FROM $ALIAS WHERE a_i NOT BETWEEN 2 AND 4", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is BETWEEN 2 AND 4", 3);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is BETWEEN 1 AND 9", 5);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is BETWEEN 8 AND 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is >= 2 AND b_is <= 4", 3);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is <= 4 AND b_is >= 2", 3);
+    expectResults("SELECT id FROM $ALIAS WHERE b_is <= 2 OR b_is >= 8", 4);
+    // tricky ~ with Solr, this should return 2 docs, but Calcite short-circuits this query and returns 0
+    // Calcite sees the predicate as disjoint from a single-valued field perspective ...
+    expectResults("SELECT id FROM $ALIAS WHERE b_is >= 5 AND b_is <= 2", 0);
+    // hacky work-around the aforementioned problem ^^
+    expectResults("SELECT id FROM $ALIAS WHERE b_is = '(+[5 TO *] +[* TO 2])'", 2);
+  }
+
+  private SolrInputDocument withMultiValuedField(String mvField, List<Object> values, String... fields) {
+    SolrInputDocument doc = new SolrInputDocument(fields);
+    doc.addField(mvField, values);
+    return doc;
+  }
+
+  @Test
+  public void testMultipleFilters() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo", "a_i", "2", "d_s", "a")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
+        .add("id", "5", "a_s", "hello-5", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "6", "a_s", "world-6", "b_s", "bar", "a_i", "4", "d_s", "c")
+        .add("id", "7", "a_s", "hello-7", "b_s", "foo", "c_s", "baz blah", "d_s", "x")
+        .add("id", "8", "a_s", "world-8", "b_s", "bar", "a_i", "5", "d_s", "c")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples = expectResults("SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world%' AND b_s IS NOT NULL AND c_s IS NULL AND a_i BETWEEN 2 AND 4 AND d_s IN ('a','b','c') ORDER BY id ASC LIMIT 10", 3);
+    assertEquals("world-2", tuples.get(0).getString("a_s"));
+    assertEquals("world-4", tuples.get(1).getString("a_s"));
+    assertEquals("world-6", tuples.get(2).getString("a_s"));
+
+    tuples = expectResults("SELECT a_s FROM $ALIAS WHERE a_s NOT LIKE 'hello%' AND b_s IS NOT NULL AND c_s IS NULL AND a_i NOT BETWEEN 2 AND 4 AND d_s IN ('a','b','c') ORDER BY id ASC LIMIT 10", 1);
+    assertEquals("world-8", tuples.get(0).getString("a_s"));
+  }
+
+  @Test
+  public void testCountWithFilters() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo", "a_i", "2", "d_s", "a")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
+        .add("id", "5", "a_s", "hello-5", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "6", "a_s", "world-6", "b_s", "bar", "a_i", "4", "d_s", "c")
+        .add("id", "7", "a_s", "hello-7", "b_s", "foo", "c_s", "baz blah", "d_s", "x")
+        .add("id", "8", "a_s", "world-8", "b_s", "bar", "a_i", "5", "d_s", "c")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples = expectResults("SELECT COUNT(1) as `the_count` FROM $ALIAS as `alias` WHERE (`alias`.`b_s`='foo' AND `alias`.`a_s` LIKE 'hell%' AND `alias`.`c_s` IS NOT NULL) HAVING (COUNT(1) > 0)", 1);
+    assertEquals(4L, (long) tuples.get(0).getLong("the_count"));
+  }
+
+  @Test
+  public void testDateHandling() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "pdatex", "2021-06-01T00:00:00Z")
+        .add("id", "2", "pdatex", "2021-06-02T02:00:00Z")
+        .add("id", "3", "pdatex", "2021-06-03T03:00:00Z")
+        .add("id", "4", "pdatex", "2021-06-04T04:00:00Z")
+        .add("id", "5", "pdatex", "2021-06-01T01:01:00Z")
+        .add("id", "6", "pdatex", "2021-06-02T02:02:00Z")
+        .add("id", "7", "pdatex", "2021-06-03T03:03:00Z")
+        .add("id", "8", "pdatex", "2021-06-04T04:04:00Z")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT id FROM $ALIAS WHERE pdatex IS NULL", 0);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex IS NOT NULL", 8);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex > '2021-06-02'", 6);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex <= '2021-06-01'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex > '2021-06-04 04:00:00'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-06-04 04:00:00'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = CAST('2021-06-04 04:04:00' as TIMESTAMP)", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-06-03' AND '2021-06-05'", 4);
+  }
+
+  @Test
+  public void testAggsOnCustomFieldType() throws Exception {
+    new UpdateRequest()
+        .add(withMultiValuedField("pintxs", Arrays.asList(1,5),"id", "1", "tintx", "1", "pintx", "2", "tfloatx", "3.33", "pfloatx", "3.33", "tlongx", "1623875868000", "plongx", "1623875868000", "tdoublex", "3.14159265359", "pdoublex", "3.14159265359", "stringx", "A", "textx", "aaa", "pdatex", "2021-06-17T00:00:00Z"))
+        .add(withMultiValuedField("pintxs", Arrays.asList(2,6),"id", "2", "tintx", "2", "pintx", "4", "tfloatx", "4.44", "pfloatx", "4.44", "tlongx", "1723875868000", "plongx", "1723875868000", "tdoublex", "6.14159265359", "pdoublex", "6.14159265359", "stringx", "B", "textx", "bbb", "pdatex", "2021-06-18T00:00:00Z"))
+        .add(withMultiValuedField("pintxs", Arrays.asList(3,7),"id", "3", "tintx", "3", "pintx", "6", "tfloatx", "5.55", "pfloatx", "5.55", "tlongx", "1823875868000", "plongx", "1823875868000", "tdoublex", "9.14159265359", "pdoublex", "9.14159265359", "stringx", "C", "textx", "ccc", "pdatex", "2021-06-19T00:00:00Z"))
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String dateStatsSql = "min(pdatex) as min_pdatex, max(pdatex) as max_pdatex";
+    String numTypeStatsSql = toStatsSql(Arrays.asList("intx", "floatx", "longx", "doublex"));
+    String sql = "SELECT min(pintxs) as min_pintxs, max(pintxs) as max_pintxs, "+
+        min("stringx")+", "+max("stringx")+", "+min("textx")+", "+max("textx")+", "+numTypeStatsSql+", "+dateStatsSql+" FROM $ALIAS";
+
+    List<Tuple> tuples = expectResults(sql, 1);
+    Tuple stats = tuples.get(0);
+    assertEquals("A", stats.getString("min_stringx"));
+    assertEquals("C", stats.getString("max_stringx"));
+    assertEquals("aaa", stats.getString("min_textx"));
+    assertEquals("ccc", stats.getString("max_textx"));
+    assertEquals(1L, (long) stats.getLong("min_tintx"));
+    assertEquals(3L, (long) stats.getLong("max_tintx"));
+    assertEquals(2L, (long) stats.getLong("min_pintx"));
+    assertEquals(6L, (long) stats.getLong("max_pintx"));
+    assertEquals(1L, (long) stats.getLong("min_pintxs"));
+    assertEquals(7L, (long) stats.getLong("max_pintxs"));
+    assertEquals(1623875868000L, (long) stats.getLong("min_tlongx"));
+    assertEquals(1823875868000L, (long) stats.getLong("max_tlongx"));
+    assertEquals(1623875868000L, (long) stats.getLong("min_plongx"));
+    assertEquals(1823875868000L, (long) stats.getLong("max_plongx"));
+    final double delta = 0.00001d;
+    assertEquals(3.33d, stats.getDouble("min_tfloatx"), delta);
+    assertEquals(5.55d, stats.getDouble("max_tfloatx"), delta);
+    assertEquals(3.33d, stats.getDouble("min_pfloatx"), delta);
+    assertEquals(5.55d, stats.getDouble("max_pfloatx"), delta);
+    assertEquals(3.14159265359d, stats.getDouble("min_tdoublex"), delta);
+    assertEquals(9.14159265359d, stats.getDouble("max_tdoublex"), delta);
+    assertEquals(3.14159265359d, stats.getDouble("min_pdoublex"), delta);
+    assertEquals(9.14159265359d, stats.getDouble("max_pdoublex"), delta);
+    assertNotNull(stats.getDate("min_pdatex"));
+    assertNotNull(stats.getDate("max_pdatex"));
+  }
+
+  private String toStatsSql(List<String> types) {
+    StringBuilder sb = new StringBuilder();
+    for (String type : types) {
+      if (sb.length() > 0) {
+        sb.append(", ");
+      }
+      sb.append(min("t"+type)).append(", ").append(min("p"+type));
+      sb.append(", ").append(max("t"+type)).append(", ").append(max("p"+type));
+    }
+    return sb.toString();
+  }
+
+  private String min(String type) {
+    return String.format(Locale.ROOT, "min(%s) as min_%s", type, type);
+  }
+
+  private String max(String type) {
+    return String.format(Locale.ROOT, "max(%s) as max_%s", type, type);
+  }
+
+  @Test
+  public void testOffsetAndFetch() throws Exception {
+    new UpdateRequest()
+        .add("id", "01")
+        .add("id", "02")
+        .add("id", "03")
+        .add("id", "04")
+        .add("id", "05")
+        .add("id", "06")
+        .add("id", "07")
+        .add("id", "08")
+        .add("id", "09")
+        .add("id", "10")
+        .add("id", "11")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    final int numDocs = 11;
+
+    List<Tuple> results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 0 FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("11", results.get(0).getString("id"));
+    assertEquals("10", results.get(1).getString("id"));
+    assertEquals("09", results.get(2).getString("id"));
+    assertEquals("08", results.get(3).getString("id"));
+    assertEquals("07", results.get(4).getString("id"));
+
+    // no explicit offset, but defaults to 0 if using FETCH!
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("11", results.get(0).getString("id"));
+    assertEquals("10", results.get(1).getString("id"));
+    assertEquals("09", results.get(2).getString("id"));
+    assertEquals("08", results.get(3).getString("id"));
+    assertEquals("07", results.get(4).getString("id"));
+
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5 FETCH NEXT 5 ROWS ONLY", 5);
+    assertEquals("06", results.get(0).getString("id"));
+    assertEquals("05", results.get(1).getString("id"));
+    assertEquals("04", results.get(2).getString("id"));
+    assertEquals("03", results.get(3).getString("id"));
+    assertEquals("02", results.get(4).getString("id"));
+
+    results = expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 10 FETCH NEXT 5 ROWS ONLY", 1);
+    assertEquals("01", results.get(0).getString("id"));
+
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC LIMIT "+numDocs, numDocs);
+
+    for (int i=0; i < numDocs; i++) {
+      results = expectResults("SELECT id FROM $ALIAS ORDER BY id ASC OFFSET "+i+" FETCH NEXT 1 ROW ONLY", 1);
+      String id = results.get(0).getString("id");
+      if (id.startsWith("0")) id = id.substring(1);
+      assertEquals(i+1, Integer.parseInt(id));
+    }
+
+    // just past the end of the results
+    expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET "+numDocs+" FETCH NEXT 5 ROWS ONLY", 0);
+
+    // Solr doesn't support OFFSET w/o LIMIT
+    expectThrows(IOException.class, () -> expectResults("SELECT id FROM $ALIAS ORDER BY id DESC OFFSET 5", 5));
+  }
+
+  @Test
+  public void testCountDistinct() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    final int cardinality = 5;
+    final int maxDocs = 100; // keep this an even # b/c we divide by 2 in this test
+    final String padFmt = "%03d";
+    for (int i = 0; i < maxDocs; i++) {
+      updateRequest = addDocForDistinctTests(i, updateRequest, cardinality, padFmt);
+    }
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    List<Tuple> tuples = expectResults("SELECT COUNT(1) AS total_rows, COUNT(distinct str_s) AS distinct_str, MIN(str_s) AS min_str, MAX(str_s) AS max_str FROM $ALIAS", 1);
+    Tuple firstRow = tuples.get(0);
+    assertEquals(maxDocs, (long) firstRow.getLong("total_rows"));
+    assertEquals(cardinality, (long) firstRow.getLong("distinct_str"));
+
+    String expectedMin = String.format(Locale.ROOT, padFmt, 0);
+    String expectedMax = String.format(Locale.ROOT, padFmt, cardinality - 1); // max is card-1
+    assertEquals(expectedMin, firstRow.getString("min_str"));
+    assertEquals(expectedMax, firstRow.getString("max_str"));
+
+    tuples = expectResults("SELECT DISTINCT str_s FROM $ALIAS ORDER BY str_s ASC", cardinality);
+    for (int t = 0; t < tuples.size(); t++) {
+      assertEquals(String.format(Locale.ROOT, padFmt, t), tuples.get(t).getString("str_s"));
+    }
+
+    tuples = expectResults("SELECT APPROX_COUNT_DISTINCT(distinct str_s) AS approx_distinct FROM $ALIAS", 1);
+    firstRow = tuples.get(0);
+    assertEquals(cardinality, (long) firstRow.getLong("approx_distinct"));
+
+    tuples = expectResults("SELECT country_s, COUNT(*) AS count_per_bucket FROM $ALIAS GROUP BY country_s", 2);
+    assertEquals(maxDocs/2L, (long)tuples.get(0).getLong("count_per_bucket"));
+    assertEquals(maxDocs/2L, (long)tuples.get(1).getLong("count_per_bucket"));
+  }
+
+  private UpdateRequest addDocForDistinctTests(int id, UpdateRequest updateRequest, int cardinality, String padFmt) {
+    String country = id % 2 == 0 ? "US" : "CA";
+    return updateRequest.add("id", String.valueOf(id), "str_s", String.format(Locale.ROOT, padFmt, id % cardinality), "country_s", country);
+  }
 }

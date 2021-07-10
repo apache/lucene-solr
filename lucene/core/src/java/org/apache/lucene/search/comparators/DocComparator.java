@@ -89,7 +89,11 @@ public class DocComparator extends FieldComparator<Integer> {
     public DocLeafComparator(LeafReaderContext context) {
       this.docBase = context.docBase;
       if (enableSkipping) {
-        this.minDoc = topValue + 1;
+        // Skip docs before topValue, but include docs starting with topValue.
+        // Including topValue is necessary when doing sort on [_doc, other fields]
+        // in a distributed search where there are docs from different indices
+        // with the same docID.
+        this.minDoc = topValue;
         this.maxDoc = context.reader().maxDoc();
         this.competitiveIterator = DocIdSetIterator.all(maxDoc);
       } else {
