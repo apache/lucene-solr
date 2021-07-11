@@ -53,24 +53,22 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
   private String collection;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
-  }
-
   @Before
   public void setUp() throws Exception {
     super.setUp();
     collection = getSaferTestName();
+    // TODO Investigate why using same cluster for all tests in this class led to sporadic failure
+    configureCluster(2)
+        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
     cluster.getSolrClient().setDefaultCollection(collection);
   }
 
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+    cluster.shutdown();
+    super.tearDown();
   }
 
   @Test
