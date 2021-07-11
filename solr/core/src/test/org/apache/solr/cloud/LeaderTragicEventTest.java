@@ -57,6 +57,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     collection = getSaferTestName();
+    // TODO Investigate why using same cluster for all tests in this class led to sporadic failure
     configureCluster(2)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
