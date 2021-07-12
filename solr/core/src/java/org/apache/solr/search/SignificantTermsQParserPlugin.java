@@ -89,7 +89,40 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public DelegatingCollector getAnalyticsCollector(ResponseBuilder rb, IndexSearcher searcher) {
+      if (searcher.getIndexReader().maxDoc() <= 0) {
+        return new NoOpTermsCollector(rb);
+      }
       return new SignifcantTermsCollector(rb, searcher, field, numTerms, minDocs, maxDocs, minTermLength);
+    }
+  }
+
+  private static class NoOpTermsCollector extends DelegatingCollector {
+    private ResponseBuilder rb;
+
+    private NoOpTermsCollector(ResponseBuilder rb) {
+      this.rb = rb;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+    }
+
+    @Override
+    public void finish() throws IOException {
+      List<String> outTerms = new ArrayList<>();
+      List<Integer> outFreq = new ArrayList<>();
+      List<Integer> outQueryFreq = new ArrayList<>();
+      List<Double> scores = new ArrayList<>();
+
+      LinkedHashMap<String, Object> response = new LinkedHashMap<>();
+
+      rb.rsp.add(NAME, response);
+
+      response.put("numDocs", 0);
+      response.put("sterms", outTerms);
+      response.put("scores", scores);
+      response.put("docFreq", outFreq);
+      response.put("queryDocFreq", outQueryFreq);
     }
   }
 
