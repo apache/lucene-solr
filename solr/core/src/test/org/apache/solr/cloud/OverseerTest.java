@@ -327,15 +327,15 @@ public class OverseerTest extends SolrTestCaseJ4 {
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     for (ZkController zkController : zkControllers) {
-      customThreadPool.submit( () -> zkController.close());
+      customThreadPool.submit(zkController::close);
     }
 
     for (HttpShardHandlerFactory httpShardHandlerFactory : httpShardHandlerFactorys) {
-      customThreadPool.submit( () -> httpShardHandlerFactory.close());
+      customThreadPool.submit(httpShardHandlerFactory::close);
     }
 
     for (UpdateShardHandler updateShardHandler : updateShardHandlers) {
-      customThreadPool.submit( () -> updateShardHandler.close());
+      customThreadPool.submit(updateShardHandler::close);
     }
 
     for (SolrClient solrClient : solrClients) {
@@ -343,7 +343,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
 
     for (ZkStateReader reader : readers) {
-      customThreadPool.submit( () -> reader.close());
+      customThreadPool.submit(reader::close);
     }
 
     for (SolrZkClient solrZkClient : zkClients) {
@@ -356,7 +356,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
 
     for (Overseer overseer : overseers) {
-      customThreadPool.submit( () -> overseer.close());
+      customThreadPool.submit(overseer::close);
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);

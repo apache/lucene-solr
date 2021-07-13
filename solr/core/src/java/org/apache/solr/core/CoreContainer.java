@@ -1138,7 +1138,7 @@ public class CoreContainer {
       } finally {
         try {
           if (updateShardHandler != null) {
-            customThreadPool.submit(() -> updateShardHandler.close());
+            customThreadPool.submit(updateShardHandler::close);
           }
         } finally {
           try {
