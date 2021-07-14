@@ -89,7 +89,105 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
       input.length()
     );
   }
-  
+
+  /**
+   * A wrapping reader that provides transparency wrt how much of the underlying stream has been
+   * consumed. This may be used to validate incremental behavior in upstream reads.
+   */
+  private static class TransparentReader extends Reader {
+
+    private final int expectSize;
+    private final Reader backing;
+    private int cursorPosition = -1;
+    private boolean finished = false;
+
+    private TransparentReader(Reader backing, int expectSize) {
+      this.expectSize = expectSize;
+      this.backing = backing;
+    }
+
+    @Override
+    public int read(char[] cbuf, int off, int len) throws IOException {
+      final int ret = backing.read(cbuf, off, len);
+      if (cursorPosition == -1) {
+        if (ret != -1) {
+          cursorPosition = ret;
+        } else {
+          cursorPosition = 0;
+        }
+      } else if (ret == -1) {
+        assert finished;
+      } else {
+        cursorPosition += ret;
+      }
+      if (!finished && cursorPosition >= expectSize) {
+        finished = true;
+      }
+      return ret;
+    }
+
+    @Override
+    public void close() throws IOException {
+      assert finished && cursorPosition != -1;
+      backing.close();
+    }
+  }
+
+  public void testIncrementalNoInertChars() throws Exception {
+    final String input = "℃aa℃aa℃aa℃aa℃aa℃aa℃aa℃aa℃aa℃aa℃aa℃aa℃aa℃aa";
+    final int inputLength = input.length();
+    final String expectOutput = "°caa°caa°caa°caa°caa°caa°caa°caa°caa°caa°caa°caa°caa°caa";
+    Normalizer2 norm = Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE);
+
+    // Sanity check/demonstrate that the input doesn't have any normalization-inert codepoints
+    for (int i = inputLength - 1; i >= 0; i--) {
+      assertFalse(norm.isInert(Character.codePointAt(input, i)));
+    }
+
+    final int outerBufferSize = random().nextInt(8) + 1; // buffer size between 1 <= n <= 8
+    char[] tempBuff = new char[outerBufferSize];
+
+    /*
+    Sanity check that with the default inner buffer size, the upstream input is read in its
+    entirety after the first external read.
+     */
+    TransparentReader tr = new TransparentReader(new StringReader(input), inputLength);
+    CharFilter reader = new ICUNormalizer2CharFilter(tr, norm);
+    assertTrue(reader.read(tempBuff) > 0);
+    assertEquals(inputLength, tr.cursorPosition);
+    assertTrue(tr.finished);
+
+    /*
+    By way of contrast with the "control" above, we now check the actual desired behavior, ensuring that
+    even for input with no inert chars, we're able to read input incrementally. To support incremental
+    upstream reads with reasonable-sized input, we artificially reduce the size of the internal buffer
+     */
+    final int innerBufferSize = random().nextInt(7) + 2; // buffer size between 2 <= n <= 8
+    tr = new TransparentReader(new StringReader(input), inputLength);
+    reader = new ICUNormalizer2CharFilter(tr, norm, innerBufferSize);
+    StringBuilder result = new StringBuilder();
+    int incrementalReads = 0;
+    int finishedReads = 0;
+    while (true) {
+      int length = reader.read(tempBuff);
+      if (length == -1) {
+        assertTrue(tr.finished);
+        break;
+      }
+      result.append(tempBuff, 0, length);
+      if (length > 0) {
+        if (!tr.finished) {
+          incrementalReads++;
+          assertTrue(tr.cursorPosition < inputLength);
+        } else {
+          finishedReads++;
+        }
+      }
+    }
+    assertTrue(incrementalReads > finishedReads);
+    assertEquals(expectOutput, result.toString());
+  }
+
   public void testMassiveLigature() throws IOException {
     String input = "\uFDFA";
 

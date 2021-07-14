@@ -45,6 +45,10 @@ Improvements
 
 * LUCENE-9983: Stop sorting determinize powersets unnecessarily. (Patrick Zhai)
 
+* LUCENE-9177: ICUNormalizer2CharFilter no longer requires normalization-inert
+  characters as boundaries for incremental processing, vastly improving worst-case
+  performance. (Michael Gibney)
+
 Optimizations
 ---------------------
 

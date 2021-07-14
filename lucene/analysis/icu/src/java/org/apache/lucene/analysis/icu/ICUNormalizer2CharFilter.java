@@ -98,25 +98,13 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
   private final CharacterUtils.CharacterBuffer tmpBuffer;
 
   private void readInputToBuffer() throws IOException {
-    while (true) {
-      // CharacterUtils.fill is supplementary char aware
-      final boolean hasRemainingChars = CharacterUtils.fill(tmpBuffer, input);
-
-      assert tmpBuffer.getOffset() == 0;
-      inputBuffer.append(tmpBuffer.getBuffer(), 0, tmpBuffer.getLength());
-
-      if (hasRemainingChars == false) {
-        inputFinished = true;
-        break;
-      }
-
-      final int lastCodePoint = Character.codePointBefore(tmpBuffer.getBuffer(), tmpBuffer.getLength(), 0);
-      if (normalizer.isInert(lastCodePoint)) {
-        // we require an inert char so that we can normalize content before and
-        // after this character independently
-        break;
-      }
+    // CharacterUtils.fill is supplementary char aware
+    if (!CharacterUtils.fill(tmpBuffer, input)) {
+      inputFinished = true;
     }
+
+    assert tmpBuffer.getOffset() == 0;
+    inputBuffer.append(tmpBuffer.getBuffer(), 0, tmpBuffer.getLength());
 
     // if checkedInputBoundary was at the end of a buffer, we need to check that char again
     checkedInputBoundary = Math.max(checkedInputBoundary - 1, 0);
@@ -129,7 +117,6 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
     }
     if (!afterQuickCheckYes) {
       int resLen = readFromInputWhileSpanQuickCheckYes();
-      afterQuickCheckYes = true;
       if (resLen > 0) return resLen;
     }
     int resLen = readFromIoNormalizeUptoBoundary();
@@ -140,8 +127,30 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
   }
 
   private int readFromInputWhileSpanQuickCheckYes() {
+    afterQuickCheckYes = true;
     int end = normalizer.spanQuickCheckYes(inputBuffer);
     if (end > 0) {
+      int cp;
+      if (end == inputBuffer.length()
+          && !normalizer.hasBoundaryAfter(cp = inputBuffer.codePointBefore(end))) {
+        /*
+        our quickCheckYes result is valid thru the end of current buffer, but we need to back off
+        because we're not at a normalization boundary. At a minimum this is relevant wrt imposing
+        canonical ordering of combining characters across the buffer boundary.
+         */
+        afterQuickCheckYes = false;
+        end -= Character.charCount(cp);
+        // NOTE: for the loop, we pivot to using `hasBoundaryBefore()` because per the docs for
+        // `Normalizer2.hasBoundaryAfter()`:
+        // "Note that this operation may be significantly slower than hasBoundaryBefore()"
+        while (end > 0 && !normalizer.hasBoundaryBefore(cp)) {
+          cp = inputBuffer.codePointBefore(end);
+          end -= Character.charCount(cp);
+        }
+        if (end == 0) {
+          return 0;
+        }
+      }
       resultBuffer.append(inputBuffer.subSequence(0, end));
       inputBuffer.delete(0, end);
       checkedInputBoundary = Math.max(checkedInputBoundary - end, 0);
