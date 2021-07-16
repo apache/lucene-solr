@@ -35,6 +35,8 @@ Improvements
 * SOLR-15525: Read ZK credentials from a file specified using a system property instead of exposing plain-text
   credentials as system properties (Timothy Potter)
 
+* SOLR-15549: ZkStateReader now supports connecting to 9.0 Solr Clouds (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)

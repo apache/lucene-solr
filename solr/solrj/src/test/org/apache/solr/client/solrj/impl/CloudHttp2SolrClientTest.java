@@ -61,6 +61,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -70,6 +71,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -792,6 +795,18 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       client.setZkClientTimeout(1000 * 60);
       client.connect();
       fail("Expected exception");
+    }
+  }
+
+  @Test
+  public void forwardCompatZkChrootTest() throws IOException, InterruptedException, KeeperException {
+    String newPath = "/forward/compat";
+    // Make sure that the ZKStateReader can connect when only a collections ZNode exists, not the clusterstate.json
+    cluster.getZkServer().getZkClient().makePath(newPath + ZkStateReader.COLLECTIONS_ZKNODE, new byte[0], CreateMode.PERSISTENT, true);
+    cluster.getZkServer().getZkClient().makePath(newPath + ZkStateReader.ALIASES, new byte[0], CreateMode.PERSISTENT, true);
+    try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress() + newPath)) {
+      client.setZkClientTimeout(1000 * 60);
+      client.connect();
     }
   }
 

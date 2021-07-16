@@ -500,7 +500,7 @@ public class ZkStateReader implements SolrCloseable {
     log.debug("Updating cluster state from ZooKeeper... ");
 
     // Sanity check ZK structure.
-    if (!zkClient.exists(CLUSTER_STATE, true)) {
+    if (!(zkClient.exists(CLUSTER_STATE, true) || zkClient.exists(COLLECTIONS_ZKNODE, true))) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
           "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
     }
