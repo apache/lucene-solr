@@ -16,10 +16,14 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
@@ -70,7 +74,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkServer.run(false);
     
     System.setProperty("zkHost", zkServer.getZkAddress());
-    
+
     setSecuritySystemProperties();
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
@@ -163,6 +167,28 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           false, false, false, false, false);
     } finally {
       zkClient.close();
+    }
+  }
+
+  @Test
+  public void testReadonlyCredentialsFromFile() throws Exception {
+    useReadonlyCredentialsFromFile();
+
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      doTest(zkClient,
+          true, true, false, false, false,
+          false, false, false, false, false);
+    }
+  }
+
+  @Test
+  public void testAllCredentialsFromFile() throws Exception {
+    useAllCredentialsFromFile();
+
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      doTest(zkClient,
+          true, true, true, true, true,
+          true, true, true, true, true);
     }
   }
 
@@ -292,6 +318,33 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "readonlyACLUsername");
     System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "readonlyACLPassword");
   }
+
+  private void useReadonlyCredentialsFromFile() throws IOException {
+    useCredentialsFromFile("readonlyACLUsername", "readonlyACLPassword");
+  }
+
+  private void useAllCredentialsFromFile() throws IOException {
+    useCredentialsFromFile("connectAndAllACLUsername", "connectAndAllACLPassword");
+  }
+
+  private void useCredentialsFromFile(String username, String password) throws IOException {
+    clearSecuritySystemProperties();
+
+    System.setProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME, VMParamsSingleSetCredentialsDigestZkCredentialsProvider.class.getName());
+
+    Properties props = new Properties();
+    props.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, username);
+    props.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, password);
+    saveCredentialsFile(props);
+  }
+
+  private void saveCredentialsFile(Properties props) throws IOException {
+    Path tmp = createTempFile("zk-creds", "properties");
+    try (OutputStreamWriter w = new OutputStreamWriter(Files.newOutputStream(tmp), StandardCharsets.UTF_8)) {
+      props.store(w, "test");
+    }
+    System.setProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_FILE_VM_PARAM_NAME, tmp.toAbsolutePath().toString());
+  }
   
   private void setSecuritySystemProperties() {
     System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
@@ -309,6 +362,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     System.clearProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME);
     System.clearProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
     System.clearProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
+    System.clearProperty(VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_FILE_VM_PARAM_NAME);
   }
   
 }
