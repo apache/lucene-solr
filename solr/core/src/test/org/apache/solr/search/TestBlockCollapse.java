@@ -31,7 +31,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.PostFilter;
 
 import org.junit.After;
 import org.junit.BeforeClass;
