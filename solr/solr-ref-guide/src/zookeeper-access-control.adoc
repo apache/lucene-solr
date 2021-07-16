@@ -63,6 +63,7 @@ You can always make you own implementation, but Solr comes with two implementati
 * `org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider`: This lets you define your credentials using system properties. It supports at most one set of credentials.
 ** The schema is "digest". The username and password are defined by system properties `zkDigestUsername` and `zkDigestPassword`. This set of credentials will be added to the list of credentials returned by `getCredentials()` if both username and password are provided.
 ** If the one set of credentials above is not added to the list, this implementation will fall back to default behavior and use the (empty) credentials list from `DefaultZkCredentialsProvider`.
+** Alternatively, you can set the `zkDigestCredentialsFile` system property to load the `zkDigestUsername` and `zkDigestPassword` from a file instead of exposing the credentials as system properties. The provided file must be a Java properties file and contain both the `zkDigestUsername` and `zkDigestPassword` properties.
 
 === Controlling ACLs
 
@@ -82,6 +83,7 @@ You can always make you own implementation, but Solr comes with:
 *** The permission is `READ` and the schema is `digest`.
 *** The username and password are defined by system properties `zkDigestReadonlyUsername` and `zkDigestReadonlyPassword`, respectively.
 *** This ACL will not be added to the list of ACLs unless both username and password are provided.
+** Alternatively, you can set the `zkDigestCredentialsFile` system property to load the `zkDigestUsername` and `zkDigestPassword` from a file instead of exposing the credentials as system properties. The provided file must be a Java properties file and contain both the `zkDigestUsername` and `zkDigestPassword` properties for the `ALL` user, as well as the `zkDigestReadonlyUsername` and `zkDigestReadonlyPassword` properties for the `READONLY` user.
 * `org.apache.solr.common.cloud.SaslZkACLProvider`: Requires SASL authentication. Gives all permissions for the user specified in system property `solr.authorization.superuser` (default: `solr`) when using SASL, and gives read permissions for anyone else. Designed for a setup where configurations have already been set up and will not be modified, or where configuration changes are controlled via Solr APIs. This provider will be useful for administration in a kerberos environment. In such an environment, the administrator wants Solr to authenticate to ZooKeeper using SASL, since this is only way to authenticate with ZooKeeper via Kerberos.
 
 If none of the above ACLs is added to the list, the (empty) ACL list of `DefaultZkACLProvider` will be used by default.
