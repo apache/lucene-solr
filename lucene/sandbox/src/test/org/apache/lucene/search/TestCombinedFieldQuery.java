@@ -73,6 +73,42 @@ public class TestCombinedFieldQuery extends LuceneTestCase {
     assertEquals(actual, query);
   }
 
+  public void testEqualsAndHashCode() {
+    CombinedFieldQuery query1 =
+        new CombinedFieldQuery.Builder()
+            .addField("field1")
+            .addField("field2")
+            .addTerm(new BytesRef("value"))
+            .build();
+
+    CombinedFieldQuery query2 =
+        new CombinedFieldQuery.Builder()
+            .addField("field1")
+            .addField("field2", 1.3f)
+            .addTerm(new BytesRef("value"))
+            .build();
+    assertNotEquals(query1, query2);
+    assertNotEquals(query1.hashCode(), query2.hashCode());
+
+    CombinedFieldQuery query3 =
+        new CombinedFieldQuery.Builder()
+            .addField("field3")
+            .addField("field4")
+            .addTerm(new BytesRef("value"))
+            .build();
+    assertNotEquals(query1, query3);
+    assertNotEquals(query1.hashCode(), query2.hashCode());
+
+    CombinedFieldQuery duplicateQuery1 =
+        new CombinedFieldQuery.Builder()
+            .addField("field1")
+            .addField("field2")
+            .addTerm(new BytesRef("value"))
+            .build();
+    assertEquals(query1, duplicateQuery1);
+    assertEquals(query1.hashCode(), duplicateQuery1.hashCode());
+  }
+
   public void testToString() {
     assertEquals("CombinedFieldQuery(()())", new CombinedFieldQuery.Builder().build().toString());
     CombinedFieldQuery.Builder builder = new CombinedFieldQuery.Builder();

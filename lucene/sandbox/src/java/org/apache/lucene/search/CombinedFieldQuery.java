@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.lucene.index.IndexReader;
@@ -128,6 +129,19 @@ public final class CombinedFieldQuery extends Query implements Accountable {
       this.field = field;
       this.weight = weight;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      FieldAndWeight that = (FieldAndWeight) o;
+      return Float.compare(that.weight, weight) == 0 && Objects.equals(field, that.field);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(field, weight);
+    }
   }
 
   // sorted map for fields.
@@ -193,13 +207,20 @@ public final class CombinedFieldQuery extends Query implements Accountable {
   }
 
   @Override
-  public int hashCode() {
-    return 31 * classHash() + Arrays.hashCode(terms);
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (sameClassAs(o) == false) return false;
+    CombinedFieldQuery that = (CombinedFieldQuery) o;
+    return Objects.equals(fieldAndWeights, that.fieldAndWeights)
+        && Arrays.equals(terms, that.terms);
   }
 
   @Override
-  public boolean equals(Object other) {
-    return sameClassAs(other) && Arrays.equals(terms, ((CombinedFieldQuery) other).terms);
+  public int hashCode() {
+    int result = classHash();
+    result += Objects.hash(fieldAndWeights);
+    result = 31 * result + Arrays.hashCode(terms);
+    return result;
   }
 
   @Override
