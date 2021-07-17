@@ -70,6 +70,9 @@ Bug Fixes
 * LUCENE-10020: DocComparator should not skip docs with the same docID on
   multiple sorts with search after (Mayya Sharipova, Julie Tibshirani)
 
+* LUCENE-10026: Fix CombinedFieldQuery equals and hashCode, which ensures
+  query rewrites don't drop CombinedFieldQuery clauses. (Julie Tibshirani)
+
 Other
 ---------------------
 
