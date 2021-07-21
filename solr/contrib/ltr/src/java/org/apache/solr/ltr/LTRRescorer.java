@@ -53,6 +53,21 @@ public class LTRRescorer extends Rescorer {
     this.scoringQuery = scoringQuery;
   }
 
+  final private static Comparator<ScoreDoc> docComparator = Comparator.comparingInt(a -> a.doc);
+
+  final protected static Comparator<ScoreDoc> scoreComparator = (a, b) -> {
+    // Sort by score descending, then docID ascending:
+    if (a.score > b.score) {
+      return -1;
+    } else if (a.score < b.score) {
+      return 1;
+    } else {
+      // This subtraction can't overflow int
+      // because docIDs are >= 0:
+      return a.doc - b.doc;
+    }
+  };
+
   protected static void heapAdjust(ScoreDoc[] hits, int size, int root) {
     final ScoreDoc doc = hits[root];
     final float score = doc.score;
@@ -126,36 +141,18 @@ public class LTRRescorer extends Rescorer {
 
     scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top
-    sortByScore(reranked);
+    Arrays.sort(reranked, scoreComparator);
     return reranked;
   }
 
+  @Deprecated
   protected static void sortByScore(ScoreDoc[] reranked) {
-    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        // Sort by score descending, then docID ascending:
-        if (a.score > b.score) {
-          return -1;
-        } else if (a.score < b.score) {
-          return 1;
-        } else {
-          // This subtraction can't overflow int
-          // because docIDs are >= 0:
-          return a.doc - b.doc;
-        }
-      }
-    });
+    Arrays.sort(reranked, scoreComparator);
   }
 
   protected static ScoreDoc[] getFirstPassDocsRanked(TopDocs firstPassTopDocs) {
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
-    Arrays.sort(hits, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        return a.doc - b.doc;
-      }
-    });
+    Arrays.sort(hits, docComparator);
 
     assert firstPassTopDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
     return hits;

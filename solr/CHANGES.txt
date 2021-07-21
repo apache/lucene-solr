@@ -41,6 +41,8 @@ Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
 
+* SOLR-15496: Reuse comparator objects in contrib/ltr rescorer classes. (marcosfpr via Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-15311: Support async parameter in MODIFYCOLLECTION
