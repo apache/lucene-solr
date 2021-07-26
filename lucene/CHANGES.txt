@@ -15,6 +15,9 @@ API Changes
   Users can now access the count of an ordinal directly without constructing an extra FacetLabel.
   Also use variable length arguments for the getOrdinal call in TaxonomyReader. (Gautam Worah)
 
+* LUCENE-10036: Replaced the ScoreCachingWrappingScorer ctor with a static factory method that
+  ensures unnecessary wrapping doesn't occur. (Greg Miller)
+
 New Features
 ---------------------
 (No changes)

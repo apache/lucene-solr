@@ -41,7 +41,7 @@ public class PositiveScoresOnlyCollector extends FilterCollector {
 
       @Override
       public void setScorer(Scorable scorer) throws IOException {
-        this.scorer = new ScoreCachingWrappingScorer(scorer);
+        this.scorer = ScoreCachingWrappingScorer.wrap(scorer);
         in.setScorer(this.scorer);
       }
 
