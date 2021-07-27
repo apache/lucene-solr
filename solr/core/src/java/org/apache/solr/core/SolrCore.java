@@ -187,6 +187,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
 
   public static final String version = "1.0";
+  public static final String DISABLE_ZK_CONFIG_WATCH = "disable.zk.config.watch";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request"); //nowarn
@@ -3130,6 +3131,8 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
    * to 'touch' the /conf directory by setting some data  so that events are triggered.
    */
   protected void registerConfListener() {
+    //if app wants to disable zk config watch, or it just want zk to update the config but then want to restart node
+    if (Boolean.getBoolean(DISABLE_ZK_CONFIG_WATCH)) return;
     if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
     final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
     if (zkSolrResourceLoader != null)
