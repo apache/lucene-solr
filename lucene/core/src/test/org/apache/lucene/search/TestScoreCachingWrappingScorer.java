@@ -156,6 +156,6 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     // But if we try to wrap an instance of ScoreCachingWrappingScorer, it shouldn't unnecessarily
     // wrap again:
     Scorable doubleWrapped = ScoreCachingWrappingScorer.wrap(wrapped);
-    assertEquals(wrapped, doubleWrapped);
+    assertSame(wrapped, doubleWrapped);
   }
 }
