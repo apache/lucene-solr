@@ -155,7 +155,7 @@ public class MultiCollector implements Collector {
     @Override
     public void setScorer(Scorable scorer) throws IOException {
       if (cacheScores) {
-        scorer = new ScoreCachingWrappingScorer(scorer);
+        scorer = ScoreCachingWrappingScorer.wrap(scorer);
       }
       if (skipNonCompetitiveScores) {
         for (int i = 0; i < collectors.length; ++i) {
