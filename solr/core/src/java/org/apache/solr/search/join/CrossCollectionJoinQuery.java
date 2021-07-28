@@ -294,7 +294,9 @@ public class CrossCollectionJoinQuery extends Query {
           }
 
           Object value = tuple.get(fromField);
-          collector.collect(value);
+          if (null != value) {
+            collector.collect(value);
+          }
         }
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
