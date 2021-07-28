@@ -235,21 +235,8 @@ public final class CombinedFieldQuery extends Query implements Accountable {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    // optimize zero and single field cases
-    if (terms.length == 0) {
+    if (terms.length == 0 || fieldAndWeights.isEmpty()) {
       return new BooleanQuery.Builder().build();
-    }
-    // single field and one term
-    if (fieldTerms.length == 1) {
-      return new TermQuery(fieldTerms[0]);
-    }
-    // single field and multiple terms
-    if (fieldAndWeights.size() == 1) {
-      SynonymQuery.Builder builder = new SynonymQuery.Builder(fieldTerms[0].field());
-      for (Term term : fieldTerms) {
-        builder.addTerm(term);
-      }
-      return builder.build();
     }
     return this;
   }
@@ -421,13 +408,7 @@ public final class CombinedFieldQuery extends Query implements Accountable {
         return null;
       }
 
-      // we must optimize this case (term not in segment), disjunctions require >= 2 subs
-      if (iterators.size() == 1) {
-        final LeafSimScorer scoringSimScorer =
-            new LeafSimScorer(simWeight, context.reader(), fields.get(0).field, true);
-        return new TermScorer(this, iterators.get(0), scoringSimScorer);
-      }
-      final MultiNormsLeafSimScorer scoringSimScorer =
+      MultiNormsLeafSimScorer scoringSimScorer =
           new MultiNormsLeafSimScorer(simWeight, context.reader(), fields, true);
       LeafSimScorer nonScoringSimScorer =
           new LeafSimScorer(simWeight, context.reader(), "pseudo_field", false);
