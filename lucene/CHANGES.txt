@@ -76,6 +76,9 @@ Bug Fixes
 * LUCENE-10026: Fix CombinedFieldQuery equals and hashCode, which ensures
   query rewrites don't drop CombinedFieldQuery clauses. (Julie Tibshirani)
 
+* LUCENE-10039: Correct CombinedFieldQuery scoring when there is a single
+  field. (Julie Tibshirani)
+
 Other
 ---------------------
 
