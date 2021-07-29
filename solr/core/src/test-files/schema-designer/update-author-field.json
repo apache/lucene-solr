@@ -1,0 +1,11 @@
+{
+  "href": "field/author",
+  "name": "author",
+  "type": "string",
+  "indexed": true,
+  "stored": true,
+  "docValues": true,
+  "multiValued": true,
+  "id": "field/author_anchor",
+  "copyDest": "_text_"
+}

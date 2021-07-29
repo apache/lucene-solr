@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.io.*;
 
-abstract class CSVLoaderBase extends ContentStreamLoader {
+public abstract class CSVLoaderBase extends ContentStreamLoader {
   public static final String SEPARATOR="separator";
   public static final String FIELDNAMES="fieldnames";
   public static final String HEADER="header";
@@ -59,7 +59,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   
   final SolrParams params;
   final CSVStrategy strategy;
-  final UpdateRequestProcessor processor;
+  protected final UpdateRequestProcessor processor;
   // hashmap to save any literal fields and their values
   HashMap <String, String> literals;
 
@@ -71,7 +71,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
 
   int skipLines;    // number of lines to skip at start of file
 
-  final AddUpdateCommand templateAdd;
+  protected final AddUpdateCommand templateAdd;
 
 
 
@@ -157,7 +157,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
 
   String errHeader="CSVLoader:";
 
-  CSVLoaderBase(SolrQueryRequest req, UpdateRequestProcessor processor) {
+  protected CSVLoaderBase(SolrQueryRequest req, UpdateRequestProcessor processor) {
     this.processor = processor;
     this.params = req.getParams();
     this.literals = new HashMap<>();
@@ -368,10 +368,10 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   }
 
   /** called for each line of values (document) */
-  abstract void addDoc(int line, String[] vals) throws IOException;
+  public abstract void addDoc(int line, String[] vals) throws IOException;
 
   /** this must be MT safe... may be called concurrently from multiple threads. */
-  void doAdd(int line, String[] vals, SolrInputDocument doc, AddUpdateCommand template) throws IOException {
+  protected void doAdd(int line, String[] vals, SolrInputDocument doc, AddUpdateCommand template) throws IOException {
     // the line number is passed for error reporting in MT mode as well as for optional rowId.
     // first, create the lucene document
     for (int i=0; i<vals.length; i++) {

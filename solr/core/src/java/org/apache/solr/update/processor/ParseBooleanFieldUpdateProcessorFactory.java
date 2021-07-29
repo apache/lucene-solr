@@ -73,8 +73,8 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
   private static final String FALSE_VALUES_PARAM = "falseValue";
   private static final String CASE_SENSITIVE_PARAM = "caseSensitive";
   
-  private Set<String> trueValues = new HashSet<>(Arrays.asList(new String[] { "true" }));
-  private Set<String> falseValues = new HashSet<>(Arrays.asList(new String[] { "false" }));
+  private final Set<String> trueValues = new HashSet<>(Arrays.asList("true"));
+  private final Set<String> falseValues = new HashSet<>(Arrays.asList("false"));
   private boolean caseSensitive = false;
 
   @Override
@@ -84,20 +84,8 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
     return new AllValuesOrNoneFieldMutatingUpdateProcessor(getSelector(), next) {
       @Override
       protected Object mutateValue(Object srcVal) {
-        if (srcVal instanceof CharSequence) {
-          String stringVal = caseSensitive ? srcVal.toString() : srcVal.toString().toLowerCase(Locale.ROOT);
-          if (trueValues.contains(stringVal)) {
-            return true;
-          } else if (falseValues.contains(stringVal)) {
-            return false;
-          } else {
-            return SKIP_FIELD_VALUE_LIST_SINGLETON;
-          }
-        }
-        if (srcVal instanceof Boolean) {
-          return srcVal;
-        }
-        return SKIP_FIELD_VALUE_LIST_SINGLETON;
+        Object parsed = parsePossibleBoolean(srcVal, caseSensitive, trueValues, falseValues);
+        return parsed != null ? parsed : SKIP_FIELD_VALUE_LIST_SINGLETON;
       }
     };
   }
@@ -109,7 +97,7 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       if (caseSensitiveParam instanceof Boolean) {
         caseSensitive = (Boolean)caseSensitiveParam;
       } else {
-        caseSensitive = Boolean.valueOf(caseSensitiveParam.toString());
+        caseSensitive = Boolean.parseBoolean(caseSensitiveParam.toString());
       }
     }
 
@@ -151,5 +139,22 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       FieldType type = schema.getFieldTypeNoEx(fieldName);
       return (null == type) || (type instanceof BoolField);
     };
+  }
+
+  public static Object parsePossibleBoolean(Object srcVal, boolean caseSensitive, Set<String> trueValues, Set<String> falseValues) {
+    if (srcVal instanceof CharSequence) {
+      String stringVal = caseSensitive ? srcVal.toString() : srcVal.toString().toLowerCase(Locale.ROOT);
+      if (trueValues.contains(stringVal)) {
+        return true;
+      } else if (falseValues.contains(stringVal)) {
+        return false;
+      } else {
+        return null;
+      }
+    }
+    if (srcVal instanceof Boolean) {
+      return srcVal;
+    }
+    return null;
   }
 }

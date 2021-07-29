@@ -272,6 +272,8 @@ limitations under the License.
 #menu #cloud.global .zkstatus a { background-image: url( ../../img/ico/node-leader.png ); }
 #menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
 
+#menu #schema-designer.global p a { background-image: url( ../../img/ico/book-open-text.png ); }
+
 .sub-menu .ping.error a
 {
 

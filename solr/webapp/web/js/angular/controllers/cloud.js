@@ -562,14 +562,12 @@ var treeSubController = function($scope, Zookeeper) {
         var path = decodeURIComponent(link.replace(/.*[\\?&]path=([^&#]*).*/, "$1"));
         Zookeeper.detail({path: path}, function(data) {
             $scope.znode = data.znode;
-            var path = data.znode.path.split( '.' );
-            if(path.length >1) {
-              $scope.lang = path.pop();
+            if (data.znode.path.endsWith("/managed-schema") || data.znode.path.endsWith(".xml.bak")) {
+              $scope.lang = "xml";
             } else {
               var lastPathElement = data.znode.path.split( '/' ).pop();
-              if (lastPathElement == "managed-schema") {
-                  $scope.lang = "xml";
-              }
+              var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
+              $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
             }
             $scope.showData = true;
         });

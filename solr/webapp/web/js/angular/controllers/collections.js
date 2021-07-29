@@ -26,6 +26,9 @@ solrAdminApp.controller('CollectionsController',
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
+                  if (name.startsWith("._designer_")) {
+                      continue;
+                  }
                   var collection = data.cluster.collections[name];
                   collection.name = name;
                   collection.type = 'collection';

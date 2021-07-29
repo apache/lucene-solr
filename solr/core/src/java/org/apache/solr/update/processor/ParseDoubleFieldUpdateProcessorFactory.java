@@ -97,28 +97,36 @@ public class ParseDoubleFieldUpdateProcessorFactory extends ParseNumericFieldUpd
 
     @Override
     protected Object mutateValue(Object srcVal) {
-      if (srcVal instanceof CharSequence) {
-        String stringVal = srcVal.toString(); 
-        ParsePosition pos = new ParsePosition(0);
-        Number number = numberFormat.get().parse(stringVal, pos);
-        if (pos.getIndex() != stringVal.length()) {
-          if (log.isDebugEnabled()) {
-            log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
-                new Object[]{srcVal, stringVal.substring(pos.getIndex())});
-          }
-          return SKIP_FIELD_VALUE_LIST_SINGLETON;
-        }
-        return number.doubleValue();
-      }
-      if (srcVal instanceof Double) {
-        return srcVal;
-      }
-      return SKIP_FIELD_VALUE_LIST_SINGLETON;
+      Object parsed = parsePossibleDouble(srcVal, numberFormat.get());
+      return parsed != null ? parsed : SKIP_FIELD_VALUE_LIST_SINGLETON;
     }
   }
 
   @Override
   protected boolean isSchemaFieldTypeCompatible(FieldType type) {
     return type instanceof DoubleValueFieldType;
+  }
+
+  public static Object parsePossibleDouble(Object srcVal, NumberFormat numberFormat) {
+    if (srcVal instanceof CharSequence) {
+      String stringVal = srcVal.toString();
+      ParsePosition pos = new ParsePosition(0);
+      Number number = numberFormat.parse(stringVal, pos);
+      if (pos.getIndex() != stringVal.length()) {
+        if (log.isDebugEnabled()) {
+          log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
+              srcVal, stringVal.substring(pos.getIndex()));
+        }
+        return null;
+      }
+      return number.doubleValue();
+    }
+    if (srcVal instanceof Double) {
+      return srcVal;
+    }
+    if (srcVal instanceof Float) {
+      return ((Float) srcVal).doubleValue();
+    }
+    return null;
   }
 }
