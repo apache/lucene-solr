@@ -31,7 +31,7 @@ In a standard `SELECT` statement such as `SELECT <expressions> FROM <table>`, th
 
 Column names in the SQL query map directly to fields in the Solr index for the collection being queried. These identifiers are case sensitive. Aliases are supported, and can be referenced in the `ORDER BY` clause.
 
-The `*` syntax to indicate all fields is not supported in either limited or unlimited queries. The `score` field can be used only with queries that contain a `LIMIT` clause.
+The `*` syntax to indicate all fields is only supported for queries with a `LIMIT` and includes the `score` field. The `score` field can be used only with queries that contain a `LIMIT` clause.
 
 For example, we could index Solr's sample documents and then construct an SQL query like this:
 
