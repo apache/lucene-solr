@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -43,9 +42,6 @@ public class MergeState {
 
   /** Maps document IDs from old segments to document IDs in the new segment */
   public final DocMap[] docMaps;
-
-  // Only used by IW when it must remap deletes that arrived against the merging segments while a merge was running:
-  final DocMap[] leafDocMaps;
 
   /** {@link SegmentInfo} of the newly merged segment. */
   public final SegmentInfo segmentInfo;
@@ -87,14 +83,10 @@ public class MergeState {
   public boolean needsIndexSort;
 
   /** Sole constructor. */
-  MergeState(List<CodecReader> originalReaders, SegmentInfo segmentInfo, InfoStream infoStream) throws IOException {
-
+  MergeState(List<CodecReader> readers, SegmentInfo segmentInfo, InfoStream infoStream) throws IOException {
+    verifyIndexSort(readers, segmentInfo);
     this.infoStream = infoStream;
-
-    final Sort indexSort = segmentInfo.getIndexSort();
-    int numReaders = originalReaders.size();
-    leafDocMaps = new DocMap[numReaders];
-    List<CodecReader> readers = maybeSortReaders(originalReaders, segmentInfo);
+    int numReaders = readers.size();
 
     maxDocs = new int[numReaders];
     fieldsProducers = new FieldsProducer[numReaders];
@@ -145,7 +137,7 @@ public class MergeState {
     segmentInfo.setMaxDoc(numDocs);
 
     this.segmentInfo = segmentInfo;
-    this.docMaps = buildDocMaps(readers, indexSort);
+    this.docMaps = buildDocMaps(readers, segmentInfo.getIndexSort());
   }
 
   // Remap docIDs around deletions
@@ -208,35 +200,18 @@ public class MergeState {
     }
   }
 
-  private List<CodecReader> maybeSortReaders(List<CodecReader> originalReaders, SegmentInfo segmentInfo) throws IOException {
-
-    // Default to identity:
-    for(int i=0;i<originalReaders.size();i++) {
-      leafDocMaps[i] = new DocMap() {
-          @Override
-          public int get(int docID) {
-            return docID;
-          }
-        };
-    }
-
+  private static void verifyIndexSort(List<CodecReader> readers, SegmentInfo segmentInfo) {
     Sort indexSort = segmentInfo.getIndexSort();
     if (indexSort == null) {
-      return originalReaders;
+      return;
     }
-
-    List<CodecReader> readers = new ArrayList<>(originalReaders.size());
-
-    for (CodecReader leaf : originalReaders) {
+    for (CodecReader leaf : readers) {
       Sort segmentSort = leaf.getMetaData().getSort();
       if (segmentSort == null || isCongruentSort(indexSort, segmentSort) == false) {
         throw new IllegalArgumentException("index sort mismatch: merged segment has sort=" + indexSort +
             " but to-be-merged segment has sort=" + (segmentSort == null ? "null" : segmentSort));
       }
-      readers.add(leaf);
     }
-
-    return readers;
   }
 
   /** A map of doc IDs. */
