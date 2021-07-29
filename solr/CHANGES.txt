@@ -58,6 +58,8 @@ Other Changes
 
 * SOLR-15502: Remove MetricsCollectorHandler deprecated warning from the logs. (Bernd Wahlen, ab)
 
+* SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -602,7 +604,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-* SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
+(No changes)
 
 ==================  8.6.2 ==================
 
