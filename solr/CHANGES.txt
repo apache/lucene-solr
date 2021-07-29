@@ -50,7 +50,7 @@ Bug Fixes
 
 * SOLR-15531: SignificantTerms streaming function should not fail on empty collections (Benedikt Arnold via Mike Drob)
 
-* SOLR-15531: Cross-collection join fixed to ignore documents that do not contain value in "from" field (hossman)
+* SOLR-15482: Cross-collection join fixed to ignore documents that do not contain value in "from" field (hossman)
 
 Other Changes
 ---------------------
