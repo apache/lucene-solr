@@ -163,10 +163,14 @@ Solr supports a broad range of SQL syntax.
 The SQL parser being used by Solr to translate the SQL statements is case insensitive. However, for ease of reading, all examples on this page use capitalized keywords.
 ====
 
-.SELECT * is not supported
+.SELECT * is only supported when using LIMIT
 [IMPORTANT]
 ====
-The SQL parser being used by Solr does not support the SELECT * syntax, you must specify each field you wish to return.
+In general, you should project the fields you need to return for each query explicitly and avoid using `select *`, which is generally considered a bad practice and
+can lead to unexpected results when the underlying Solr schema changes.
+However, Solr does support `select *` for queries that also include a `LIMIT` clause.
+All stored fields and the `score` will be included in the results.
+Without a `LIMIT` clause, only fields with docValues enabled can be returned.
 ====
 
 === Escaping Reserved Words
