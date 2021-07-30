@@ -4397,8 +4397,15 @@ public class SolrCLI {
             password = credentials.split(":")[1];
           } else {
             Console console = System.console();
-            username = console.readLine("Enter username: ");
-            password = new String(console.readPassword("Enter password: "));
+            // keep prompting until they've entered a non-empty username & password
+            do {
+              username = console.readLine("Enter username: ");
+            } while (username == null || username.trim().length() == 0);
+            username = username.trim();
+
+            do {
+              password = new String(console.readPassword("Enter password: "));
+            } while (password.length() == 0);
           }
 
           boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "false"));

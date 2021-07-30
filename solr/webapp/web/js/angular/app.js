@@ -192,6 +192,10 @@ solrAdminApp.config([
         templateUrl: 'partials/schema-designer.html',
         controller: 'SchemaDesignerController'
       }).
+      when('/~security', {
+        templateUrl: 'partials/security.html',
+        controller: 'SecurityController'
+      }).
       otherwise({
         templateUrl: 'partials/unknown.html',
         controller: 'UnknownController'
@@ -451,7 +455,7 @@ solrAdminApp.config([
         $location.path('/login');
       }
     } else {
-      // schema designer prefers to handle errors itselft
+      // schema designer prefers to handle errors itself
       var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
       if (!isHandledBySchemaDesigner) {
         $rootScope.exceptions[rejection.config.url] = rejection.data.error;

@@ -17,6 +17,8 @@ New Features
 
 * SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
 
+* SOLR-15527: Security screen in Admin UI for managing users, roles, and permissions (Timothy Potter)
+
 Improvements
 ---------------------
 * SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)

@@ -24,7 +24,10 @@ An authorization plugin is also available to configure Solr with permissions to 
 
 To use Basic authentication, you must first create a `security.json` file. This file and where to put it is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.
 
-For Basic authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication. Usernames and passwords (as a sha256(password+salt) hash) could be added when the file is created, or can be added later with the Basic authentication API, described below.
+For Basic authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication.
+Usernames and passwords (as a sha256(password+salt) hash) could be added when the file is created, or can be added later with the Basic authentication API, described below.
+
+If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
 
 The `authorization` part is not related to Basic authentication, but is a separate authorization plugin designed to support fine-grained user access control. For more information, see the section <<rule-based-authorization-plugin.adoc#,Rule-Based Authorization Plugin>>.
 

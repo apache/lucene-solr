@@ -1,5 +1,5 @@
 = Securing Solr
-:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging, zookeeper-access-control
+:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging, zookeeper-access-control, security-ui
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -32,7 +32,9 @@ See the page <<enabling-ssl.adoc#,Enabling TLS (SSL)>> for details.
 
 == Authentication, Authorization and Audit Logging
 
-See chapter <<authentication-and-authorization-plugins.adoc#,Configuring Authentication, Authorization and Audit Logging plugins>> to learn how to work with the `security.json` file.
+Use the <<security-ui.adoc#,Security>> screen in the Admin UI to manage users, roles, and permissions.
+
+See chapter <<authentication-and-authorization-plugins.adoc#,Configuring Authentication and Authorization>> to learn how to work with the `security.json` file.
 
 [#securing-solr-auth-plugins]
 === Authentication Plugins
