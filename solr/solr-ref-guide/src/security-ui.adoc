@@ -21,7 +21,7 @@ The Security screen allows administrators with the `security-edit` permission to
 The Security screen works with Solr running in cloud and standalone modes.
 
 .Security Screen
-image::images/solr-admin-ui/security.png[]
+image::images/security-ui/security.png[]
 
 == Getting Started
 
