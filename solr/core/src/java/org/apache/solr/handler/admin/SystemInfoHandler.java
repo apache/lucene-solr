@@ -33,6 +33,7 @@ import java.util.Set;
 
 import com.codahale.metrics.Gauge;
 import org.apache.lucene.LucenePackage;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -347,6 +348,8 @@ public class SystemInfoHandler extends RequestHandlerBase
         info.add("roles", roles);
       }
     }
+
+    info.add("tls", UrlScheme.HTTPS.equals(UrlScheme.INSTANCE.getUrlScheme()));
 
     return info;
   }

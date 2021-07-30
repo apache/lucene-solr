@@ -280,6 +280,12 @@ solrAdminServices.factory('System',
        upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
      })
 }])
+.factory('Security',
+    ['$resource', function($resource) {
+          return $resource('/api/cluster/security/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+            get: {method: "GET"}, post: {method: "POST", timeout: 90000}
+        })
+}])
 .factory('AuthenticationService',
     ['base64', function (base64) {
         var service = {};

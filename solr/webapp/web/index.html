@@ -27,6 +27,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/common.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/analysis.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/schema-designer.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/security.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cloud.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cores.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/collections.css?_=${version}">
@@ -90,6 +91,7 @@ limitations under the License.
   <script src="js/angular/controllers/replication.js"></script>
   <script src="js/angular/controllers/schema.js"></script>
   <script src="js/angular/controllers/schema-designer.js"></script>
+  <script src="js/angular/controllers/security.js"></script>
   <script src="js/angular/controllers/segments.js"></script>
   <script src="js/angular/controllers/unknown.js"></script>
   <script src="js/angular/controllers/cluster-suggestions.js"></script>
@@ -159,6 +161,8 @@ limitations under the License.
                   <li class="level" ng-class="{active:page=='logging-levels'}"><a href="#/~logging/level">Level</a></li>
                 </ul>
               </li>
+
+              <li id="security" class="global" ng-class="{active:page=='security'}"><p><a href="#/~security">Security</a></p></li>
 
               <li id="cloud" class="global optional" ng-show="isCloudEnabled" ng-class="{active:showingCloud}"><p><a href="#/~cloud">Cloud</a></p>
                 <ul ng-show="showingCloud">
