@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
@@ -111,33 +113,40 @@ class SolrSchema extends AbstractSchema implements Closeable {
     }
   }
 
-  private Map<String, LukeResponse.FieldTypeInfo> getFieldTypeInfo(final String collection) {
+  private LukeResponse getSchema(final String collection) {
     final String zk = this.properties.getProperty("zk");
     PKIAuthenticationPlugin.withServerIdentity(true);
     try {
       LukeRequest lukeRequest = new LukeRequest();
-      lukeRequest.setShowSchema(true); // for custom type info ...
+      lukeRequest.setShowSchema(true); // for empty fields and custom type info ...
       lukeRequest.setNumTerms(0);
-      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection).getFieldTypeInfo();
+      return lukeRequest.process(solrClientCache.getCloudSolrClient(zk), collection);
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     } finally {
       PKIAuthenticationPlugin.withServerIdentity(false);
     }
   }
-
+  
   RelProtoDataType getRelDataType(String collection) {
     // Temporary type factory, just for the duration of this method. Allowable
     // because we're creating a proto-type, not a type; before being used, the
     // proto-type will be copied into a real type factory.
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-    Map<String, LukeResponse.FieldInfo> luceneFieldInfoMap = getFieldInfo(collection);
+    
+    // Get fields that have data, including dynamic field instances
+    Map<String, LukeResponse.FieldInfo> fieldsInUseMap = getFieldInfo(collection);
 
-    Map<String, LukeResponse.FieldTypeInfo> fieldTypeInfoMap = null; // loaded lazily if needed
+    LukeResponse schema = getSchema(collection);
+    // merge the actual fields in use returned by Luke with the declared fields in the schema that are empty
+    Map<String, LukeResponse.FieldInfo> combinedFields = Stream.of(fieldsInUseMap, schema.getFieldInfo())
+            .flatMap(map -> map.entrySet().stream())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
+
     Map<String, Class<?>> javaClassForTypeMap = new HashMap<>(); // local cache for custom field types we've already resolved
 
-    for (Map.Entry<String, LukeResponse.FieldInfo> entry : luceneFieldInfoMap.entrySet()) {
+    for (Map.Entry<String, LukeResponse.FieldInfo> entry : combinedFields.entrySet()) {
       LukeResponse.FieldInfo luceneFieldInfo = entry.getValue();
 
       String luceneFieldType = luceneFieldInfo.getType();
@@ -173,11 +182,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
         default:
           Class<?> javaClass = javaClassForTypeMap.get(luceneFieldType);
           if (javaClass == null) {
-            if (fieldTypeInfoMap == null) {
-              // lazily go to luke for the field type info ...
-              fieldTypeInfoMap = getFieldTypeInfo(collection);
-            }
-            javaClass = guessJavaClassForFieldType(fieldTypeInfoMap.get(luceneFieldType));
+            javaClass = guessJavaClassForFieldType(schema.getFieldTypeInfo().get(luceneFieldType));
             javaClassForTypeMap.put(luceneFieldType, javaClass);
           }
           type = typeFactory.createJavaType(javaClass);
