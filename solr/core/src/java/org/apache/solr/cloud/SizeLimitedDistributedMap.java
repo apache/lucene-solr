@@ -72,7 +72,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
 
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
-        if (stat.getMzxid() <= topElementMzxId) {
+        if (stat != null && stat.getMzxid() <= topElementMzxId) {
           zookeeper.delete(dir + "/" + child, -1, true);
           if (onOverflowObserver != null) onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
         }
