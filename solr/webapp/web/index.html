@@ -26,6 +26,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/angular-csp.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/common.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/analysis.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/schema-designer.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cloud.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cores.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/collections.css?_=${version}">
@@ -88,6 +89,7 @@ limitations under the License.
   <script src="js/angular/controllers/plugins.js"></script>
   <script src="js/angular/controllers/replication.js"></script>
   <script src="js/angular/controllers/schema.js"></script>
+  <script src="js/angular/controllers/schema-designer.js"></script>
   <script src="js/angular/controllers/segments.js"></script>
   <script src="js/angular/controllers/unknown.js"></script>
   <script src="js/angular/controllers/cluster-suggestions.js"></script>
@@ -166,6 +168,8 @@ limitations under the License.
                   <li class="graph" ng-class="{active:page=='cloud-graph'}"><a href="#/~cloud?view=graph">Graph</a></li>
                 </ul>
               </li>
+
+              <li ng-show="isCloudEnabled && isSchemaDesignerEnabled" id="schema-designer" class="global" ng-class="{active:page=='schema-designer'}"><p><a href="#/~schema-designer">Schema Designer</a></p></li>
 
               <li ng-show="isCloudEnabled" id="collections" class="global" ng-class="{active:page=='collections'}"><p><a href="#/~collections">Collections</a></p></li>
               <li ng-hide="isCloudEnabled" id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>

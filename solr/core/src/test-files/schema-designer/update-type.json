@@ -1,0 +1,41 @@
+{
+  "name": "test_txt",
+  "class": "solr.TextField",
+  "positionIncrementGap": "100",
+  "enableGraphQueries": true,
+  "autoGeneratePhraseQueries": false,
+  "synonymQueryStyle": "org.apache.solr.parser.SolrQueryParserBase$SynonymQueryStyle:AS_SAME_TERM",
+  "indexed": true,
+  "stored": true,
+  "docValues": false,
+  "termVectors": false,
+  "omitNorms": false,
+  "omitTermFreqAndPositions": false,
+  "omitPositions": false,
+  "storeOffsetsWithPositions": false,
+  "multiValued": true,
+  "large": false,
+  "uninvertible": true,
+  "tokenized": true,
+  "indexAnalyzer": {
+    "tokenizer": {
+      "class": "solr.WhitespaceTokenizerFactory"
+    },
+    "filters": [
+      {
+        "class": "solr.ASCIIFoldingFilterFactory"
+      }
+    ]
+
+  },
+  "queryAnalyzer": {
+    "tokenizer": {
+      "class": "solr.WhitespaceTokenizerFactory"
+    },
+    "filters": [
+      {
+        "class": "solr.ASCIIFoldingFilterFactory"
+      }
+    ]
+  }
+}

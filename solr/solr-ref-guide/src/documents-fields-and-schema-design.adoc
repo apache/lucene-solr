@@ -1,5 +1,5 @@
 = Documents, Fields, and Schema Design
-:page-children: overview-of-documents-fields-and-schema-design, solr-field-types, defining-fields, copying-fields, dynamic-fields, other-schema-elements, schema-api, putting-the-pieces-together, docvalues, schemaless-mode, luke-request-handler
+:page-children: overview-of-documents-fields-and-schema-design, solr-field-types, defining-fields, copying-fields, dynamic-fields, other-schema-elements, schema-api, putting-the-pieces-together, docvalues, schemaless-mode, luke-request-handler, schema-designer
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -41,4 +41,6 @@ This section includes the following topics:
 
 <<schemaless-mode.adoc#,Schemaless Mode>>: Automatically add previously unknown schema fields using value-based field type guessing.
 
-<<luke-request-handler.adoc#,Luke Requst Handler>>: The request handler which provides access to information about fields in the index. This request handler powers the <<schema-browser-screen.adoc#,Schema Browser>> page of Solr's Admin UI.
+<<luke-request-handler.adoc#,Luke Request Handler>>: The request handler which provides access to information about fields in the index. This request handler powers the <<schema-browser-screen.adoc#,Schema Browser>> page of Solr's Admin UI.
+
+<<schema-designer.adoc#,Schema Designer>>: Provides an interactive experience to create a schema using sample data.

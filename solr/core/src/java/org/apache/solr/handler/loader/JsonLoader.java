@@ -84,6 +84,41 @@ public class JsonLoader extends ContentStreamLoader {
     new SingleThreadedJsonLoader(req, rsp, processor).load(req, rsp, stream, processor);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static SolrInputDocument buildDoc(Map<String, Object> m) {
+    SolrInputDocument result = new SolrInputDocument();
+    for (Map.Entry<String, Object> e : m.entrySet()) {
+      if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
+        if (e.getValue() instanceof List) {
+          List value = (List) e.getValue();
+          for (Object o : value) {
+            if (o instanceof Map) {
+              // retain the value as a list, even if the list contains a single value.
+              if(!result.containsKey(e.getKey())) {
+                result.setField(e.getKey(), new ArrayList<>(1));
+              }
+              result.addField(e.getKey(), buildDoc((Map) o));
+            }
+          }
+        } else if (e.getValue() instanceof Map) {
+          result.addField(e.getKey(), buildDoc((Map) e.getValue()));
+        }
+      } else {
+        result.setField(e.getKey(), e.getValue());
+      }
+    }
+    return result;
+  }
+
+  private static boolean mapEntryIsChildDoc(Object val) {
+    if(val instanceof List) {
+      @SuppressWarnings({"rawtypes"})
+      List listVal = (List) val;
+      if (listVal.size() == 0) return false;
+      return  listVal.get(0) instanceof Map;
+    }
+    return val instanceof Map;
+  }
 
   static class SingleThreadedJsonLoader extends ContentStreamLoader {
 
@@ -245,32 +280,6 @@ public class JsonLoader extends ContentStreamLoader {
           }
         }
       });
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private SolrInputDocument buildDoc(Map<String, Object> m) {
-      SolrInputDocument result = new SolrInputDocument();
-      for (Map.Entry<String, Object> e : m.entrySet()) {
-        if (mapEntryIsChildDoc(e.getValue())) { // parse child documents
-          if (e.getValue() instanceof List) {
-            List value = (List) e.getValue();
-            for (Object o : value) {
-              if (o instanceof Map) {
-                // retain the value as a list, even if the list contains a single value.
-                if(!result.containsKey(e.getKey())) {
-                  result.setField(e.getKey(), new ArrayList<>(1));
-                }
-                result.addField(e.getKey(), buildDoc((Map) o));
-              }
-            }
-          } else if (e.getValue() instanceof Map) {
-            result.addField(e.getKey(), buildDoc((Map) e.getValue()));
-          }
-        } else {
-          result.setField(e.getKey(), e.getValue());
-        }
-      }
-      return result;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -625,15 +634,6 @@ public class JsonLoader extends ContentStreamLoader {
       return extendedFieldValue.containsKey(req.getSchema().getUniqueKeyField().getName());
     }
 
-    private boolean mapEntryIsChildDoc(Object val) {
-      if(val instanceof List) {
-        @SuppressWarnings({"rawtypes"})
-        List listVal = (List) val;
-        if (listVal.size() == 0) return false;
-        return  listVal.get(0) instanceof Map;
-      }
-      return val instanceof Map;
-    }
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

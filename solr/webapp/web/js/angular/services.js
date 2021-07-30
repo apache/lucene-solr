@@ -269,6 +269,17 @@ solrAdminServices.factory('System',
        get: {method: "GET"}
      })
 }])
+.factory('SchemaDesigner',
+   ['$resource', function($resource) {
+     return $resource('/api/schema-designer/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+       get: {method: "GET"},
+       post: {method: "POST", timeout: 90000},
+       put: {method: "PUT"},
+       postXml: {headers: {'Content-type': 'text/xml'}, method: "POST", timeout: 90000},
+       postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
+       upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
+     })
+}])
 .factory('AuthenticationService',
     ['base64', function (base64) {
         var service = {};

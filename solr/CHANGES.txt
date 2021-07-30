@@ -15,6 +15,8 @@ New Features
 
 * SOLR-15208: Add the countDist aggregation to the stats, facet and timeseries Streaming Expressions (Joel Bernstein)
 
+* SOLR-15277: Schema Designer UI (Timothy Potter, Kiran Chitturi)
+
 Improvements
 ---------------------
 * SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)

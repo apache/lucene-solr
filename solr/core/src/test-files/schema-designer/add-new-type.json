@@ -1,0 +1,41 @@
+{ "add-field-type": {
+  "name": "test_txt",
+  "class": "solr.TextField",
+  "positionIncrementGap": "100",
+  "autoGeneratePhraseQueries": false,
+  "enableGraphQueries": true,
+  "synonymQueryStyle": "AS_SAME_TERM",
+  "indexed": true,
+  "stored": true,
+  "docValues": false,
+  "termVectors": false,
+  "omitNorms": false,
+  "omitTermFreqAndPositions": false,
+  "omitPositions": false,
+  "storeOffsetsWithPositions": false,
+  "multiValued": false,
+  "large": false,
+  "uninvertible": true,
+  "tokenized": true,
+  "indexAnalyzer": {
+    "tokenizer": {
+      "class": "solr.WhitespaceTokenizerFactory"
+    },
+    "filters": [
+      {
+        "class": "solr.ASCIIFoldingFilterFactory"
+      }
+    ]
+  },
+  "queryAnalyzer": {
+    "tokenizer": {
+      "class": "solr.WhitespaceTokenizerFactory"
+    },
+    "filters": [
+      {
+        "class": "solr.ASCIIFoldingFilterFactory"
+      }
+    ]
+  }
+}
+}

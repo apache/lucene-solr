@@ -93,28 +93,33 @@ public class ParseLongFieldUpdateProcessorFactory extends ParseNumericFieldUpdat
     
     @Override
     protected Object mutateValue(Object srcVal) {
-      if (srcVal instanceof CharSequence) {
-        String stringVal = srcVal.toString();
-        ParsePosition pos = new ParsePosition(0);
-        Number number = numberFormat.get().parse(stringVal, pos);
-        if (pos.getIndex() != stringVal.length()) {
-          if (log.isDebugEnabled()) {
-            log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
-                new Object[]{srcVal, stringVal.substring(pos.getIndex())});
-          }
-          return SKIP_FIELD_VALUE_LIST_SINGLETON;
-        }
-        return number.longValue();
-      }
-      if (srcVal instanceof Long) {
-        return srcVal;
-      }
-      return SKIP_FIELD_VALUE_LIST_SINGLETON;
+      Object parsed = parsePossibleLong(srcVal, numberFormat.get());
+      return parsed != null ? parsed : SKIP_FIELD_VALUE_LIST_SINGLETON;
     }
   }
 
   @Override
   protected boolean isSchemaFieldTypeCompatible(FieldType type) {
     return type instanceof LongValueFieldType;
+  }
+
+  public static Object parsePossibleLong(Object srcVal, NumberFormat numberFormat) {
+    if (srcVal instanceof CharSequence) {
+      String stringVal = srcVal.toString();
+      ParsePosition pos = new ParsePosition(0);
+      Number number = numberFormat.parse(stringVal, pos);
+      if (pos.getIndex() != stringVal.length()) {
+        if (log.isDebugEnabled()) {
+          log.debug("value '{}' is not parseable, thus not mutated; unparsed chars: '{}'",
+              srcVal, stringVal.substring(pos.getIndex()));
+        }
+        return null;
+      }
+      return number.longValue();
+    }
+    if (srcVal instanceof Long) {
+      return srcVal;
+    }
+    return null;
   }
 }

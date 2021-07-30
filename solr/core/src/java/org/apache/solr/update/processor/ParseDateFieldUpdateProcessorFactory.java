@@ -131,36 +131,8 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
 
       @Override
       protected Object mutateValue(Object srcVal) {
-        if (srcVal instanceof CharSequence) {
-          String srcStringVal = srcVal.toString();
-          // trim single quotes around date if present
-          // see issue #5279  (Apache HttpClient)
-          int stringValLen = srcStringVal.length();
-          if (stringValLen > 1
-              && srcStringVal.startsWith("'")
-              && srcStringVal.endsWith("'")
-          ) {
-            srcStringVal = srcStringVal.substring(1, stringValLen - 1);
-          }
-
-          for (Map.Entry<String,DateTimeFormatter> format : formats.entrySet()) {
-            DateTimeFormatter parser = format.getValue();
-            try {
-              return Date.from(parseInstant(parser, srcStringVal, parsePosition));
-            } catch (DateTimeParseException e) {
-              if (log.isDebugEnabled()) {
-                log.debug("value '{}' is not parseable with format '{}'",
-                    new Object[]{srcStringVal, format.getKey()});
-              }
-            }
-          }
-          log.debug("value '{}' was not parsed by any configured format, thus was not mutated", srcStringVal);
-          return SKIP_FIELD_VALUE_LIST_SINGLETON;
-        }
-        if (srcVal instanceof Date) {
-          return srcVal;
-        }
-        return SKIP_FIELD_VALUE_LIST_SINGLETON;
+        Object parsed = parsePossibleDate(srcVal, formats.values(), parsePosition);
+        return parsed != null ? parsed : SKIP_FIELD_VALUE_LIST_SINGLETON;
       }
     };
   }
@@ -209,6 +181,37 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
       FieldType type = schema.getFieldTypeNoEx(fieldName);
       return (null == type) || type instanceof DateValueFieldType;
     };
+  }
+
+  public static Object parsePossibleDate(Object srcVal, Collection<DateTimeFormatter> parsers, ParsePosition parsePosition) {
+    if (srcVal instanceof CharSequence) {
+      String srcStringVal = srcVal.toString();
+      // trim single quotes around date if present
+      // see issue #5279  (Apache HttpClient)
+      int stringValLen = srcStringVal.length();
+      if (stringValLen > 1
+          && srcStringVal.startsWith("'")
+          && srcStringVal.endsWith("'")
+      ) {
+        srcStringVal = srcStringVal.substring(1, stringValLen - 1);
+      }
+
+      for (DateTimeFormatter parser: parsers) {
+        try {
+          return Date.from(parseInstant(parser, srcStringVal, parsePosition));
+        } catch (DateTimeParseException e) {
+          if (log.isDebugEnabled()) {
+            log.debug("value '{}' is not parseable with format '{}'", srcStringVal, parser);
+          }
+        }
+      }
+      log.debug("value '{}' was not parsed by any configured format, thus was not mutated", srcStringVal);
+      return null;
+    }
+    if (srcVal instanceof Date) {
+      return srcVal;
+    }
+    return null;
   }
 
   public static void validateFormatter(DateTimeFormatter formatter) {

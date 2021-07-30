@@ -92,6 +92,7 @@ import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.CollectionBackupsAPI;
 import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.designer.SchemaDesignerAPI;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -743,6 +744,11 @@ public class CoreContainer {
     containerHandlers.getApiBag().registerObject(clusterAPI);
     containerHandlers.getApiBag().registerObject(clusterAPI.commands);
     containerHandlers.getApiBag().registerObject(clusterAPI.configSetCommands);
+
+    if (isZooKeeperAware()) {
+      containerHandlers.getApiBag().registerObject(new SchemaDesignerAPI(this));
+    } // else Schema Designer not available in standalone (non-cloud) mode
+
     /*
      * HealthCheckHandler needs to be initialized before InfoHandler, since the later one will call CoreContainer.getHealthCheckHandler().
      * We don't register the handler here because it'll be registered inside InfoHandler
