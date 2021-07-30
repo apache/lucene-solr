@@ -37,6 +37,8 @@ Improvements
 
 * SOLR-15549: ZkStateReader now supports connecting to 9.0 Solr Clouds (Houston Putman)
 
+* SOLR-15570: Include fields declared in the schema in table metadata (SQL) even if they are empty (Timothy Potter)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
