@@ -18,6 +18,9 @@ API Changes
 * LUCENE-10036: Replaced the ScoreCachingWrappingScorer ctor with a static factory method that
   ensures unnecessary wrapping doesn't occur. (Greg Miller)
 
+* LUCENE-10027: Add a new Directory reader open API from indexCommit and
+   a custom comparator for sorting leaf readers (Mayya Sharipova).
+
 New Features
 ---------------------
 (No changes)
