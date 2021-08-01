@@ -76,6 +76,9 @@ Bug Fixes
 
 * LUCENE-9988: Fix DrillSideways correctness bug introduced in LUCENE-9944 (Greg Miller)
 
+* LUCENE-9964: Duplicate long values in a document field should only be counted once when using SortedNumericDocValuesFields
+  (Gautam Worah)
+
 * LUCENE-9999: CombinedFieldQuery can fail with an exception when document
   is missing some fields. (Jim Ferenczi, Julie Tibshirani)
 
