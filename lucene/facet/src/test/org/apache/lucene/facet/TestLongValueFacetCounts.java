@@ -557,7 +557,7 @@ public class TestLongValueFacetCounts extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     w.close();
-    LongValueFacetCounts facetCounts = new LongValueFacetCounts("field", r);
+    LongValueFacetCounts facetCounts = new LongValueFacetCounts("field", r, true);
 
     FacetResult fr = facetCounts.getAllChildrenSortByValue();
     for (LabelAndValue labelAndValue : fr.labelValues) {
