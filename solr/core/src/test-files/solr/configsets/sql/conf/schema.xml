@@ -66,6 +66,9 @@
   <field name="pdatex" type="pdatex" indexed="true" stored="true"/>
   <field name="pdatexs" type="pdatex" indexed="true" stored="true" multiValued="true"/>
 
+  <field name="notstored" type="string" indexed="true" docValues="false" stored="false"/>
+  <field name="dvonly" type="string" docValues="true" stored="false"/>
+
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
