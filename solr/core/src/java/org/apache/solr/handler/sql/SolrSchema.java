@@ -19,6 +19,7 @@ package org.apache.solr.handler.sql;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -43,6 +44,7 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.schema.DateValueFieldType;
 import org.apache.solr.schema.DoubleValueFieldType;
 import org.apache.solr.schema.FloatValueFieldType;
@@ -127,6 +129,10 @@ class SolrSchema extends AbstractSchema implements Closeable {
       PKIAuthenticationPlugin.withServerIdentity(false);
     }
   }
+
+  private boolean isStoredOrDocValues(final EnumSet<FieldFlag> flags) {
+    return flags != null && (flags.contains(FieldFlag.STORED) || flags.contains(FieldFlag.DOC_VALUES));
+  }
   
   RelProtoDataType getRelDataType(String collection) {
     // Temporary type factory, just for the duration of this method. Allowable
@@ -139,8 +145,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
     Map<String, LukeResponse.FieldInfo> fieldsInUseMap = getFieldInfo(collection);
 
     LukeResponse schema = getSchema(collection);
+    // Only want fields that are stored or have docValues enabled
+    Map<String, LukeResponse.FieldInfo> storedFields = schema.getFieldInfo().entrySet().stream()
+            .filter(e -> isStoredOrDocValues(e.getValue().getFlags()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     // merge the actual fields in use returned by Luke with the declared fields in the schema that are empty
-    Map<String, LukeResponse.FieldInfo> combinedFields = Stream.of(fieldsInUseMap, schema.getFieldInfo())
+    Map<String, LukeResponse.FieldInfo> combinedFields = Stream.of(fieldsInUseMap, storedFields)
             .flatMap(map -> map.entrySet().stream())
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
 
