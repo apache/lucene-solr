@@ -58,6 +58,9 @@ Improvements
 * LUCENE-10030: Lazily evaluate score in DrillSidewaysScorer.doQueryFirstScoring
   (Grigoriy Troitskiy)
 
+* LUCENE-9945: Extend DrillSideways to support exposing FacetCollectors directly.
+  (Greg Miller, Sejal Pawar)
+
 Optimizations
 ---------------------
 
