@@ -427,8 +427,11 @@ solrAdminApp.config([
         return rejection;
     }
 
-    // Schema Designer handles errors internally to provide a better user experience than the global error handler
-    var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
+    // Some page controllers, such as Schema Designer, handle errors internally to provide a better user experience than the global error handler
+    var isHandledByPageController =
+        (rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/")) ||
+        (rejection.status === 403 && $location.path() === "/~security");
+
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -436,7 +439,7 @@ solrAdminApp.config([
       var $http = $injector.get('$http');
       var result = $http(rejection.config);
       return result;
-    } else if (rejection.status === 401 && !isHandledBySchemaDesigner) {
+    } else if (rejection.status === 401 && !isHandledByPageController) {
       // Authentication redirect
       var headers = rejection.headers();
       var wwwAuthHeader = headers['www-authenticate'];
@@ -458,9 +461,13 @@ solrAdminApp.config([
         $location.path('/login');
       }
     } else {
-      // schema designer prefers to handle errors itself
-      if (!isHandledBySchemaDesigner) {
-        $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+      // some controllers prefer to handle errors internally
+      if (!isHandledByPageController) {
+        if (rejection.data.error) {
+          $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+        } else if (rejection.data.message) {
+          $rootScope.exceptions[rejection.config.url] = {msg:rejection.data.message+" from "+rejection.data.url};
+        }
       }
     }
     return $q.reject(rejection);
