@@ -1035,26 +1035,9 @@ public class CoreContainer {
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
         zkSys.zkController.preClose();
-        /*
-         * Pause updates for all cores on this node and wait for all in-flight update requests to finish.
-         * Here, we (slightly) delay leader election so that in-flight update requests succeed and we can preserve consistency.
-         *
-         * Jetty already allows a grace period for in-flight requests to complete and our solr cores, searchers etc
-         * are reference counted to allow for graceful shutdown. So we don't worry about any other kind of requests.
-         *
-         * We do not need to unpause ever because the node is being shut down.
-         */
-        getCores().parallelStream().forEach(solrCore -> {
-          SolrCoreState solrCoreState = solrCore.getSolrCoreState();
-          try {
-            solrCoreState.pauseUpdatesAndAwaitInflightRequests();
-          } catch (TimeoutException e) {
-            log.warn("Timed out waiting for in-flight update requests to complete for core: {}", solrCore.getName());
-          } catch (InterruptedException e) {
-            log.warn("Interrupted while waiting for in-flight update requests to complete for core: {}", solrCore.getName());
-            Thread.currentThread().interrupt();
-          }
-        });
+      }
+      pauseUpdatesAndAwaitInflightRequests();
+      if (isZooKeeperAware()) {
         zkSys.zkController.tryCancelAllElections();
       }
 
@@ -1206,6 +1189,29 @@ public class CoreContainer {
         SolrException.log(log, "Error canceling recovery for core", e);
       }
     }
+  }
+
+  /**
+   * Pause updates for all cores on this node and wait for all in-flight update requests to finish.
+   * Here, we (slightly) delay leader election so that in-flight update requests succeed and we can preserve consistency.
+   *
+   * Jetty already allows a grace period for in-flight requests to complete and our solr cores, searchers etc
+   * are reference counted to allow for graceful shutdown. So we don't worry about any other kind of requests.
+   *
+   * We do not need to unpause ever because the node is being shut down.
+   */
+  private void pauseUpdatesAndAwaitInflightRequests() {
+    getCores().parallelStream().forEach(solrCore -> {
+      SolrCoreState solrCoreState = solrCore.getSolrCoreState();
+      try {
+        solrCoreState.pauseUpdatesAndAwaitInflightRequests();
+      } catch (TimeoutException e) {
+        log.warn("Timed out waiting for in-flight update requests to complete for core: {}", solrCore.getName());
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while waiting for in-flight update requests to complete for core: {}", solrCore.getName());
+        Thread.currentThread().interrupt();
+      }
+    });
   }
 
   @Override
