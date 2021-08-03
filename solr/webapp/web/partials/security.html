@@ -51,10 +51,10 @@ limitations under the License.
             <span ng-show="manageUsersEnabled" id="realm-field">
               <label for="realmName">Realm:&nbsp;</label><input disabled class="input-text" type="text" id="realmName" ng-model="realmName">
             </span>
-            <span id="block-field"><label for="block_unknown">Block anonymous requests?</label><input class="input-check" type="checkbox" id="block_unknown" ng-model="blockUnknown" ng-change="onBlockUnknownChange()" ng-true-value="'true'" ng-false-value="'false'"/><a ng-click="showHelp('blockUnknownHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+            <span id="block-field" ng-show="manageUsersEnabled"><label for="block_unknown">Block anonymous requests?</label><input class="input-check" type="checkbox" id="block_unknown" ng-model="blockUnknown" ng-change="onBlockUnknownChange()" ng-true-value="'true'" ng-false-value="'false'"/><a ng-click="showHelp('blockUnknownHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
               <div id="blockUnknownHelp" class="help" ng-show="helpId === 'blockUnknownHelp'">
                 <div class="help-top">
-                  <p>If checked, un-authenticated requests to any Solr endpoint are blocked. If un-checked, then any endpoint that is not protected with a permission will be accessible by anonymous users. Only disable this check if you want to allow un-authenticated access to specific endpoints that are configured with <b>role: null</b>. For more information, see:
+                  <p>If checked, un-authenticated requests to any Solr endpoint are blocked. If un-checked, then any endpoint that is not protected with a permission will be accessible by anonymous users. Only disable this check if you want to allow un-authenticated access to specific endpoints that are configured with <b>role: null</b>. All other endpoints should be protected with explicit role bindings that require authentication. For more information, see:
                   <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/basic-authentication-plugin.html#enable-basic-authentication">Basic Authentication</a></div></p>
                 </div>
               </div>

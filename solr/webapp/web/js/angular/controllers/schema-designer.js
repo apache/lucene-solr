@@ -168,7 +168,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         $scope.showNewSchemaDialog();
       }
     }, function(e) {
-      if (e.status === 403) {
+      if (e.status === 401 || e.status === 403) {
         $scope.isSchemaDesignerEnabled = false;
         $scope.hideAll();
       }

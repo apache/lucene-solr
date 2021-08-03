@@ -103,6 +103,7 @@ However, if *Block anonymous requests* (`blockUnknown=true`) is checked, then an
 
 To edit a permission, simply click on the corresponding row in the table. When editing a permission, the current index of the permission in the list of permissions is editable.
 This allows you to re-order permissions if needed; see <<rule-based-authorization-plugin.adoc#permission-ordering-and-resolution,Permission Ordering>>.
+In general, you want to permissions listed from most specific to least specific in `security.json`.
 
 
 

@@ -65,6 +65,14 @@ Save your settings to a file called `security.json` locally. If you are using So
 
 If `blockUnknown` does not appear in the `security.json` file, it will default to `false`. This has the effect of not requiring authentication at all. In some cases, you may want this; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that this parameter is set to `true` in order for authentication to be truly enabled in your system.
 
+[WARNING]
+====
+If you set `blockUnknown` to `false`, then *any* request that is not explicitly protected by a permission will be accessible by anonymous users!
+Consequently, you should define a role binding for every <<rule-based-authorization-plugin.adoc#permissions,predefined>> permission you want to protect.
+You can assign the special `role: null` binding for requests that you want to allow anonymous users to access. To protect all endpoints except those with `role:null`,
+you can add a role binding for the `all` permission and place it in the last position in `security.json`.
+====
+
 If `realm` is not defined, it will default to `solr`.
 
 If you are using SolrCloud, you must upload `security.json` to ZooKeeper. An example command and more information about securing your setup can be found at <<authentication-and-authorization-plugins#in-solrcloud-mode,Authentication and Authorization Plugins In SolrCloud Mode>>.

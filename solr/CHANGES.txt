@@ -66,6 +66,9 @@ Other Changes
 
 * SOLR-15566: Clarify ref guide documentation about SQL queries with `SELECT *` requiring a `LIMIT` clause (Timothy Potter)
 
+* SOLR-15573: bin/solr auth utility should provide role bindings for `security-read` and `config-edit` by default
+  to protect the security and schema designer screens in the Admin UI (Timothy Potter)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
