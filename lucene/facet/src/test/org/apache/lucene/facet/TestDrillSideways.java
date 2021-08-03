@@ -1717,5 +1717,81 @@ public class TestDrillSideways extends FacetTestCase {
     writer.close();
     IOUtils.close(searcher.getIndexReader(), taxoReader, taxoWriter, dir, taxoDir);
   }
+
+  public void testExtendedDrillSidewaysResult() throws Exception {
+    // LUCENE-9945: Extend DrillSideways to support exposing FacetCollectors directly
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    DirectoryTaxonomyWriter taxoWriter =
+        new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    FacetsConfig config = new FacetsConfig();
+    config.setHierarchical("dim", true);
+
+    Document doc = new Document();
+    doc.add(new FacetField("dim", "a"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    Document doc2 = new Document();
+    doc.add(new FacetField("dim", "x"));
+    writer.addDocument(config.build(taxoWriter, doc2));
+
+    // open NRT
+    IndexSearcher searcher = getNewSearcher(writer.getReader());
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+
+    DrillDownQuery ddq = new DrillDownQuery(config);
+    ddq.add("dim", "x");
+
+    DrillSideways ds = getNewDrillSidewaysBuildFacetsResult(searcher, config, taxoReader);
+
+    SimpleCollectorManager manager =
+        new SimpleCollectorManager(
+            10, (a, b) -> Float.compare(b.docAndScore.score, a.docAndScore.score));
+    SimpleCollector collector = manager.newCollector();
+
+    // Sometimes pass in a Collector and sometimes CollectorManager
+    // so that we can test both DrillSidewaysResult and ConcurrentDrillSidewaysResult
+    DrillSidewaysResult r;
+    if (random().nextBoolean()) {
+      r = ds.search(ddq, collector);
+    } else {
+      r = ds.search(ddq, manager);
+    }
+
+    // compute Facets using exposed FacetCollectors from DrillSidewaysResult
+    Map<String, Facets> drillSidewaysFacets = new HashMap<>();
+    Facets drillDownFacets = getTaxonomyFacetCounts(taxoReader, config, r.drillDownFacetsCollector);
+    if (r.drillSidewaysFacetsCollector != null) {
+      for (int i = 0; i < r.drillSidewaysFacetsCollector.length; i++) {
+        drillSidewaysFacets.put(
+            r.drillSidewaysDims[i],
+            getTaxonomyFacetCounts(taxoReader, config, r.drillSidewaysFacetsCollector[i]));
+      }
+    }
+
+    Facets facets;
+    if (drillSidewaysFacets.isEmpty()) {
+      facets = drillDownFacets;
+    } else {
+      facets = new MultiFacets(drillSidewaysFacets, drillDownFacets);
+    }
+
+    // Facets computed using FacetsCollecter exposed in DrillSidewaysResult
+    // should match the Facets computed by {@link DrillSideways#buildFacetsResult}
+    FacetResult facetResultActual = facets.getTopChildren(2, "dim");
+    FacetResult facetResultExpected = r.facets.getTopChildren(2, "dim");
+
+    assertEquals(facetResultExpected.dim, facetResultActual.dim);
+    assertEquals(facetResultExpected.path.length, facetResultActual.path.length);
+    assertEquals(facetResultExpected.value, facetResultActual.value);
+    assertEquals(facetResultExpected.childCount, facetResultActual.childCount);
+
+    writer.close();
+    IOUtils.close(searcher.getIndexReader(), taxoReader, taxoWriter, dir, taxoDir);
+  }
 }
 
