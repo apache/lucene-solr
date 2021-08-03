@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -66,11 +68,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String REGISTRY_PARAM = "registry";
   public static final String GROUP_PARAM = "group";
   public static final String KEY_PARAM = "key";
+  public static final String EXPR_PARAM = "expr";
   public static final String TYPE_PARAM = "type";
 
   public static final String ALL = "all";
 
-  private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
+  private static final Pattern KEY_SPLIT_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
   private final CoreContainer cc;
   private final Map<String, String> injectedSysProps = CommonTestInjection.injectAdditionalProps();
   private final boolean enabled;
@@ -121,6 +124,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       handleKeyRequest(keys, consumer);
       return;
     }
+    String[] exprs = params.getParams(EXPR_PARAM);
+    if (exprs != null && exprs.length > 0) {
+      handleExprRequest(exprs, consumer);
+      return;
+    }
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
@@ -140,6 +148,87 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     consumer.accept("metrics", response);
   }
 
+  private static class MetricsExpr {
+    Pattern registryRegex;
+    MetricFilter metricFilter;
+    Predicate<CharSequence> propertyFilter;
+  }
+
+  private void handleExprRequest(String[] exprs, BiConsumer<String, Object> consumer) {
+    SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
+    SimpleOrderedMap<Object> errors = new SimpleOrderedMap<>();
+    List<MetricsExpr> metricsExprs = new ArrayList<>();
+
+    for (String key : exprs) {
+      if (key == null || key.isEmpty()) {
+        continue;
+      }
+      String[] parts = KEY_SPLIT_REGEX.split(key);
+      if (parts.length < 2 || parts.length > 3) {
+        errors.add(key, "at least two and at most three colon-separated parts must be provided");
+        continue;
+      }
+      MetricsExpr me = new MetricsExpr();
+      me.registryRegex = Pattern.compile(unescape(parts[0]));
+      me.metricFilter = new SolrMetricManager.RegexFilter(unescape(parts[1]));
+      String propertyPart = parts.length > 2 ? unescape(parts[2]) : null;
+      if (propertyPart == null) {
+        me.propertyFilter = name -> true;
+      } else {
+        me.propertyFilter = new Predicate<CharSequence>() {
+          final Pattern pattern = Pattern.compile(propertyPart);
+          @Override
+          public boolean test(CharSequence charSequence) {
+            return pattern.matcher(charSequence).matches();
+          }
+        };
+      }
+      metricsExprs.add(me);
+    }
+    // find matching registries first, to avoid scanning non-matching registries
+    Set<String> matchingRegistries = new TreeSet<>();
+    metricsExprs.forEach(me -> {
+      metricManager.registryNames().forEach(name -> {
+        if (me.registryRegex.matcher(name).matches()) {
+          matchingRegistries.add(name);
+        }
+      });
+    });
+    for (String registryName : matchingRegistries) {
+      MetricRegistry registry = metricManager.registry(registryName);
+      for (MetricsExpr me : metricsExprs) {
+        @SuppressWarnings("unchecked")
+        SimpleOrderedMap<Object> perRegistryResult = (SimpleOrderedMap<Object>) result.get(registryName);
+        final SimpleOrderedMap<Object> perRegistryTemp = new SimpleOrderedMap<>();
+        // skip processing if not a matching registry
+        if (!me.registryRegex.matcher(registryName).matches()) {
+          continue;
+        }
+        MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), me.metricFilter,
+            me.propertyFilter, false, false, true, false, (k, v) -> perRegistryTemp.add(k, v));
+        // extracted some metrics and there's no entry for this registry yet
+        if (perRegistryTemp.size() > 0) {
+          if (perRegistryResult == null) { // new results for this registry
+            result.add(registryName, perRegistryTemp);
+          } else {
+            // merge if needed
+            for (Iterator<Map.Entry<String, Object>> it = perRegistryTemp.iterator(); it.hasNext(); ) {
+              Map.Entry<String, Object> entry = it.next();
+              Object existing = perRegistryResult.get(entry.getKey());
+              if (existing == null) {
+                perRegistryResult.add(entry.getKey(), entry.getValue());
+              }
+            }
+          }
+        }
+      }
+    }
+    consumer.accept("metrics", result);
+    if (errors.size() > 0) {
+      consumer.accept("errors", errors);
+    }
+  }
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleKeyRequest(String[] keys, BiConsumer<String, Object> consumer) throws Exception {
     SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
@@ -148,7 +237,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       if (key == null || key.isEmpty()) {
         continue;
       }
-      String[] parts = KEY_REGEX.split(key);
+      String[] parts = KEY_SPLIT_REGEX.split(key);
       if (parts.length < 2 || parts.length > 3) {
         errors.add(key, "at least two and at most three colon-separated parts must be provided");
         continue;
@@ -202,7 +291,9 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
       if (c == '\\') {
-        continue;
+        if (i < s.length() - 1 && s.charAt(i + 1) == ':') {
+          continue;
+        }
       }
       sb.append(c);
     }
