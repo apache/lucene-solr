@@ -186,7 +186,6 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.permFilterTypes = ["", "name", "role", "path", "collection"];
 
     System.get(function(data) {
-      // console.log(">> system: "+JSON.stringify(data));
       $scope.authenticationPlugin = data.security ? data.security["authenticationPlugin"] : null;
       $scope.authorizationPlugin = data.security ? data.security["authorizationPlugin"] : null;
       $scope.myRoles = data.security ? data.security["roles"] : [];
@@ -196,7 +195,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       $scope.solrHome = data["solr_home"];
       $scope.refreshSecurityPanel();
     }, function(e) {
-      if (e.status === 403) {
+      if (e.status === 401 || e.status === 403) {
         $scope.isSecurityAdminEnabled = true;
         $scope.hasSecurityEditPerm = false;
         $scope.hideAll();

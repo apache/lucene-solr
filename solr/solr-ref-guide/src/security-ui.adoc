@@ -33,7 +33,7 @@ When first getting started with Solr, use the `bin/solr auth` command-line utili
 For example, the following command will enable *basic authentication* and prompt you for the username and password for the initial user with administrative access:
 [source,bash]
 ----
- bin/solr auth enable -type basicAuth -prompt true -z localhost:2181
+ bin/solr auth enable -type basicAuth -prompt true -z localhost:2181 -blockUnknown true
 ----
 _Note: The `auth` utility only works with Solr running in cloud mode and thus requires a Zookeeper connection string passed via the `-z` option._
 
@@ -103,6 +103,7 @@ However, if *Block anonymous requests* (`blockUnknown=true`) is checked, then an
 
 To edit a permission, simply click on the corresponding row in the table. When editing a permission, the current index of the permission in the list of permissions is editable.
 This allows you to re-order permissions if needed; see <<rule-based-authorization-plugin.adoc#permission-ordering-and-resolution,Permission Ordering>>.
+In general, you want to permissions listed from most specific to least specific in `security.json`.
 
 
 

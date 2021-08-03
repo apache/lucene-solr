@@ -1477,17 +1477,15 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         ;;
         -prompt)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-prompt" "$2")
-            shift
+            shift 2
         ;;
         -blockUnknown)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-blockUnknown" "$2")
-            shift
-            break
+            shift 2
         ;;
         -updateIncludeFileOnly)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-updateIncludeFileOnly" "$2")
-            shift
-            break
+            shift 2
         ;;
         -V|--verbose)
             VERBOSE="-verbose"
