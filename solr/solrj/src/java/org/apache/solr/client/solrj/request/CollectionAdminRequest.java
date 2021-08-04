@@ -165,6 +165,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
+   * Take the request specific basic auth creds on this admin request and propagate them to a related request if does
+   * not already have credentials set, such as a CollectionAdminRequest.RequestStatus when doing async requests.
+   */
+  protected <T extends CollectionAdminRequest<? extends CollectionAdminResponse>> T propagateBasicAuthCreds(T req) {
+    String user = getBasicAuthUser();
+    String pass = getBasicAuthPassword();
+    if (user != null && pass != null && req.getBasicAuthUser() == null) {
+      req.setBasicAuthCredentials(user, pass);
+    }
+    return req;
+  }
+
+  /**
    * Base class for asynchronous collection admin requests
    */
   public abstract static class AsyncCollectionAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
@@ -245,7 +258,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public RequestStatusState processAndWait(String asyncId, SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
       processAsync(asyncId, client);
-      return requestStatus(asyncId).waitFor(client, timeoutSeconds);
+      return propagateBasicAuthCreds(requestStatus(asyncId)).waitFor(client, timeoutSeconds);
     }
 
     @Override
@@ -1688,7 +1701,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       while (System.nanoTime() < finishTime) {
         state = this.process(client).getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
-          deleteAsyncId(requestId).process(client);
+          propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;
         }
         TimeUnit.SECONDS.sleep(1);

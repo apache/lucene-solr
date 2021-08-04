@@ -92,7 +92,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas);
     create.setMaxShardsPerNode(2);
     withBasicAuth(create)
-        .process(cluster.getSolrClient());
+        .processAndWait(cluster.getSolrClient(), 10);
     waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
         collectionName, clusterShape(1, numPullReplicas + 1));
     DocCollection docCollection =
