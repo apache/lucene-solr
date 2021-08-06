@@ -339,10 +339,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "2", "text_t", "XXXX XXXX", "str_s", "b", "field_i", "8")
         .add("id", "3", "text_t", "XXXX XXXX", "str_s", "a", "field_i", "20")
         .add("id", "4", "text_t", "XXXX XXXX", "str_s", "b", "field_i", "11")
-        .add("id", "5", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "30")
-        .add("id", "6", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "40")
-        .add("id", "7", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "50")
-        .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60")
+        .add("id", "5", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "30", "specialchars_s", "witha|pipe")
+        .add("id", "6", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "40", "specialchars_s", "witha\\slash")
+        .add("id", "7", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "50", "specialchars_s", "witha!bang")
+        .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60", "specialchars_s", "witha\"quote")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
@@ -453,6 +453,14 @@ public class TestSQLHandler extends SolrCloudTestCase {
     tuple = tuples.get(1);
     assertEquals("8", tuple.get("id"));
 
+    expectResults("SELECT id FROM $ALIAS WHERE str_s = 'a'", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE 'a' = str_s", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE str_s <> 'c'", 4);
+    expectResults("SELECT id FROM $ALIAS WHERE 'c' <> str_s", 4);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s = 'witha\"quote'", 1);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s = 'witha|pipe'", 1);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s LIKE 'with%'", 4);
+    expectResults("SELECT id FROM $ALIAS WHERE specialchars_s LIKE 'witha|%'", 1);
   }
 
   @Test
@@ -1642,6 +1650,17 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.EOF);
     assert (tuple.EXCEPTION);
     assert (tuple.getException().contains("No match found for function signature blah"));
+
+    // verify exception message formatting with wildcard query
+    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+        "stmt",
+        "select str_s from collection1 where not_a_field LIKE 'foo%'");
+
+    solrStream = new SolrStream(baseUrl, sParams);
+    tuple = getTuple(new ExceptionStream(solrStream));
+    assert (tuple.EOF);
+    assert (tuple.EXCEPTION);
+    assert (tuple.getException().contains("Column 'not_a_field' not found in any table"));
   }
 
   @Test
@@ -2105,6 +2124,24 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-06-04 04:00:00'", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = CAST('2021-06-04 04:04:00' as TIMESTAMP)", 1);
     expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-06-03' AND '2021-06-05'", 4);
+  }
+
+  @Test
+  public void testISO8601TimestampFiltering() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "pdatex", "2021-07-13T15:12:09.037Z")
+        .add("id", "2", "pdatex", "2021-07-13T15:12:10.037Z")
+        .add("id", "3", "pdatex", "2021-07-13T15:12:11.037Z")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= CAST('2021-07-13 15:12:10.037' as TIMESTAMP)", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z'", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex < '2021-07-13T15:12:10.037Z'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex = '2021-07-13T15:12:10.037Z'", 1);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex <> '2021-07-13T15:12:10.037Z'", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex BETWEEN '2021-07-13T15:12:09.037Z' AND '2021-07-13T15:12:10.037Z' ORDER BY pdatex ASC", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z'", 2);
+    expectResults("SELECT id, pdatex FROM $ALIAS WHERE pdatex >= '2021-07-13T15:12:10.037Z' ORDER BY pdatex ASC LIMIT 10", 2);
   }
 
   @Test

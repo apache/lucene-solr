@@ -45,6 +45,8 @@ Improvements
 
 * SOLR-15564: Improve filtering expressions in /admin/metrics. (ab)
 
+* SOLR-15576: Allow filtering on ISO-8601 formatted timestamp literals in SQL WHERE clause (Timothy Potter)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
