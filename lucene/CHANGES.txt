@@ -94,6 +94,8 @@ Bug Fixes
 * LUCENE-10039: Correct CombinedFieldQuery scoring when there is a single
   field. (Julie Tibshirani)
 
+* LUCENE-10046: Counting bug fixed in StringValueFacetCounts. (Greg Miller)
+
 Other
 ---------------------
 

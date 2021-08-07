@@ -375,7 +375,7 @@ public class StringValueFacetCounts extends Facets {
           int term = (int) segValues.nextOrd();
           boolean countedDocInTotal = false;
           while (term != SortedSetDocValues.NO_MORE_ORDS) {
-            increment(term);
+            increment((int) ordMap.get(term));
             if (countedDocInTotal == false) {
               totalDocCount++;
             }
