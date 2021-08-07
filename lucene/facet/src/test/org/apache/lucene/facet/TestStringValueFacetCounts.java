@@ -149,6 +149,40 @@ public class TestStringValueFacetCounts extends FacetTestCase {
     IOUtils.close(searcher.getIndexReader(), dir);
   }
 
+  public void testSparseMultiSegmentCase() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    Map<String, Integer> expectedCounts = new HashMap<>();
+
+    // Create two segments, each with only one doc that has a large number of SSDV field values.
+    // This ensures "sparse" counting will occur in StringValueFacetCounts (i.e., small number
+    // of hits relative to the field cardinality):
+    Document doc = new Document();
+    for (int i = 0; i < 100; i++) {
+      doc.add(new SortedSetDocValuesField("field", new BytesRef("foo_" + i)));
+      expectedCounts.put("foo_" + i, 1);
+    }
+    writer.addDocument(doc);
+    writer.commit();
+
+    doc = new Document();
+    for (int i = 0; i < 100; i++) {
+      doc.add(new SortedSetDocValuesField("field", new BytesRef("bar_" + i)));
+      expectedCounts.put("bar_" + i, 1);
+    }
+    writer.addDocument(doc);
+
+    int expectedTotalDocCount = 2;
+
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+
+    checkFacetResult(expectedCounts, expectedTotalDocCount, searcher, 10, 2, 1, 0);
+
+    IOUtils.close(searcher.getIndexReader(), dir);
+  }
+
   public void testMissingSegment() throws Exception {
 
     Directory dir = newDirectory();
