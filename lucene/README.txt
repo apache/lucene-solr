@@ -21,3 +21,5 @@ To review the documentation, read the main documentation page, located at:
 `docs/index.html`
 
 To build Lucene or its documentation for a source distribution, see BUILD.txt
+
+TESTING
