@@ -310,6 +310,16 @@ Examining the clusterstate after issuing this call should show exactly one repli
 [[utilizenode]]
 == UTILIZENODE: Utilize a New Node
 
+[WARNING]
+.Autoscaling is deprecated
+====
+The autoscaling framework in its current form is deprecated and will be removed in Solr 9.0.
+
+Some features relating to replica placement will be replaced in 9.0, but other features are not likely to be replaced.
+
+This command is part of the autoscaling framework and will be removed in 9.0 without a replacement.
+====
+
 This command can be used to move some replicas from the existing nodes to either a new node or a less loaded node to reduce the load on the existing node.
 
 This uses your autoscaling policies and preferences to identify which replica needs to be moved. It tries to fix any policy violations first and then it tries to move some load off of the most loaded nodes according to the preferences.

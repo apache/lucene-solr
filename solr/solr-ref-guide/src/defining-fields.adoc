@@ -42,7 +42,7 @@ A default value that will be added automatically to any document that does not h
 
 == Optional Field Type Override Properties
 
-Fields can have many of the same properties as field types. Properties from the table below which are specified on an individual field will override any explicit value for that property specified on the the `fieldType` of the field, or any implicit default property value provided by the underlying `fieldType` implementation. The table below is reproduced from <<field-type-definitions-and-properties.adoc#,Field Type Definitions and Properties>>, which has more details:
+Fields can have many of the same properties as field types. Properties from the table below which are specified on an individual field will override any explicit value for that property specified on the `fieldType` of the field, or any implicit default property value provided by the underlying `fieldType` implementation. The table below is reproduced from <<field-type-definitions-and-properties.adoc#,Field Type Definitions and Properties>>, which has more details:
 
 // TODO: SOLR-10655 BEGIN: refactor this into a 'field-default-properties.include.adoc' file for reuse
 

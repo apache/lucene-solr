@@ -100,7 +100,7 @@ distribution of the `filesize_d` variable:
 * The sample seems to have a balanced number of observations above and below
 40,000. Based on this the *mean* and *mode* would appear to be around 40,000.
 * The number of observations tapers off to a small number of outliers on
-the and low and high end of the sample.
+the low and high end of the sample.
 
 This sample can be re-run multiple times to see if the samples
 produce similar plots.
@@ -219,8 +219,8 @@ The `timeseries` function supports any combination of the following aggregate fu
 The `significantTerms` function queries a collection, but instead of returning documents, it returns significant terms found in documents in the result set.
 This function scores terms based on how frequently they appear in the result set and how rarely they appear in the entire corpus.
 The `significantTerms` function emits a tuple for each term which contains the term, the score, the foreground count and the background count.
-The foreground count is how many documents the term appears in in the result set.
-The background count is how many documents the term appears in in the entire corpus.
+The foreground count is how many documents the term appears in the result set.
+The background count is how many documents the term appears in the entire corpus.
 The foreground and background counts are global for the collection.
 
 The `significantTerms` function can often provide insights that cannot be gleaned from other types of aggregations.

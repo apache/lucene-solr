@@ -180,7 +180,7 @@ For example, in the request below documents 3007WFP and 9885A004 will be elevate
 [source,text]
 http://localhost:8983/solr/techproducts/elevate?q=cable&df=text&excludeIds=IW-02&elevateIds=3007WFP,9885A004
 
-If either one of these parameters is specified at request time, the the entire elevation configuration for the query is ignored.
+If either one of these parameters is specified at request time, the entire elevation configuration for the query is ignored.
 
 For example, in the request below documents IW-02 and F8V7067-APL-KIT will be elevated, and no documents will be excluded – regardless of what elevations or exclusions are configured for the query "ipod" in elevate.xml:
 

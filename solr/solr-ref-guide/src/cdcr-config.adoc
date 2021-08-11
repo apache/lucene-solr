@@ -335,7 +335,7 @@ Based on the same example from uni-directional solution, let's walk through the 
 * Before you begin, stop or pause any indexing processes. This is best done during a small maintenance window.
 * Stop the SolrCloud instances in both Cluster 1 and Cluster 2.
 * Upload the modified `solrconfig.xml` to ZooKeeper on both Cluster 1 and Cluster 2 as appropriate, see the examples above in the section <<Bi-Directional Updates>>.
-* If documents were indexed prior to this exercise, sync the index directories from the Cluster 1 collection to the Cluster 2 collection to the corresponding shard nodes or vice versa. The `rsync` utility works well for this if it's available on your server. Check to be sure the the updated index is copied across.
+* If documents were indexed prior to this exercise, sync the index directories from the Cluster 1 collection to the Cluster 2 collection to the corresponding shard nodes or vice versa. The `rsync` utility works well for this if it's available on your server. Check to be sure the updated index is copied across.
 +
 For example, if there are 2 shards on collection 'cluster1' (the updated collection) with 2 replicas for each shard, copy the corresponding index directories from:
 +

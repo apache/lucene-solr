@@ -150,7 +150,7 @@ This more efficient logic can also be used with other `collapseField` values, vi
 ====
 Specifing `hint=block` when collapsing on a field that is not unique per contiguous block of documents is not supported and may fail in unexpected ways; including the possibility of silently returning incorrect results.
 
-The implementation does not offer any safeguards against misuse on an unsupported field, since doing so would require the the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
+The implementation does not offer any safeguards against misuse on an unsupported field, since doing so would require the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
 ====
 
 == Expand Component

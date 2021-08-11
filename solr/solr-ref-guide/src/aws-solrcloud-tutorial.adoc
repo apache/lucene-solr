@@ -243,7 +243,7 @@ $ cd $ZOO_HOME
 $ bin/zkServer.sh start
 ----
 
-. On the the first node being used for Solr (`solr-node-1`), start Solr and tell it where to find ZooKeeper.
+. On the first node being used for Solr (`solr-node-1`), start Solr and tell it where to find ZooKeeper.
 +
 [source,bash]
 ----

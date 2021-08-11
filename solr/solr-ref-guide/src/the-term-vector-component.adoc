@@ -29,7 +29,7 @@ The TermVectorComponent is not enabled implicitly in Solr - it must be explicitl
 bin/solr -e techproducts
 ----
 
-To enable the this component, you need to configure it using a `searchComponent` element:
+To enable this component, you need to configure it using a `searchComponent` element:
 
 [source,xml]
 ----
@@ -156,7 +156,7 @@ If `true`, returns payload information.
 If `true`, returns document term frequency info for each term in the document.
 
 `tv.tf_idf`::
-If `true`, calculates TF / DF (i.e.,: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
+If `true`, calculates TF / DF (i.e., TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
 +
 This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
 

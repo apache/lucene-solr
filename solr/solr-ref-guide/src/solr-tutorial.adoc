@@ -593,7 +593,7 @@ It is possible to mix schemaless features with a defined schema. Using the Schem
 ===== Create the "names" Field
 The films data we are going to index has a small number of fields for each movie: an ID, director name(s), film name, release date, and genre(s).
 
-If you look at one of the files in `example/films`, you'll see the first film is named _.45_, released in 2006. As the first document in the dataset, Solr is going to guess the field type based on the data in the record. If we go ahead and index this data, that first film name is going to indicate to Solr that that field type is a "float" numeric field, and will create a "name" field with a type `FloatPointField`. All data after this record will be expected to be a float.
+If you look at one of the files in `example/films`, you'll see the first film is named _.45_, released in 2006. As the first document in the dataset, Solr is going to guess the field type based on the data in the record. If we go ahead and index this data, the first film name is going to indicate to Solr that the field type is a "float" numeric field, and will create a "name" field with a type `FloatPointField`. All data after this record will be expected to be a float.
 
 Well, that's not going to work. We have titles like _A Mighty Wind_ and _Chicken Run_, which are strings - decidedly not numeric and not floats. If we let Solr guess the "name" field is a float, what will happen is later titles will cause an error and indexing will fail. That's not going to get us very far.
 
@@ -927,7 +927,7 @@ Use the Admin UI <<documents-screen.adoc#,Documents tab>> (at http://localhost:8
 
 You may notice that even if you index content in this tutorial more than once, it does not duplicate the results found. This is because the example Solr schema (a file named either `managed-schema` or `schema.xml`) specifies a `uniqueKey` field called `id`. Whenever you POST commands to Solr to add a document with the same value for the `uniqueKey` as an existing document, it automatically replaces it for you.
 
-You can see that that has happened by looking at the values for `numDocs` and `maxDoc` in the core-specific Overview section of the Solr Admin UI.
+You can see that has happened by looking at the values for `numDocs` and `maxDoc` in the core-specific Overview section of the Solr Admin UI.
 
 `numDocs` represents the number of searchable documents in the index (and will be larger than the number of XML, JSON, or CSV files since some files contained more than one document). The `maxDoc` value may be larger as the `maxDoc` count includes logically deleted documents that have not yet been physically removed from the index. You can re-post the sample files over and over again as much as you want and `numDocs` will never increase, because the new documents will constantly be replacing the old.
 

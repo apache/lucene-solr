@@ -266,5 +266,5 @@ In this case, Solr found five matches for "memory," but only returns four result
 
 Grouping is supported for <<solrcloud.adoc#,distributed searches>>, with some caveats:
 
-* Currently `group.func` is is not supported in any distributed searches
+* Currently `group.func` is not supported in any distributed searches
 * `group.ngroups` and `group.facet` require that all documents in each group must be co-located on the same shard in order for accurate counts to be returned. <<shards-and-indexing-data-in-solrcloud.adoc#,Document routing via composite keys>> can be a useful solution in many situations.

@@ -2271,7 +2271,7 @@ numeric: result of the sumSq calculation
 
 == transpose
 
-The `transpose` function https://en.wikipedia.org/wiki/Transpose[transposes] a matrix .
+The `transpose` function https://en.wikipedia.org/wiki/Transpose[transposes] a matrix.
 
 === transpose Parameters
 

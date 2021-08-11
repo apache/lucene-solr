@@ -22,7 +22,7 @@
 ====
 The autoscaling framework in its current form is deprecated and will be removed in Solr 9.0.
 
-A new design for this feature is currently under development in https://issues.apache.org/jira/browse/SOLR-14613[SOLR-14613] with a goal for release with Solr 9.0.
+Some features relating to replica placement will be replaced in 9.0, but other features are not likely to be replaced.
 ====
 
 Autoscaling in Solr aims to provide good defaults so a SolrCloud cluster remains balanced and stable in the face of various cluster change events. This balance is achieved by satisfying a set of rules and sorting preferences to select the target of cluster management operations automatically on cluster events.

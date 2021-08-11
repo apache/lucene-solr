@@ -101,7 +101,7 @@ Note that while date math is most commonly used relative to `NOW` it can be appl
 
 ==== NOW
 
-The `NOW` parameter is used internally by Solr to ensure consistent date math expression parsing across multiple nodes in a distributed request. But it can be specified to instruct Solr to use an arbitrary moment in time (past or future) to override for all situations where the the special value of "```NOW```" would impact date math expressions.
+The `NOW` parameter is used internally by Solr to ensure consistent date math expression parsing across multiple nodes in a distributed request. But it can be specified to instruct Solr to use an arbitrary moment in time (past or future) to override for all situations where the special value of `NOW` would impact date math expressions.
 
 It must be specified as a (long valued) milliseconds since epoch.
 

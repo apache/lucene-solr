@@ -68,7 +68,7 @@ parameter which is the name of the collection to sample.
 
 image::images/math-expressions/logs-sample.png[]
 
-The sample contains 500 random records with the their full field list. By looking
+The sample contains 500 random records with their full field list. By looking
 at this sample we can quickly learn about the *fields* available in the `logs` collection.
 
 === Time Period

@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Segments Info screen lets you see a visualization of the various segments in the underlying Lucene index for this core, with information about the size of each segment – both bytes and in number of documents – as well as other basic metadata about those segments. Most visible is the the number of deleted documents, but you can hover your mouse over the segments to see additional numeric details.
+The Segments Info screen lets you see a visualization of the various segments in the underlying Lucene index for this core, with information about the size of each segment – both bytes and in number of documents – as well as other basic metadata about those segments. Most visible is the number of deleted documents, but you can hover your mouse over the segments to see additional numeric details.
 
 image::images/segments-info/segments_info.png[image,width=486,height=250]
 

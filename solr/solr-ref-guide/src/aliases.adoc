@@ -283,7 +283,7 @@ As with all Routed Aliases, DRA's impose some costs if your data is not well beh
 normal caveats of each component dimension there is a need for care in sending new categories after the DRA has been
 running for a while. Ordered Dimensions (time) behave slightly differently from Unordered (category) dimensions.
 Ordered dimensions rely on the iteration order of the collections in the alias and therefore cannot tolerate the
-generation of collection names out of order. The this means that of this is that when an ordered dimension such as time
+generation of collection names out of order. This means that of this is that when an ordered dimension such as time
 is a component of a DRA and the DRA experiences receipt of a document with a novel category with a time value
 corresponding to a time slice other than the starting time-slice for the time dimension, several collections will
 need to be created before the document can be indexed. This "new category effect" is identical to the behavior

@@ -39,7 +39,7 @@ Solr can sort query responses according to:
 * The value of any primitive field (numerics, string, boolean, dates, etc.) which has `docValues="true"` (or `multiValued="false"` and `indexed="true"`, in which case the indexed terms will used to build DocValue like structures on the fly at runtime)
 * A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
 * A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document. TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
-** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copying-fields.adoc#,use a `copyField` directive>> in the the Schema to clone the field. Then search on the field and sort on its clone.
+** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copying-fields.adoc#,use a `copyField` directive>> in the Schema to clone the field. Then search on the field and sort on its clone.
 
 In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.  This default behavior is equivalent to explicitly sorting using the 2 argument `<<function-queries.adoc#field-function,field()>>` function: `sort=field(name,min) asc` and `sort=field(name,max) desc`
 

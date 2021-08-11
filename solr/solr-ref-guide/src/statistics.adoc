@@ -197,7 +197,7 @@ Below is an example of a frequency table built from a result set
 of rounded *differences* in daily opening stock prices for the stock ticker *amzn*.
 
 This example is interesting because it shows a multi-step process to arrive
-at the result. The first step is to *search* for records in the the *stocks*
+at the result. The first step is to *search* for records in the *stocks*
 collection with a ticker of *amzn*. Notice that the result set is sorted by
 date ascending and it returns the `open_d` field which is the opening price for
 the day.

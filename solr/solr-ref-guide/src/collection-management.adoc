@@ -1463,7 +1463,7 @@ See the parameter descriptions below for more information.
 
 *Input*
 
-The following API command deletes the the first backup (`backupId=0`) at the specified repository location.
+The following API command deletes the first backup (`backupId=0`) at the specified repository location.
 
 [.dynamic-tabs]
 --

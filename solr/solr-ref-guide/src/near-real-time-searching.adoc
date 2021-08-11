@@ -79,7 +79,7 @@ TIP: These parameters can be overridden at run time by defining Java "system var
 
 The choices for `autoCommit` (with `openSearcher=false`) and `autoSoftCommit` have different consequences. In the event of un-graceful shutdown, it can take up to the time specified in `autoCommit` for Solr to replay the uncommitted documents from the transaction log.
 
-The time chosen for `autoSoftCommit` determines the maximum time after a document is sent to Solr before it becomes searchable and does not affect the transaction log. Choose as long an interval as your application can tolerate for this value, often 15-60 seconds is reasonable, or even longer depending on the requirements. In situations where the the time is set to a very short interval (say 1 second), consider disabling your caches (queryResultCache and filterCache especially) as they will have little utility.
+The time chosen for `autoSoftCommit` determines the maximum time after a document is sent to Solr before it becomes searchable and does not affect the transaction log. Choose as long an interval as your application can tolerate for this value, often 15-60 seconds is reasonable, or even longer depending on the requirements. In situations where the time is set to a very short interval (say 1 second), consider disabling your caches (queryResultCache and filterCache especially) as they will have little utility.
 
 TIP: For extremely high bulk indexing, especially for the initial load if there is no searching, consider turning off `autoSoftCommit` by specifying a value of `-1` for the maxTime parameter.
 

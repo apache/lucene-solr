@@ -60,7 +60,7 @@ An Analytics request is passed to Solr with the parameter `analytics` in a reque
 <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,Search Handler>>.
 Since the analytics request is sent inside of a search handler request, it will compute results based on the result set determined by the search handler.
 
-For example, this curl command encodes and POSTs a simple analytics request to the the search handler:
+For example, this curl command encodes and POSTs a simple analytics request to the search handler:
 
 [source,bash]
 ----

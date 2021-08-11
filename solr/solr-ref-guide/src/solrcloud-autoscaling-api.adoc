@@ -22,7 +22,9 @@
 ====
 The autoscaling framework in its current form is deprecated and will be removed in Solr 9.0.
 
-A new design for this feature is currently under development in https://issues.apache.org/jira/browse/SOLR-14613[SOLR-14613] with a goal for release with Solr 9.0.
+Some features relating to replica placement will be replaced in 9.0, but other features are not likely to be replaced.
+
+There is no planned replacement for the Autoscaling API.
 ====
 
 The Autoscaling API is used to manage autoscaling policies, preferences, triggers, listeners and to get diagnostics on the state of the cluster.
