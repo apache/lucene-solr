@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
@@ -84,7 +85,7 @@ public class JdbcTest extends SolrCloudTestCase {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
 
-    new UpdateRequest()
+    UpdateRequest update = new UpdateRequest()
         .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "testnull_i", null)
         .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2", "testnull_i", "2")
         .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "testnull_i", null)
@@ -94,8 +95,21 @@ public class JdbcTest extends SolrCloudTestCase {
         .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7", "testnull_i", null)
         .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8", "testnull_i", "8")
         .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9", "testnull_i", null)
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10", "testnull_i", "10")
-        .commit(cluster.getSolrClient(), collection);
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10", "testnull_i", "10");
+
+    SolrInputDocument withMVs = new SolrInputDocument();
+    withMVs.setField(id, "10");
+    withMVs.setField("s_multi", Arrays.asList("abc", "lmn", "xyz"));
+    withMVs.setField("d_multi", Arrays.asList(1d, 2d, 3d));
+    update.add(withMVs);
+
+    withMVs = new SolrInputDocument();
+    withMVs.setField(id, "11");
+    withMVs.setField("s_multi", Arrays.asList("a", "b", "c"));
+    withMVs.setField("d_multi", Arrays.asList(3d, 4d, 5d));
+    update.add(withMVs);
+
+    update.commit(cluster.getSolrClient(), collection);
 
     zkHost = cluster.getZkServer().getZkAddress();
   }
@@ -107,7 +121,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i desc limit 2")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " WHERE a_i IS NOT NULL order by a_i desc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(14, rs.getLong("a_i"));
@@ -130,7 +144,7 @@ public class JdbcTest extends SolrCloudTestCase {
         }
 
         //Test statement reuse
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc limit 2")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " WHERE a_i IS NOT NULL order by a_i asc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(0, rs.getLong("a_i"));
@@ -155,7 +169,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
       //Test connection reuse
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i desc limit 2")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " WHERE a_i IS NOT NULL order by a_i desc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(14, rs.getLong("a_i"));
@@ -171,7 +185,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
         //Test statement reuse
         stmt.setMaxRows(2);
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " WHERE a_i IS NOT NULL order by a_i asc")) {
           assertTrue(rs.next());
 
           assertEquals(0, rs.getLong("a_i"));
@@ -186,7 +200,7 @@ public class JdbcTest extends SolrCloudTestCase {
         }
 
         //Test simple loop. Since limit is set it will override the statement maxRows.
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc    LIMIT   100")) {
+        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " WHERE a_i IS NOT NULL order by a_i asc    LIMIT   100")) {
           int count = 0;
           while (rs.next()) {
             ++count;
@@ -246,7 +260,7 @@ public class JdbcTest extends SolrCloudTestCase {
     props.put("numWorkers", "2");
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + "  WHERE a_s IS NOT NULL group by a_s " +
             "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
@@ -290,7 +304,7 @@ public class JdbcTest extends SolrCloudTestCase {
       assert (p.getProperty("numWorkers").equals("2"));
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
+        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + "  WHERE a_s IS NOT NULL group by a_s " +
             "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
@@ -908,5 +922,57 @@ public class JdbcTest extends SolrCloudTestCase {
     assertTrue(rs.wasNull());
 
     assertFalse(rs.next());
+  }
+
+  @Test
+  public void doTestMultiValued() throws Exception {
+
+    Properties props = new Properties();
+
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
+      try (Statement stmt = con.createStatement()) {
+        // Multi-valued field projection
+        try (ResultSet rs = stmt.executeQuery("select id, s_multi, d_multi from " + COLLECTIONORALIAS + " WHERE s_multi IS NOT NULL order by id desc limit 2")) {
+          assertTrue(rs.next());
+
+          assertEquals(Arrays.asList("a", "b", "c"), rs.getObject("s_multi"));
+          assertEquals(Arrays.asList(3d, 4d, 5d), rs.getObject("d_multi"));
+
+          assertTrue(rs.next());
+
+          assertEquals(Arrays.asList("abc", "lmn", "xyz"), rs.getObject("s_multi"));
+          assertEquals(Arrays.asList(1d, 2d, 3d), rs.getObject("d_multi"));
+
+          assertFalse(rs.next());
+        }
+
+        // Filtering with multi-valued fields
+        try (ResultSet rs = stmt.executeQuery("select id, s_multi, d_multi from " + COLLECTIONORALIAS + " WHERE s_multi IN ('a', 'abc') AND d_multi >= 1 order by id desc limit 2")) {
+          assertTrue(rs.next());
+
+          assertEquals(Arrays.asList("a", "b", "c"), rs.getObject("s_multi"));
+          assertEquals(Arrays.asList(3d, 4d, 5d), rs.getObject("d_multi"));
+
+          assertTrue(rs.next());
+
+          assertEquals(Arrays.asList("abc", "lmn", "xyz"), rs.getObject("s_multi"));
+          assertEquals(Arrays.asList(1d, 2d, 3d), rs.getObject("d_multi"));
+
+          assertFalse(rs.next());
+        }
+
+        // group by multi-valued
+        try (ResultSet rs = stmt.executeQuery("select count(*) as the_count, d_multi from " + COLLECTIONORALIAS + " WHERE d_multi IS NOT NULL GROUP BY d_multi ORDER BY count(*) DESC")) {
+          assertTrue(rs.next());
+          assertEquals(2, rs.getLong("the_count"));
+          assertTrue(3d == rs.getDouble("d_multi"));
+          assertTrue(rs.next()); // 4 other values, all with count 1
+          assertTrue(rs.next());
+          assertTrue(rs.next());
+          assertTrue(rs.next());
+          assertFalse(rs.next());
+        }
+      }
+    }
   }
 }

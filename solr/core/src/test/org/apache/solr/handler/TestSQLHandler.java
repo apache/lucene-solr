@@ -17,11 +17,14 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -2338,5 +2341,110 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // notafield_i matches a dynamic field pattern but has no docs, so don't allow this
     expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notafield_i FROM $ALIAS", 5));
     expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notstored FROM $ALIAS", 5));
+  }
+
+  @Test
+  public void testMultiValuedFieldHandling() throws Exception {
+    List<String> textmv = Arrays.asList("just some text here", "across multiple values", "the quick brown fox jumped over the lazy dog");
+    List<String> listOfTimestamps = Arrays.asList("2021-08-06T15:37:52Z", "2021-08-06T15:37:53Z", "2021-08-06T15:37:54Z");
+    List<Date> dates = listOfTimestamps.stream().map(ts -> new Date(Instant.parse(ts).toEpochMilli())).collect(Collectors.toList());
+    List<String> stringxmv = Arrays.asList("a", "b", "c");
+    List<String> stringsx = Arrays.asList("d", "e", "f");
+    List<Double> pdoublesx = Arrays.asList(1d, 2d, 3d);
+    List<Double> pdoublexmv = Arrays.asList(4d, 5d, 6d);
+    List<Boolean> booleans = Arrays.asList(false, true);
+    List<Long> evenLongs = Arrays.asList(2L, 4L, 6L);
+    List<Long> oddLongs = Arrays.asList(1L, 3L, 5L);
+
+    UpdateRequest update = new UpdateRequest();
+    final int maxDocs = 10;
+    for (int i = 0; i < maxDocs; i++) {
+      SolrInputDocument doc = new SolrInputDocument("id", String.valueOf(i));
+      if (i % 2 == 0) {
+        doc.setField("stringsx", stringsx);
+        doc.setField("pdoublexmv", pdoublexmv);
+        doc.setField("longs", evenLongs);
+      } else {
+        // stringsx & pdoublexmv null
+        doc.setField("longs", oddLongs);
+      }
+      doc.setField("stringxmv", stringxmv);
+      doc.setField("pdoublesx", pdoublesx);
+      doc.setField("pdatexs", dates);
+      doc.setField("textmv", textmv);
+      doc.setField("booleans", booleans);
+      update.add(doc);
+    }
+    update.add("id", String.valueOf(maxDocs)); // all multi-valued fields are null
+    update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a'", 10);
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a')", 1);
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a' LIMIT 10", 10);
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a') LIMIT 10", 1);
+
+    // can't sort by a mv field
+    expectThrows(IOException.class,
+        () -> expectResults("SELECT stringxmv FROM $ALIAS WHERE stringxmv IS NOT NULL ORDER BY stringxmv ASC LIMIT 10", 0));
+
+    // even id's have these fields, odd's are null ...
+    expectListInResults("0", "stringsx", stringsx, -1, 5);
+    expectListInResults("0", "pdoublexmv", pdoublexmv, -1, 5);
+    expectListInResults("1", "stringsx", null, -1, 0);
+    expectListInResults("1", "pdoublexmv", null, -1, 0);
+    expectListInResults("2", "stringsx", stringsx, 10, 5);
+    expectListInResults("2", "pdoublexmv", pdoublexmv, 10, 5);
+
+    expectListInResults("1", "stringxmv", stringxmv, -1, 10);
+    expectListInResults("1", "pdoublesx", pdoublesx, -1, 10);
+    expectListInResults("1", "pdatexs", listOfTimestamps, -1, 10);
+    expectListInResults("1", "booleans", booleans, -1, 10);
+    expectListInResults("1", "longs", oddLongs, -1, 5);
+
+    expectListInResults("2", "stringxmv", stringxmv, 10, 10);
+    expectListInResults("2", "pdoublesx", pdoublesx, 10, 10);
+    expectListInResults("2", "pdatexs", listOfTimestamps, 10, 10);
+    expectListInResults("2", "textmv", textmv, 10, 10);
+    expectListInResults("2", "booleans", booleans, 10, 10);
+    expectListInResults("2", "longs", evenLongs, 10, 5);
+
+    expectAggCount("stringxmv", 3);
+    expectAggCount("stringsx", 3);
+    expectAggCount("pdoublesx", 3);
+    expectAggCount("pdoublexmv", 3);
+    expectAggCount("pdatexs", 3);
+    expectAggCount("booleans", 2);
+    expectAggCount("longs", 6);
+  }
+
+  private void expectListInResults(String id, String mvField, List<?> expected, int limit, int expCount) throws Exception {
+    String projection = limit > 0 ? "*" : "id," + mvField;
+    String sql = "SELECT " + projection + " FROM $ALIAS WHERE id='" + id + "'";
+    if (limit > 0) sql += " LIMIT " + limit;
+    List<Tuple> results = expectResults(sql, 1);
+    if (expected != null) {
+      assertEquals(expected, results.get(0).get(mvField));
+    } else {
+      assertNull(results.get(0).get(mvField));
+    }
+
+    if (expected != null) {
+      String crit = "'" + expected.get(0) + "'";
+      sql = "SELECT " + projection + " FROM $ALIAS WHERE " + mvField + "=" + crit;
+      if (limit > 0) sql += " LIMIT " + limit;
+      expectResults(sql, expCount);
+
+      // test "IN" operator but skip for text analyzed fields
+      if (!"textmv".equals(mvField)) {
+        String inClause = expected.stream().map(o -> "'" + o + "'").collect(Collectors.joining(","));
+        sql = "SELECT " + projection + " FROM $ALIAS WHERE " + mvField + " IN (" + inClause + ")";
+        if (limit > 0) sql += " LIMIT " + limit;
+        expectResults(sql, expCount);
+      }
+    }
+  }
+
+  private void expectAggCount(String mvField, int expCount) throws Exception {
+    expectResults("SELECT COUNT(*), " + mvField + " FROM $ALIAS GROUP BY " + mvField, expCount);
   }
 }

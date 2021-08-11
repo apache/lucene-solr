@@ -19,6 +19,19 @@
 <!-- The Solr schema file, version 1.6  -->
 
 <schema name="sql" version="1.6">
+
+  <field name="pdoublexmv" type="pdouble" multiValued="true" stored="true" docValues="true"/>s
+  <field name="pdoublesx" type="pdoubles" stored="true"/>
+  <field name="stringsx" type="strings" stored="true" indexed="true"/>
+  <field name="stringxmv" type="string" stored="true" multiValued="true" docValues="true"/>
+
+  <field name="booleans" type="boolean" stored="true" indexed="true" docValues="true" multiValued="true"/>
+  <field name="longs" type="plongx" stored="true" indexed="true" docValues="true" multiValued="true"/>
+
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+
+
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -68,6 +81,7 @@
 
   <field name="notstored" type="string" indexed="true" docValues="false" stored="false"/>
   <field name="dvonly" type="string" docValues="true" stored="false"/>
+  <field name="textmv" type="text" multiValued="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -119,6 +133,7 @@
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" docValues="true" indexed="true"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
