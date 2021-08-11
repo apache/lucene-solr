@@ -185,8 +185,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
 
       Tuple tuple = super.read();
       if(!tuple.EOF) {
-        tuple.fieldNames = metadataFields;
-        tuple.fieldLabels = metadataAliases;
+        tuple.setFieldNames(metadataFields);
+        tuple.setFieldLabels(metadataAliases);
       }
       return tuple;
     }
