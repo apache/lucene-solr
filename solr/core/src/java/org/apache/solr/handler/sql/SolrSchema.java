@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,6 +38,7 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -56,6 +59,11 @@ class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
   final SolrClientCache solrClientCache;
   private volatile boolean isClosed = false;
+
+  // collection schema gets requested 2x times during query execution,
+  // so there's some benefit to caching it for the duration of a statement
+  // every statement gets a new SolrSchema instance
+  private Map<String, RelDataType> schemaCache = new ConcurrentHashMap<>();
 
   SolrSchema(Properties properties, SolrClientCache solrClientCache) {
     super();
@@ -133,8 +141,27 @@ class SolrSchema extends AbstractSchema implements Closeable {
   private boolean isStoredOrDocValues(final EnumSet<FieldFlag> flags) {
     return flags != null && (flags.contains(FieldFlag.STORED) || flags.contains(FieldFlag.DOC_VALUES));
   }
-  
+
+  private EnumSet<FieldFlag> getFieldFlags(final LukeResponse.FieldInfo luceneFieldInfo) {
+    EnumSet<FieldFlag> flags = luceneFieldInfo.getSchemaFlags();
+    if (flags == null) {
+      String fieldSchema = luceneFieldInfo.getSchema();
+      if (fieldSchema != null) {
+        flags = LukeResponse.FieldInfo.parseFlags(fieldSchema);
+      }
+    }
+    return flags;
+  }
+
   RelProtoDataType getRelDataType(String collection) {
+    return RelDataTypeImpl.proto(getRowSchema(collection));
+  }
+
+  RelDataType getRowSchema(String collection) {
+    return schemaCache.computeIfAbsent(collection, this::buildRowSchema);
+  }
+
+  RelDataType buildRowSchema(String collection) {
     // Temporary type factory, just for the duration of this method. Allowable
     // because we're creating a proto-type, not a type; before being used, the
     // proto-type will be copied into a real type factory.
@@ -147,12 +174,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
     LukeResponse schema = getSchema(collection);
     // Only want fields that are stored or have docValues enabled
     Map<String, LukeResponse.FieldInfo> storedFields = schema.getFieldInfo().entrySet().stream()
-            .filter(e -> isStoredOrDocValues(e.getValue().getFlags()))
+            .filter(e -> isStoredOrDocValues(getFieldFlags(e.getValue())))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     // merge the actual fields in use returned by Luke with the declared fields in the schema that are empty
     Map<String, LukeResponse.FieldInfo> combinedFields = Stream.of(fieldsInUseMap, storedFields)
             .flatMap(map -> map.entrySet().stream())
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, TreeMap::new));
 
     Map<String, Class<?>> javaClassForTypeMap = new HashMap<>(); // local cache for custom field types we've already resolved
 
@@ -166,51 +193,54 @@ class SolrSchema extends AbstractSchema implements Closeable {
       }
 
       RelDataType type;
-      switch (luceneFieldType) {
-        case "string":
-          type = typeFactory.createJavaType(String.class);
-          break;
-        case "tint":
-        case "tlong":
-        case "int":
-        case "long":
-        case "pint":
-        case "plong":
-          type = typeFactory.createJavaType(Long.class);
-          break;
-        case "tfloat":
-        case "tdouble":
-        case "float":
-        case "double":
-        case "pfloat":
-        case "pdouble":
-          type = typeFactory.createJavaType(Double.class);
-          break;
-        case "pdate":
-          type = typeFactory.createJavaType(Date.class);
-          break;
-        default:
-          Class<?> javaClass = javaClassForTypeMap.get(luceneFieldType);
-          if (javaClass == null) {
-            javaClass = guessJavaClassForFieldType(schema.getFieldTypeInfo().get(luceneFieldType));
-            javaClassForTypeMap.put(luceneFieldType, javaClass);
-          }
-          type = typeFactory.createJavaType(javaClass);
-      }
 
-      /*
-      EnumSet<FieldFlag> flags = luceneFieldInfo.parseFlags(luceneFieldInfo.getSchema());
-      if(flags != null && flags.contains(FieldFlag.MULTI_VALUED)) {
-        type = typeFactory.createArrayType(type, -1);
+      // We have to pass multi-valued fields through Calcite as SQL Type ANY
+      // Array doesn't work for aggregations! Calcite doesn't like GROUP BY on an ARRAY field
+      // but Solr happily computes aggs on a multi-valued field, so we have a paradigm mis-match and
+      // ANY is the best way to retain use of operators on multi-valued fields while still being able
+      // to GROUP BY and project the multi-valued fields in results
+      EnumSet<FieldFlag> flags = getFieldFlags(luceneFieldInfo);
+      if (flags != null && flags.contains(FieldFlag.MULTI_VALUED)) {
+        type = typeFactory.createSqlType(SqlTypeName.ANY);
+      } else {
+        switch (luceneFieldType) {
+          case "string":
+            type = typeFactory.createJavaType(String.class);
+            break;
+          case "tint":
+          case "tlong":
+          case "int":
+          case "long":
+          case "pint":
+          case "plong":
+            type = typeFactory.createJavaType(Long.class);
+            break;
+          case "tfloat":
+          case "tdouble":
+          case "float":
+          case "double":
+          case "pfloat":
+          case "pdouble":
+            type = typeFactory.createJavaType(Double.class);
+            break;
+          case "pdate":
+            type = typeFactory.createJavaType(Date.class);
+            break;
+          default:
+            Class<?> javaClass = javaClassForTypeMap.get(luceneFieldType);
+            if (javaClass == null) {
+              javaClass = guessJavaClassForFieldType(schema.getFieldTypeInfo().get(luceneFieldType));
+              javaClassForTypeMap.put(luceneFieldType, javaClass);
+            }
+            type = typeFactory.createJavaType(javaClass);
+        }
       }
-      */
-
       fieldInfo.add(entry.getKey(), type).nullable(true);
     }
     fieldInfo.add("_query_", typeFactory.createJavaType(String.class));
     fieldInfo.add("score", typeFactory.createJavaType(Double.class));
 
-    return RelDataTypeImpl.proto(fieldInfo.build());
+    return fieldInfo.build();
   }
 
   private Class<?> guessJavaClassForFieldType(LukeResponse.FieldTypeInfo typeInfo) {

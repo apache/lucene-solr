@@ -92,6 +92,13 @@ Like the `/sql` request handler, the `/stream` and `/export` request handlers ar
 
 In some cases, fields used in SQL queries must be configured as DocValue fields. If queries are unlimited, all fields must be DocValue fields. If queries are limited (with the `limit` clause) then fields do not have to be have DocValues enabled.
 
+.Multi-valued Fields
+[IMPORTANT]
+====
+Multi-valued fields in the project list will be returned as a `List` of values; with JDBC, use `getObject(col)` to retrieve the multi-valued field and then cast to a `List`.
+In general, you can project, filter, and group by, but you cannot sort by multi-valued fields.
+====
+
 === Sending Queries
 
 The SQL Interface provides a basic JDBC driver and an HTTP interface to perform queries.
@@ -252,7 +259,6 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |Operator |Description |Example |Solr Query
 |= |Equals |`fielda = 10` |`fielda:10`
 |<> |Does not equal |`fielda <> 10` |`-fielda:10`
-|!= |Does not equal |`fielda != 10` |`-fielda:10`
 |> |Greater than |`fielda > 10` |`fielda:{10 TO *]`
 |>= |Greater than or equals |`fielda >= 10` |`fielda:[10 TO *]`
 |< |Less than |`fielda < 10` |`fielda:[* TO 10}`
@@ -264,6 +270,7 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 |IS NOT NULL |Match columns with value |`fielda IS NOT NULL` |`field:*`
 |===
 
+* Use `<>` instead of `!=` for not equals
 * IN, LIKE, BETWEEN support the NOT keyword to find rows where the condition is not true, such as `fielda NOT LIKE 'day%'`
 * String literals must be wrapped in single-quotes; double-quotes indicate database objects and not a string literal.
 * A simplistic LIKE can be used with an asterisk wildcard, such as `field = 'sam*'`; this is Solr specific and not part of the SQL standard.
