@@ -151,7 +151,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * be cached in order to not hurt latency too much because of caching.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
-    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f), 250);
+    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f), 10);
   }
 
   // pkg-private for testing
