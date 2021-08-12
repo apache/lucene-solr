@@ -996,7 +996,7 @@ If a hash bucket is empty, generate a hash value from the first previous bucket 
 The default is `true` if the `bucketCount` is greater than `1` and `false` otherwise.
 
 The number of hashes generated depends on the options above.
-With the default settings for `withRotation`, the number of hashes generated is `hashCount` x `bucketCount` x `hashSetSize` => 512, by default.
+With the default settings for `withRotation`, the number of hashes generated is `hashCount` x `bucketCount` x `hashSetSize` \=> 512, by default.
 
 *Example:*
 

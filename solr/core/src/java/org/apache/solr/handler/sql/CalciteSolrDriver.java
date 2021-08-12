@@ -18,7 +18,10 @@ package org.apache.solr.handler.sql;
 
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
+import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.util.Holder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 
 import java.sql.Connection;
@@ -46,6 +49,10 @@ public class CalciteSolrDriver extends Driver {
     INSTANCE.register();
   }
 
+  static void subQueryThreshold(Holder<SqlToRelConverter.Config> configHolder) {
+    configHolder.accept(config -> config.withInSubQueryThreshold(Integer.MAX_VALUE));
+  }
+
   @Override
   protected String getConnectStringPrefix() {
     return CONNECT_STRING_PREFIX;
@@ -57,8 +64,13 @@ public class CalciteSolrDriver extends Driver {
       return null;
     }
 
+    // Configure SqlToRelConverter to allow more values for an 'IN' clause,
+    // otherwise, Calcite will transform the query into a join with a static table of literals
+    Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.addThread(CalciteSolrDriver::subQueryThreshold);
+
     Connection connection = super.connect(url, info);
     CalciteConnection calciteConnection = (CalciteConnection) connection;
+
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
     String schemaName = info.getProperty("zk");

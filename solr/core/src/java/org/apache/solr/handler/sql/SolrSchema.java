@@ -138,8 +138,10 @@ class SolrSchema extends AbstractSchema implements Closeable {
     }
   }
 
-  private boolean isStoredOrDocValues(final EnumSet<FieldFlag> flags) {
-    return flags != null && (flags.contains(FieldFlag.STORED) || flags.contains(FieldFlag.DOC_VALUES));
+  private boolean isStoredIndexedOrDocValues(final EnumSet<FieldFlag> flags) {
+    // if a field is not stored but indexed, then we should still include it in the table schema so that users
+    // can filter on it, they just won't be able to return it as a field
+    return flags != null && (flags.contains(FieldFlag.DOC_VALUES) || flags.contains(FieldFlag.STORED) || flags.contains(FieldFlag.INDEXED));
   }
 
   private EnumSet<FieldFlag> getFieldFlags(final LukeResponse.FieldInfo luceneFieldInfo) {
@@ -172,13 +174,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
     Map<String, LukeResponse.FieldInfo> fieldsInUseMap = getFieldInfo(collection);
 
     LukeResponse schema = getSchema(collection);
-    // Only want fields that are stored or have docValues enabled
     Map<String, LukeResponse.FieldInfo> storedFields = schema.getFieldInfo().entrySet().stream()
-            .filter(e -> isStoredOrDocValues(getFieldFlags(e.getValue())))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     // merge the actual fields in use returned by Luke with the declared fields in the schema that are empty
     Map<String, LukeResponse.FieldInfo> combinedFields = Stream.of(fieldsInUseMap, storedFields)
             .flatMap(map -> map.entrySet().stream())
+            .filter(e -> isStoredIndexedOrDocValues(getFieldFlags(e.getValue()))) // Only want fields that are stored, indexed, or have docValues enabled
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, TreeMap::new));
 
     Map<String, Class<?>> javaClassForTypeMap = new HashMap<>(); // local cache for custom field types we've already resolved

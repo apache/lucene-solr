@@ -18,7 +18,9 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
@@ -2084,7 +2087,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals("world-2", tuples.get(0).getString("a_s"));
     assertEquals("world-4", tuples.get(1).getString("a_s"));
     assertEquals("world-6", tuples.get(2).getString("a_s"));
-
     tuples = expectResults("SELECT a_s FROM $ALIAS WHERE a_s NOT LIKE 'hello%' AND b_s IS NOT NULL AND c_s IS NULL AND a_i NOT BETWEEN 2 AND 4 AND d_s IN ('a','b','c') ORDER BY id ASC LIMIT 10", 1);
     assertEquals("world-8", tuples.get(0).getString("a_s"));
   }
@@ -2446,5 +2448,97 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   private void expectAggCount(String mvField, int expCount) throws Exception {
     expectResults("SELECT COUNT(*), " + mvField + " FROM $ALIAS GROUP BY " + mvField, expCount);
+  }
+
+  @Test
+  public void testManyInValues() throws Exception {
+    int maxSize = 1000;
+    int width = 4;
+    List<String> bigList = new ArrayList<>(maxSize);
+    for (int i=0; i < maxSize; i++) {
+      bigList.add(StringUtils.leftPad(String.valueOf(i), width, "0"));
+    }
+
+    UpdateRequest update = new UpdateRequest();
+    final int maxDocs = 10;
+    for (int i = 0; i < maxDocs; i++) {
+      SolrInputDocument doc = new SolrInputDocument("id", String.valueOf(i));
+      doc.setField("stringxmv", bigList);
+      update.add(doc);
+    }
+    update.add("id", String.valueOf(maxDocs)); // no stringxmv
+
+    SolrInputDocument doc = new SolrInputDocument("id", String.valueOf(maxDocs+1));
+    doc.setField("stringxmv", Arrays.asList("a", "b", "c"));
+    update.add(doc);
+
+    doc = new SolrInputDocument("id", String.valueOf(maxDocs+2));
+    doc.setField("stringxmv", Arrays.asList("d", "e", "f"));
+    update.add(doc);
+
+    update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    int numIn = 200;
+    List<String> bigInList = new ArrayList<>(bigList);
+    Collections.shuffle(bigInList, random());
+    bigInList = bigInList.subList(0, numIn).stream().map(s -> "'"+s+"'").collect(Collectors.toList());
+    String inClause = String.join(",", bigInList);
+    String sql = "SELECT id FROM $ALIAS WHERE stringxmv IN ("+inClause+") ORDER BY id ASC";
+    expectResults(sql, maxDocs);
+    sql = "SELECT * FROM $ALIAS WHERE stringxmv IN ("+inClause+") ORDER BY id ASC LIMIT "+maxDocs;
+    expectResults(sql, maxDocs);
+    sql = "SELECT id FROM $ALIAS WHERE stringxmv NOT IN ("+inClause+") ORDER BY id ASC";
+    expectResults(sql, 3);
+    sql = "SELECT id FROM $ALIAS WHERE stringxmv IS NOT NULL AND stringxmv NOT IN ("+inClause+") ORDER BY id ASC";
+    expectResults(sql, 2);
+    sql = "SELECT * FROM $ALIAS WHERE stringxmv IN ('a','d') ORDER BY id ASC LIMIT 10";
+    expectResults(sql, 2);
+  }
+
+  @Test
+  public void testNotAndOrLogic() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo", "a_i", "2", "d_s", "a")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    // single NOT clause
+    expectResults("SELECT id FROM $ALIAS WHERE a_s <> 'hello-1' ORDER BY id ASC LIMIT 10", 3);
+    expectResults("SELECT id FROM $ALIAS WHERE b_s NOT LIKE 'foo' ORDER BY id ASC LIMIT 10", 0);
+    expectResults("SELECT id FROM $ALIAS WHERE d_s NOT IN ('x','y') ORDER BY id ASC LIMIT 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE a_i IS NULL ORDER BY id ASC LIMIT 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE c_s IS NOT NULL ORDER BY id ASC LIMIT 10", 2);
+
+    expectResults("SELECT * FROM $ALIAS WHERE a_s='hello-1' AND d_s='x' ORDER BY id ASC LIMIT 10", 1);
+    expectResults("SELECT id FROM $ALIAS WHERE a_s='hello-1' AND d_s='x'", 1);
+
+    expectResults("SELECT * FROM $ALIAS WHERE a_s <> 'hello-1' AND d_s <> 'x' ORDER BY id ASC LIMIT 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE a_s <> 'hello-1' AND d_s <> 'x'", 2);
+
+    expectResults("SELECT * FROM $ALIAS WHERE d_s <> 'x' ORDER BY id ASC LIMIT 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE d_s <> 'x'", 2);
+
+    expectResults("SELECT * FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s <> 'x' ORDER BY id ASC LIMIT 10", 0);
+    expectResults("SELECT id FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s <> 'x'", 0);
+
+    expectResults("SELECT * FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT IN ('x') ORDER BY id ASC LIMIT 10", 0);
+    expectResults("SELECT id FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT IN ('x')", 0);
+    expectResults("SELECT * FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT IN ('a') ORDER BY id ASC LIMIT 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT IN ('a')", 2);
+
+    expectResults("SELECT * FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT LIKE 'x' ORDER BY id ASC LIMIT 10", 0);
+    expectResults("SELECT id FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT LIKE 'x'", 0);
+    expectResults("SELECT * FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT LIKE 'b' ORDER BY id ASC LIMIT 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s NOT LIKE 'b'", 2);
+    expectResults("SELECT * FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s LIKE 'x' ORDER BY id ASC LIMIT 10", 2);
+    expectResults("SELECT id FROM $ALIAS WHERE (a_s = 'hello-1' OR a_s = 'hello-3') AND d_s LIKE 'x'", 2);
+
+    expectResults("SELECT * FROM $ALIAS WHERE a_s <> 'hello-1' AND b_s='foo' AND d_s IS NOT NULL AND a_i IS NULL AND c_s IN ('bar') ORDER BY id ASC LIMIT 10", 1);
+    expectResults("SELECT id FROM $ALIAS WHERE a_s <> 'hello-1' AND b_s='foo' AND d_s IS NOT NULL AND a_i IS NULL AND c_s IN ('bar')", 1);
+
+    // just a bunch of OR's that end up matching all docs
+    expectResults("SELECT id FROM $ALIAS WHERE a_s <> 'hello-1' OR a_i <> 2 OR d_s <> 'x' ORDER BY id ASC LIMIT 10", 4);
   }
 }

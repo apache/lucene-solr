@@ -274,7 +274,8 @@ The parallel SQL interface supports and pushes down most common SQL operators, s
 * IN, LIKE, BETWEEN support the NOT keyword to find rows where the condition is not true, such as `fielda NOT LIKE 'day%'`
 * String literals must be wrapped in single-quotes; double-quotes indicate database objects and not a string literal.
 * A simplistic LIKE can be used with an asterisk wildcard, such as `field = 'sam*'`; this is Solr specific and not part of the SQL standard.
-* * When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets. For example, +++b_is \<= 2 AND b_is >= 5+++ appears to Calcite to be disjoint sets, which they are from a single-valued field perspective. However, this may not be the case with multi-valued fields, as Solr might match documents. The work-around is to use Solr query syntax directly inside of an equals expression wrapped in parens: +++b_is = '(+[5 TO *] +[* TO 2])'+++
+* The maximum number of values for an `IN` clause is limited by the `maxBooleanClauses` configured for your collection.
+* When performing ANDed range queries over a multi-valued field, Apache Calcite short-circuits to zero results if the ANDed predicates appear to be disjoint sets. For example, +++b_is \<= 2 AND b_is >= 5+++ appears to Calcite to be disjoint sets, which they are from a single-valued field perspective. However, this may not be the case with multi-valued fields, as Solr might match documents. The work-around is to use Solr query syntax directly inside of an equals expression wrapped in parens: +++b_is = '(+[5 TO *] +[* TO 2])'+++
 
 === ORDER BY Clause
 
@@ -309,6 +310,7 @@ There are a few differences to note between limited and unlimited queries:
 * Limited queries support `score` in the field list and `ORDER BY`. Unlimited queries do not.
 * Limited queries allow any stored field in the field list. Unlimited queries require the fields to be stored as a DocValues field.
 * Limited queries allow any indexed field in the `ORDER BY` list. Unlimited queries require the fields to be stored as a DocValues field.
+* If a field is indexed but not stored and does not have docValues, you can filter and sort on the field, but you cannot return it in results.
 
 === SELECT DISTINCT Queries
 
