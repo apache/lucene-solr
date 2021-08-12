@@ -964,6 +964,58 @@ With this configuration the set of mappings is named "english" and can be manage
 
 See <<Synonym Graph Filter>> below for example input/output.
 
+== MinHash Filter
+
+Generates a repeatably random fixed number of hash tokens from all the input tokens in the stream.
+To do this it first consumes all of the input tokens from its source.
+This filter would normally be preceded by a <<Shingle Filter>>, as shown in the example below.
+
+Each input token is hashed.
+It is subsequently "rehashed" `hashCount` times by combining with a set of precomputed hashes.
+For each of the resulting hashes, the hash space is divided in to `bucketCount` buckets.
+The lowest set of `hashSetSize` hashes (usually a set of one) is generated for each bucket.
+
+This filter generates one type of signature or sketch for the input tokens and can be used to compute Jaccard similarity between documents.
+
+*Arguments:*
+
+`hashCount`::
+The number of hashes to use.
+The default is `1`.
+
+`bucketCount`::
+The number of buckets to use.
+The default is `512`.
+
+`hashSetSize`::
+The size of the set for the lowest hashes from each bucket.
+The default is `1`.
+
+`withRotation`::
+If a hash bucket is empty, generate a hash value from the first previous bucket that has a value.
+The default is `true` if the `bucketCount` is greater than `1` and `false` otherwise.
+
+The number of hashes generated depends on the options above.
+With the default settings for `withRotation`, the number of hashes generated is `hashCount` x `bucketCount` x `hashSetSize` => 512, by default.
+
+*Example:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.ICUTokenizerFactory"/>
+  <filter class="solr.ICUFoldingFilterFactory"/>
+  <filter class="solr.ShingleFilterFactory" minShingleSize="5" outputUnigrams="false" outputUnigramsIfNoShingles="false" maxShingleSize="5" tokenSeparator=" "/>
+  <filter class="org.apache.lucene.analysis.minhash.MinHashFilterFactory" bucketCount="512" hashSetSize="1" hashCount="1"/>
+</analyzer>
+----
+
+*In:* "woof woof woof woof woof"
+
+*Tokenizer to Filter:* "woof woof woof woof woof"
+
+*Out:* "℁팽徭聙↝ꇁ홱杯", "℁팽徭聙↝ꇁ홱杯", "℁팽徭聙↝ꇁ홱杯",     .... a total of 512 times
+
 == N-Gram Filter
 
 Generates n-gram tokens of sizes in the given range. Note that tokens are ordered by position and then by gram size.
