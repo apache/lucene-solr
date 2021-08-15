@@ -17,11 +17,14 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -123,9 +126,16 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
 
     // Regression check on timeAllowed in combination with sorting, SOLR-14758
     // Should see either a complete result or a partial result, but never an NPE
-    rsp = queryServer(createParams("q", "text:d", "fl", "id", "sort", "payload desc", "rows", "20", "timeAllowed", "1"));
+    rsp = queryAllowPartialResults("q", "text:d", "fl", "id", "sort", "payload desc", "rows", "20", "timeAllowed", "1");
     if (!Objects.equals(Boolean.TRUE, rsp.getHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
       assertFieldValues(rsp.getResults(), id, "11", "13", "12");
     }
+  }
+  
+  /** Modified version of {@link BaseDistributedSearchTestCase#query(Object...)} that allows partial results. */
+  private QueryResponse queryAllowPartialResults(Object... q) throws SolrServerException, IOException {
+    ModifiableSolrParams params = createParams(q);
+    setDistributedParams(params);
+    return queryServer(params);
   }
 }
