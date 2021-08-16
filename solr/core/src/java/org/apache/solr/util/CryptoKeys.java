@@ -361,7 +361,7 @@ public final class CryptoKeys {
       try {
         Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
         rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
-        return rsaCipher.doFinal(buffer.array(),buffer.position(), buffer.limit());
+        return rsaCipher.doFinal(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.limit());
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
       }

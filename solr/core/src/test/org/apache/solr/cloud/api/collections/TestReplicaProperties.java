@@ -196,14 +196,14 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       lastFailMsg = "";
       ClusterState clusterState = client.getZkStateReader().getClusterState();
       for (Slice slice : clusterState.getCollection(collectionName).getSlices()) {
-        Boolean foundLeader = false;
-        Boolean foundPreferred = false;
+        boolean foundLeader = false;
+        boolean foundPreferred = false;
         for (Replica replica : slice.getReplicas()) {
-          Boolean isLeader = replica.getBool("leader", false);
-          Boolean isPreferred = replica.getBool("property.preferredleader", false);
+          boolean isLeader = replica.getBool("leader", false);
+          boolean isPreferred = replica.getBool("property.preferredleader", false);
           if (isLeader != isPreferred) {
-            lastFailMsg = "Replica should NOT have preferredLeader != leader. Preferred: " + isPreferred.toString() +
-                " leader is " + isLeader.toString();
+            lastFailMsg = "Replica should NOT have preferredLeader != leader. Preferred: " + isPreferred +
+                " leader is " + isLeader;
           }
           if (foundLeader && isLeader) {
             lastFailMsg = "There should only be a single leader in _any_ shard! Replica " + replica.getName() +

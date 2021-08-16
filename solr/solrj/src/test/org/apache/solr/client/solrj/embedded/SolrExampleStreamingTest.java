@@ -67,7 +67,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
 
   public void testWaitOptions() throws Exception {
     // SOLR-3903
-    final List<Throwable> failures = new ArrayList<>();
+    final List<Throwable> failures = new ArrayList<>(); // TODO these failures are not the same as recorded by the client
     final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
     try (ConcurrentUpdateSolrClient concurrentClient = new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl)
         .withQueueSize(2)

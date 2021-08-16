@@ -88,6 +88,7 @@ public class TestPivotHelperCode extends SolrTestCaseJ4{
 
 
   @SuppressForbidden(reason = "Checking object equality for Long instance")
+  @SuppressWarnings("BoxedPrimitiveConstructor")
   public void testCompareWithNullLast() throws Exception {
     Long a = random().nextLong();
     Long b = random().nextLong();

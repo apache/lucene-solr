@@ -365,8 +365,9 @@ public class ApiBag {
       return errs;
     }
 
-    public String toString() {
-      return super.toString() + ", errors: " + getErrs() + ", ";
+    @Override
+    public String getMessage() {
+      return super.getMessage() + ", errors: " + getErrs() + ", ";
     }
   }
 

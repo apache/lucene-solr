@@ -168,11 +168,7 @@ public class SolrException extends RuntimeException {
     log.error(msg);
   }
 
-  // public String toString() { return toStr(this); }  // oops, inf loop
-  @Override
-  public String toString() { return super.toString(); }
-
-  public static String toStr(Throwable e) {   
+  public static String toStr(Throwable e) {
     CharArrayWriter cw = new CharArrayWriter();
     PrintWriter pw = new PrintWriter(cw);
     e.printStackTrace(pw);

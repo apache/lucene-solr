@@ -134,15 +134,15 @@ class SolrRules {
       return result;
     }
 
-    private static final Predicate<RelNode> FILTER_PREDICATE = relNode -> {
+    private static boolean filter(RelNode relNode) {
       List<RexNode> filterOperands = ((RexCall) ((LogicalFilter) relNode).getCondition()).getOperands();
       return isNotFilterByExpr(filterOperands, SolrRules.solrFieldNames(relNode.getRowType()));
-    };
+    }
 
     private static final SolrFilterRule FILTER_RULE = new SolrFilterRule();
 
     private SolrFilterRule() {
-      super(LogicalFilter.class, FILTER_PREDICATE, "SolrFilterRule");
+      super(LogicalFilter.class, SolrFilterRule::filter, "SolrFilterRule");
     }
 
     public RelNode convert(RelNode rel) {

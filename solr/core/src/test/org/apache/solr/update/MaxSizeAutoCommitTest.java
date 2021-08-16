@@ -51,9 +51,13 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // Given an ID, returns an XML string for an "add document" request
-  private static final Function<Integer, String> ADD_DOC_FN = (id) -> adoc("id", Integer.toString(id));
+  private static String addDoc(int id) {
+    return adoc("id", Integer.toString(id));
+  }
   // Given an ID, returns an XML string for a "delete document" request
-  private static final Function<Integer, String> DELETE_DOC_FN = (id) -> delI(Integer.toString(id));
+  private static String delDoc(int id) {
+    return delI(Integer.toString(id));
+  }
   // How long to sleep while checking for commits
   private static final int COMMIT_CHECKING_SLEEP_TIME_MS = 50;
   // max TLOG file size
@@ -190,7 +194,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
    * @return a SolrQueryRequestBase
    */
   private SolrQueryRequestBase constructBatchAddDocRequest(int startId, int batchSize) {
-    return constructBatchRequestHelper(startId, batchSize, ADD_DOC_FN);
+    return constructBatchRequestHelper(startId, batchSize, MaxSizeAutoCommitTest::addDoc);
   }
 
   /**
@@ -200,7 +204,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
    * @return a SolrQueryRequestBase
    */
   private SolrQueryRequestBase constructBatchDeleteDocRequest(int startId, int batchSize) {
-    return constructBatchRequestHelper(startId, batchSize, DELETE_DOC_FN);
+    return constructBatchRequestHelper(startId, batchSize, MaxSizeAutoCommitTest::delDoc);
   }
 
   /**

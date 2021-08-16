@@ -1086,7 +1086,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         String prop = entry.getKey();
         if ("".equals(entry.getValue())) {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
-          m.put(prop, null);
+          entry.setValue(null);
         }
         DocCollection.verifyProp(m, prop);
       }

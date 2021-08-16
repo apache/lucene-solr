@@ -1605,7 +1605,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
         if (getFacetQuery().size() != other.getFacetQuery().size()) return false;
         for (Map.Entry<String,Integer> entry : getFacetQuery().entrySet()) {
           Integer otherQCount = other.getFacetQuery().get(entry.getKey());
-          if (otherQCount == null || otherQCount != entry.getValue()) return false;
+          if (otherQCount == null || !otherQCount.equals(entry.getValue())) return false;
         }
       }
       return true;

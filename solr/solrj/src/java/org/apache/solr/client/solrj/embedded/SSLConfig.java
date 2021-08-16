@@ -31,9 +31,9 @@ public class SSLConfig {
   private String trustStore;
   private String trustStorePassword;
 
-  /** NOTE: all other settings are ignored if useSSL is false; trustStore settings are ignored if clientAuth is false */
-  public SSLConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
-    this.useSsl = useSSL;
+  /** NOTE: all other settings are ignored if useSsl is false; trustStore settings are ignored if clientAuth is false */
+  public SSLConfig(boolean useSsl, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
+    this.useSsl = useSsl;
     this.clientAuth = clientAuth;
     this.keyStore = keyStore;
     this.keyStorePassword = keyStorePassword;
@@ -41,8 +41,8 @@ public class SSLConfig {
     this.trustStorePassword = trustStorePassword;
   }
   
-  public void setUseSSL(boolean useSSL) {
-    this.useSsl = useSSL;
+  public void setUseSSL(boolean useSsl) {
+    this.useSsl = useSsl;
   }
   
   public void setClientAuth(boolean clientAuth) {

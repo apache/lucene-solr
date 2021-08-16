@@ -83,7 +83,7 @@ public class NodeMutator {
         }
 
         Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(),collection);
-        slicesCopy.put(slice.getName(), newSlice);
+        sliceEntry.setValue(newSlice);
       }
 
       if (needToUpdateCollection) {

@@ -76,7 +76,7 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     SimplePostTool.BAOS baos = new SimplePostTool.BAOS();
     new JavaBinCodec(new BinaryResponseWriter.Resolver(null, null)).marshal(nl, baos);
     ByteBuffer byteBuffer = baos.getByteBuffer();
-    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit()));
+    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.limit()));
     assertEquals(text, nl._get("doc1/desc", null));
 
 

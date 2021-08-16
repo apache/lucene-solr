@@ -127,9 +127,7 @@ public class HashRangeQuery extends Query {
   }
 
   private boolean equalsTo(HashRangeQuery other) {
-    return Objects.equals(field, other.field) &&
-            Objects.equals(lower, other.lower) &&
-            Objects.equals(upper, other.upper);
+    return lower == other.lower && upper == other.upper && Objects.equals(field, other.field);
   }
 
   @Override

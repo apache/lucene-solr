@@ -52,7 +52,7 @@ public class ConstantValueTest extends SolrTestCaseJ4 {
     // Double
     uncasted = ConstantValue.creatorFunction.apply("12341234.12341234");
     assertTrue(uncasted instanceof ConstantDoubleValue);
-    assertEquals(12341234.12341234, ((ConstantDoubleValue)uncasted).getDouble(), .000000001);
+    assertEquals(12341234.12341234, ((ConstantDoubleValue)uncasted).getDouble(), 0);
 
     // String
     uncasted = ConstantValue.creatorFunction.apply("'abcdef'");

@@ -1086,7 +1086,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     } else if (val instanceof ByteBuffer) {
       ByteBuffer buf = (ByteBuffer) val;
-      writeByteArray(buf.array(),buf.position(),buf.limit() - buf.position());
+      writeByteArray(buf.array(), buf.arrayOffset() + buf.position(),buf.limit() - buf.position());
       return true;
     } else if (val == END_OBJ) {
       writeTag(END);

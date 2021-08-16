@@ -44,7 +44,7 @@ public class BinaryField extends FieldType  {
   }
 
   private String toBase64String(ByteBuffer buf) {
-    return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());
+    return Base64.byteArrayToBase64(buf.array(), buf.arrayOffset() + buf.position(), buf.limit()-buf.position());
   }
 
   @Override
@@ -93,7 +93,7 @@ public class BinaryField extends FieldType  {
     } else if (val instanceof ByteBuffer && ((ByteBuffer)val).hasArray()) {
       ByteBuffer byteBuf = (ByteBuffer) val;
       buf = byteBuf.array();
-      offset = byteBuf.position();
+      offset = byteBuf.arrayOffset() + byteBuf.position();
       len = byteBuf.limit() - byteBuf.position();
     } else {
       String strVal = val.toString();

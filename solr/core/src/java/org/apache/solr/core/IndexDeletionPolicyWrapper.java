@@ -63,7 +63,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * {@link #onCommit} on our {@link #getWrappedDeletionPolicy()}.
    * 
    * <p>
-   * This map is atomically replaced by {@linke #updateKnownCommitPoints}.  
+   * This map is atomically replaced by {@link #updateKnownCommitPoints}.
    * The keys are the {@link IndexCommit#getGeneration} of each commit
    * </p>
    *

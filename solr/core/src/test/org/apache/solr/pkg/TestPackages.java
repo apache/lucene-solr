@@ -804,6 +804,7 @@ public class TestPackages extends SolrCloudTestCase {
 
   public static void postFileAndWait(MiniSolrCloudCluster cluster, String fname, String path, String sig) throws Exception {
     ByteBuffer fileContent = getFileContent(fname);
+    @SuppressWarnings("ByteBufferBackingArray") // this is the result of a call to wrap()
     String sha512 = DigestUtils.sha512Hex(fileContent.array());
 
     TestDistribPackageStore.postFile(cluster.getSolrClient(),
@@ -852,7 +853,7 @@ public class TestPackages extends SolrCloudTestCase {
                                       @SuppressWarnings({"rawtypes"}) Class... classes) throws IOException {
     ByteBuffer jar = generateZip(classes);
     try (FileOutputStream fos = new FileOutputStream(loc)) {
-      fos.write(jar.array(), 0, jar.limit());
+      fos.write(jar.array(), jar.arrayOffset(), jar.limit());
       fos.flush();
     }
     return jar;
@@ -867,7 +868,7 @@ public class TestPackages extends SolrCloudTestCase {
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
-        zipOut.write(b.array(), 0, b.limit());
+        zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();
       }
     }

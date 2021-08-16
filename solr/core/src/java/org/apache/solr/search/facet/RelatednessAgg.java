@@ -116,7 +116,7 @@ public class RelatednessAgg extends AggValueSource {
     RelatednessAgg that = (RelatednessAgg) o;
     return Objects.equals(fgQ, that.fgQ)
       && Objects.equals(bgQ, that.bgQ)
-      && Objects.equals(min_pop, that.min_pop);
+      && min_pop == that.min_pop;
   }
   
   @Override
@@ -528,11 +528,11 @@ public class RelatednessAgg extends AggValueSource {
       }
       BucketData that = (BucketData)other;
       // we will most certainly be compared to other buckets of the same Agg instance, so compare counts first
-      return Objects.equals(this.implied, that.implied)
-        && Objects.equals(this.fg_count, that.fg_count)
-        && Objects.equals(this.bg_count, that.bg_count)
-        && Objects.equals(this.fg_size, that.fg_size)
-        && Objects.equals(this.bg_size, that.bg_size)
+      return this.implied == that.implied
+        && this.fg_count == that.fg_count
+        && this.bg_count == that.bg_count
+        && this.fg_size == that.fg_size
+        && this.bg_size == that.bg_size
         && Objects.equals(this.agg, that.agg);
     }
 

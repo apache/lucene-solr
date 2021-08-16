@@ -87,13 +87,16 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   // replace \0 with the field name and create a parsable string
   public String func(String field, String template) {
-    StringBuilder sb = new StringBuilder("{!func}");
-    for (char ch : template.toCharArray()) {
-      if (ch=='\0') {
+    int size = 7 + field.length() + template.length();
+    StringBuilder sb = new StringBuilder(size);
+    sb.append("{!func}");
+    for (int i = 0; i < template.length(); i++) {
+      char ch = template.charAt(i);
+      if (ch != '\0') {
+        sb.append(ch);
+      } else {
         sb.append(field);
-        continue;
       }
-      sb.append(ch);
     }
     return sb.toString();
   }

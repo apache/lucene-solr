@@ -70,7 +70,7 @@ public class RankField extends FieldType {
 
   @Override
   public Type getUninversionType(SchemaField sf) {
-    throw null;
+    throw new UnsupportedOperationException();
   }
 
   @Override

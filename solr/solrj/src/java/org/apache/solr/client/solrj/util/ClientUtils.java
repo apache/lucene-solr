@@ -114,7 +114,7 @@ public class ClientUtils
       v = Base64.byteArrayToBase64(bytes, 0, bytes.length);
     } else if (v instanceof ByteBuffer) {
       ByteBuffer bytes = (ByteBuffer) v;
-      v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
+      v = Base64.byteArrayToBase64(bytes.array(), bytes.arrayOffset() + bytes.position(),bytes.limit() - bytes.position());
     }
 
     XML.Writable valWriter = null;

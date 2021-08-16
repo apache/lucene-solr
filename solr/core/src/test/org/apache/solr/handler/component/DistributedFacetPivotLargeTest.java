@@ -810,7 +810,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(257, (long) cardiffStatsInfo.getCount());
     assertEquals(0, (long) cardiffStatsInfo.getMissing());
     assertEquals(347554.0, cardiffStatsInfo.getSum());
-    assertEquals(8.20968772E8, cardiffStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(820968772, cardiffStatsInfo.getSumOfSquares(), 0);
     assertEquals(1352.35019455253, (double) cardiffStatsInfo.getMean(), 0.1E-7);
     assertEquals(1170.86048165857, cardiffStatsInfo.getStddev(), 0.1E-7);
 
@@ -824,7 +824,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(101, (long) bbcCardifftPivotFieldStatsInfo.getCount());
     assertEquals(0, (long) bbcCardifftPivotFieldStatsInfo.getMissing());
     assertEquals(248742.0, bbcCardifftPivotFieldStatsInfo.getSum());
-    assertEquals(6.52422564E8, bbcCardifftPivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(652422564, bbcCardifftPivotFieldStatsInfo.getSumOfSquares(), 0);
     assertEquals(2462.792079208, (double) bbcCardifftPivotFieldStatsInfo.getMean(), 0.1E-7);
     assertEquals(631.0525860312, bbcCardifftPivotFieldStatsInfo.getStddev(), 0.1E-7);
 
@@ -840,7 +840,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(6, (long) placeholder0PivotFieldStatsInfo.getCount());
     assertEquals(0, (long) placeholder0PivotFieldStatsInfo.getMissing());
     assertEquals(22700.0, placeholder0PivotFieldStatsInfo.getSum());
-    assertEquals(1.0105E8, placeholder0PivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(1.0105E8, placeholder0PivotFieldStatsInfo.getSumOfSquares(), 0);
     assertEquals(3783.333333333, (double) placeholder0PivotFieldStatsInfo.getMean(), 0.1E-7);
     assertEquals(1741.742422595, placeholder0PivotFieldStatsInfo.getStddev(), 0.1E-7);
 
@@ -855,7 +855,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     assertEquals(6, (long) microsoftPlaceholder0PivotFieldStatsInfo.getCount());
     assertEquals(0, (long) microsoftPlaceholder0PivotFieldStatsInfo.getMissing());
     assertEquals(22700.0, microsoftPlaceholder0PivotFieldStatsInfo.getSum());
-    assertEquals(1.0105E8, microsoftPlaceholder0PivotFieldStatsInfo.getSumOfSquares(), 0.1E-7);
+    assertEquals(1.0105E8, microsoftPlaceholder0PivotFieldStatsInfo.getSumOfSquares(), 0);
     assertEquals(3783.333333333, (double) microsoftPlaceholder0PivotFieldStatsInfo.getMean(), 0.1E-7);
     assertEquals(1741.742422595, microsoftPlaceholder0PivotFieldStatsInfo.getStddev(), 0.1E-7);
   }

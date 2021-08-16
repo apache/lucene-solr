@@ -985,9 +985,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
 
     // ensure english locale and root locale return the same date
-    assertEquals(expectTs, DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+    assertEquals(expectTs + "", DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
             .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli(),
-        DateTimeFormatter.ofPattern(dateFormat, Locale.ENGLISH)
+        DateTimeFormatter.ofPattern(dateFormat, Locale.ROOT)
             .withZone(ZoneId.of("UTC")).parse(inputString, Instant::from).toEpochMilli());
 
     assertParsedDate(inputString, Date.from(Instant.ofEpochMilli(expectTs)), "parse-date-patterns-default-config");

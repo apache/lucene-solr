@@ -54,7 +54,7 @@ public class RawValueEvaluator extends SourceEvaluator {
   
   private void init(Object value){
     if(value instanceof Integer){
-      this.value = (Long)value;
+      this.value = ((Integer)value).longValue();
     }
     else if(value instanceof Float){
       this.value = ((Float)value).doubleValue();
