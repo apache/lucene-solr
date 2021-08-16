@@ -47,6 +47,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.io.input.ClosedInputStream;
+import org.apache.curator.shaded.com.google.common.collect.Sets;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +72,7 @@ class S3StorageClient {
   private static final String S3_DIR_CONTENT_TYPE = "application/x-directory";
 
   // Error messages returned by S3 for a key not found.
-  private static final Set<String> NOT_FOUND_CODES = Set.of("NoSuchKey", "404 Not Found");
+  private static final Set<String> NOT_FOUND_CODES = Sets.newHashSet("NoSuchKey", "404 Not Found");
 
   private final AmazonS3 s3Client;
 

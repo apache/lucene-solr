@@ -27,14 +27,14 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.solr</groupId>
-  <artifactId>solr-gcs-repository</artifactId>
+  <artifactId>solr-s3-repository</artifactId>
   <packaging>jar</packaging>
-  <name>Apache Solr GCS BackupRepository</name>
+  <name>Apache Solr S3 BackupRepository</name>
   <description>
-    BackupRepository implementation for Google Cloud Storage (GCS)
+    BackupRepository implementation for AWS Cloud Storage (S3)
   </description>
   <properties>
-    <module-directory>solr/contrib/gcs-repository</module-directory>
+    <module-directory>solr/contrib/s3-repository</module-directory>
   </properties>
   <scm>
     <connection>scm:git:${vc-anonymous-base-url}</connection>
@@ -42,7 +42,7 @@
     <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <dependencies>
-@solr-gcs-repository.internal.dependencies@
-@solr-gcs-repository.external.dependencies@
+@solr-s3-repository.internal.dependencies@
+@solr-s3-repository.external.dependencies@
   </dependencies>
 </project>

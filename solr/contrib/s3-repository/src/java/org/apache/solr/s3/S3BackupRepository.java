@@ -58,7 +58,8 @@ public class S3BackupRepository implements BackupRepository {
   private S3StorageClient client;
 
   @Override
-  public void init(NamedList<?> args) {
+  @SuppressWarnings({"rawtypes"})
+  public void init(NamedList args) {
     this.config = args;
     S3BackupRepositoryConfig backupConfig = new S3BackupRepositoryConfig(this.config);
 
