@@ -165,10 +165,11 @@ public class JavaBinUpdateRequestCodec {
         Map<String,Object> params = entry.getValue();
         if (params != null) {
           Long version = (Long) params.get(UpdateRequest.VER);
-          if (params.containsKey(ShardParams._ROUTE_))
-            updateRequest.deleteById(entry.getKey(), (String) params.get(ShardParams._ROUTE_));
-          else
-          updateRequest.deleteById(entry.getKey(), version);
+          if (params.containsKey(ShardParams._ROUTE_)) {
+            updateRequest.deleteById(entry.getKey(), (String) params.get(ShardParams._ROUTE_), version);
+          } else {
+            updateRequest.deleteById(entry.getKey(), version);
+          }
         } else {
           updateRequest.deleteById(entry.getKey());
         }

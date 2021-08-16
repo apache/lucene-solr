@@ -585,7 +585,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument());
     } else if (cmd instanceof DeleteUpdateCommand) {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
-      nodes = setupRequest(dcmd.getId(), null);
+      nodes = setupRequest(dcmd.getId(), null, (null != dcmd.getRoute() ? dcmd.getRoute() : req.getParams().get(ShardParams._ROUTE_)) );
     }
   }
 

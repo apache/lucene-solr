@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,9 +28,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
+  
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -137,6 +139,167 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     
   }
 
+  public void testDeleteByIdImplicitRouter() throws Exception {
+    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final String name = "implicit_collection_without_routerfield_" + NAME_COUNTER.getAndIncrement();
+    assertEquals(RequestStatusState.COMPLETED,
+                 CollectionAdminRequest.createCollectionWithImplicitRouter(name, "_default", "shard1,shard2", 2)
+                 .processAndWait(cloudClient, DEFAULT_TIMEOUT));
+    cloudClient.waitForState(name, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+                             (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    cloudClient.setDefaultCollection(name);
+
+    final DocCollection docCol =  cloudClient.getZkStateReader().getClusterState().getCollection(name);
+    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
+         SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
+         
+      // Add three documents to shard1
+      shard1.add(sdoc("id", "1", "title", "s1 one"));
+      shard1.add(sdoc("id", "2", "title", "s1 two"));
+      shard1.add(sdoc("id", "3", "title", "s1 three"));
+      shard1.commit();
+      final AtomicInteger docCounts1 = new AtomicInteger(3);
+      
+      // Add two documents to shard2
+      shard2.add(sdoc("id", "4", "title", "s2 four"));
+      shard2.add(sdoc("id", "5", "title", "s2 five"));
+      shard2.commit();
+      final AtomicInteger docCounts2 = new AtomicInteger(2);
+
+      // A re-usable helper to verify that the expected number of documents can be found on each shard...
+      Runnable checkShardCounts = () -> {
+        try {
+          // including cloudClient helps us test view from other nodes that aren't the leaders...
+          for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
+            assertEquals(docCounts1.get() + docCounts2.get(), c.query(params("q", "*:*")).getResults().getNumFound());
+            
+            assertEquals(docCounts1.get(), c.query(params("q", "*:*", "shards", "shard1")).getResults().getNumFound());
+            assertEquals(docCounts2.get(), c.query(params("q", "*:*", "shards", "shard2")).getResults().getNumFound());
+            
+            assertEquals(docCounts1.get() + docCounts2.get(), c.query(params("q", "*:*", "shards", "shard2,shard1")).getResults().getNumFound());
+          }
+          
+          assertEquals(docCounts1.get(), shard1.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
+          assertEquals(docCounts2.get(), shard2.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound());
+          
+        } catch (Exception sse) {
+          throw new RuntimeException(sse);
+        }
+      };
+      checkShardCounts.run();
+
+      { // Send a delete request for a doc on shard1 to core hosting shard1 with NO routing info
+        // Should delete (implicitly) since doc is (implicitly) located on this shard
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("1");
+        shard1.request(deleteRequest);
+        shard1.commit();
+        docCounts1.decrementAndGet();
+      }
+      checkShardCounts.run();
+      
+      { // Send a delete request to core hosting shard1 with a route param for a document that is actually in shard2
+        // Should delete.
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("4").withRoute("shard2");
+        shard1.request(deleteRequest);
+        shard1.commit();
+        docCounts2.decrementAndGet();
+      }
+      checkShardCounts.run();
+
+      { // Send a delete request to core hosting shard1 with NO route param for a document that is actually in shard2
+        // Shouldn't delete, since deleteById requests are not broadcast to all shard leaders.
+        // (This is effictively a request to delete "5" if an only if it is on shard1)
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("5");
+        shard1.request(deleteRequest);
+        shard1.commit();
+      }
+      checkShardCounts.run();
+      
+      { // Multiple deleteById commands for different shards in a single request
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("2", "shard1");
+        deleteRequest.deleteById("5", "shard2");
+        shard1.request(deleteRequest);
+        shard1.commit();
+        docCounts1.decrementAndGet();
+        docCounts2.decrementAndGet();
+      }
+      checkShardCounts.run();
+    }
+    
+  }
+
+  public void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
+    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final String name = "composite_collection_with_routerfield_" + NAME_COUNTER.getAndIncrement();
+    assertEquals(RequestStatusState.COMPLETED,
+                 CollectionAdminRequest.createCollection(name, "_default", 2, 2)
+                 .setRouterName("compositeId")
+                 .setRouterField("routefield_s")
+                 .setShards("shard1,shard2")
+                 .processAndWait(cloudClient, DEFAULT_TIMEOUT));
+    cloudClient.waitForState(name, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+                             (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    cloudClient.setDefaultCollection(name);
+    
+    final DocCollection docCol =  cloudClient.getZkStateReader().getClusterState().getCollection(name);
+    try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
+         SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
+
+      // Add three documents w/diff routes (all sent to shard1 leader's core)
+      shard1.add(sdoc("id", "1", "routefield_s", "europe"));
+      shard1.add(sdoc("id", "3", "routefield_s", "europe"));
+      shard1.add(sdoc("id", "5", "routefield_s", "africa"));
+      shard1.commit();
+
+      // Add two documents w/diff routes (all sent to shard2 leader's core)
+      shard2.add(sdoc("id", "4", "routefield_s", "africa"));
+      shard2.add(sdoc("id", "2", "routefield_s", "europe"));
+      shard2.commit();
+      
+      final AtomicInteger docCountsEurope = new AtomicInteger(3);
+      final AtomicInteger docCountsAfrica = new AtomicInteger(2);
+
+      // A re-usable helper to verify that the expected number of documents can be found based on _route_ key...
+      Runnable checkShardCounts = () -> {
+        try {
+          // including cloudClient helps us test view from other nodes that aren't the leaders...
+          for (SolrClient c : Arrays.asList(cloudClient, shard1, shard2)) {
+            assertEquals(docCountsEurope.get() + docCountsAfrica.get(), c.query(params("q", "*:*")).getResults().getNumFound());
+            
+            assertEquals(docCountsEurope.get(), c.query(params("q", "*:*", "_route_", "europe")).getResults().getNumFound());
+            assertEquals(docCountsAfrica.get(), c.query(params("q", "*:*", "_route_", "africa")).getResults().getNumFound());
+          }
+        } catch (Exception sse) {
+          throw new RuntimeException(sse);
+        }
+      };
+      checkShardCounts.run();
+      
+      { // Send a delete request to core hosting shard1 with a route param for a document that was originally added via core on shard2
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("4", "africa");
+        shard1.request(deleteRequest);
+        shard1.commit();
+        docCountsAfrica.decrementAndGet();
+      }
+      checkShardCounts.run();
+      
+      { // Multiple deleteById commands with different routes in a single request
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("2", "europe");
+        deleteRequest.deleteById("5", "africa");
+        shard1.request(deleteRequest);
+        shard1.commit();
+        docCountsEurope.decrementAndGet();
+        docCountsAfrica.decrementAndGet();
+      }
+      checkShardCounts.run();
+    }
+  }
 
   public void testThatCantForwardToLeaderFails() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
