@@ -84,7 +84,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
         CoreContainer cc = ocmh.overseer.getCoreContainer();
         try (BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo))) {
-            URI location = repository.createURI(backupLocation);
+            URI location = repository.createDirectoryURI(backupLocation);
             final URI backupPath = BackupFilePaths.buildExistingBackupLocationURI(repository, location, backupName);
             if (repository.exists(repository.resolve(backupPath, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup name [" + backupName + "] at " +
@@ -190,7 +190,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {
-                repository.deleteDirectory(repository.resolve(backupUri, BackupFilePaths.getZkStateDir(backupId)));
+                repository.deleteDirectory(repository.resolveDirectory(backupUri, BackupFilePaths.getZkStateDir(backupId)));
             }
         } catch (FileNotFoundException e) {
             //ignore this

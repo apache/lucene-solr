@@ -195,7 +195,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     HdfsBackupRepository repo = new HdfsBackupRepository();
     repo.init(new NamedList<>(params));
 
-    URI baseLoc = repo.createURI("/backup");
+    URI baseLoc = repo.createDirectoryURI("/backup");
 
     BackupManager mgr = BackupManager.forRestore(repo, solrClient.getZkStateReader(), repo.resolve(baseLoc, backupName));
     BackupProperties props = mgr.readBackupProperties();

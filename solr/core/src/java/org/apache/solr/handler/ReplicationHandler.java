@@ -504,7 +504,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       core.getCoreContainer().assertPathAllowed(Paths.get(location));
     }
 
-    URI locationUri = repo.createURI(location);
+    URI locationUri = repo.createDirectoryURI(location);
 
     //If name is not provided then look for the last unnamed( the ones with the snapshot.timestamp format)
     //snapshot folder since we allow snapshots to be taken without providing a name. Pick the latest timestamp.
@@ -615,7 +615,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
         // small race here before the commit point is saved
-      URI locationUri = repo.createURI(location);
+      URI locationUri = repo.createDirectoryURI(location);
       String commitName = params.get(CoreAdminParams.COMMIT_NAME);
       SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
       snapShooter.validateCreateSnapshot();

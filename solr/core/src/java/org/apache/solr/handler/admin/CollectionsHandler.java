@@ -1128,7 +1128,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
 
       // Check if the specified location is valid for this repository.
-      final URI uri = repository.createURI(location);
+      final URI uri = repository.createDirectoryURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
@@ -1177,13 +1177,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Check if the specified location is valid for this repository.
-      final URI uri = repository.createURI(location);
+      final URI uri = repository.createDirectoryURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
         }
       } catch (IOException ex) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + uri + ". Is it valid?", ex);
       }
 
       final String createNodeArg = req.getParams().get(CREATE_NODE_SET);
@@ -1229,13 +1229,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         // Check if the specified location is valid for this repository.
-        URI uri = repository.createURI(location);
+        URI uri = repository.createDirectoryURI(location);
         try {
           if (!repository.exists(uri)) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + uri + " does not exist.");
           }
         } catch (IOException ex) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + uri + ". Is it valid?", ex);
         }
 
         int deletionModesProvided = 0;
@@ -1277,13 +1277,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         String backupName = req.getParams().get(NAME);
-        final URI locationURI = repository.createURI(location);
+        final URI locationURI = repository.createDirectoryURI(location);
         try {
           if (!repository.exists(locationURI)) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + locationURI + " does not exist.");
           }
         } catch (IOException ex) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + locationURI + ". Is it valid?", ex);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + locationURI + ". Is it valid?", ex);
         }
         URI backupLocation = BackupFilePaths.buildExistingBackupLocationURI(repository, locationURI, backupName);
         if (repository.exists(repository.resolve(backupLocation, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {

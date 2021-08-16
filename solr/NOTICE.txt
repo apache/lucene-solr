@@ -70,6 +70,13 @@ License: http://hsqldb.org/web/hsqlLicense.html
 Jersey Core: https://jersey.java.net/
 License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
 
+Jakarta Activation API: https://eclipse-ee4j.github.io/jaf/
+Copyright (c) 2007, Eclipse Foundation, Inc. and its licensors.
+
+Jakarta XML Binding: https://github.com/javaee/jaxb-spec
+License: Common Development and Distribution License (CDDL) v1.1 (https://glassfish.java.net/public/CDDL+GPL_1_1.html)
+Copyright (c) 2003-2018 Oracle and/or its affiliates. All rights reserved.
+
 The HdfsDirectory and BlockDirectory were derived from
 the Apache Blur incubating project and are Apache License 2.0.
 
@@ -649,3 +656,8 @@ https://github.com/yonik/noggit
      * https://github.com/cncf/udpa
    * LOCATION_IN_GRPC:
      * xds/third_party/udpa
+
+The S3 Output Stream is based on ASL 2.0 reference implementations found at:
+    https://github.com/confluentinc/kafka-connect-storage-cloud/blob/5.0.x/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java
+This files resides at:
+    contrib/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java

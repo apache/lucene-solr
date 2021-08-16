@@ -49,8 +49,18 @@ public class TrackingBackupRepository implements BackupRepository {
     }
 
     @Override
+    public URI createDirectoryURI(String path) {
+        return delegate.createDirectoryURI(path);
+    }
+
+    @Override
     public URI resolve(URI baseUri, String... pathComponents) {
         return delegate.resolve(baseUri, pathComponents);
+    }
+
+    @Override
+    public URI resolveDirectory(URI baseUri, String... pathComponents) {
+        return delegate.resolveDirectory(baseUri, pathComponents);
     }
 
     @Override

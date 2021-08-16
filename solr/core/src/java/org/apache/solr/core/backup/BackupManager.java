@@ -217,7 +217,7 @@ public class BackupManager {
    */
   public void writeCollectionState(String collectionName,
                                    DocCollection collectionState) throws IOException {
-    URI dest = getZkStateDir(COLLECTION_PROPS_FILE);
+    URI dest = repository.resolve(getZkStateDir(), COLLECTION_PROPS_FILE);
     try (OutputStream collectionStateOs = repository.createOutput(dest)) {
       collectionStateOs.write(Utils.toJSON(Collections.singletonMap(collectionName, collectionState)));
     }
@@ -232,13 +232,11 @@ public class BackupManager {
    */
   public void uploadConfigDir(String sourceConfigName, String targetConfigName)
           throws IOException {
-    URI source = getZkStateDir(CONFIG_STATE_DIR, sourceConfigName);
-    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + targetConfigName;
-
+    URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
     Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
     Preconditions.checkState(repository.getPathType(source) == PathType.DIRECTORY,
-            "Path {} is not a directory", zkPath);
-    uploadToZk(zkStateReader.getZkClient(), source, zkPath);
+            "Path {} is not a directory", source);
+    uploadToZk(zkStateReader.getZkClient(), source, CONFIG_STATE_DIR + "/" + targetConfigName);
   }
 
   /**
@@ -248,9 +246,9 @@ public class BackupManager {
    * @throws IOException in case of I/O errors.
    */
   public void downloadConfigDir(String configName) throws IOException {
-    URI dest = getZkStateDir(CONFIG_STATE_DIR, configName);
+    URI dest = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, configName);
     repository.createDirectory(getZkStateDir());
-    repository.createDirectory(getZkStateDir(CONFIG_STATE_DIR));
+    repository.createDirectory(repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
     downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
@@ -276,7 +274,7 @@ public class BackupManager {
   }
 
   public void downloadCollectionProperties(String collectionName) throws IOException {
-    URI dest = getZkStateDir(ZkStateReader.COLLECTION_PROPS_ZKNODE);
+    URI dest = repository.resolve(getZkStateDir(), ZkStateReader.COLLECTION_PROPS_ZKNODE);
     String zkPath = ZkStateReader.COLLECTIONS_ZKNODE + '/' + collectionName + '/' + ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
 
@@ -350,18 +348,14 @@ public class BackupManager {
     }
   }
 
-  private URI getZkStateDir(String... subFolders) {
+  private URI getZkStateDir() {
     URI zkStateDir;
     if (backupId != null) {
       final String zkBackupFolder = BackupFilePaths.getZkStateDir(backupId);
-      zkStateDir = repository.resolve(backupPath, zkBackupFolder);
+      zkStateDir = repository.resolveDirectory(backupPath, zkBackupFolder);
     } else {
-      zkStateDir = repository.resolve(backupPath, ZK_STATE_DIR);
+      zkStateDir = repository.resolveDirectory(backupPath, ZK_STATE_DIR);
     }
-
-    if (subFolders.length == 0) {
-      return zkStateDir;
-    }
-    return repository.resolve(zkStateDir, subFolders);
+    return zkStateDir;
   }
 }

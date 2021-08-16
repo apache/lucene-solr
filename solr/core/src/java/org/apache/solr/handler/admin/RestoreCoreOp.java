@@ -60,7 +60,7 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
                 + " parameter or as a default repository property");
       }
 
-      URI locationUri = repository.createURI(location);
+      URI locationUri = repository.createDirectoryURI(location);
       CloudDescriptor cd = core.getCoreDescriptor().getCloudDescriptor();
       // this core must be the only replica in its shard otherwise
       // we cannot guarantee consistency between replicas because when we add data (or restore index) to this replica

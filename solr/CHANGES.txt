@@ -19,6 +19,8 @@ New Features
 
 * SOLR-15527: Security screen in Admin UI for managing users, roles, and permissions (Timothy Potter)
 
+* SOLR-15089: Allow backup/restoration to Amazon's S3 blobstore (Andy Throgmorton, Houston Putman, Jason Gerlowski, Pierre Salagnac, Mike Drob)
+
 Improvements
 ---------------------
 * SOLR-15460: Implement LIKE, IS NOT NULL, IS NULL, and support wildcard * in equals string literal for Parallel SQL (Timothy Potter, Houston Putman)

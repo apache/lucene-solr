@@ -103,6 +103,8 @@ grant {
   permission java.lang.RuntimePermission "writeFileDescriptor";
   // needed by hadoop http
   permission java.lang.RuntimePermission "getProtectionDomain";
+  // needed by aws s3 sdk
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
 
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";

@@ -22,7 +22,7 @@ Solr provides two approaches to backing up and restoring Solr cores or collectio
 
 [NOTE]
 ====
-Backups (and Snapshots) capture data that has been <<near-real-time-searching.adoc#commits-and-searching,_hard_ commited>>. Commiting changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.
+Backups (and Snapshots) capture data that has been <<near-real-time-searching.adoc#commits-and-searching,_hard_ committed>>. Commiting changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.
 
 Likewise, committing changes using `openSearcher=false` may result in changes committed to disk and included in subsequent backups, even if they are not currently visible in search results.
 ====
@@ -305,9 +305,9 @@ An example configuration using these properties can be found below:
 
 === GCSBackupRepository
 
-Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
+Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
 
-GCSBackupRepsoitory accepts the following options for overall configuration:
+GCSBackupRepository accepts the following options for overall configuration:
 
 `gcsBucket`::
 The GCS bucket to read and write all backup files to.
@@ -414,7 +414,96 @@ An example configuration using the overall and GCS-client properties can be seen
     <int name="gcsClientMaxRetries">5</int>
     <int name="gcsClientHttpInitialHttpDelayMillis">1500</int>
     <double name="gcsClientHttpRetryDelayMultiplier">1.5</double>
-    <int name="gcsClientMaxHttpRetryDelayMillis>10000</int>
+    <int name="gcsClientMaxHttpRetryDelayMillis">10000</int>
+  </repository>
+</backup>
+----
+
+=== S3BackupRepository
+
+Stores and retrieves backup files in an Amazon S3 bucket. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
+
+This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
+
+[NOTE]
+====
+When using the Backup & Restore Collections API Calls, you can provide a **location** that either starts with `s3://` or not.
+Either way, if your **location** (or s3 object prefix) starts with a `/`, it will be removed automatically.
+The repository does not allow backup locations that begin with a `/`.
+====
+
+S3BackupRepository accepts the following options (in `solr.xml`) for overall configuration:
+
+`s3.bucket.name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The S3 bucket to read and write all backup files to. Can be overridden by setting `S3_BUCKET_NAME` environment variable.
+
+`s3.region`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A valid Amazon S3 region string where your bucket is provisioned. You must have read and write permissions for this bucket.
+For a full list of regions, please reference the https://docs.aws.amazon.com/general/latest/gr/s3.html[S3 documentation].
+Can be overridden by setting `S3_REGION` environment variable.
+
+`s3.endpoint`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Explicit S3 endpoint. Not needed under normal operations when using AWS S3 (the S3 client can infer the endpoint from the `s3.region`).
+This parameter is helpful if using a mock S3 framework and want to explicitly override where S3 requests are routed, such as when using S3Mock.
+Can be overridden by setting `S3_ENDPOINT` environment variable.
+
+
+[NOTE]
+====
+You can use the `s3.endpoint` option to use this BackupRepository with _s3-compatible_ endpoints.
+Beware that not all _s3-compatible_ endpoints will work with the S3BackupRepository.
+Minio is an example of an _s3-compatible_ endpoint that does not work with the S3BackupRepository.
+The S3BackupRepository is only guaranteed to be compatible with AWS S3 and S3Mock.
+====
+
+`s3.proxy.host`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Proxy hostname for the S3 client to route requests through, if desired.
+Should be used in conjunction with `s3.proxy.port` parameter.
+Can be overridden by setting `S3_PROXY_HOST` environment variable.
+
+`s3.proxy.port`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Proxy port number for the S3 client to route requests through, if desired.
+Should be used in conjunction with `s3.proxy.host` parameter.
+Can be overridden by setting `S3_PROXY_PORT` environment variable.
+
+An example configuration to enable S3 backups and restore can be seen below:
+
+[source,xml]
+----
+<backup>
+  <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
+    <str name="s3.bucket.name">my-s3-bucket</str>
+    <str name="s3.region">us-west-2</str>
   </repository>
 </backup>
 ----
