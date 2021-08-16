@@ -85,8 +85,6 @@ Optimizations
 Bug Fixes
 ---------------------
 
-* LUCENE-9963: Improve FlattenGraphFilter's robustness when handling incoming token graphs with holes (Geoffrey Lawson)
-
 * LUCENE-9988: Fix DrillSideways correctness bug introduced in LUCENE-9944 (Greg Miller)
 
 * LUCENE-9964: Duplicate long values in a document field should only be counted once when using SortedNumericDocValuesFields
@@ -105,6 +103,9 @@ Bug Fixes
   field. (Julie Tibshirani)
 
 * LUCENE-10046: Counting bug fixed in StringValueFacetCounts. (Greg Miller)
+
+* LUCENE-9963: FlattenGraphFilter is now more robust when handling
+  incoming holes in the input token graph (Geoff Lawson)
 
 Other
 ---------------------
