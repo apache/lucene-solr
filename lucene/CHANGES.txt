@@ -78,6 +78,10 @@ Optimizations
 * LUCENE-10031: Slightly faster segment merging for sorted indices.
   (Adrien Grand)
 
+* LUCENE-10014: Lucene90DocValuesFormat was using too many bits per
+  value when compressing via gcd, unnecessarily wasting index storage.
+  (weizijun)
+
 Bug Fixes
 ---------------------
 

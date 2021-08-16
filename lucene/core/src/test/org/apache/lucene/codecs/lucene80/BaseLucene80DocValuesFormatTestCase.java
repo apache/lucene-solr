@@ -621,11 +621,13 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE));
     conf.setRAMBufferSizeMB(-1);
+    // so Lucene docids are predictable / stay in order
     conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     IndexWriter writer = new IndexWriter(dir, conf);
     
     final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
     final LongSupplier values = blocksOfVariousBPV();
+    List<long[]> writeDocValues = new ArrayList<>();
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       
@@ -637,6 +639,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
         doc.add(new SortedNumericDocValuesField("dv", value));
       }
       Arrays.sort(valueArray);
+      writeDocValues.add(valueArray);
       for (int j = 0; j < valueCount; j++) {
         doc.add(new StoredField("stored", Long.toString(valueArray[j])));
       }
@@ -659,15 +662,23 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
         if (i > docValues.docID()) {
           docValues.nextDoc();
         }
-        String expected[] = r.document(i).getValues("stored");
+        String expectedStored[] = r.document(i).getValues("stored");
         if (i < docValues.docID()) {
-          assertEquals(0, expected.length);
+          assertEquals(0, expectedStored.length);
         } else {
-          String actual[] = new String[docValues.docValueCount()];
-          for (int j = 0; j < actual.length; j++) {
-            actual[j] = Long.toString(docValues.nextValue());
+          long[] readValueArray = new long[docValues.docValueCount()];
+          String actualDocValue[] = new String[docValues.docValueCount()];
+          for (int j = 0; j < docValues.docValueCount(); ++j) {
+            long actualDV = docValues.nextValue();
+            readValueArray[j] = actualDV;
+            actualDocValue[j] = Long.toString(readValueArray[j]);
           }
-          assertArrayEquals(expected, actual);
+          long[] writeValueArray = writeDocValues.get(i);
+          // compare write values and read values
+          assertArrayEquals(readValueArray, writeValueArray);
+
+          // compare dv and stored values
+          assertArrayEquals(expectedStored, actualDocValue);
         }
       }
     }
