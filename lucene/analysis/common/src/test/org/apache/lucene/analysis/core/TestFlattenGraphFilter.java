@@ -17,10 +17,15 @@
 
 package org.apache.lucene.analysis.core;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.AutomatonToTokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.CharArraySet;
@@ -28,11 +33,17 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.Transition;
 
 public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
   
@@ -289,10 +300,10 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
     
   }
 
-  // The end node the long path is supposed to flatten over doesn't exist
+  // b has a posInc of 1, which is correct, but no edge ever visited that node.
+  // After hole recovery 'b' and 'c' should still be under 'abc'
   // assert disabled = pos length of abc = 4
   // assert enabled = AssertionError: outputEndNode=3 vs inputTo=2
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9963")
   public void testAltPathFirstStepHole() throws Exception {
     TokenStream in =
         new CannedTokenStream(
@@ -312,9 +323,9 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
         3);
   }
 
-  // Last node in an alt path releases the long path. but it doesn't exist in this graph
-  // pos length of abc = 1
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9963")
+  // Last node in an alt path fixes outputnode of long path. In this graph the follow up node fixes
+  // that.
+  // incorrect pos length of abc = 1
   public void testAltPathLastStepHole() throws Exception {
     TokenStream in =
         new CannedTokenStream(
@@ -339,7 +350,7 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
         4);
   }
 
-  // Posinc >2 gets squashed to 2
+  // Check to see how multiple holes in a row are preserved.
   public void testLongHole() throws Exception {
     TokenStream in =
         new CannedTokenStream(
@@ -361,11 +372,9 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
         28);
   }
 
-  // multiple nodes missing in the alt path. Last edge shows up after long edge and short edge,
-  // which looks good but the output graph isn't flat.
+  // multiple nodes missing in the alt path.
   // assert disabled = nothing
   // assert enabled = AssertionError
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9963")
   public void testAltPathLastStepLongHole() throws Exception {
     TokenStream in =
         new CannedTokenStream(
@@ -380,16 +389,15 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
         new String[] {"abc", "a", "d"},
         new int[] {0, 0, 3},
         new int[] {1, 1, 4},
-        new int[] {1, 0, 1},
-        new int[] {1, 1, 1},
+        new int[] {1, 0, 2},
+        new int[] {2, 1, 1},
         4);
   }
 
   // LUCENE-8723
-  // Token stream ends without last node showing up
+  // Token stream ends without any edge to fix the long edge's output node
   // assert disabled = dropped token
   // assert enabled = AssertionError: 2
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9963")
   public void testAltPathLastStepHoleWithoutEndToken() throws Exception {
     TokenStream in =
         new CannedTokenStream(
@@ -407,6 +415,189 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
         new int[] {1, 0, 1},
         new int[] {1, 1, 1},
         2);
+  }
+
+  // similar to AltPathLastStepHoleWithoutEndToken, but instead of no token to trigger long path
+  // resolution,
+  // the next token has no way to reference to the long path so we have to resolve as if that last
+  // token wasn't present.
+  public void testAltPathLastStepHoleFollowedByHole() throws Exception {
+    TokenStream in =
+        new CannedTokenStream(
+            0,
+            5,
+            new Token[] {token("abc", 1, 3, 0, 3), token("b", 1, 1, 1, 2), token("e", 3, 1, 4, 5)});
+
+    TokenStream out = new FlattenGraphFilter(in);
+
+    assertTokenStreamContents(
+        out,
+        new String[] {"abc", "b", "e"},
+        new int[] {0, 1, 4},
+        new int[] {3, 2, 5},
+        new int[] {1, 1, 2},
+        new int[] {1, 1, 1},
+        5);
+  }
+
+  // Two Shingled long paths pass each other which gives a flattened graph with tokens backing up a
+  // lot.
+  public void testShingledGap() throws Exception {
+    TokenStream in =
+        new CannedTokenStream(
+            0,
+            5,
+            new Token[] {
+              token("abc", 1, 3, 0, 3),
+              token("a", 0, 1, 0, 1),
+              token("b", 1, 1, 1, 2),
+              token("cde", 1, 3, 2, 5),
+              token("d", 1, 1, 3, 4),
+              token("e", 1, 1, 4, 5)
+            });
+
+    TokenStream out = new FlattenGraphFilter(in);
+
+    assertTokenStreamContents(
+        out,
+        new String[] {"abc", "a", "d", "b", "cde", "e"},
+        new int[] {0, 0, 3, 3, 4, 4},
+        new int[] {1, 1, 3, 3, 5, 5},
+        new int[] {1, 0, 1, 0, 1, 0},
+        new int[] {1, 1, 1, 1, 1, 1},
+        5);
+  }
+
+  // With shingles, token order may change during flattening.
+  // We need to be careful not to free input nodes if they still have unreleased edges.
+  // with/without exceptions ArrayIndexOutOfBoundsException
+  public void testShingledGapWithHoles() throws Exception {
+    TokenStream in =
+        new CannedTokenStream(
+            0,
+            5,
+            new Token[] {
+              token("abc", 1, 3, 0, 3),
+              token("b", 1, 1, 1, 2),
+              token("cde", 1, 3, 2, 5),
+              token("d", 1, 1, 3, 4),
+              token("e", 1, 1, 4, 5)
+            });
+
+    TokenStream out = new FlattenGraphFilter(in);
+
+    assertTokenStreamContents(
+        out,
+        new String[] {"abc", "d", "b", "cde", "e"},
+        new int[] {0, 3, 3, 4, 4},
+        new int[] {3, 3, 3, 5, 5},
+        new int[] {1, 1, 0, 1, 0},
+        new int[] {1, 1, 1, 1, 1},
+        5);
+  }
+
+  // When the first token is a hole there is no original token to offset from.
+  public void testFirstTokenHole() throws Exception {
+    TokenStream in = new CannedTokenStream(0, 9, new Token[] {token("start", 2, 1, 0, 5)});
+    TokenStream out = new FlattenGraphFilter(in);
+
+    assertTokenStreamContents(
+        out, new String[] {"start"}, new int[] {0}, new int[] {5}, new int[] {2}, new int[] {1}, 9);
+  }
+
+  // The singled token starts from a hole.
+  // Hole recovery will cause the shingled token to start later in the output than its alternate
+  // paths.
+  // This will result in it being released too early.
+  public void testShingleFromGap() throws Exception {
+    TokenStream in =
+        new CannedTokenStream(
+            0,
+            9,
+            new Token[] {
+              token("a", 1, 1, 4, 8),
+              token("abc", 0, 3, 4, 7),
+              token("cd", 2, 2, 6, 8),
+              token("d", 1, 1, 7, 8),
+              token("e", 1, 1, 8, 9)
+            });
+    TokenStream out = new FlattenGraphFilter(in);
+    assertTokenStreamContents(
+        out,
+        new String[] {"a", "abc", "d", "cd", "e"},
+        new int[] {4, 4, 7, 7, 8},
+        new int[] {7, 7, 8, 8, 9},
+        new int[] {1, 0, 1, 1, 1},
+        new int[] {1, 1, 2, 1, 1},
+        9);
+  }
+
+  public void testShingledGapAltPath() throws Exception {
+    TokenStream in =
+        new CannedTokenStream(
+            0,
+            4,
+            new Token[] {
+              token("abc", 1, 3, 0, 3), token("abcd", 0, 4, 0, 4), token("cd", 2, 2, 2, 4),
+            });
+    TokenStream out = new FlattenGraphFilter(in);
+    assertTokenStreamContents(
+        out,
+        new String[] {"abc", "abcd", "cd"},
+        new int[] {0, 0, 2},
+        new int[] {3, 4, 4},
+        new int[] {1, 0, 1},
+        new int[] {1, 2, 1},
+        4);
+  }
+
+  // Lots of shingles and alternate paths connecting to each other. One edge 'c' missing between
+  // 'ab' and 'def'
+  public void testHeavilyConnectedGraphWithGap() throws IOException {
+    TokenStream in =
+        new CannedTokenStream(
+            0,
+            7,
+            new Token[] {
+              token("a", 1, 1, 0, 1),
+              token("ab", 0, 2, 0, 2),
+              token("abcdef", 0, 6, 0, 6),
+              token("abcd", 0, 4, 0, 4),
+              token("bcdef", 1, 5, 1, 7),
+              token("def", 2, 3, 4, 7),
+              token("e", 1, 1, 5, 6),
+              token("f", 1, 1, 6, 7)
+            });
+    TokenStream out = new FlattenGraphFilter(in);
+    assertTokenStreamContents(
+        out,
+        new String[] {"a", "ab", "abcdef", "abcd", "bcdef", "e", "def", "f"},
+        new int[] {0, 0, 0, 0, 5, 5, 6, 6},
+        new int[] {1, 1, 7, 1, 7, 6, 7, 7},
+        new int[] {1, 0, 0, 0, 1, 0, 1, 0},
+        new int[] {1, 1, 3, 1, 2, 1, 1, 1},
+        7);
+  }
+  // This graph can create a disconnected input node that is farther ahead in the output than its
+  // subsequent input node.
+  // Exceptions: Free too early or dropped tokens.
+  public void testShingleWithLargeLeadingGap() throws IOException {
+    TokenStream in =
+        new CannedTokenStream(
+            0,
+            6,
+            new Token[] {
+              token("abcde", 1, 5, 0, 5), token("ef", 4, 2, 4, 6), token("f", 1, 1, 5, 6),
+            });
+    TokenStream out = new FlattenGraphFilter(in);
+    assertTokenStreamContents(
+        out,
+        new String[] {"abcde", "f", "ef"},
+        new int[] {0, 5, 5},
+        new int[] {5, 6, 6},
+        new int[] {1, 1, 0},
+        new int[] {1, 1, 1},
+        6);
   }
 
   /**
@@ -429,8 +620,6 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
   }
 
   // Create a random graph then delete some edges to see if we can trip up FlattenGraphFilter
-  // Is there some way we can do this and validate output nodes?
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9963")
   public void testRandomGraphs() throws Exception {
     String[] baseTokens = new String[] {"t1", "t2", "t3", "t4"};
     String[] synTokens = new String[] {"s1", "s2", "s3", "s4"};
@@ -439,7 +628,7 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
     CharsRefBuilder charRefBuilder = new CharsRefBuilder();
     Random random = random();
 
-    // between 20 and 20 synonym entries
+    // between 10 and 20 synonym entries
     int synCount = random.nextInt(10) + 10;
     for (int i = 0; i < synCount; i++) {
       int type = random.nextInt(4);
@@ -491,7 +680,7 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
       stopWords.add(tokenArray[index]);
     }
 
-    Analyzer a =
+    Analyzer withFlattenGraph =
         new Analyzer() {
           @Override
           protected TokenStreamComponents createComponents(String fieldName) {
@@ -510,8 +699,288 @@ public class TestFlattenGraphFilter extends BaseTokenStreamTestCase {
     }
 
     String text = String.join(" ", stringTokens);
-    checkAnalysisConsistency(random, a, false, text);
+    // FlattenGraphFilter can create inconsistent offsets.
+    // If that is resolved we can check offsets
+    // Until then converting to automaton will pull text through and check if we hit asserts.
+    // checkAnalysisConsistency(random, withFlattenGraph, false, text);
+    TokenStreamToAutomaton tsta = new TokenStreamToAutomaton();
+    TokenStream flattenedTokenStream = withFlattenGraph.tokenStream("field", text);
+    assertFalse(Operations.hasDeadStates(tsta.toAutomaton(flattenedTokenStream)));
+    flattenedTokenStream.close();
+
+    /*
+       CheckGeneralization can get VERY slow as matching holes to tokens or other holes generates a lot of potentially valid paths.
+       Analyzer withoutFlattenGraph =
+           new Analyzer() {
+             @Override
+             protected TokenStreamComponents createComponents(String fieldName) {
+               Tokenizer in = new WhitespaceTokenizer();
+               TokenStream result = new SynonymGraphFilter(in, synMap, true);
+               result = new StopFilter(result, stopWords);
+               return new TokenStreamComponents(in, result);
+             }
+           };
+       checkGeneralization(
+           withFlattenGraph.tokenStream("field", text),
+           withoutFlattenGraph.tokenStream("field", text));
+
+    */
   }
+
+  /*
+   * Make some strings, make an automaton that accepts those strings, convert that automaton into a TokenStream,
+   * flatten it, back to an automaton, and see if the original strings are still accepted.
+   */
+  public void testPathsNotLost() throws IOException {
+    int wordCount = random().nextInt(5) + 5;
+    List<BytesRef> acceptStrings = new LinkedList<>();
+    for (int i = 0; i < wordCount; i++) {
+      int wordLen = random().nextInt(5) + 5;
+      BytesRef ref = new BytesRef(wordLen);
+      ref.length = wordLen;
+      ref.offset = 0;
+      for (int j = 0; j < wordLen; j++) {
+        ref.bytes[j] = (byte) (random().nextInt(5) + 65);
+      }
+      acceptStrings.add(ref);
+    }
+    acceptStrings.sort(Comparator.naturalOrder());
+
+    acceptStrings = acceptStrings.stream().limit(wordCount).collect(Collectors.toList());
+    Automaton nonFlattenedAutomaton = DaciukMihovAutomatonBuilder.build(acceptStrings);
+
+    TokenStream ts = AutomatonToTokenStream.toTokenStream(nonFlattenedAutomaton);
+    TokenStream flattenedTokenStream = new FlattenGraphFilter(ts);
+    TokenStreamToAutomaton tsta = new TokenStreamToAutomaton();
+    Automaton flattenedAutomaton = tsta.toAutomaton(flattenedTokenStream);
+
+    // TokenStreamToAutomaton adds position increment transitions into the automaton.
+    List<BytesRef> acceptStringsWithPosSep = createAcceptStringsWithPosSep(acceptStrings);
+
+    for (BytesRef acceptString : acceptStringsWithPosSep) {
+      assertTrue(
+          "string not accepted " + acceptString.utf8ToString(),
+          recursivelyValidate(acceptString, 0, 0, flattenedAutomaton));
+    }
+  }
+
+  /**
+   * adds POS_SEP bytes between bytes to match TokenStreamToAutomaton format.
+   *
+   * @param acceptStrings Byte refs of accepted strings. Each byte is a transition
+   * @return List of ByteRefs where each byte is separated by a POS_SEP byte.
+   */
+  private List<BytesRef> createAcceptStringsWithPosSep(List<BytesRef> acceptStrings) {
+    List<BytesRef> acceptStringsWithPosSep = new ArrayList<>();
+    for (BytesRef acceptString : acceptStrings) {
+      BytesRef withPosSep = new BytesRef(acceptString.length * 2 - 1);
+      withPosSep.length = acceptString.length * 2 - 1;
+      withPosSep.offset = 0;
+      for (int i = 0; i < acceptString.length; i++) {
+        withPosSep.bytes[i * 2] = acceptString.bytes[i];
+        if (i * 2 + 1 < withPosSep.length) {
+          withPosSep.bytes[i * 2 + 1] = TokenStreamToAutomaton.POS_SEP;
+        }
+      }
+      acceptStringsWithPosSep.add(withPosSep);
+    }
+    return acceptStringsWithPosSep;
+  }
+
+  /**
+   * Checks if acceptString is accepted by the automaton. Automaton may be an NFA.
+   *
+   * @param acceptString String to test
+   * @param acceptStringIndex current index into acceptString, initial value should be 0
+   * @param state state to transition from. initial value should be 0
+   * @param automaton Automaton to test
+   * @return true if acceptString is accepted by the automaton. otherwise false.
+   */
+  public boolean recursivelyValidate(
+      BytesRef acceptString, int acceptStringIndex, int state, Automaton automaton) {
+    if (acceptStringIndex == acceptString.length) {
+      return automaton.isAccept(state);
+    }
+
+    Transition transition = new Transition();
+    automaton.initTransition(state, transition);
+    int numTransitions = automaton.getNumTransitions(state);
+    boolean accept = false;
+    // Automaton can be NFA, so we need to check all matching transitions
+    for (int i = 0; i < numTransitions; i++) {
+      automaton.getTransition(state, i, transition);
+      if (transition.min <= acceptString.bytes[acceptStringIndex]
+          && transition.max >= acceptString.bytes[acceptStringIndex]) {
+        accept =
+            recursivelyValidate(acceptString, acceptStringIndex + 1, transition.dest, automaton);
+      }
+      if (accept == true) {
+        break;
+      }
+    }
+    return accept;
+  }
+
+  /**
+   * This method checks if strings that lead to the accept state of the not flattened TokenStream
+   * also lead to the accept state in the flattened TokenStream. This gets complicated when you
+   * factor in holes. The FlattenGraphFilter will remove alternate paths that are made entirely of
+   * holes. An alternate path of Holes is indistinguishable from a path that just has long
+   * lengths(ex: testStrangelyNumberedNodes). Also alternate paths that end in multiple holes could
+   * be interpreted as sequential holes after the branching has converged during flattening. This
+   * leads to a lot of weird logic about navigating around holes that may compromise the accuracy of
+   * this test.
+   *
+   * @param flattened flattened TokenStream
+   * @param notFlattened not flattened TokenStream
+   * @throws IOException on error creating Automata
+   */
+  /* private void checkGeneralization(TokenStream flattened, TokenStream notFlattened)
+      throws IOException {
+    TokenStreamToAutomaton tsta = new TokenStreamToAutomaton();
+
+    List<LinkedList<Integer>> acceptStrings = getAcceptStrings(tsta.toAutomaton(notFlattened));
+    checkAcceptStrings(acceptStrings, tsta.toAutomaton(flattened));
+    flattened.close();
+    notFlattened.close();
+  }*/
+
+  /**
+   * gets up to 10000 strings that lead to accept state in the given automaton.
+   *
+   * @param automaton automaton
+   * @return list of accept sequences
+   */
+  /* private List<LinkedList<Integer>> getAcceptStrings(Automaton automaton) {
+    List<LinkedList<Integer>> acceptedSequences = new LinkedList<>();
+    LinkedList<Integer> prefix = new LinkedList<>();
+    // state 0 is always the start node
+    // Particularly branching automatons can create lots of possible acceptable strings. limit to
+    // the first 10K
+    buildAcceptStringRecursive(automaton, 0, prefix, acceptedSequences, 10000);
+    return acceptedSequences;
+  }*/
+
+  /**
+   * @param automaton automaton to generate strings from
+   * @param state state to start at
+   * @param prefix string prefix
+   * @param acceptedSequences List of strings build so far.
+   * @param limit maximum number of acceptedSequences.
+   */
+  /*private void buildAcceptStringRecursive(
+      Automaton automaton,
+      int state,
+      LinkedList<Integer> prefix,
+      List<LinkedList<Integer>> acceptedSequences,
+      int limit) {
+    if (acceptedSequences.size() == limit) {
+      return;
+    }
+    if (automaton.isAccept(state)) {
+      acceptedSequences.add(new LinkedList<>(prefix));
+      return;
+    }
+    int numTransitions = automaton.getNumTransitions(state);
+    Transition transition = new Transition();
+    for (int i = 0; i < numTransitions; i++) {
+      automaton.getTransition(state, i, transition);
+      // min and max are the same transitions made from TokenStreamToAutomaton
+      prefix.addLast(transition.min);
+      buildAcceptStringRecursive(automaton, transition.dest, prefix, acceptedSequences, limit);
+      prefix.removeLast();
+    }
+  }
+
+  private void checkAcceptStrings(List<LinkedList<Integer>> acceptSequence, Automaton automaton) {
+    for (LinkedList<Integer> acceptString : acceptSequence) {
+      assertTrue(
+          "String did not lead to accept state " + acceptString,
+          recursivelyValidateWithHoles(acceptString, 0, automaton));
+    }
+  }
+
+  private boolean recursivelyValidateWithHoles(
+      LinkedList<Integer> acceptSequence, int state, Automaton automaton) {
+    if (acceptSequence.isEmpty()) {
+      return automaton.isAccept(state);
+    }
+
+    Integer curr = acceptSequence.pop();
+    int numTransitions = automaton.getNumTransitions(state);
+    Transition transition = new Transition();
+
+    boolean accept = false;
+    // Automaton can be NFA, so we need to check all matching transitions
+    for (int i = 0; i < numTransitions; i++) {
+      automaton.getTransition(state, i, transition);
+      if (transition.min <= curr && transition.max >= curr) {
+        accept = recursivelyValidateWithHoles(acceptSequence, transition.dest, automaton);
+        // Factoring in flattened graphs the space covered by a hole may be bigger in the flattened
+        // graph.
+        // Try consuming more steps with holes.
+        if (accept == false
+            && transition.min == TokenStreamToAutomaton.HOLE
+            && transition.max == TokenStreamToAutomaton.HOLE) {
+          acceptSequence.push(TokenStreamToAutomaton.HOLE);
+          acceptSequence.push(TokenStreamToAutomaton.POS_SEP);
+          accept = recursivelyValidateWithHoles(acceptSequence, transition.dest, automaton);
+          acceptSequence.pop();
+          acceptSequence.pop();
+        }
+      } else if (transition.min == TokenStreamToAutomaton.HOLE
+          && transition.max == TokenStreamToAutomaton.HOLE
+          && automaton.getNumTransitions(transition.dest) > 0) {
+        //consume multiple holes in the automaton
+        // clear POS_INC
+        automaton.getTransition(transition.dest, 0, transition);
+        acceptSequence.push(curr);
+        accept = recursivelyValidateWithHoles(acceptSequence, transition.dest, automaton);
+        acceptSequence.pop();
+      } else if(curr == TokenStreamToAutomaton.HOLE) {
+        //consume non-holes in the automaton with holes
+        while (transition.min != TokenStreamToAutomaton.POS_SEP
+                && automaton.getNumTransitions(transition.dest) > 0) {
+          automaton.getTransition(transition.dest, 0, transition);
+        }
+        acceptSequence.push(curr);
+        accept = recursivelyValidateWithHoles(acceptSequence, transition.dest, automaton);
+        acceptSequence.pop();
+      }
+      if (accept) {
+        break;
+      }
+    }
+    // Flatten graph filter will remove side paths that are only Holes. Gaps may also change size as
+    // graph is flattened.
+    // Traverse over them if curr is a hole to make sure the gap is kept
+    if (accept == false && curr == TokenStreamToAutomaton.HOLE && acceptSequence.size() > 0) {
+      // get rid of the separator
+      acceptSequence.pop();
+
+      for (int i = 0; i < numTransitions; i++) {
+        automaton.getTransition(state, i, transition);
+        //advance to the next POS_SEP in automaton
+        while (transition.min != TokenStreamToAutomaton.POS_SEP
+            && automaton.getNumTransitions(transition.dest) > 0) {
+          automaton.getTransition(transition.dest, 0, transition);
+        }
+        accept = recursivelyValidateWithHoles(acceptSequence, transition.dest, automaton);
+        if (accept) {
+          break;
+        }
+      }
+
+      // might be multiple holes squashed under a one step path. Try burning remaining holes
+      if (accept == false) {
+        accept = recursivelyValidateWithHoles(acceptSequence, state, automaton);
+      }
+
+      acceptSequence.push(TokenStreamToAutomaton.POS_SEP);
+    }
+    acceptSequence.push(curr);
+    return accept;
+  } */
 
   // NOTE: TestSynonymGraphFilter's testRandomSyns also tests FlattenGraphFilter
 }
