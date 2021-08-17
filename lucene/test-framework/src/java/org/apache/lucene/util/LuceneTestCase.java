@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.util;
 
 import java.io.Closeable;
@@ -30,6 +31,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -3021,5 +3023,87 @@ public abstract class LuceneTestCase extends Assert {
       mp.setNoCFSRatio(Math.max(0.25d, mp.getNoCFSRatio()));
     }
     return conf;
+  }
+
+  /**
+   * Creates a {@link BytesRef} holding UTF-8 bytes for the incoming String, that sometimes uses a
+   * non-zero {@code offset}, and non-zero end-padding, to tickle latent bugs that fail to look at
+   * {@code BytesRef.offset}.
+   */
+  public static BytesRef newBytesRef(String s) {
+    return newBytesRef(s.getBytes(StandardCharsets.UTF_8));
+  }
+
+  /**
+   * Creates a copy of the incoming {@link BytesRef} that sometimes uses a non-zero {@code offset},
+   * and non-zero end-padding, to tickle latent bugs that fail to look at {@code BytesRef.offset}.
+   */
+  public static BytesRef newBytesRef(BytesRef b) {
+    assert b.isValid();
+    return newBytesRef(b.bytes, b.offset, b.length);
+  }
+
+  /**
+   * Creates a random BytesRef from the incoming bytes that sometimes uses a non-zero {@code
+   * offset}, and non-zero end-padding, to tickle latent bugs that fail to look at {@code
+   * BytesRef.offset}.
+   */
+  public static BytesRef newBytesRef(byte[] b) {
+    return newBytesRef(b, 0, b.length);
+  }
+
+  /**
+   * Creates a random empty BytesRef that sometimes uses a non-zero {@code offset}, and non-zero
+   * end-padding, to tickle latent bugs that fail to look at {@code BytesRef.offset}.
+   */
+  public static BytesRef newBytesRef() {
+    return newBytesRef(new byte[0], 0, 0);
+  }
+
+  /**
+   * Creates a random empty BytesRef, with at least the requested length of bytes free, that
+   * sometimes uses a non-zero {@code offset}, and non-zero end-padding, to tickle latent bugs that
+   * fail to look at {@code BytesRef.offset}.
+   */
+  public static BytesRef newBytesRef(int byteLength) {
+    return newBytesRef(new byte[byteLength], 0, byteLength);
+  }
+
+  /**
+   * Creates a copy of the incoming bytes slice that sometimes uses a non-zero {@code offset}, and
+   * non-zero end-padding, to tickle latent bugs that fail to look at {@code BytesRef.offset}.
+   */
+  public static BytesRef newBytesRef(byte[] bytesIn, int offset, int length) {
+    // System.out.println("LTC.newBytesRef!  bytesIn.length=" + bytesIn.length + " offset=" + offset
+    // + " length=" + length);
+
+    assert bytesIn.length >= offset + length
+        : "got offset=" + offset + " length=" + length + " bytesIn.length=" + bytesIn.length;
+
+    // randomly set a non-zero offset
+    int startOffset;
+    if (random().nextBoolean()) {
+      startOffset = RandomNumbers.randomIntBetween(random(), 1, 20);
+    } else {
+      startOffset = 0;
+    }
+
+    // also randomly set an end padding:
+    int endPadding;
+    if (random().nextBoolean()) {
+      endPadding = RandomNumbers.randomIntBetween(random(), 1, 20);
+    } else {
+      endPadding = 0;
+    }
+
+    byte[] bytes = new byte[startOffset + length + endPadding];
+
+    System.arraycopy(bytesIn, offset, bytes, startOffset, length);
+    // System.out.println("LTC:  return bytes.length=" + bytes.length + " startOffset=" +
+    // startOffset + " length=" + bytesIn.length);
+
+    BytesRef it = new BytesRef(bytes, startOffset, bytesIn.length);
+    assert it.isValid();
+    return it;
   }
 }

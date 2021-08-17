@@ -70,14 +70,17 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   
   // encodes a long into a BytesRef as VLong so that we get varying number of bytes when we update
   static BytesRef toBytes(long value) {
-//    long orig = value;
-    BytesRef bytes = new BytesRef(10); // negative longs may take 10 bytes
+    //    long orig = value;
+    BytesRef bytes = newBytesRef(10); // negative longs may take 10 bytes
+    int upto = 0;
     while ((value & ~0x7FL) != 0L) {
-      bytes.bytes[bytes.length++] = (byte) ((value & 0x7FL) | 0x80L);
+      bytes.bytes[bytes.offset + upto++] = (byte) ((value & 0x7FL) | 0x80L);
       value >>>= 7;
     }
-    bytes.bytes[bytes.length++] = (byte) value;
-//    System.err.println("[" + Thread.currentThread().getName() + "] value=" + orig + ", bytes=" + bytes);
+    bytes.bytes[bytes.offset + upto++] = (byte) value;
+    bytes.length = upto;
+    //    System.err.println("[" + Thread.currentThread().getName() + "] value=" + orig + ", bytes="
+    // + bytes);
     return bytes;
   }
   
@@ -330,10 +333,10 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new StringField("dvUpdateKey", "dv", Store.NO));
       doc.add(new NumericDocValuesField("ndv", i));
-      doc.add(new BinaryDocValuesField("bdv", new BytesRef(Integer.toString(i))));
-      doc.add(new SortedDocValuesField("sdv", new BytesRef(Integer.toString(i))));
-      doc.add(new SortedSetDocValuesField("ssdv", new BytesRef(Integer.toString(i))));
-      doc.add(new SortedSetDocValuesField("ssdv", new BytesRef(Integer.toString(i * 2))));
+      doc.add(new BinaryDocValuesField("bdv", newBytesRef(Integer.toString(i))));
+      doc.add(new SortedDocValuesField("sdv", newBytesRef(Integer.toString(i))));
+      doc.add(new SortedSetDocValuesField("ssdv", newBytesRef(Integer.toString(i))));
+      doc.add(new SortedSetDocValuesField("ssdv", newBytesRef(Integer.toString(i * 2))));
       writer.addDocument(doc);
     }
     writer.commit();
@@ -354,8 +357,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       assertEquals(i, bdv.nextDoc());
       assertEquals(17, getValue(bdv));
       assertEquals(i, sdv.nextDoc());
-      BytesRef term = sdv.binaryValue();
-      assertEquals(new BytesRef(Integer.toString(i)), term);
+      BytesRef term = sdv.lookupOrd(sdv.ordValue());
+      assertEquals(newBytesRef(Integer.toString(i)), term);
       assertEquals(i, ssdv.nextDoc());
       long ord = ssdv.nextOrd();
       term = ssdv.lookupOrd(ord);
@@ -481,7 +484,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new StringField("key", "doc", Store.NO));
     doc.add(new BinaryDocValuesField("bdv", toBytes(5L)));
-    doc.add(new SortedDocValuesField("sorted", new BytesRef("value")));
+    doc.add(new SortedDocValuesField("sorted", newBytesRef("value")));
     writer.addDocument(doc); // flushed document
     writer.commit();
     writer.addDocument(doc); // in-memory document
@@ -497,8 +500,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       assertEquals(i, bdv.nextDoc());
       assertEquals(17, getValue(bdv));
       assertEquals(i, sdv.nextDoc());
-      BytesRef term = sdv.binaryValue();
-      assertEquals(new BytesRef("value"), term);
+      BytesRef term = sdv.lookupOrd(sdv.ordValue());
+      assertEquals(newBytesRef("value"), term);
     }
     
     reader.close();

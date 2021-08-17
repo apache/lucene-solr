@@ -481,11 +481,8 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(1, reader.numDocs());
     Term t = new Term("field", "a");
     assertEquals(1, reader.docFreq(t));
-    PostingsEnum td = TestUtil.docs(random(), reader,
-                                    "field",
-                                    new BytesRef("a"),
-                                    null,
-                                    PostingsEnum.FREQS);
+    PostingsEnum td =
+        TestUtil.docs(random(), reader, "field", newBytesRef("a"), null, PostingsEnum.FREQS);
     td.nextDoc();
     assertEquals(128*1024, td.freq());
     reader.close();
@@ -675,9 +672,9 @@ public class TestIndexWriter extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
     TermsEnum te = subreader.terms("").iterator();
-    assertEquals(new BytesRef("a"), te.next());
-    assertEquals(new BytesRef("b"), te.next());
-    assertEquals(new BytesRef("c"), te.next());
+    assertEquals(newBytesRef("a"), te.next());
+    assertEquals(newBytesRef("b"), te.next());
+    assertEquals(newBytesRef("c"), te.next());
     assertNull(te.next());
     reader.close();
     dir.close();
@@ -696,10 +693,10 @@ public class TestIndexWriter extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
     TermsEnum te = subreader.terms("").iterator();
-    assertEquals(new BytesRef(""), te.next());
-    assertEquals(new BytesRef("a"), te.next());
-    assertEquals(new BytesRef("b"), te.next());
-    assertEquals(new BytesRef("c"), te.next());
+    assertEquals(newBytesRef(""), te.next());
+    assertEquals(newBytesRef("a"), te.next());
+    assertEquals(newBytesRef("b"), te.next());
+    assertEquals(newBytesRef("c"), te.next());
     assertNull(te.next());
     reader.close();
     dir.close();
@@ -893,22 +890,22 @@ public class TestIndexWriter extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField(random, "id", "500", Field.Store.NO));
       doc.add(newField(random, "field", "some prepackaged text contents", storedTextType));
-      doc.add(new BinaryDocValuesField("binarydv", new BytesRef("500")));
+      doc.add(new BinaryDocValuesField("binarydv", newBytesRef("500")));
       doc.add(new NumericDocValuesField("numericdv", 500));
-      doc.add(new SortedDocValuesField("sorteddv", new BytesRef("500")));
-      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("one")));
-      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
+      doc.add(new SortedDocValuesField("sorteddv", newBytesRef("500")));
+      doc.add(new SortedSetDocValuesField("sortedsetdv", newBytesRef("one")));
+      doc.add(new SortedSetDocValuesField("sortedsetdv", newBytesRef("two")));
       doc.add(new SortedNumericDocValuesField("sortednumericdv", 4));
       doc.add(new SortedNumericDocValuesField("sortednumericdv", 3));
       w.addDocument(doc);
       doc = new Document();
       doc.add(newStringField(random, "id", "501", Field.Store.NO));
       doc.add(newField(random, "field", "some more contents", storedTextType));
-      doc.add(new BinaryDocValuesField("binarydv", new BytesRef("501")));
+      doc.add(new BinaryDocValuesField("binarydv", newBytesRef("501")));
       doc.add(new NumericDocValuesField("numericdv", 501));
-      doc.add(new SortedDocValuesField("sorteddv", new BytesRef("501")));
-      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("two")));
-      doc.add(new SortedSetDocValuesField("sortedsetdv", new BytesRef("three")));
+      doc.add(new SortedDocValuesField("sorteddv", newBytesRef("501")));
+      doc.add(new SortedSetDocValuesField("sortedsetdv", newBytesRef("two")));
+      doc.add(new SortedSetDocValuesField("sortedsetdv", newBytesRef("three")));
       doc.add(new SortedNumericDocValuesField("sortednumericdv", 6));
       doc.add(new SortedNumericDocValuesField("sortednumericdv", 1));
       w.addDocument(doc);
@@ -962,10 +959,10 @@ public class TestIndexWriter extends LuceneTestCase {
 
             Document doc = new Document();
             Field idField = newStringField(random, "id", "", Field.Store.NO);
-            Field binaryDVField = new BinaryDocValuesField("binarydv", new BytesRef());
+            Field binaryDVField = new BinaryDocValuesField("binarydv", newBytesRef());
             Field numericDVField = new NumericDocValuesField("numericdv", 0);
-            Field sortedDVField = new SortedDocValuesField("sorteddv", new BytesRef());
-            Field sortedSetDVField = new SortedSetDocValuesField("sortedsetdv", new BytesRef());
+            Field sortedDVField = new SortedDocValuesField("sorteddv", newBytesRef());
+            Field sortedSetDVField = new SortedSetDocValuesField("sortedsetdv", newBytesRef());
             doc.add(idField);
             doc.add(newField(random, "field", "some text contents", storedTextType));
             doc.add(binaryDVField);
@@ -975,10 +972,10 @@ public class TestIndexWriter extends LuceneTestCase {
             for(int i=0;i<100;i++) {
               //log.println("\nTEST: i=" + i);
               idField.setStringValue(Integer.toString(i));
-              binaryDVField.setBytesValue(new BytesRef(idField.stringValue()));
+              binaryDVField.setBytesValue(newBytesRef(idField.stringValue()));
               numericDVField.setLongValue(i);
-              sortedDVField.setBytesValue(new BytesRef(idField.stringValue()));
-              sortedSetDVField.setBytesValue(new BytesRef(idField.stringValue()));
+              sortedDVField.setBytesValue(newBytesRef(idField.stringValue()));
+              sortedSetDVField.setBytesValue(newBytesRef(idField.stringValue()));
               int action = random.nextInt(100);
               if (action == 17) {
                 w.addIndexes(adder);
@@ -1209,12 +1206,30 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, PostingsEnum.NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, PostingsEnum.NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, PostingsEnum.NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, PostingsEnum.NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, PostingsEnum.NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, PostingsEnum.NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(
+        TestUtil.docs(random(), ir, "binary", newBytesRef("doc1field1"), null, PostingsEnum.NONE)
+                .nextDoc()
+            != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(
+        TestUtil.docs(random(), ir, "binary", newBytesRef("doc2field1"), null, PostingsEnum.NONE)
+                .nextDoc()
+            != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(
+        TestUtil.docs(random(), ir, "binary", newBytesRef("doc3field1"), null, PostingsEnum.NONE)
+                .nextDoc()
+            != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(
+        TestUtil.docs(random(), ir, "string", newBytesRef("doc1field2"), null, PostingsEnum.NONE)
+                .nextDoc()
+            != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(
+        TestUtil.docs(random(), ir, "string", newBytesRef("doc2field2"), null, PostingsEnum.NONE)
+                .nextDoc()
+            != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(
+        TestUtil.docs(random(), ir, "string", newBytesRef("doc3field2"), null, PostingsEnum.NONE)
+                .nextDoc()
+            != DocIdSetIterator.NO_MORE_DOCS);
 
     ir.close();
     dir.close();
@@ -2322,11 +2337,13 @@ public class TestIndexWriter extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
-    doc.add(new SortedDocValuesField("dv", new BytesRef("bar!")));
-    expectThrows(IllegalArgumentException.class, () -> {
-      iwriter.addDocument(doc);
-    });
+    doc.add(new SortedDocValuesField("dv", newBytesRef("foo!")));
+    doc.add(new SortedDocValuesField("dv", newBytesRef("bar!")));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          iwriter.addDocument(doc);
+        });
 
     iwriter.commit();
     assertFalse(iwriter.hasUncommittedChanges());
@@ -2338,7 +2355,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
+    doc.add(new SortedDocValuesField("dv", newBytesRef("foo!")));
     w.addDocument(doc);
     w.close();
     // Close again should have no effect
@@ -2350,7 +2367,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
+    doc.add(new SortedDocValuesField("dv", newBytesRef("foo!")));
     w.addDocument(doc);
     w.rollback();
     // Close after rollback should have no effect
@@ -2362,7 +2379,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
-    doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
+    doc.add(new SortedDocValuesField("dv", newBytesRef("foo!")));
     w.addDocument(doc);
     w.close();
     // Rollback after close should have no effect
@@ -2417,7 +2434,7 @@ public class TestIndexWriter extends LuceneTestCase {
       });
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
+    doc.add(new SortedDocValuesField("dv", newBytesRef("foo!")));
     w.addDocument(doc);
     w.commit();
     w.addDocument(doc);
@@ -3594,7 +3611,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     Token token = new Token("bar", 0, 3);
-    BytesRef evil = new BytesRef(new byte[1024]);
+    BytesRef evil = newBytesRef(new byte[1024]);
     evil.offset = 1000; // offset + length is now out of bounds.
     token.setPayload(evil);
     doc.add(new TextField("foo", new CannedTokenStream(token)));
@@ -3685,7 +3702,7 @@ public class TestIndexWriter extends LuceneTestCase {
           Bits liveDocs = sr.getLiveDocs();
           for (Integer dId : uniqueDocs) {
             boolean mustBeHardDeleted = dId % 2 == 0;
-            if (iterator.seekExact(new BytesRef(dId.toString()))) {
+            if (iterator.seekExact(newBytesRef(dId.toString()))) {
               PostingsEnum postings = iterator.postings(null);
               while (postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                 if (liveDocs.get(postings.docID())) {

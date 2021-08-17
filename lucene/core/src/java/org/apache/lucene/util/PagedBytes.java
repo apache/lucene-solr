@@ -376,7 +376,8 @@ public final class PagedBytes implements Accountable {
 
     @Override
     public void writeBytes(byte[] b, int offset, int length) {
-      assert b.length >= offset + length;
+      assert b.length >= offset + length
+          : "b.length=" + b.length + " offset=" + offset + " length=" + length;
       if (length == 0) {
         return;
       }

@@ -128,7 +128,7 @@ public class TestIndexableField extends LuceneTestCase {
         for(int idx=0;idx<bytes.length;idx++) {
           bytes[idx] = (byte) (counter+idx);
         }
-        return new BytesRef(bytes, 0, bytes.length);
+        return newBytesRef(bytes, 0, bytes.length);
       } else {
         return null;
       }
@@ -282,14 +282,14 @@ public class TestIndexableField extends LuceneTestCase {
             final Terms tfv = r.getTermVectors(docID).terms(name);
             assertNotNull(tfv);
             TermsEnum termsEnum = tfv.iterator();
-            assertEquals(new BytesRef(""+counter), termsEnum.next());
+            assertEquals(newBytesRef("" + counter), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
             PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
             assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
             assertEquals(1, dpEnum.freq());
             assertEquals(1, dpEnum.nextPosition());
 
-            assertEquals(new BytesRef("text"), termsEnum.next());
+            assertEquals(newBytesRef("text"), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
             dpEnum = termsEnum.postings(dpEnum, PostingsEnum.ALL);
             assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
