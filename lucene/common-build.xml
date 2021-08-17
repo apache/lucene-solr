@@ -1232,6 +1232,13 @@
                 <propertyref prefix="solr.tests.use.numeric.points" />
             </syspropertyset>
 
+            <!-- Properties for the Solr s3-repository -->
+            <syspropertyset>
+              <propertyref prefix="server.jetty.threads.idle-timeout" />
+              <propertyref prefix="spring.autoconfigure.exclude" />
+              <propertyref prefix="spring.jmx.enabled" />
+            </syspropertyset>
+
             <!-- Pass randomized settings to the forked JVM. -->
             <syspropertyset ignoreEmpty="true">
                 <propertyref prefix="tests.file.encoding" />
