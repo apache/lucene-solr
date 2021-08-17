@@ -35,7 +35,11 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET).build();
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET)
+          .withProperty("spring.autoconfigure.exclude", "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration")
+          .withProperty("spring.jmx.enabled", "false")
+          .withProperty("server.jetty.threads.idle-timeout", "3s")
+          .build();
 
   private AmazonS3 s3;
 

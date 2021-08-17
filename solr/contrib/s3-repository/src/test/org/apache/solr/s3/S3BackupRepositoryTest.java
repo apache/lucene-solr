@@ -41,6 +41,7 @@ import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,7 +55,17 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME)
+          .withProperty("spring.autoconfigure.exclude", "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration")
+          .withProperty("spring.jmx.enabled", "false")
+          .withProperty("server.jetty.threads.idle-timeout", "3s")
+          .build();
+
+  @BeforeClass
+  public static void setupProperties() {
+    System.setProperty("aws.accessKeyId", "foo");
+    System.setProperty("aws.secretKey", "bar");
+  }
 
   /**
    * Sent by {@link org.apache.solr.handler.ReplicationHandler}, ensure we don't choke on the bare
@@ -121,33 +132,32 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   /** Check resolving paths. */
   @Test
   public void testResolve() throws Exception {
+    try (S3BackupRepository repo = getRepository()) {
+      // Add single element to root
+      assertEquals(new URI("s3:/root/path"), repo.resolve(new URI("s3:/root"), "path"));
 
-    S3BackupRepository repo = new S3BackupRepository();
+      // Root ends with '/'
+      assertEquals(new URI("s3://root/path"), repo.resolve(new URI("s3://root/"), "path"));
+      assertEquals(new URI("s3://root/path"), repo.resolve(new URI("s3://root///"), "path"));
 
-    // Add single element to root
-    assertEquals(new URI("s3:/root/path"), repo.resolve(new URI("s3:/root"), "path"));
+      // Add to a sub-element
+      assertEquals(
+          new URI("s3://root/path1/path2"), repo.resolve(new URI("s3://root/path1"), "path2"));
 
-    // Root ends with '/'
-    assertEquals(new URI("s3://root/path"), repo.resolve(new URI("s3://root/"), "path"));
-    assertEquals(new URI("s3://root/path"), repo.resolve(new URI("s3://root///"), "path"));
+      // Add two elements to root
+      assertEquals(
+          new URI("s3://root/path1/path2"), repo.resolve(new URI("s3://root"), "path1", "path2"));
 
-    // Add to a sub-element
-    assertEquals(
-        new URI("s3://root/path1/path2"), repo.resolve(new URI("s3://root/path1"), "path2"));
+      // Add compound elements
+      assertEquals(
+          new URI("s3:/root/path1/path2/path3"),
+          repo.resolve(new URI("s3:/root"), "path1/path2", "path3"));
 
-    // Add two elements to root
-    assertEquals(
-        new URI("s3://root/path1/path2"), repo.resolve(new URI("s3://root"), "path1", "path2"));
-
-    // Add compound elements
-    assertEquals(
-        new URI("s3:/root/path1/path2/path3"),
-        repo.resolve(new URI("s3:/root"), "path1/path2", "path3"));
-
-    // Check URIs with an authority
-    assertEquals(new URI("s3://auth/path"), repo.resolve(new URI("s3://auth"), "path"));
-    assertEquals(
-        new URI("s3://auth/path1/path2"), repo.resolve(new URI("s3://auth/path1"), "path2"));
+      // Check URIs with an authority
+      assertEquals(new URI("s3://auth/path"), repo.resolve(new URI("s3://auth"), "path"));
+      assertEquals(
+          new URI("s3://auth/path1/path2"), repo.resolve(new URI("s3://auth/path1"), "path2"));
+    }
   }
 
   /** Check - pushing a file to the repo (backup). - pulling a file from the repo (restore). */

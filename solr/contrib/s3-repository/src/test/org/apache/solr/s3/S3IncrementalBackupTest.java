@@ -37,7 +37,11 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME)
+          .withProperty("spring.autoconfigure.exclude", "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration")
+          .withProperty("spring.jmx.enabled", "false")
+          .withProperty("server.jetty.threads.idle-timeout", "1s")
+          .build();
 
   public static final String SOLR_XML =
       "<solr>\n"
@@ -85,6 +89,8 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("aws.accessKeyId", "foo");
+    System.setProperty("aws.secretKey", "bar");
     configureCluster(NUM_SHARDS) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
         .withSolrXml(

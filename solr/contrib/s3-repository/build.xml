@@ -34,11 +34,4 @@
     <fileset dir="${test.lib.dir}" includes="*.jar"/>
   </path>
 
-  <!-- S3Mock uses Spring Boot under the hood, which tries to do too much auto configuration that we don't want -->
-  <property name="spring.autoconfigure.exclude" value="org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration"/>
-  <property name="spring.jmx.enabled" value="false"/>
-
-  <!-- Without this, randomizedtesting will think our tests leak threads (b/c S3Mock's Jetty hasn't bothered to clean up yet) -->
-  <property name="server.jetty.threads.idle-timeout" value="1s"/>
-
 </project>

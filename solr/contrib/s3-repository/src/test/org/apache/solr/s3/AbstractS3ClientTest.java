@@ -34,7 +34,11 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME)
+          .withProperty("spring.autoconfigure.exclude", "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration")
+          .withProperty("spring.jmx.enabled", "false")
+          .withProperty("server.jetty.threads.idle-timeout", "3s")
+          .build();
 
   S3StorageClient client;
 
