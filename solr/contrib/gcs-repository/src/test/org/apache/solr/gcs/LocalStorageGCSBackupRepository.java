@@ -95,7 +95,7 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
   protected void initializeBackupLocation() {
     try {
       final String baseLocation = getBackupLocation(null);
-      final URI baseLocationUri = createURI(baseLocation);
+      final URI baseLocationUri = createDirectoryURI(baseLocation);
       createDirectory(baseLocationUri);
     } catch (Exception e) {
       throw new RuntimeException(e);

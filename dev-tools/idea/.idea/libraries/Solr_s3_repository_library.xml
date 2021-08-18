@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Solr s3 repository library">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/solr/contrib/s3-repository/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/solr/contrib/s3-repository/lib" recursive="false" />
+  </library>
+</component>

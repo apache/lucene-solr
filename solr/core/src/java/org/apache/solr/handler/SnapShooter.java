@@ -95,7 +95,7 @@ public class SnapShooter {
       SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.ROOT);
       directoryName = "snapshot." + fmt.format(new Date());
     }
-    this.snapshotDirPath = backupRepo.resolve(location, directoryName);
+    this.snapshotDirPath = backupRepo.resolveDirectory(location, directoryName);
     this.commitName = commitName;
   }
 
@@ -120,7 +120,7 @@ public class SnapShooter {
       paths = backupRepo.listAll(baseSnapDirPath);
       for (String path : paths) {
         if (path.equals(this.directoryName)
-            && backupRepo.getPathType(baseSnapDirPath.resolve(path)) == PathType.DIRECTORY) {
+            && backupRepo.getPathType(backupRepo.resolveDirectory(baseSnapDirPath, path)) == PathType.DIRECTORY) {
           dirFound = true;
           break;
         }

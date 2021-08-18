@@ -235,6 +235,14 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
         }
     }
 
+    @Test
+    public void testDirectoryExistsWithDirectoryUri() throws Exception {
+        try (BackupRepository repo = getRepository()) {
+            repo.createDirectory(getBaseUri());
+            assertTrue(repo.exists(repo.createDirectoryURI(getBaseUri().toString())));
+        }
+    }
+
     private void addFile(BackupRepository repo, URI file) throws IOException {
         try (OutputStream os = repo.createOutput(file)) {
             os.write(100);

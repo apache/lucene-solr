@@ -90,7 +90,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     try (BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo))) {
 
       // Backup location
-      URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
+      URI location = repository.createDirectoryURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
       final URI backupUri = createAndValidateBackupPath(repository, incremental, location, backupName, collectionName);
 
       BackupManager backupMgr = (incremental) ?
@@ -145,7 +145,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   private URI createAndValidateBackupPath(BackupRepository repository, boolean incremental, URI location, String backupName, String collection) throws IOException{
-    final URI backupNamePath = repository.resolve(location, backupName);
+    final URI backupNamePath = repository.resolveDirectory(location, backupName);
 
     if ( (!incremental) && repository.exists(backupNamePath)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup directory already exists: " + backupNamePath);
@@ -155,10 +155,17 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       repository.createDirectory(backupNamePath);
     } else if (incremental){
       final String[] directoryContents = repository.listAll(backupNamePath);
-      if (directoryContents.length == 1 && !directoryContents[0].equals(collection)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "The backup [" + backupName + "] at location [" + location +
-                "] cannot be used to back up [" + collection + "], as it already holds a different collection [" +
-                directoryContents[0] + "]");
+      if (directoryContents.length == 1) {
+        String directoryContentsName = directoryContents[0];
+        // Strip the trailing '/' if it exists
+        if (directoryContentsName.endsWith("/")) {
+          directoryContentsName = directoryContentsName.substring(0, directoryContentsName.length()-1);
+        }
+        if (!directoryContentsName.equals(collection)) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "The backup [" + backupName + "] at location [" + location +
+              "] cannot be used to back up [" + collection + "], as it already holds a different collection [" +
+              directoryContents[0] + "]");
+        }
       }
     }
 
@@ -167,7 +174,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     // Incremental backups have an additional directory named after the collection that needs created
-    final URI backupPathWithCollection = repository.resolve(backupNamePath, collection);
+    final URI backupPathWithCollection = repository.resolveDirectory(backupNamePath, collection);
     if (! repository.exists(backupPathWithCollection)) {
       repository.createDirectory(backupPathWithCollection);
     }

@@ -57,7 +57,7 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   public static RestoreCore create(BackupRepository backupRepo, SolrCore core, URI location, String backupname) {
-    RestoreRepository repository = new BasicRestoreRepository(backupRepo.resolve(location, backupname), backupRepo);
+    RestoreRepository repository = new BasicRestoreRepository(backupRepo.resolveDirectory(location, backupname), backupRepo);
     return new RestoreCore(core, repository);
   }
 
