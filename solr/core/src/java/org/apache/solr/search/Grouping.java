@@ -35,6 +35,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -225,6 +226,11 @@ public class Grouping {
   public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, request);
     Query gq = parser.getQuery();
+
+    if (gq == null) {
+      // normalize a null query to a query that matches nothing
+      gq = new MatchNoDocsQuery();
+    }
     Grouping.CommandQuery gc = new CommandQuery();
     gc.query = gq;
     gc.withinGroupSort = withinGroupSort;
@@ -246,7 +252,6 @@ public class Grouping {
       gc.docsPerGroup = gc.numGroups;  // doesn't make sense to limit to one
       gc.groupOffset = gc.offset;
     }
-
     commands.add(gc);
   }
 
