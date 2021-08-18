@@ -53,7 +53,7 @@ public class Algorithm implements AutoCloseable {
     Config config = runData.getConfig();
     taskPackages = initTasksPackages(config);
     String algTxt = config.getAlgorithmText();
-    sequence = new TaskSequence(runData,null,null,false);
+    sequence = new TaskSequence(runData,null,null,true);
     TaskSequence currSequence = sequence;
     PerfTask prevTask = null;
     StreamTokenizer stok = new StreamTokenizer(new StringReader(algTxt));
