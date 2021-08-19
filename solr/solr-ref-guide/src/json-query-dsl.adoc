@@ -36,7 +36,7 @@ All of these syntaxes can be used to specify queries for either the JSON Request
 
 The examples below show how to use each of the syntaxes discussed above to represent a query.  Each snippet represents the same basic search: the term `iPod` in a field called `name`:
 
-. Using the standard query API, with a simple query string
+Using the standard query API, with a simple query string
 +
 [.dynamic-tabs]
 --
@@ -58,7 +58,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-basic]
 ====
 --
 
-. Using the JSON Request API, with a simple query string
+Using the JSON Request API, with a simple query string
 +
 [.dynamic-tabs]
 --
@@ -83,7 +83,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-1]
 ====
 --
 
-. Using the JSON Request API, with a local-params string
+Using the JSON Request API, with a local-params string
 +
 [.dynamic-tabs]
 --
@@ -108,7 +108,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-2]
 ====
 --
 
-. Using the JSON Request API, with a fully expanded JSON object
+Using the JSON Request API, with a fully expanded JSON object
 +
 [.dynamic-tabs]
 --
@@ -144,7 +144,7 @@ Many of Solr's query parsers allow queries to be nested within one another.  Whe
 === Nested Boost Query Example
 As an example, consider the three requests below, which wrap a simple query (the term `iPod` in the field `name`) within a boost query:
 
-. Using the standard query API.
+Using the standard query API:
 +
 [.dynamic-tabs]
 --
@@ -166,8 +166,8 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-booste
 ====
 --
 
-. Using the JSON Request API, with a mix of fully-expanded and local-params queries.
-As you can see, the special key `v` is replaced with the key `query`.
+Using the JSON Request API, with a mix of fully-expanded and local-params queries.
+As you can see, the special key `v` is replaced with the key `query`:
 +
 [.dynamic-tabs]
 --
@@ -197,7 +197,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-booste
 ====
 --
 
-. Using the JSON Request API, with all queries fully expanded as JSON
+Using the JSON Request API, with all queries fully expanded as JSON:
 +
 [.dynamic-tabs]
 --
@@ -367,11 +367,12 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool-f
 
 Multiple additional queries might be specified under `queries` key with all syntax alternatives described above.
 Every entry might have multiple values in an array.
+
 To reference these queries one can use `{"param":"query_name"}`, as well as old-style referencing `"{!v=$query_name}"`.
 Beware of arity for these references.
 
-Depending on the context, a reference might be resolved into the first element in array ignoring the later elements, e.g., if one changes the reference below from `{"param":"electronic"}` to `{"param":"manufacturers"}` it's equivalent to querying for `manu:apple`, ignoring the later query.
-These queries don't impact query result until explicit referencing.
+Depending on the context, a reference might be resolved into the first element in the array ignoring the later elements, e.g., if one changes the reference below from `{"param":"electronic"}` to `{"param":"manufacturers"}`, it's equivalent to querying for `manu:apple`, ignoring the later query.
+These queries don't impact the query result until explicit referencing.
 
 [source,bash]
 ----
@@ -428,3 +429,64 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-tagged-query]
 --
 
 Note that the tags created in the example above have no impact in how the search is executed.  Tags will not affect a query unless they are referenced by some other part of the request that uses them.
+
+== Faceting Nested Documents
+
+This paragraph binds many features together.
+Basically it's an example of filter exclusions for nested documents when facets are counted over child document  fields, but facet counts roll up in parent document counts.
+Let's go on item by item:
+
+* _Filter exclusion_ is usually necessary when multiple filter values can be applied to each field.
+This is also also known as drill-sideways facets.
+See also <<faceting.adoc#tagging-and-excluding-filters,the classic example>> of filter exclusion.
+* _Nested documents_, or child documents, are described in <<indexing-nested-documents.adoc#,Indexing Nested Documents>>.
+In the example below, they are referred as SKUs since this is a frequent use case for this feature.
+* _Counting facets over children documents_ means that even though the result of the search are usually parent documents, the children documents and their fields are used for faceting.
+* _Facet counts roll up_ means that child documents contribute facet hits because parent documents they are linked to are counted.
+For example, if a parent doc has two (2) red children, it's counted as one (1) due to rollup.
+
+[source,json,subs="verbatim,callouts"]
+----
+{
+    "queries": {
+        "parents":"content_type:parentDocument",             <1>
+        "sku_fqs": [{"#sku_attr1_tag":"sku_attr1:foo"},      <2>
+                    {"#sku_attr2_tag":"sku_attr2:bar"}
+                   ]
+    },
+    "filter": {
+            "#sku_filters":{                                 <3>
+                "parent": {
+                    "which": {"param":"parents"},
+                    "filters": {"param":"sku_fqs"}
+                  }}
+    },
+    "facet": {
+        "sku_attr1": {                                       <4>
+            "type":"terms",
+            "field":"sku_attr1",
+            "limit":-1,
+            "domain": {       <5>
+                 "excludeTags":"sku_filters",
+                 "blockChildren":"{!v=$parents}",
+                 "filter":
+                     "{!bool filter=$sku_fqs excludeTags=sku_attr1_tag}"
+            },
+            "facet": {
+                "by_parent":"uniqueBlock({!v=$parents})"    <6>
+            }
+        }
+    }
+}
+----
+<1> Defines a parents filter via <<Additional Queries>> for later usage.
+<2> Declares two SKU filters under different #tags, as described in <<Tagging in JSON Query DSL>>.
+<3> Defines tag block join query for later exclusion.
+This joins SKUs to top level docs, and refers to both the `parents` query and the SKU filter queries defined earlier.
+<4> Calculates a drill-sideways `terms` facet over SKU documents.
+The SKU field is defined as `sku_attr1`, and we've set `limit=-1` so we get all facet values.
+<5> Removes the top-level parent filter in the `domain` with `excludeTags`.
+The `blockChildren` value references the all-parents query.
+Then we define a filter to restrict to SKU docs but exclude one tag retaining only `sku_attr2:bar`.
+<6> Counts the subfacet in parent documents.
+See also <<json-facet-api.adoc#uniqueblock-and-block-join-counts>>.
