@@ -1085,7 +1085,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    BinaryDocValues dv = DocValues.getBinary(ireader.leaves().get(0).reader(), "dv");
+    SortedDocValues dv = DocValues.getSorted(ireader.leaves().get(0).reader(), "dv");
     assertEquals(0, dv.nextDoc());
     assertEquals(newBytesRef(bytes), dv.lookupOrd(dv.ordValue()));
     ireader.close();
@@ -3461,10 +3461,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
             return new BinaryDocValuesField("field", newBytesRef(bytes));
           }
 
-        @Override
-        public DocIdSetIterator iterator(IndexReader r) throws IOException {
-          return MultiDocValues.getBinaryValues(r, "field");
-        }
+          @Override
+          public DocIdSetIterator iterator(IndexReader r) throws IOException {
+            return MultiDocValues.getBinaryValues(r, "field");
+          }
       });
   }
 
