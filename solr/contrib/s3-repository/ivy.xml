@@ -23,7 +23,6 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="com.amazonaws" name="aws-java-sdk-bom" rev="${/com.amazonaws/aws-java-sdk-bom}" conf="compile"/>
     <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="${/com.amazonaws/aws-java-sdk-core}" conf="compile"/>
     <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="${/com.amazonaws/aws-java-sdk-s3}" conf="compile"/>
     <dependency org="javax.xml.bind" name="jaxb-api" rev="${/javax.xml.bind/jaxb-api}" conf="compile"/>
