@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -931,5 +932,29 @@ public class
 
     assertAnalyzesTo(analyzerNoCompound, "北海道日本ハムファイターズ",
             new String[]{"北海道", "日本", "ハムファイターズ"});
+  }
+
+  public void testEmptyBacktrace() throws IOException {
+    String text = "";
+
+    // since the max backtrace gap ({@link JapaneseTokenizer#MAX_BACKTRACE_GAP)
+    // is set to 1024, we want the first 1023 characters to generate multiple paths
+    // so that the regular backtrace is not executed.
+    for (int i = 0; i < 1023; i++) {
+      text += "あ";
+    }
+
+    // and the last 2 characters to be a valid word so that they
+    // will end-up together
+    text += "手紙";
+
+    List<String> outputs = new ArrayList<>();
+    for (int i = 0; i < 511; i++) {
+      outputs.add("ああ");
+    }
+    outputs.add("あ");
+    outputs.add("手紙");
+
+    assertAnalyzesTo(analyzer, text, outputs.toArray(new String[0]));
   }
 }
