@@ -55,7 +55,7 @@ This will produce pages with a DRAFT watermark across them. While these are fine
 Push the Guide directly to production via Subversion `import` from where you built it.
 
 [source,bash]
-svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/build/solr-ref-guide/html-site https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/7_7
+svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/build/solr-ref-guide/html-site https://svn.apache.org/repos/infra/sites/solr/guide/7_7
 
 Confirm you can browse to Guide manually by going to the new URL. For example:
 https://solr.apache.org/guide/7_7
@@ -84,7 +84,7 @@ IMPORTANT: The `-Dsolr-guide-version` system property is optional if you build d
 . Checkout the directory you need to update from the svn production repo:
 +
 [source,bash]
-$ svn co https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/<dir>
+$ svn co https://svn.apache.org/repos/infra/sites/solr/guide/<dir>
 +
 * This command checks out the Guide version directory into a local subdirectory with the same name as the version (such as "7_7"). You can provide a better name locally if you prefer by adding it to the end of the command shown above.
 * Don't shortcut this and download the whole production website. It will take an incredibly long time and that will feel like _forever_.
