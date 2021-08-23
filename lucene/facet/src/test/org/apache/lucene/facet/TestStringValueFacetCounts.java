@@ -248,51 +248,62 @@ public class TestStringValueFacetCounts extends FacetTestCase {
 
   public void testRandom() throws Exception {
 
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    int fullIterations = LuceneTestCase.TEST_NIGHTLY ? 20 : 3;
+    for (int iter = 0; iter < fullIterations; iter++) {
+      Directory dir = newDirectory();
+      RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-    // Build up test data
-    String[] tokens = getRandomTokens(50); // 50 random values to pick from
-    int numDocs = atLeast(1000);
-    int expectedTotalDocCount = 0;
-    Map<String, Integer> expected = new HashMap<>();
-    for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      int valCount = random().nextInt(5); // each doc can have up to 5 values
-      Set<String> docVals = new HashSet<>();
-      for (int j = 0; j < valCount; j++) {
-        int tokenIdx = random().nextInt(tokens.length);
-        String val = tokens[tokenIdx];
-        // values should only be counted once per document
-        if (docVals.contains(val) == false) {
-          expected.put(val, expected.getOrDefault(val, 0) + 1);
+      // Build up test data
+      String[] tokens = getRandomTokens(50); // 50 random values to pick from
+      int numDocs = atLeast(1000);
+      int expectedTotalDocCount = 0;
+      Map<String, Integer> expected = new HashMap<>();
+      for (int i = 0; i < numDocs; i++) {
+        Document doc = new Document();
+        // Sometimes we restrict docs to be single-valued, but most of the time they can have up to
+        // 5:
+        int maxValuesPerDoc;
+        if (random().nextInt(10) < 8) {
+          maxValuesPerDoc = 5;
+        } else {
+          maxValuesPerDoc = 1;
         }
-        docVals.add(val);
-        doc.add(new SortedSetDocValuesField("field", new BytesRef(val)));
+        int valCount = random().nextInt(maxValuesPerDoc);
+        Set<String> docVals = new HashSet<>();
+        for (int j = 0; j < valCount; j++) {
+          int tokenIdx = random().nextInt(tokens.length);
+          String val = tokens[tokenIdx];
+          // values should only be counted once per document
+          if (docVals.contains(val) == false) {
+            expected.put(val, expected.getOrDefault(val, 0) + 1);
+          }
+          docVals.add(val);
+          doc.add(new SortedSetDocValuesField("field", new BytesRef(val)));
+        }
+        // only docs with at least one value in the field should be counted in the total
+        if (docVals.isEmpty() == false) {
+          expectedTotalDocCount++;
+        }
+        writer.addDocument(doc);
+        if (random().nextInt(10) == 0) {
+          writer.commit(); // sometimes commit
+        }
       }
-      // only docs with at least one value in the field should be counted in the total
-      if (docVals.isEmpty() == false) {
-        expectedTotalDocCount++;
+
+      IndexSearcher searcher = newSearcher(writer.getReader());
+      writer.close();
+
+      // run iterations with random values of topN
+      int iterations = LuceneTestCase.TEST_NIGHTLY ? 10_000 : 50;
+      int[] topNs = new int[iterations];
+      for (int i = 0; i < iterations; i++) {
+        topNs[i] = atLeast(1);
       }
-      writer.addDocument(doc);
-      if (random().nextInt(10) == 0) {
-        writer.commit(); // sometimes commit
-      }
+
+      checkFacetResult(expected, expectedTotalDocCount, searcher, topNs);
+
+      IOUtils.close(searcher.getIndexReader(), dir);
     }
-
-    IndexSearcher searcher = newSearcher(writer.getReader());
-    writer.close();
-
-    // run iterations with random values of topN
-    int iterations = LuceneTestCase.TEST_NIGHTLY ? 10_000 : 50;
-    int[] topNs = new int[iterations];
-    for (int i = 0; i < iterations; i++) {
-      topNs[i] = atLeast(1);
-    }
-
-    checkFacetResult(expected, expectedTotalDocCount, searcher, topNs);
-
-    IOUtils.close(searcher.getIndexReader(), dir);
   }
 
   private void checkFacetResult(
