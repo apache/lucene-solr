@@ -1630,6 +1630,15 @@ public final class JapaneseTokenizer extends Tokenizer {
   private void backtrace(final Position endPosData, final int fromIDX) throws IOException {
     final int endPos = endPosData.pos;
 
+    /**
+     * LUCENE-10059: If the endPos is the same as lastBackTracePos, we don't want to backtrace to
+     * avoid an assertion error {@link RollingCharBuffer#get(int)} when it tries to generate an
+     * empty buffer
+     */
+    if (endPos == lastBackTracePos) {
+      return;
+    }
+
     if (VERBOSE) {
       System.out.println("\n  backtrace: endPos=" + endPos + " pos=" + pos + "; " + (pos - lastBackTracePos) + " characters; last=" + lastBackTracePos + " cost=" + endPosData.costs[fromIDX]);
     }
