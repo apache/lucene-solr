@@ -28,6 +28,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.ConjunctionDISI;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -326,16 +327,21 @@ public class StringValueFacetCounts extends Facets {
   }
 
   private void countOneSegment(
-      SortedSetDocValues segValues, int segmentOrd, FacetsCollector.MatchingDocs hits)
+      SortedSetDocValues multiValues, int segmentOrd, FacetsCollector.MatchingDocs hits)
       throws IOException {
+
+    // It's slightly more efficient to work against SortedDocValues if the field is actually
+    // single-valued (see: LUCENE-5309)
+    SortedDocValues singleValues = DocValues.unwrapSingleton(multiValues);
+    DocIdSetIterator valuesIt = singleValues != null ? singleValues : multiValues;
 
     // Intersect hits with doc values unless we're "counting all," in which case we'll iterate
     // all doc values for this segment:
     DocIdSetIterator it;
     if (hits == null) {
-      it = segValues;
+      it = valuesIt;
     } else {
-      it = ConjunctionDISI.intersectIterators(Arrays.asList(hits.bits.iterator(), segValues));
+      it = ConjunctionDISI.intersectIterators(Arrays.asList(hits.bits.iterator(), valuesIt));
     }
 
     // TODO: yet another option is to count all segs
@@ -350,16 +356,23 @@ public class StringValueFacetCounts extends Facets {
     if (ordinalMap == null) {
       // If there's no ordinal map we don't need to map segment ordinals to globals, so counting
       // is very straight-forward:
-      for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-        int term = (int) segValues.nextOrd();
-        boolean countedDocInTotal = false;
-        while (term != SortedSetDocValues.NO_MORE_ORDS) {
-          increment(term);
-          if (countedDocInTotal == false) {
-            totalDocCount++;
+      if (singleValues != null) {
+        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+          increment(singleValues.ordValue());
+          totalDocCount++;
+        }
+      } else {
+        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+          int term = (int) multiValues.nextOrd();
+          boolean countedDocInTotal = false;
+          while (term != SortedSetDocValues.NO_MORE_ORDS) {
+            increment(term);
+            if (countedDocInTotal == false) {
+              totalDocCount++;
+              countedDocInTotal = true;
+            }
+            term = (int) multiValues.nextOrd();
           }
-          countedDocInTotal = true;
-          term = (int) segValues.nextOrd();
         }
       }
     } else {
@@ -367,20 +380,27 @@ public class StringValueFacetCounts extends Facets {
       // depending on how many hits we have to count relative to how many unique doc val ordinals
       // there are in this segment:
       final LongValues ordMap = ordinalMap.getGlobalOrds(segmentOrd);
-      int segmentCardinality = (int) segValues.getValueCount();
+      int segmentCardinality = (int) multiValues.getValueCount();
 
       if (hits != null && hits.totalHits < segmentCardinality / 10) {
         // Remap every ord to global ord as we iterate:
-        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-          int term = (int) segValues.nextOrd();
-          boolean countedDocInTotal = false;
-          while (term != SortedSetDocValues.NO_MORE_ORDS) {
-            increment((int) ordMap.get(term));
-            if (countedDocInTotal == false) {
-              totalDocCount++;
+        if (singleValues != null) {
+          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+            increment((int) ordMap.get(singleValues.ordValue()));
+            totalDocCount++;
+          }
+        } else {
+          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+            int term = (int) multiValues.nextOrd();
+            boolean countedDocInTotal = false;
+            while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              increment((int) ordMap.get(term));
+              if (countedDocInTotal == false) {
+                totalDocCount++;
+                countedDocInTotal = true;
+              }
+              term = (int) multiValues.nextOrd();
             }
-            countedDocInTotal = true;
-            term = (int) segValues.nextOrd();
           }
         }
       } else {
@@ -389,16 +409,23 @@ public class StringValueFacetCounts extends Facets {
         // we expect to visit a large percentage of the unique ordinals (lots of hits relative
         // to the segment cardinality), so we count the segment densely:
         final int[] segCounts = new int[segmentCardinality];
-        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-          int term = (int) segValues.nextOrd();
-          boolean countedDocInTotal = false;
-          while (term != SortedSetDocValues.NO_MORE_ORDS) {
-            segCounts[term]++;
-            if (countedDocInTotal == false) {
-              totalDocCount++;
+        if (singleValues != null) {
+          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+            segCounts[singleValues.ordValue()]++;
+            totalDocCount++;
+          }
+        } else {
+          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+            int term = (int) multiValues.nextOrd();
+            boolean countedDocInTotal = false;
+            while (term != SortedSetDocValues.NO_MORE_ORDS) {
+              segCounts[term]++;
+              if (countedDocInTotal == false) {
+                totalDocCount++;
+                countedDocInTotal = true;
+              }
+              term = (int) multiValues.nextOrd();
             }
-            countedDocInTotal = true;
-            term = (int) segValues.nextOrd();
           }
         }
 
