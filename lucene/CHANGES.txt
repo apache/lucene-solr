@@ -19,7 +19,11 @@ API Changes
   ensures unnecessary wrapping doesn't occur. (Greg Miller)
 
 * LUCENE-10027: Add a new Directory reader open API from indexCommit and
-   a custom comparator for sorting leaf readers (Mayya Sharipova).
+  a custom comparator for sorting leaf readers (Mayya Sharipova).
+
+* LUCENE-7020: TieredMergePolicy#setMaxMergeAtOnceExplicit is deprecated
+  and the number of segments that get merged via explicit merges is unlimited
+  by default. (Adrien Grand, Shawn Heisey)
 
 New Features
 ---------------------

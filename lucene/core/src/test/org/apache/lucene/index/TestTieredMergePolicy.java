@@ -384,6 +384,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     final double oneSegmentSize = 1.0D;
     final double maxSegmentSize = 10 * oneSegmentSize;
     tmp.setMaxMergedSegmentMB(maxSegmentSize);
+    tmp.setMaxMergeAtOnceExplicit(30);
 
     SegmentInfos infos = new SegmentInfos(Version.LATEST.major);
     for (int j = 0; j < 30; ++j) {
@@ -418,6 +419,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     final TieredMergePolicy tmp = new TieredMergePolicy();
     final double maxSegmentSize = 10.0D;
     tmp.setMaxMergedSegmentMB(maxSegmentSize);
+    tmp.setMaxMergeAtOnceExplicit(30);
 
     SegmentInfos infos = new SegmentInfos(Version.LATEST.major);
     for (int j = 0; j < 30; ++j) {

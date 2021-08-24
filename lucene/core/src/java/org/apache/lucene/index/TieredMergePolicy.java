@@ -95,7 +95,7 @@ public class TieredMergePolicy extends MergePolicy {
   // value and segsPerTier to avoid suboptimal merging.
   private int maxMergeAtOnce = 10;
   private long maxMergedSegmentBytes = 5*1024*1024*1024L;
-  private int maxMergeAtOnceExplicit = 30;
+  private int maxMergeAtOnceExplicit = Integer.MAX_VALUE;
 
   private long floorSegmentBytes = 2*1024*1024L;
   private double segsPerTier = 10.0;
@@ -134,7 +134,10 @@ public class TieredMergePolicy extends MergePolicy {
   // if user calls IW.maybeMerge "explicitly"
 
   /** Maximum number of segments to be merged at a time,
-   *  during forceMerge or forceMergeDeletes. Default is 30. */
+   *  during forceMerge or forceMergeDeletes. Default is unlimited.
+   * @deprecated This method will be removed in Lucene 9 and explicit
+   *             merges won't limit the number of merged segments. */
+  @Deprecated
   public TieredMergePolicy setMaxMergeAtOnceExplicit(int v) {
     if (v < 2) {
       throw new IllegalArgumentException("maxMergeAtOnceExplicit must be > 1 (got " + v + ")");
@@ -146,7 +149,9 @@ public class TieredMergePolicy extends MergePolicy {
 
   /** Returns the current maxMergeAtOnceExplicit setting.
    *
-   * @see #setMaxMergeAtOnceExplicit */
+   * @see #setMaxMergeAtOnceExplicit
+   * @deprecated This method will be removed in Lucene 9. */
+  @Deprecated
   public int getMaxMergeAtOnceExplicit() {
     return maxMergeAtOnceExplicit;
   }
