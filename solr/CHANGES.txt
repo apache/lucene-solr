@@ -78,6 +78,8 @@ Bug Fixes
 * SOLR-8889: Fixed various problems in Solr and SolrJ that could cause deleteById commands with "_route_" information to processed
   by the wrong shard, and/or fail when forwarded to replicas from the shard leader. (Dan Fox, Yuki Yano, hossman)
 
+* SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
+
 Other Changes
 ---------------------
 * SOLR-15355: Upgrade Hadoop from 3.2.0 to 3.2.2. (Antoine Gruzelle via David Smiley)

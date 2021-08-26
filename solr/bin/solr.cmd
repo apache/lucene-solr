@@ -1207,7 +1207,7 @@ IF "%GC_TUNE%"=="" (
     -XX:+ExplicitGCInvokesConcurrent
 )
 
-if !JAVA_MAJOR_VERSION! GEQ 9  (
+if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (
   IF NOT "%GC_LOG_OPTS%"=="" (
     echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting
     GOTO :eof
@@ -1224,7 +1224,7 @@ if !JAVA_MAJOR_VERSION! GEQ 9  (
      -XX:+PrintTenuringDistribution ^
      -XX:+PrintGCApplicationStoppedTime
   )
-  if "%JAVA_VENDOR%" == "IBM J9" (
+  if "%JAVA_VENDOR%" == "OpenJ9" (
     set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
   ) else (
     set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
@@ -2038,7 +2038,6 @@ CALL :resolve_java_vendor
 
 set JAVA_MAJOR_VERSION=0
 set JAVA_VERSION_INFO=
-set JAVA_BUILD=0
 
 FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "version"^"`) do (
   set JAVA_VERSION_INFO=%%a
@@ -2055,20 +2054,14 @@ FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "versi
       set JAVA_MAJOR_VERSION=%%b
     )
   )
-
-  REM Don't look for "_{build}" if we're on IBM J9.
-  if NOT "%JAVA_VENDOR%" == "IBM J9" (
-    for /f "delims=_ tokens=2" %%a in ("!JAVA_VERSION_INFO!") do (
-      set /a JAVA_BUILD=%%a
-    )
-  )
 )
 GOTO :eof
 
 REM Set which JVM vendor we have
 :resolve_java_vendor
-"%JAVA%" -version 2>&1 | findstr /i "IBM J9" > nul
-if %ERRORLEVEL% == 1 ( set "JAVA_VENDOR=Oracle" ) else ( set "JAVA_VENDOR=IBM J9" )
+REM OpenJ9 was previously known as IBM J9, this will match both
+"%JAVA%" -version 2>&1 | findstr /i /C:"IBM J9" /C:"OpenJ9" > nul
+if %ERRORLEVEL% == 1 ( set "JAVA_VENDOR=Oracle" ) else ( set "JAVA_VENDOR=OpenJ9" )
 
 set JAVA_VENDOR_OUT=
 GOTO :eof

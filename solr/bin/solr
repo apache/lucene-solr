@@ -165,8 +165,9 @@ else
     exit 1
   fi
   JAVA_VENDOR="Oracle"
-  if [ "`echo $JAVA_VER | grep -i "IBM J9"`" != "" ]; then
-      JAVA_VENDOR="IBM J9"
+   # OpenJ9 was previously known as IBM J9, this will match both
+  if [ "`echo $JAVA_VER | grep -i -E "OpenJ9|IBM J9"`" != "" ]; then
+      JAVA_VENDOR="OpenJ9"
   fi
 fi
 
@@ -2019,9 +2020,9 @@ fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
 if [ "$GC_LOG_OPTS" != "" ]; then
-  if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
+  if [[ "$JAVA_VER_NUM" -lt "9" ]] || [ "$JAVA_VENDOR" == "OpenJ9" ]; then
     gc_log_flag="-Xloggc"
-    if [ "$JAVA_VENDOR" == "IBM J9" ]; then
+    if [ "$JAVA_VENDOR" == "OpenJ9" ]; then
       gc_log_flag="-Xverbosegclog"
     fi
     if [ -z ${JAVA8_GC_LOG_FILE_OPTS+x} ]; then
