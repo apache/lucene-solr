@@ -71,6 +71,9 @@ Improvements
 
 * LUCENE-5309: Optimize facet counting for single-valued SSDV / StringValueFacetCounts. (Greg Miller)
 
+* LUCENE-9917: The BEST_SPEED compression mode now trades more compression ratio
+  in exchange of faster reads. (Adrien Grand)
+
 Optimizations
 ---------------------
 
