@@ -61,6 +61,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryCachingPolicy;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
@@ -130,6 +131,124 @@ public class TestDrillSideways extends FacetTestCase {
     // Do not wrap with an asserting searcher, since DrillSidewaysQuery doesn't
     // implement all the required components like Weight#scorer.
     return newSearcher(reader, true, false, random().nextBoolean());
+  }
+
+  // See LUCENE-10060:
+  public void testNoCaching() throws Exception {
+    Directory dir = newDirectory();
+    Directory taxoDir = newDirectory();
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    DirectoryTaxonomyWriter taxoWriter =
+        new DirectoryTaxonomyWriter(taxoDir, IndexWriterConfig.OpenMode.CREATE);
+
+    FacetsConfig config = new FacetsConfig();
+
+    // Setup some basic test documents:
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedDocValuesField("id", new BytesRef("1")));
+    doc.add(new FacetField("Color", "Red"));
+    doc.add(new FacetField("Size", "Small"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new StringField("id", "2", Field.Store.NO));
+    doc.add(new SortedDocValuesField("id", new BytesRef("2")));
+    doc.add(new FacetField("Color", "Green"));
+    doc.add(new FacetField("Size", "Small"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new StringField("id", "3", Field.Store.NO));
+    doc.add(new SortedDocValuesField("id", new BytesRef("3")));
+    doc.add(new FacetField("Color", "Blue"));
+    doc.add(new FacetField("Size", "Small"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new StringField("id", "4", Field.Store.NO));
+    doc.add(new SortedDocValuesField("id", new BytesRef("4")));
+    doc.add(new FacetField("Color", "Red"));
+    doc.add(new FacetField("Size", "Medium"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new StringField("id", "5", Field.Store.NO));
+    doc.add(new SortedDocValuesField("id", new BytesRef("5")));
+    doc.add(new FacetField("Color", "Blue"));
+    doc.add(new FacetField("Size", "Medium"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new StringField("id", "6", Field.Store.NO));
+    doc.add(new SortedDocValuesField("id", new BytesRef("6")));
+    doc.add(new FacetField("Color", "Blue"));
+    doc.add(new FacetField("Size", "Large"));
+    writer.addDocument(config.build(taxoWriter, doc));
+
+    // Delete a couple documents. We'll want to make sure they don't get counted in binning:
+    writer.deleteDocuments(new Term("id", "4"));
+    writer.deleteDocuments(new Term("id", "6"));
+
+    // Simple DDQ that just filters all results by Color == Blue:
+    DrillDownQuery ddq = new DrillDownQuery(config);
+    ddq.add("Color", "Blue");
+
+    // Setup an IndexSearcher that will try to cache queries aggressively:
+    IndexSearcher searcher = getNewSearcher(writer.getReader());
+    searcher.setQueryCachingPolicy(
+        new QueryCachingPolicy() {
+          @Override
+          public void onUse(Query query) {}
+
+          @Override
+          public boolean shouldCache(Query query) {
+            return true;
+          }
+        });
+
+    // Setup a DS instance for searching:
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+    DrillSideways ds = getNewDrillSideways(searcher, config, taxoReader);
+
+    // We'll use a CollectorManager to trigger the trickiest caching behavior:
+    SimpleCollectorManager collectorManager =
+        new SimpleCollectorManager(10, Comparator.comparing(cr -> cr.id));
+    // Make sure our CM produces Collectors that _do not_ need scores to ensure IndexSearcher tries
+    // to cache:
+    assertFalse(collectorManager.newCollector().scoreMode().needsScores());
+    // If we incorrectly cache here, the "sideways" FacetsCollectors will get populated with counts
+    // for the deleted
+    // docs. Make sure they don't:
+    DrillSideways.ConcurrentDrillSidewaysResult<List<DocAndScore>> concurrentResult =
+        ds.search(ddq, collectorManager);
+    assertEquals(2, concurrentResult.collectorResult.size());
+    assertEquals(
+        "dim=Color path=[] value=4 childCount=3\n  Blue (2)\n  Red (1)\n  Green (1)\n",
+        concurrentResult.facets.getTopChildren(10, "Color").toString());
+    assertEquals(
+        "dim=Size path=[] value=2 childCount=2\n  Small (1)\n  Medium (1)\n",
+        concurrentResult.facets.getTopChildren(10, "Size").toString());
+
+    // Now do the same thing but use a Collector directly:
+    SimpleCollector collector = new SimpleCollector();
+    // Make sure our Collector _does not_ need scores to ensure IndexSearcher tries to cache:
+    assertFalse(collector.scoreMode().needsScores());
+    // If we incorrectly cache here, the "sideways" FacetsCollectors will get populated with counts
+    // for the deleted
+    // docs. Make sure they don't:
+    DrillSidewaysResult result = ds.search(ddq, collector);
+    assertEquals(2, collector.hits.size());
+    assertEquals(
+        "dim=Color path=[] value=4 childCount=3\n  Blue (2)\n  Red (1)\n  Green (1)\n",
+        result.facets.getTopChildren(10, "Color").toString());
+    assertEquals(
+        "dim=Size path=[] value=2 childCount=2\n  Small (1)\n  Medium (1)\n",
+        result.facets.getTopChildren(10, "Size").toString());
+
+    writer.close();
+    IOUtils.close(searcher.getIndexReader(), taxoReader, taxoWriter, dir, taxoDir);
   }
 
   public void testBasic() throws Exception {
@@ -1258,7 +1377,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     @Override
     public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE;
+      return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
 

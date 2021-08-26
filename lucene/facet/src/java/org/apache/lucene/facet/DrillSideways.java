@@ -35,14 +35,12 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.MultiCollectorManager;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
@@ -246,16 +244,7 @@ public class DrillSideways {
             drillSidewaysFacetsCollectorManagers,
             drillDownQueries,
             scoreSubDocsAtOnce());
-    if (hitCollector.scoreMode().needsScores() == false) {
-      // this is a horrible hack in order to make sure IndexSearcher will not
-      // attempt to cache the DrillSidewaysQuery
-      hitCollector = new FilterCollector(hitCollector) {
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE;
-        }
-      };
-    }
+
     searcher.search(dsq, hitCollector);
 
     FacetsCollector drillDownCollector;

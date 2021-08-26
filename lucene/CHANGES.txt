@@ -113,6 +113,8 @@ Bug Fixes
 * LUCENE-9963: FlattenGraphFilter is now more robust when handling
   incoming holes in the input token graph (Geoff Lawson)
 
+* LUCENE-10060: Ensure DrillSidewaysQuery instances never get cached. (Greg Miller, Zachary Chen)
+
 Other
 ---------------------
 
