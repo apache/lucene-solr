@@ -160,15 +160,14 @@ class DrillSidewaysQuery extends Query {
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
-        if (baseWeight.isCacheable(ctx) == false) {
-          return false;
-        }
-        for (Weight w : drillDowns) {
-          if (w.isCacheable(ctx) == false) {
-            return false;
-          }
-        }
-        return true;
+        // We can never cache DSQ instances. It's critical that the BulkScorer produced by this
+        // Weight runs through the "normal" execution path so that it has access to an
+        // "acceptDocs" instance that accurately reflects deleted docs. During caching,
+        // "acceptDocs" is null so that caching over-matches (since the final BulkScorer would
+        // account for deleted docs). The problem is that this BulkScorer has a side-effect of
+        // populating the "sideways" FacetsCollectors, so it will use deleted docs in its
+        // sideways counting if caching kicks in. See LUCENE-10060:
+        return false;
       }
 
       @Override
