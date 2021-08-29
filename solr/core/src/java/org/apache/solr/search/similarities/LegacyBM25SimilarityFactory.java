@@ -41,7 +41,10 @@ import org.apache.solr.schema.SimilarityFactory;
  * </ul>
  * @lucene.experimental
  * @since 8.0.0
+ *
+ * @deprecated {@link BM25SimilarityFactory} should be used instead
  */
+@Deprecated
 public class LegacyBM25SimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
   private float k1;

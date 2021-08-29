@@ -24,7 +24,8 @@ import org.apache.solr.schema.SimilarityFactory;
 /**
  * Factory for BM25Similarity. This is the default similarity since 8.x.
  * If you need the exact same formula as in 6.x and 7.x you should instead look at
- * {@link LegacyBM25SimilarityFactory}
+ * {@link LegacyBM25SimilarityFactory} noting that it is deprecated as of 8.10.0
+ * and will be removed in 9.x.
  * <p>
  * Parameters:
  * <ul>
