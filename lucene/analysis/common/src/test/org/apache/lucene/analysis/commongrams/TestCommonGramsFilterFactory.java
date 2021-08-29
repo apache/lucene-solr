@@ -23,25 +23,25 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.TestStopFilterFactory;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ClasspathResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.Version;
 
-/**
- * Tests pretty much copied from StopFilterFactoryTest We use the test files
- * used by the StopFilterFactoryTest TODO: consider creating separate test files
- * so this won't break if stop filter test files change
- **/
 public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new ClasspathResourceLoader(TestStopFilterFactory.class);
+    ResourceLoader loader = new ClasspathResourceLoader(getClass());
     assertTrue("loader is null and it shouldn't be", loader != null);
-    CommonGramsFilterFactory factory = (CommonGramsFilterFactory) tokenFilterFactory("CommonGrams", Version.LATEST, loader,
-        "words", "stop-1.txt", 
-        "ignoreCase", "true");
+    CommonGramsFilterFactory factory =
+        (CommonGramsFilterFactory)
+            tokenFilterFactory(
+                "CommonGrams",
+                Version.LATEST,
+                loader,
+                "words",
+                "common-1.txt",
+                "ignoreCase",
+                "true");
     CharArraySet words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2,
@@ -49,9 +49,16 @@ public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory
         .isIgnoreCase() == true);
 
-    factory = (CommonGramsFilterFactory) tokenFilterFactory("CommonGrams", Version.LATEST, loader,
-        "words", "stop-1.txt, stop-2.txt", 
-        "ignoreCase", "true");
+    factory =
+        (CommonGramsFilterFactory)
+            tokenFilterFactory(
+                "CommonGrams",
+                Version.LATEST,
+                loader,
+                "words",
+                "common-1.txt, common-2.txt",
+                "ignoreCase",
+                "true");
     words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 4,
@@ -59,10 +66,18 @@ public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory
         .isIgnoreCase() == true);
 
-    factory = (CommonGramsFilterFactory) tokenFilterFactory("CommonGrams", Version.LATEST, loader,
-        "words", "stop-snowball.txt", 
-        "format", "snowball", 
-        "ignoreCase", "true");
+    factory =
+        (CommonGramsFilterFactory)
+            tokenFilterFactory(
+                "CommonGrams",
+                Version.LATEST,
+                loader,
+                "words",
+                "common-snowball.txt",
+                "format",
+                "snowball",
+                "ignoreCase",
+                "true");
     words = factory.getCommonWords();
     assertEquals(8, words.size());
     assertTrue(words.contains("he"));
@@ -89,7 +104,26 @@ public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase
     assertTokenStreamContents(stream, 
         new String[] { "testing", "testing_the", "the", "the_factory", "factory" });
   }
-  
+
+  /**
+   * Test that ignoreCase flag is honored when no words are provided and default stopwords are used.
+   */
+  public void testIgnoreCase() throws Exception {
+    ResourceLoader loader = new ClasspathResourceLoader(getClass());
+    CommonGramsFilterFactory factory =
+        (CommonGramsFilterFactory)
+            tokenFilterFactory("CommonGrams", Version.LATEST, loader, "ignoreCase", "true");
+    CharArraySet words = factory.getCommonWords();
+    assertTrue("words is null and it shouldn't be", words != null);
+    assertTrue(words.contains("the"));
+    assertTrue(words.contains("The"));
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    tokenizer.setReader(new StringReader("testing The factory"));
+    TokenStream stream = factory.create(tokenizer);
+    assertTokenStreamContents(
+        stream, new String[] {"testing", "testing_The", "The", "The_factory", "factory"});
+  }
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {      
@@ -98,3 +132,4 @@ public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }
+

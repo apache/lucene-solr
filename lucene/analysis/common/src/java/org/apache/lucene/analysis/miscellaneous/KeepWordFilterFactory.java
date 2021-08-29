@@ -16,15 +16,11 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
-import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.en.AbstractWordsFileFilterFactory;
 
 /**
  * Factory for {@link KeepWordFilter}. 
@@ -39,48 +35,30 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @since 3.1
  * @lucene.spi {@value #NAME}
  */
-public class KeepWordFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class KeepWordFilterFactory extends AbstractWordsFileFilterFactory {
 
   /** SPI name */
   public static final String NAME = "keepWord";
 
-  private final boolean ignoreCase;
-  private final String wordFiles;
-  private CharArraySet words;
-  
   /** Creates a new KeepWordFilterFactory */
   public KeepWordFilterFactory(Map<String,String> args) {
     super(args);
-    wordFiles = get(args, "words");
-    ignoreCase = getBoolean(args, "ignoreCase", false);
-    if (!args.isEmpty()) {
-      throw new IllegalArgumentException("Unknown parameters: " + args);
-    }
   }
 
   @Override
-  public void inform(ResourceLoader loader) throws IOException {
-    if (wordFiles != null) {
-      words = getWordSet(loader, wordFiles, ignoreCase);
-    }
-  }
-
-  public boolean isIgnoreCase() {
-    return ignoreCase;
-  }
-
-  public CharArraySet getWords() {
-    return words;
+  protected CharArraySet createDefaultWords() {
+    return null;
   }
 
   @Override
   public TokenStream create(TokenStream input) {
     // if the set is null, it means it was empty
-    if (words == null) {
+    if (getWords() == null) {
       return input;
     } else {
-      final TokenStream filter = new KeepWordFilter(input, words);
+      final TokenStream filter = new KeepWordFilter(input, getWords());
       return filter;
     }
   }
 }
+

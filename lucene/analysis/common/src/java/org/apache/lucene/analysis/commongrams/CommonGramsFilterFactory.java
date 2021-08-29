@@ -16,17 +16,13 @@
  */
 package org.apache.lucene.analysis.commongrams;
 
-
-import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.AbstractWordsFileFilterFactory;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Constructs a {@link CommonGramsFilter}.
@@ -41,55 +37,34 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @since 3.1
  * @lucene.spi {@value #NAME}
  */
-public class CommonGramsFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class CommonGramsFilterFactory extends AbstractWordsFileFilterFactory {
 
   /** SPI name */
   public static final String NAME = "commonGrams";
 
-  // TODO: shared base class for Stop/Keep/CommonGrams?
-  private CharArraySet commonWords;
-  private final String commonWordFiles;
-  private final String format;
-  private final boolean ignoreCase;
-  
   /** Creates a new CommonGramsFilterFactory */
   public CommonGramsFilterFactory(Map<String,String> args) {
     super(args);
-    commonWordFiles = get(args, "words");
-    format = get(args, "format");
-    ignoreCase = getBoolean(args, "ignoreCase", false);
-    if (!args.isEmpty()) {
-      throw new IllegalArgumentException("Unknown parameters: " + args);
-    }
   }
 
-  @Override
-  public void inform(ResourceLoader loader) throws IOException {
-    if (commonWordFiles != null) {
-      if ("snowball".equalsIgnoreCase(format)) {
-        commonWords = getSnowballWordSet(loader, commonWordFiles, ignoreCase);
-      } else {
-        commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
-      }
-    } else {
-      commonWords = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
-    }
-  }
-
-  public boolean isIgnoreCase() {
-    return ignoreCase;
+  /** Default ctor for compatibility with SPI */
+  public CommonGramsFilterFactory() {
+    throw defaultCtorException();
   }
 
   public CharArraySet getCommonWords() {
-    return commonWords;
+    return getWords();
+  }
+
+  @Override
+  protected CharArraySet createDefaultWords() {
+    return new CharArraySet(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET, isIgnoreCase());
   }
 
   @Override
   public TokenFilter create(TokenStream input) {
-    CommonGramsFilter commonGrams = new CommonGramsFilter(input, commonWords);
+    CommonGramsFilter commonGrams = new CommonGramsFilter(input, getWords());
     return commonGrams;
   }
 }
- 
-  
-  
+
