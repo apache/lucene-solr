@@ -682,6 +682,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* LUCENE-10008: Respect ignoreCase in CommonGramsFilterFactory (Vigya Sharma)
+
 * LUCENE-9259: Fix wrong NGramFilterFactory argument name for preserveOriginal option (Paul Pazderski)
 
 * LUCENE-8849: DocValuesRewriteMethod.visit wasn't visiting its embedded query (Michele Palmia, David Smiley)
