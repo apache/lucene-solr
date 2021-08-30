@@ -26,6 +26,7 @@
     <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
     <dependency org="com.fasterxml.woodstox" name="woodstox-core" rev="${/com.fasterxml.woodstox/woodstox-core}" conf="compile"/>
     <dependency org="org.codehaus.woodstox" name="stax2-api" rev="${/org.codehaus.woodstox/stax2-api}" conf="compile"/>
+    <dependency org="org.reactivestreams" name="reactive-streams" rev="${/org.reactivestreams/reactive-streams}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="apache-client" rev="${/software.amazon.awssdk/apache-client}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="arns" rev="${/software.amazon.awssdk/arns}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="auth" rev="${/software.amazon.awssdk/auth}" conf="compile"/>
