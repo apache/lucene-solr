@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.MathUtil;
@@ -146,7 +147,7 @@ public abstract class MultiLevelSkipListWriter {
       
       if (level != 0) {
         // store child pointers for all levels except the lowest
-        skipBuffer[level].writeVLong(childPointer);
+        writeChildPointer(childPointer, skipBuffer[level]);
       }
       
       //remember the childPointer for the next level
@@ -168,12 +169,32 @@ public abstract class MultiLevelSkipListWriter {
     for (int level = numberOfSkipLevels - 1; level > 0; level--) {
       long length = skipBuffer[level].getFilePointer();
       if (length > 0) {
-        output.writeVLong(length);
+        writeLevelLength(length, output);
         skipBuffer[level].writeTo(output);
       }
     }
     skipBuffer[0].writeTo(output);
     
     return skipPointer;
+  }
+
+  /**
+   * Writes the length of a level to the given output.
+   *
+   * @param levelLength the length of a level
+   * @param output the IndexOutput the length shall be written to
+   */
+  protected void writeLevelLength(long levelLength, IndexOutput output) throws IOException {
+    output.writeVLong(levelLength);
+  }
+
+  /**
+   * Writes the child pointer of a block to the given output.
+   *
+   * @param childPointer block of higher level point to the lower level
+   * @param skipBuffer the skip buffer to write to
+   */
+  protected void writeChildPointer(long childPointer, DataOutput skipBuffer) throws IOException {
+    skipBuffer.writeVLong(childPointer);
   }
 }
