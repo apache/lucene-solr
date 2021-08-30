@@ -40,11 +40,8 @@
     <dependency org="software.amazon.awssdk" name="regions" rev="${/software.amazon.awssdk/regions}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="s3" rev="${/software.amazon.awssdk/s3}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="sdk-core" rev="${/software.amazon.awssdk/sdk-core}" conf="compile"/>
-    <dependency org="software.amazon.awssdk" name="url-connection-client" rev="${/software.amazon.awssdk/url-connection-client}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="utils" rev="${/software.amazon.awssdk/utils}" conf="compile"/>
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
-
-    <exclude org="software.amazon.awssdk" ext="netty-nio-client" matcher="regexp" type="${ivy.exclude.types}"/>
 
     <dependency org="com.adobe.testing" name="s3mock" rev="${/com.adobe.testing/s3mock}" conf="test"/>
     <dependency org="com.adobe.testing" name="s3mock-junit4" rev="${/com.adobe.testing/s3mock-junit4}" conf="test"/>
@@ -89,5 +86,6 @@
     <dependency org="org.springframework" name="spring-jcl" rev="${/org.springframework/spring-jcl}" conf="test"/>
     <dependency org="org.springframework" name="spring-web" rev="${/org.springframework/spring-web}" conf="test"/>
     <dependency org="org.springframework" name="spring-webmvc" rev="${/org.springframework/spring-webmvc}" conf="test"/>
+    <dependency org="software.amazon.awssdk" name="url-connection-client" rev="${/software.amazon.awssdk/url-connection-client}" conf="test"/>
   </dependencies>
 </ivy-module>
