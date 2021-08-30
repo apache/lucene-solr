@@ -88,9 +88,9 @@ public class S3BackupRepository implements BackupRepository {
       if (location.startsWith(S3_SCHEME + ":")) {
         result = new URI(location);
       } else if (location.startsWith("/")) {
-        result = new URI(S3_SCHEME, null, location, null);
+        result = new URI(S3_SCHEME, "", location, null);
       } else {
-        result = new URI(S3_SCHEME, null, "/" + location, null);
+        result = new URI(S3_SCHEME, "", "/" + location, null);
       }
       return result;
     } catch (URISyntaxException ex) {
@@ -125,9 +125,11 @@ public class S3BackupRepository implements BackupRepository {
   @Override
   public URI resolveDirectory(URI baseUri, String... pathComponents) {
     if (pathComponents.length > 0) {
-      pathComponents[pathComponents.length - 1] = pathComponents[pathComponents.length - 1] + "/";
+      if (!pathComponents[pathComponents.length - 1].endsWith("/")) {
+        pathComponents[pathComponents.length - 1] = pathComponents[pathComponents.length - 1] + "/";
+      }
     } else {
-      if (!baseUri.getPath().endsWith("/")) {
+      if (!baseUri.toString().endsWith("/")) {
         baseUri = URI.create(baseUri + "/");
       }
     }

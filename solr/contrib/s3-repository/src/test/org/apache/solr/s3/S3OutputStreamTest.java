@@ -17,7 +17,6 @@
 package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
-import com.amazonaws.services.s3.AmazonS3;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -28,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
@@ -41,16 +41,18 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
           .withProperty("server.jetty.threads.idle-timeout", "3s")
           .build();
 
-  private AmazonS3 s3;
+  private S3Client s3;
 
   @Before
   public void setUpClient() {
-    s3 = S3_MOCK_RULE.createS3Client();
+    System.setProperty("aws.sharedCredentialsFile", "conf/temp");
+    System.setProperty("aws.configFile", "conf/temp");
+    s3 = S3_MOCK_RULE.createS3ClientV2();
   }
 
   @After
   public void tearDownClient() {
-    s3.shutdown();
+    s3.close();
   }
 
   /**
@@ -69,7 +71,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     output.close();
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(BUCKET, "byte-by-byte").getObjectContent();
+    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("byte-by-byte"));
     String read = IOUtils.toString(input, Charset.defaultCharset());
     assertEquals("Contents saved to S3 file did not match expected", "hello", read);
   }
@@ -88,7 +90,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     output.close();
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(BUCKET, "small-buffer").getObjectContent();
+    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("small-buffer"));
     String read = IOUtils.toString(input, Charset.defaultCharset());
     assertEquals("hello", read);
   }
@@ -108,7 +110,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     output.close();
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(BUCKET, "large-buffer").getObjectContent();
+    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("large-buffer"));
     String read = IOUtils.toString(input, Charset.defaultCharset());
     assertEquals(new String(buffer, Charset.defaultCharset()), read);
   }
@@ -129,7 +131,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     output.close();
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(BUCKET, "flush-small").getObjectContent();
+    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("flush-small"));
     String read = IOUtils.toString(input, Charset.defaultCharset());
     assertEquals(
         "Flushing a small frame of an S3OutputStream should not impact data written",
@@ -154,7 +156,7 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     output.close();
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(BUCKET, "flush-large").getObjectContent();
+    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("flush-large"));
     String read = IOUtils.toString(input, Charset.defaultCharset());
     assertEquals(
         "Flushing a large frame of an S3OutputStream should not impact data written",

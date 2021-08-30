@@ -29,26 +29,26 @@ public class S3BackupRepositoryConfig {
   public static final String BUCKET_NAME = "s3.bucket.name";
   public static final String REGION = "s3.region";
   public static final String ENDPOINT = "s3.endpoint";
-  public static final String PROXY_HOST = "s3.proxy.host";
-  public static final String PROXY_PORT = "s3.proxy.port";
+  public static final String PROXY_URL = "s3.proxy.url";
+  public static final String PROXY_USE_SYSTEM_SETTINGS = "s3.proxy.useSystemSettings";
 
   private final String bucketName;
   private final String region;
-  private final String proxyHost;
-  private final int proxyPort;
+  private final String proxyURL;
+  private final boolean proxyUseSystemSettings;
   private final String endpoint;
 
   public S3BackupRepositoryConfig(NamedList<?> config) {
     region = getStringConfig(config, REGION);
     bucketName = getStringConfig(config, BUCKET_NAME);
-    proxyHost = getStringConfig(config, PROXY_HOST);
-    proxyPort = getIntConfig(config, PROXY_PORT);
+    proxyURL = getStringConfig(config, PROXY_URL);
+    proxyUseSystemSettings = getBooleanConfig(config, PROXY_USE_SYSTEM_SETTINGS, true);
     endpoint = getStringConfig(config, ENDPOINT);
   }
 
   /** Construct a {@link S3StorageClient} from the provided config. */
   public S3StorageClient buildClient() {
-    return new S3StorageClient(bucketName, region, proxyHost, proxyPort, endpoint);
+    return new S3StorageClient(bucketName, region, proxyURL, proxyUseSystemSettings, endpoint);
   }
 
   private static String getStringConfig(NamedList<?> config, String property) {
@@ -73,10 +73,14 @@ public class S3BackupRepositoryConfig {
 
   /** If the property as any other value than 'true' or 'TRUE', this will default to false. */
   private static boolean getBooleanConfig(NamedList<?> config, String property) {
+    return getBooleanConfig(config, property, false);
+  }
+
+  private static boolean getBooleanConfig(NamedList<?> config, String property, boolean def) {
     String envProp = System.getenv().get(toEnvVar(property));
     if (envProp == null) {
       Boolean configProp = config.getBooleanArg(property);
-      return configProp != null && configProp;
+      return configProp == null ? def : configProp;
     } else {
       return Boolean.parseBoolean(envProp);
     }

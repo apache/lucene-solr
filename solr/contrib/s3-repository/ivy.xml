@@ -23,10 +23,9 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="${/com.amazonaws/aws-java-sdk-core}" conf="compile"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="${/com.amazonaws/aws-java-sdk-s3}" conf="compile"/>
-    <dependency org="javax.xml.bind" name="jaxb-api" rev="${/javax.xml.bind/jaxb-api}" conf="compile"/>
     <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
+    <dependency org="com.fasterxml.woodstox" name="woodstox-core" rev="${/com.fasterxml.woodstox/woodstox-core}" conf="compile"/>
+    <dependency org="org.codehaus.woodstox" name="stax2-api" rev="${/org.codehaus.woodstox/stax2-api}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="apache-client" rev="${/software.amazon.awssdk/apache-client}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="arns" rev="${/software.amazon.awssdk/arns}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="auth" rev="${/software.amazon.awssdk/auth}" conf="compile"/>
@@ -45,9 +44,13 @@
     <dependency org="software.amazon.awssdk" name="utils" rev="${/software.amazon.awssdk/utils}" conf="compile"/>
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
 
+    <exclude org="software.amazon.awssdk" ext="netty-nio-client" matcher="regexp" type="${ivy.exclude.types}"/>
+
     <dependency org="com.adobe.testing" name="s3mock" rev="${/com.adobe.testing/s3mock}" conf="test"/>
     <dependency org="com.adobe.testing" name="s3mock-junit4" rev="${/com.adobe.testing/s3mock-junit4}" conf="test"/>
     <dependency org="com.adobe.testing" name="s3mock-testsupport-common" rev="${/com.adobe.testing/s3mock-testsupport-common}" conf="test"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="${/com.amazonaws/aws-java-sdk-core}" conf="test"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="${/com.amazonaws/aws-java-sdk-s3}" conf="test"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-xml" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-xml}" conf="test"/>
     <dependency org="com.fasterxml.jackson.datatype" name="jackson-datatype-jdk8" rev="${/com.fasterxml.jackson.datatype/jackson-datatype-jdk8}" conf="test"/>
     <dependency org="com.fasterxml.jackson.datatype" name="jackson-datatype-jsr310" rev="${/com.fasterxml.jackson.datatype/jackson-datatype-jsr310}" conf="test"/>

@@ -7,14 +7,16 @@ This S3 repository is a backup repository implementation designed to provide bac
 
 Add this to your `solr.xml`:
 
+```xml
     <backup>
         <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
             <str name="s3.bucket.name">BUCKET_NAME</str>
             <str name="s3.region">us-west-2</str>
         </repository>
     </backup>
+```
 
-This plugin uses the [default AWS credentials provider chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html), so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
+This plugin uses the [default AWS credentials provider chain](https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html), so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 
 ## Testing locally
 
@@ -25,6 +27,7 @@ To run / test locally, first spin up S3Mock:
 
 Add this to your `solr.xml`:
 
+```xml
     <backup>
         <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
             <str name="s3.endpoint">http://localhost:9090</str>
@@ -32,6 +35,7 @@ Add this to your `solr.xml`:
             <str name="s3.region">us-east-1</str>
         </repository>
     </backup>
+```
 
 Start Solr, and create a collection (e.g., "foo"). Then hit the following URL, which will take a backup and persist it in S3Mock under the name `test`:
 
@@ -45,6 +49,7 @@ http://localhost:8983/solr/admin/collections?action=RESTORE&repository=s3&locati
 
 If you are also running Solr in a docker image, and need to set the endpoint of S3Mock to be different than `localhost`, then add the following under `<repository>`:
 
+```xml
     <backup>
         <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
             <str name="s3.bucket.name">TEST_BUCKET</str>
@@ -52,6 +57,7 @@ If you are also running Solr in a docker image, and need to set the endpoint of 
             <str name="s3.region">us-east-1</str>
         </repository>
     </backup>
+```
 
 This works for the regular S3 backup repository as well (not mock).
 But the plugin only provides official support for AWS S3, not _S3 compatible_ products.
