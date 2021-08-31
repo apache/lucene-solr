@@ -51,6 +51,8 @@ Improvements
 
 * SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
 
+* SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -95,6 +97,8 @@ Other Changes
 
 * SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
+
+* SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
 ==================  8.9.0 ==================
 

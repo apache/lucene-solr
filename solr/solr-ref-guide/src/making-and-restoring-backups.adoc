@@ -421,9 +421,10 @@ An example configuration using the overall and GCS-client properties can be seen
 
 === S3BackupRepository
 
-Stores and retrieves backup files in an Amazon S3 bucket. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
+Stores and retrieves backup files in an Amazon S3 bucket.
+This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
 
-This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
+This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 
 [NOTE]
 ====
@@ -474,27 +475,35 @@ Minio is an example of an _s3-compatible_ endpoint that does not work with the S
 The S3BackupRepository is only guaranteed to be compatible with AWS S3 and S3Mock.
 ====
 
-`s3.proxy.host`::
+`s3.proxy.url`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Proxy hostname for the S3 client to route requests through, if desired.
-Should be used in conjunction with `s3.proxy.port` parameter.
-Can be overridden by setting `S3_PROXY_HOST` environment variable.
+Proxy url for the S3 client to route requests through, if desired.
+The url should include `<scheme>://<hostname>:<port>`, however port and scheme _may_ be inferred if missing.
++
+If used, this will override any system proxy settings that are set.
+There is no need to disable the `s3.proxy.useSystemSettings` option.
+If you need to use a proxy `username`, `password` or `nonProxyHosts`, please use the system properties listed below.
 
-`s3.proxy.port`::
+`s3.proxy.useSystemSettings`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: true
 |===
 +
-Proxy port number for the S3 client to route requests through, if desired.
-Should be used in conjunction with `s3.proxy.host` parameter.
-Can be overridden by setting `S3_PROXY_PORT` environment variable.
+By default use the system proxy settings if they are set when communicating with the S3 server.
+The supported proxy system properties are:
++
+* `http.proxyHost`
+* `http.proxyPort`
+* `http.nonProxyHosts`
+* `http.proxyUser`
+* `http.proxyPassword`
 
 An example configuration to enable S3 backups and restore can be seen below:
 

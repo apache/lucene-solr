@@ -23,10 +23,10 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="${/com.amazonaws/aws-java-sdk-core}" conf="compile"/>
-    <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="${/com.amazonaws/aws-java-sdk-s3}" conf="compile"/>
-    <dependency org="javax.xml.bind" name="jaxb-api" rev="${/javax.xml.bind/jaxb-api}" conf="compile"/>
     <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
+    <dependency org="com.fasterxml.woodstox" name="woodstox-core" rev="${/com.fasterxml.woodstox/woodstox-core}" conf="compile"/>
+    <dependency org="org.codehaus.woodstox" name="stax2-api" rev="${/org.codehaus.woodstox/stax2-api}" conf="compile"/>
+    <dependency org="org.reactivestreams" name="reactive-streams" rev="${/org.reactivestreams/reactive-streams}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="apache-client" rev="${/software.amazon.awssdk/apache-client}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="arns" rev="${/software.amazon.awssdk/arns}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="auth" rev="${/software.amazon.awssdk/auth}" conf="compile"/>
@@ -35,27 +35,25 @@
     <dependency org="software.amazon.awssdk" name="aws-xml-protocol" rev="${/software.amazon.awssdk/aws-xml-protocol}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="http-client-spi" rev="${/software.amazon.awssdk/http-client-spi}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="metrics-spi" rev="${/software.amazon.awssdk/metrics-spi}" conf="compile"/>
-    <dependency org="software.amazon.awssdk" name="netty-nio-client" rev="${/software.amazon.awssdk/netty-nio-client}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="profiles" rev="${/software.amazon.awssdk/profiles}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="protocol-core" rev="${/software.amazon.awssdk/protocol-core}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="regions" rev="${/software.amazon.awssdk/regions}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="s3" rev="${/software.amazon.awssdk/s3}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="sdk-core" rev="${/software.amazon.awssdk/sdk-core}" conf="compile"/>
-    <dependency org="software.amazon.awssdk" name="url-connection-client" rev="${/software.amazon.awssdk/url-connection-client}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="utils" rev="${/software.amazon.awssdk/utils}" conf="compile"/>
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
 
     <dependency org="com.adobe.testing" name="s3mock" rev="${/com.adobe.testing/s3mock}" conf="test"/>
     <dependency org="com.adobe.testing" name="s3mock-junit4" rev="${/com.adobe.testing/s3mock-junit4}" conf="test"/>
     <dependency org="com.adobe.testing" name="s3mock-testsupport-common" rev="${/com.adobe.testing/s3mock-testsupport-common}" conf="test"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-core" rev="${/com.amazonaws/aws-java-sdk-core}" conf="test"/>
+    <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="${/com.amazonaws/aws-java-sdk-s3}" conf="test"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-xml" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-xml}" conf="test"/>
     <dependency org="com.fasterxml.jackson.datatype" name="jackson-datatype-jdk8" rev="${/com.fasterxml.jackson.datatype/jackson-datatype-jdk8}" conf="test"/>
     <dependency org="com.fasterxml.jackson.datatype" name="jackson-datatype-jsr310" rev="${/com.fasterxml.jackson.datatype/jackson-datatype-jsr310}" conf="test"/>
     <dependency org="com.fasterxml.jackson.module" name="jackson-module-jaxb-annotations" rev="${/com.fasterxml.jackson.module/jackson-module-jaxb-annotations}" conf="test"/>
     <dependency org="com.fasterxml.jackson.module" name="jackson-module-parameter-names" rev="${/com.fasterxml.jackson.module/jackson-module-parameter-names}" conf="test"/>
     <dependency org="com.fasterxml.woodstox" name="woodstox-core" rev="${/com.fasterxml.woodstox/woodstox-core}" conf="test"/>
-    <dependency org="com.typesafe.netty" name="netty-reactive-streams-http" rev="${/com.typesafe.netty/netty-reactive-streams-http}" conf="test"/>
-    <dependency org="com.typesafe.netty" name="netty-reactive-streams" rev="${/com.typesafe.netty/netty-reactive-streams}" conf="test"/>
     <dependency org="io.micrometer" name="micrometer-core" rev="${/io.micrometer/micrometer-core}" conf="test"/>
     <dependency org="jakarta.annotation" name="jakarta.annotation-api" rev="${/jakarta.annotation/jakarta.annotation-api}" conf="test"/>
     <dependency org="jakarta.servlet" name="jakarta.servlet-api" rev="${/jakarta.servlet/jakarta.servlet-api}" conf="test"/>
@@ -86,5 +84,6 @@
     <dependency org="org.springframework" name="spring-jcl" rev="${/org.springframework/spring-jcl}" conf="test"/>
     <dependency org="org.springframework" name="spring-web" rev="${/org.springframework/spring-web}" conf="test"/>
     <dependency org="org.springframework" name="spring-webmvc" rev="${/org.springframework/spring-webmvc}" conf="test"/>
+    <dependency org="software.amazon.awssdk" name="url-connection-client" rev="${/software.amazon.awssdk/url-connection-client}" conf="test"/>
   </dependencies>
 </ivy-module>

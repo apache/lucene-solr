@@ -16,29 +16,13 @@
  */
 package org.apache.solr.s3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
-import com.amazonaws.services.s3.model.DeleteObjectsResult;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -46,14 +30,35 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.io.input.ClosedInputStream;
 import org.apache.curator.shaded.com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.apache.ProxyConfiguration;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.model.CommonPrefix;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
+import software.amazon.awssdk.services.s3.model.DeletedObject;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 /**
- * Creates a {@link AmazonS3} for communicating with AWS S3. Utilizes the default credential
+ * Creates a {@link S3Client} for communicating with AWS S3. Utilizes the default credential
  * provider chain; reference <a
  * href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">AWS SDK
  * docs</a> for details on where this client will fetch credentials from, and the order of
@@ -74,48 +79,51 @@ public class S3StorageClient {
   // Error messages returned by S3 for a key not found.
   private static final Set<String> NOT_FOUND_CODES = Sets.newHashSet("NoSuchKey", "404 Not Found");
 
-  private final AmazonS3 s3Client;
+  private final S3Client s3Client;
 
   // The S3 bucket where we read/write all data.
   private final String bucketName;
 
   S3StorageClient(
-      String bucketName, String region, String proxyHost, int proxyPort, String endpoint) {
-    this(createInternalClient(region, proxyHost, proxyPort, endpoint), bucketName);
+      String bucketName,
+      String region,
+      String proxyUrl,
+      boolean proxyUseSystemSettings,
+      String endpoint) {
+    this(createInternalClient(region, proxyUrl, proxyUseSystemSettings, endpoint), bucketName);
   }
 
   @VisibleForTesting
-  S3StorageClient(AmazonS3 s3Client, String bucketName) {
+  S3StorageClient(S3Client s3Client, String bucketName) {
     this.s3Client = s3Client;
     this.bucketName = bucketName;
   }
 
-  private static AmazonS3 createInternalClient(
-      String region, String proxyHost, int proxyPort, String endpoint) {
-    ClientConfiguration clientConfig = new ClientConfiguration().withProtocol(Protocol.HTTPS);
-
+  private static S3Client createInternalClient(
+      String region, String proxyUrl, boolean proxyUseSystemSettings, String endpoint) {
+    ApacheHttpClient.Builder sdkHttpClientBuilder = ApacheHttpClient.builder();
     // If configured, add proxy
-    if (!StringUtils.isEmpty(proxyHost)) {
-      clientConfig.setProxyHost(proxyHost);
-      if (proxyPort > 0) {
-        clientConfig.setProxyPort(proxyPort);
-      }
+    ProxyConfiguration.Builder proxyConfigurationBuilder = ProxyConfiguration.builder();
+    if (!StringUtils.isEmpty(proxyUrl)) {
+      proxyConfigurationBuilder.endpoint(URI.create(proxyUrl));
+    } else {
+      proxyConfigurationBuilder.useSystemPropertyValues(proxyUseSystemSettings);
     }
+    sdkHttpClientBuilder.proxyConfiguration(proxyConfigurationBuilder.build());
+    sdkHttpClientBuilder.useIdleConnectionReaper(false);
 
     /*
      * Default s3 client builder loads credentials from disk and handles token refreshes
      */
-    AmazonS3ClientBuilder clientBuilder =
-        AmazonS3ClientBuilder.standard()
-            .enablePathStyleAccess()
-            .withClientConfiguration(clientConfig);
+    S3ClientBuilder clientBuilder =
+        S3Client.builder()
+            .serviceConfiguration(builder -> builder.pathStyleAccessEnabled(true))
+            .httpClient(sdkHttpClientBuilder.build());
 
     if (!StringUtils.isEmpty(endpoint)) {
-      clientBuilder.setEndpointConfiguration(
-          new AwsClientBuilder.EndpointConfiguration(endpoint, region));
-    } else {
-      clientBuilder.setRegion(region);
+      clientBuilder.endpointOverride(URI.create(endpoint));
     }
+    clientBuilder.region(Region.of(region));
 
     return clientBuilder.build();
   }
@@ -130,17 +138,16 @@ public class S3StorageClient {
       //            throw new S3Exception("Parent directory doesn't exist, path=" + path);
     }
 
-    ObjectMetadata objectMetadata = new ObjectMetadata();
-    objectMetadata.setContentType(S3_DIR_CONTENT_TYPE);
-    objectMetadata.setContentLength(0);
-
-    // Create empty object with header
-    final InputStream im = ClosedInputStream.CLOSED_INPUT_STREAM;
-
     try {
-      PutObjectRequest putRequest = new PutObjectRequest(bucketName, path, im, objectMetadata);
-      s3Client.putObject(putRequest);
-    } catch (AmazonClientException ase) {
+      // Create empty object with content type header
+      PutObjectRequest putRequest =
+          PutObjectRequest.builder()
+              .bucket(bucketName)
+              .contentType(S3_DIR_CONTENT_TYPE)
+              .key(path)
+              .build();
+      s3Client.putObject(putRequest, RequestBody.empty());
+    } catch (SdkClientException ase) {
       throw handleAmazonException(ase);
     }
   }
@@ -175,13 +182,11 @@ public class S3StorageClient {
   void deleteDirectory(String path) throws S3Exception {
     path = sanitizedDirPath(path);
 
-    Set<String> entries = new HashSet<>();
+    // Get all the files and subdirectories
+    Set<String> entries = listAll(path);
     if (pathExists(path)) {
       entries.add(path);
     }
-
-    // Get all the files and subdirectories
-    entries.addAll(listAll(path));
 
     deleteObjects(entries);
   }
@@ -195,55 +200,39 @@ public class S3StorageClient {
   String[] listDir(String path) throws S3Exception {
     path = sanitizedDirPath(path);
 
-    String prefix = path;
-    ListObjectsRequest listRequest =
-        new ListObjectsRequest()
-            .withBucketName(bucketName)
-            .withPrefix(prefix)
-            .withDelimiter(S3_FILE_PATH_DELIMITER);
+    final String prefix = path;
 
-    List<String> entries = new ArrayList<>();
     try {
-      ObjectListing objectListing = s3Client.listObjects(listRequest);
+      ListObjectsV2Iterable objectListing =
+          s3Client.listObjectsV2Paginator(
+              builder ->
+                  builder
+                      .bucket(bucketName)
+                      .prefix(prefix)
+                      .delimiter(S3_FILE_PATH_DELIMITER)
+                      .build());
 
-      while (true) {
-        List<String> files =
-            objectListing.getObjectSummaries().stream()
-                .map(S3ObjectSummary::getKey)
-                .collect(Collectors.toList());
-        files.addAll(objectListing.getCommonPrefixes());
-        // This filtering is needed only for S3mock. Real S3 does not ignore the trailing '/' in the
-        // prefix.
-        files =
-            files.stream()
-                .filter(s -> s.startsWith(prefix))
-                .map(s -> s.substring(prefix.length()))
-                .filter(s -> !s.isEmpty())
-                .filter(
-                    s -> {
-                      int slashIndex = s.indexOf(S3_FILE_PATH_DELIMITER);
-                      return slashIndex == -1 || slashIndex == s.length() - 1;
-                    })
-                .map(
-                    s -> {
-                      if (s.endsWith(S3_FILE_PATH_DELIMITER)) {
-                        return s.substring(0, s.length() - 1);
-                      }
-                      return s;
-                    })
-                .collect(Collectors.toList());
-
-        entries.addAll(files);
-
-        if (objectListing.isTruncated()) {
-          objectListing = s3Client.listNextBatchOfObjects(objectListing);
-        } else {
-          break;
-        }
-      }
-      return entries.toArray(new String[0]);
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+      return Stream.concat(
+              objectListing.contents().stream().map(S3Object::key),
+              objectListing.commonPrefixes().stream().map(CommonPrefix::prefix))
+          .filter(s -> s.startsWith(prefix))
+          .map(s -> s.substring(prefix.length()))
+          .filter(s -> !s.isEmpty())
+          .filter(
+              s -> {
+                int slashIndex = s.indexOf(S3_FILE_PATH_DELIMITER);
+                return slashIndex == -1 || slashIndex == s.length() - 1;
+              })
+          .map(
+              s -> {
+                if (s.endsWith(S3_FILE_PATH_DELIMITER)) {
+                  return s.substring(0, s.length() - 1);
+                }
+                return s;
+              })
+          .toArray(String[]::new);
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
@@ -254,17 +243,20 @@ public class S3StorageClient {
    * @return true if path exists, otherwise false?
    */
   boolean pathExists(String path) throws S3Exception {
-    path = sanitizedPath(path);
+    final String s3Path = sanitizedPath(path);
 
     // for root return true
-    if (path.isEmpty() || S3_FILE_PATH_DELIMITER.equals(path)) {
+    if (s3Path.isEmpty() || S3_FILE_PATH_DELIMITER.equals(s3Path)) {
       return true;
     }
 
     try {
-      return s3Client.doesObjectExist(bucketName, path);
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+      s3Client.headObject(builder -> builder.bucket(bucketName).key(s3Path));
+      return true;
+    } catch (NoSuchKeyException e) {
+      return false;
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
@@ -275,15 +267,16 @@ public class S3StorageClient {
    * @return true if path is directory, otherwise false.
    */
   boolean isDirectory(String path) throws S3Exception {
-    path = sanitizedDirPath(path);
+    final String s3Path = sanitizedDirPath(path);
 
     try {
-      ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
-      String contentType = objectMetadata.getContentType();
+      HeadObjectResponse objectMetadata =
+          s3Client.headObject(builder -> builder.bucket(bucketName).key(s3Path));
+      String contentType = objectMetadata.contentType();
 
       return !StringUtils.isEmpty(contentType) && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
@@ -294,17 +287,18 @@ public class S3StorageClient {
    * @return length of file.
    */
   long length(String path) throws S3Exception {
-    path = sanitizedFilePath(path);
+    String s3Path = sanitizedFilePath(path);
     try {
-      ObjectMetadata objectMetadata = s3Client.getObjectMetadata(bucketName, path);
-      String contentType = objectMetadata.getContentType();
+      HeadObjectResponse objectMetadata =
+          s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
+      String contentType = objectMetadata.contentType();
 
       if (StringUtils.isEmpty(contentType) || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
-        return objectMetadata.getContentLength();
+        return objectMetadata.contentLength();
       }
       throw new S3Exception("Path is Directory");
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
@@ -315,14 +309,13 @@ public class S3StorageClient {
    * @return InputStream for file.
    */
   InputStream pullStream(String path) throws S3Exception {
-    path = sanitizedFilePath(path);
+    final String s3Path = sanitizedFilePath(path);
 
     try {
-      S3Object requestedObject = s3Client.getObject(bucketName, path);
       // This InputStream instance needs to be closed by the caller
-      return requestedObject.getObjectContent();
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+      return s3Client.getObject(b -> b.bucket(bucketName).key(s3Path));
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
@@ -341,14 +334,14 @@ public class S3StorageClient {
 
     try {
       return new S3OutputStream(s3Client, path, bucketName);
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
   /** Override {@link Closeable} since we throw no exception. */
   void close() {
-    s3Client.shutdown();
+    s3Client.close();
   }
 
   /** Any file path that specifies a non-existent file will not be treated as an error. */
@@ -361,8 +354,8 @@ public class S3StorageClient {
        * However, there's no guarantee the delete did not happen if an exception is thrown.
        */
       return deleteObjects(paths, MAX_KEYS_PER_BATCH_DELETE);
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
@@ -374,41 +367,43 @@ public class S3StorageClient {
    */
   @VisibleForTesting
   Collection<String> deleteObjects(Collection<String> entries, int batchSize) throws S3Exception {
-    List<KeyVersion> keysToDelete =
-        entries.stream().map(KeyVersion::new).collect(Collectors.toList());
+    List<ObjectIdentifier> keysToDelete =
+        entries.stream()
+            .map(s -> ObjectIdentifier.builder().key(s).build())
+            .sorted(Comparator.comparing(ObjectIdentifier::key).reversed())
+            .collect(Collectors.toList());
 
-    keysToDelete.sort(Comparator.comparing(KeyVersion::getKey).reversed());
-    List<List<KeyVersion>> partitions = Lists.partition(keysToDelete, batchSize);
+    List<List<ObjectIdentifier>> partitions = Lists.partition(keysToDelete, batchSize);
     Set<String> deletedPaths = new HashSet<>();
 
     boolean deleteIndividually = false;
-    for (List<KeyVersion> partition : partitions) {
+    for (List<ObjectIdentifier> partition : partitions) {
       DeleteObjectsRequest request = createBatchDeleteRequest(partition);
 
       try {
-        DeleteObjectsResult result = s3Client.deleteObjects(request);
+        DeleteObjectsResponse response = s3Client.deleteObjects(request);
 
-        result.getDeletedObjects().stream()
-            .map(DeleteObjectsResult.DeletedObject::getKey)
-            .forEach(deletedPaths::add);
-      } catch (AmazonServiceException e) {
-        // This means that the batch-delete is not implemented by this S3 server
-        if (e.getStatusCode() == 501) {
+        response.deleted().stream().map(DeletedObject::key).forEach(deletedPaths::add);
+      } catch (AwsServiceException ase) {
+        if (ase.statusCode() == 501) {
+          // This means that the batch-delete is not implemented by this S3 server
           deleteIndividually = true;
           break;
         } else {
-          throw e;
+          throw handleAmazonException(ase);
         }
+      } catch (SdkException sdke) {
+        throw handleAmazonException(sdke);
       }
     }
 
     if (deleteIndividually) {
-      for (KeyVersion k : keysToDelete) {
+      for (ObjectIdentifier k : keysToDelete) {
         try {
-          s3Client.deleteObject(bucketName, k.getKey());
-          deletedPaths.add(k.getKey());
-        } catch (AmazonClientException e) {
-          throw new S3Exception("Could not delete object with key: " + k.getKey(), e);
+          s3Client.deleteObject(b -> b.bucket(bucketName).key(k.key()));
+          deletedPaths.add(k.key());
+        } catch (SdkException sdke) {
+          throw new S3Exception("Could not delete object with key: " + k.key(), sdke);
         }
       }
     }
@@ -416,39 +411,29 @@ public class S3StorageClient {
     return deletedPaths;
   }
 
-  private DeleteObjectsRequest createBatchDeleteRequest(List<KeyVersion> keysToDelete) {
-    return new DeleteObjectsRequest(bucketName).withKeys(keysToDelete);
+  private DeleteObjectsRequest createBatchDeleteRequest(List<ObjectIdentifier> keysToDelete) {
+    return DeleteObjectsRequest.builder()
+        .bucket(bucketName)
+        .delete(Delete.builder().objects(keysToDelete).build())
+        .build();
   }
 
-  private List<String> listAll(String path) throws S3Exception {
+  private Set<String> listAll(String path) throws S3Exception {
     String prefix = sanitizedDirPath(path);
-    ListObjectsRequest listRequest =
-        new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix);
 
-    List<String> entries = new ArrayList<>();
     try {
-      ObjectListing objectListing = s3Client.listObjects(listRequest);
+      ListObjectsV2Iterable objectListing =
+          s3Client.listObjectsV2Paginator(
+              builder -> builder.bucket(bucketName).prefix(prefix).build());
 
-      while (true) {
-        List<String> files =
-            objectListing.getObjectSummaries().stream()
-                .map(S3ObjectSummary::getKey)
-                // This filtering is needed only for S3mock. Real S3 does not ignore the trailing
-                // '/' in the prefix.
-                .filter(s -> s.startsWith(prefix))
-                .collect(Collectors.toList());
-
-        entries.addAll(files);
-
-        if (objectListing.isTruncated()) {
-          objectListing = s3Client.listNextBatchOfObjects(objectListing);
-        } else {
-          break;
-        }
-      }
-      return entries;
-    } catch (AmazonClientException ase) {
-      throw handleAmazonException(ase);
+      return objectListing.contents().stream()
+          .map(S3Object::key)
+          // This filtering is needed only for S3mock. Real S3 does not ignore the trailing
+          // '/' in the prefix.
+          .filter(s -> s.startsWith(prefix))
+          .collect(Collectors.toSet());
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
     }
   }
 
@@ -536,31 +521,33 @@ public class S3StorageClient {
    * Best effort to handle Amazon exceptions as checked exceptions. Amazon exception are all
    * subclasses of {@link RuntimeException} so some may still be uncaught and propagated.
    */
-  static S3Exception handleAmazonException(AmazonClientException ace) {
+  static S3Exception handleAmazonException(SdkException sdke) {
 
-    if (ace instanceof AmazonServiceException) {
-      AmazonServiceException ase = (AmazonServiceException) ace;
+    if (sdke instanceof AwsServiceException) {
+      AwsServiceException ase = (AwsServiceException) sdke;
       String errMessage =
           String.format(
               Locale.ROOT,
               "An AmazonServiceException was thrown! [serviceName=%s] "
-                  + "[awsRequestId=%s] [httpStatus=%s] [s3ErrorCode=%s] [s3ErrorType=%s] [message=%s]",
-              ase.getServiceName(),
-              ase.getRequestId(),
-              ase.getStatusCode(),
-              ase.getErrorCode(),
-              ase.getErrorType(),
-              ase.getErrorMessage());
+                  + "[awsRequestId=%s] [httpStatus=%s] [s3ErrorCode=%s] [message=%s]",
+              ase.awsErrorDetails().serviceName(),
+              ase.requestId(),
+              ase.statusCode(),
+              ase.awsErrorDetails().errorCode(),
+              ase.awsErrorDetails().errorMessage());
 
       log.error(errMessage);
 
-      if (ase.getStatusCode() == 404 && NOT_FOUND_CODES.contains(ase.getErrorCode())) {
+      if (sdke instanceof NoSuchKeyException
+          || sdke instanceof NoSuchBucketException
+          || (ase.statusCode() == 404
+              && NOT_FOUND_CODES.contains(ase.awsErrorDetails().errorCode()))) {
         return new S3NotFoundException(errMessage, ase);
       } else {
         return new S3Exception(errMessage, ase);
       }
     }
 
-    return new S3Exception(ace);
+    return new S3Exception(sdke);
   }
 }

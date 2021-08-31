@@ -18,7 +18,6 @@
 package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
-import com.amazonaws.regions.Regions;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
@@ -26,6 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.regions.Region;
 
 @LuceneTestCase.SuppressCodecs({
   "SimpleText"
@@ -90,13 +90,14 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   @BeforeClass
   public static void setupClass() throws Exception {
     System.setProperty("aws.accessKeyId", "foo");
-    System.setProperty("aws.secretKey", "bar");
+    System.setProperty("aws.secretAccessKey", "bar");
+
     configureCluster(NUM_SHARDS) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
         .withSolrXml(
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)
-                .replace("REGION", Regions.US_EAST_1.getName())
+                .replace("REGION", Region.US_EAST_1.id())
                 .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()))
         .configure();
   }
