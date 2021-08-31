@@ -310,8 +310,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   protected S3BackupRepository getRepository() {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
-    System.setProperty("aws.sharedCredentialsFile", "conf/temp");
-    System.setProperty("aws.configFile", "conf/temp");
 
     NamedList<Object> args = getBaseBackupRepositoryConfiguration();
 

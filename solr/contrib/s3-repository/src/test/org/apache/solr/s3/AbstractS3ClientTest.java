@@ -43,10 +43,9 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
   @Before
   public void setUpClient() {
-    System.setProperty("aws.sharedCredentialsFile", "conf/temp");
-    System.setProperty("aws.configFile", "conf/temp");
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
+
     client =
         new S3StorageClient(
             BUCKET_NAME, "us-east-1", "", false, "http://localhost:" + S3_MOCK_RULE.getHttpPort());

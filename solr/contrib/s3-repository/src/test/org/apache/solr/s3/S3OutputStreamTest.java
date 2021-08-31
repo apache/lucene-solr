@@ -45,8 +45,6 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
 
   @Before
   public void setUpClient() {
-    System.setProperty("aws.sharedCredentialsFile", "conf/temp");
-    System.setProperty("aws.configFile", "conf/temp");
     s3 = S3_MOCK_RULE.createS3ClientV2();
   }
 
@@ -61,58 +59,58 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testWriteByteByByte() throws IOException {
-
-    S3OutputStream output = new S3OutputStream(s3, "byte-by-byte", BUCKET);
-    output.write('h');
-    output.write('e');
-    output.write('l');
-    output.write('l');
-    output.write('o');
-    output.close();
+    try (S3OutputStream output = new S3OutputStream(s3, "byte-by-byte", BUCKET)) {
+      output.write('h');
+      output.write('e');
+      output.write('l');
+      output.write('l');
+      output.write('o');
+    }
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("byte-by-byte"));
-    String read = IOUtils.toString(input, Charset.defaultCharset());
-    assertEquals("Contents saved to S3 file did not match expected", "hello", read);
+    try (InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("byte-by-byte"))) {
+      String read = IOUtils.toString(input, Charset.defaultCharset());
+      assertEquals("Contents saved to S3 file did not match expected", "hello", read);
+    }
   }
 
   /** Write a small byte array, which is smaller than S3 part size. */
   @Test
   public void testWriteSmallBuffer() throws IOException {
-
     // must be smaller than S3 part size
     byte[] buffer = "hello".getBytes(Charset.defaultCharset());
     // pre-check -- ensure that our test string isn't too big
     assertTrue(buffer.length < S3OutputStream.PART_SIZE);
 
-    S3OutputStream output = new S3OutputStream(s3, "small-buffer", BUCKET);
-    output.write(buffer);
-    output.close();
+    try (S3OutputStream output = new S3OutputStream(s3, "small-buffer", BUCKET)) {
+      output.write(buffer);
+    }
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("small-buffer"));
-    String read = IOUtils.toString(input, Charset.defaultCharset());
-    assertEquals("hello", read);
+    try (InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("small-buffer"))) {
+      String read = IOUtils.toString(input, Charset.defaultCharset());
+      assertEquals("hello", read);
+    }
   }
 
   /** Write a byte array larger than S3 part size. Simulate a real multi-part upload. */
   @Test
   public void testWriteLargeBuffer() throws IOException {
-
     // must be larger than S3 part size
     String content = RandomStringUtils.randomAlphanumeric(S3OutputStream.PART_SIZE + 1024);
     byte[] buffer = content.getBytes(Charset.defaultCharset());
     // pre-check -- ensure that our test string isn't too small
     assertTrue(buffer.length > S3OutputStream.PART_SIZE);
 
-    S3OutputStream output = new S3OutputStream(s3, "large-buffer", BUCKET);
-    output.write(buffer);
-    output.close();
+    try (S3OutputStream output = new S3OutputStream(s3, "large-buffer", BUCKET)) {
+      output.write(buffer);
+    }
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("large-buffer"));
-    String read = IOUtils.toString(input, Charset.defaultCharset());
-    assertEquals(new String(buffer, Charset.defaultCharset()), read);
+    try (InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("large-buffer"))) {
+      String read = IOUtils.toString(input, Charset.defaultCharset());
+      assertEquals(new String(buffer, Charset.defaultCharset()), read);
+    }
   }
 
   /** Check flush is a no-op if data size is lower than required size of S3 part. */
@@ -122,21 +120,22 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     byte[] buffer = "hello".getBytes(Charset.defaultCharset());
     assertTrue(buffer.length < S3OutputStream.PART_SIZE);
 
-    S3OutputStream output = new S3OutputStream(s3, "flush-small", BUCKET);
-    output.write(buffer);
-    output.flush();
+    try (S3OutputStream output = new S3OutputStream(s3, "flush-small", BUCKET)) {
+      output.write(buffer);
+      output.flush();
 
-    buffer = ", world!".getBytes(Charset.defaultCharset());
-    output.write(buffer);
-    output.close();
+      buffer = ", world!".getBytes(Charset.defaultCharset());
+      output.write(buffer);
+    }
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("flush-small"));
-    String read = IOUtils.toString(input, Charset.defaultCharset());
-    assertEquals(
-        "Flushing a small frame of an S3OutputStream should not impact data written",
-        "hello, world!",
-        read);
+    try (InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("flush-small"))) {
+      String read = IOUtils.toString(input, Charset.defaultCharset());
+      assertEquals(
+          "Flushing a small frame of an S3OutputStream should not impact data written",
+          "hello, world!",
+          read);
+    }
   }
 
   /** Check flush is happening when data in buffer is larger than S3 minimal part size. */
@@ -147,20 +146,21 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
     byte[] buffer = content.getBytes(Charset.defaultCharset());
     assertTrue(buffer.length > S3OutputStream.MIN_PART_SIZE);
 
-    S3OutputStream output = new S3OutputStream(s3, "flush-large", BUCKET);
-    output.write(buffer);
-    output.flush();
+    try (S3OutputStream output = new S3OutputStream(s3, "flush-large", BUCKET)) {
+      output.write(buffer);
+      output.flush();
 
-    buffer = "some more".getBytes(Charset.defaultCharset());
-    output.write(buffer);
-    output.close();
+      buffer = "some more".getBytes(Charset.defaultCharset());
+      output.write(buffer);
+    }
 
     // Check we can re-read same content
-    InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("flush-large"));
-    String read = IOUtils.toString(input, Charset.defaultCharset());
-    assertEquals(
-        "Flushing a large frame of an S3OutputStream should not impact data written",
-        content + "some more",
-        read);
+    try (InputStream input = s3.getObject(b -> b.bucket(BUCKET).key("flush-large"))) {
+      String read = IOUtils.toString(input, Charset.defaultCharset());
+      assertEquals(
+          "Flushing a large frame of an S3OutputStream should not impact data written",
+          content + "some more",
+          read);
+    }
   }
 }
