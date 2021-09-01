@@ -53,6 +53,8 @@ Improvements
 
 * SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
 
+* SOLR-15609: Upgrade log4j to 2.14.1 (hossman)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
