@@ -67,7 +67,7 @@ public class TestManyPointsInOldIndex extends LuceneTestCase {
     dir.setCheckIndexOnClose(false);
 
     // ... because we check ourselves here:
-    TestUtil.checkIndex(dir, false, true, null);
+    TestUtil.checkIndex(dir, false, true, true, null);
     dir.close();
   }
 }

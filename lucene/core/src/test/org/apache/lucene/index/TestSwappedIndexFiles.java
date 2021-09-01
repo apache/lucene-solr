@@ -114,9 +114,13 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
       );
 
       // CheckIndex should also fail:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
-          () -> TestUtil.checkIndex(dirCopy, true, true, null)
-      );
+      expectThrowsAnyOf(
+          Arrays.asList(
+              CorruptIndexException.class,
+              EOFException.class,
+              IndexFormatTooOldException.class,
+              CheckIndex.CheckIndexException.class),
+          () -> TestUtil.checkIndex(dirCopy, true, true, true, null));
     }
   }
 }

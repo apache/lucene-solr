@@ -113,9 +113,9 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
       );
 
       // CheckIndex should also fail:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class),
-          () -> TestUtil.checkIndex(dirCopy, true, true, null)
-      );
+      expectThrowsAnyOf(
+          Arrays.asList(CorruptIndexException.class, EOFException.class),
+          () -> TestUtil.checkIndex(dirCopy, true, true, true, null));
     }
   }
 }
