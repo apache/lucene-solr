@@ -1108,8 +1108,9 @@ def configure_pgp(gpg_todo):
     id = str(input("Please enter your Apache id: (ENTER=skip) "))
     if id.strip() == '':
         return False
-    all_keys = load('https://home.apache.org/keys/group/lucene.asc')
-    lines = all_keys.splitlines()
+    key_url = "https://home.apache.org/keys/committer/%s.asc" % id.strip()
+    committer_key = load(key_url)
+    lines = committer_key.splitlines()
     keyid_linenum = None
     for idx, line in enumerate(lines):
         if line == 'ASF ID: %s' % id:
@@ -1119,7 +1120,7 @@ def configure_pgp(gpg_todo):
         keyid_line = lines[keyid_linenum]
         assert keyid_line.startswith('LDAP PGP key: ')
         gpg_id = keyid_line[14:].replace(" ", "")[-8:]
-        print("Found gpg key id %s on file at Apache (https://home.apache.org/keys/group/lucene.asc)" % gpg_id)
+        print("Found gpg key id %s on file at Apache (%s)" % (gpg_id, key_url))
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
