@@ -17,7 +17,7 @@
 package org.apache.lucene.analysis.te;
 
 import java.util.Map;
-import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 
 /**
@@ -45,11 +45,6 @@ public class TeluguNormalizationFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-  }
-
-  /** Default ctor for compatibility with SPI */
-  public TeluguNormalizationFilterFactory() {
-    throw defaultCtorException();
   }
 
   @Override

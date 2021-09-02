@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.te;
 
 import java.io.Reader;
 import java.io.StringReader;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
 /** Simple tests to ensure the Telugu filter Factories are working. */
