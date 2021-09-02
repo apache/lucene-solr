@@ -27,7 +27,7 @@ API Changes
 
 New Features
 ---------------------
-(No changes)
+* LUCENE-10083: Analyzer and stemmer for Telugu language (Vinod Singh)
 
 Improvements
 ---------------------
