@@ -159,6 +159,14 @@ IF "%SOLR_REQUESTLOG_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=requestlog"
 )
 
+REM Jetty gzip module enabled by default
+IF NOT DEFINED SOLR_GZIP_ENABLED (
+  set "SOLR_GZIP_ENABLED=true"
+)
+IF "%SOLR_GZIP_ENABLED%"=="true" (
+  set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=gzip"
+)
+
 REM Authentication options
 
 IF NOT DEFINED SOLR_AUTH_TYPE (

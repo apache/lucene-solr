@@ -279,6 +279,11 @@ if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
 fi
 
+# Jetty gzip module enabled by default
+if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
+  SOLR_JETTY_CONFIG+=("--module=gzip")
+fi
+
 # Authentication options
 if [ -z "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_OPTS" ]; then
   echo "WARNING: SOLR_AUTHENTICATION_OPTS environment variable configured without associated SOLR_AUTH_TYPE variable"

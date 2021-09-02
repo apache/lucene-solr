@@ -177,6 +177,9 @@ REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 
+REM Jetty GZIP module enabled by default
+REM set SOLR_GZIP_ENABLED=true
+
 REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 REM list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
 REM or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
