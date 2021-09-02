@@ -58,6 +58,8 @@ Improvements
 * SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
   (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
 
+* SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
