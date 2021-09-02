@@ -27,6 +27,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
@@ -161,13 +163,20 @@ public class CommandHandler {
     } else if (!collectors.isEmpty()) {
       searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
     } else {
-      searchWithTimeLimiter(query, filter, null);
+      searchWithTimeLimiter(query, filter, NO_OP_COLLECTOR);
     }
 
     for (@SuppressWarnings({"rawtypes"})Command command : commands) {
       command.postCollect(searcher);
     }
   }
+
+  private static Collector NO_OP_COLLECTOR = new SimpleCollector() {
+    @Override
+    public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
+    @Override
+    public void collect(int doc) throws IOException {}
+  };
 
   private DocSet computeGroupedDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
     @SuppressWarnings({"rawtypes"})

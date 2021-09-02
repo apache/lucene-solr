@@ -89,6 +89,8 @@ Bug Fixes
 
 * SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
 
+* SOLR-6156: Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed. (Modassar Ather, Christine Poerschke)
+
 Other Changes
 ---------------------
 * SOLR-15355: Upgrade Hadoop from 3.2.0 to 3.2.2. (Antoine Gruzelle via David Smiley)
