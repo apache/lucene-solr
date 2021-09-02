@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.*;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
@@ -71,10 +72,14 @@ public class TestCheckIndex extends BaseTestCheckIndex {
   public void testCheckIndexAllValid() throws Exception {
     try (Directory dir = newDirectory()) {
       int liveDocCount = 1 + random().nextInt(10);
-      IndexWriterConfig conifg = newIndexWriterConfig();
-      conifg.setIndexSort(new Sort(new SortField("sort_field", SortField.Type.INT, true)));
-      conifg.setSoftDeletesField("soft_delete");
-      try (IndexWriter w = new IndexWriter(dir, conifg)) {
+      IndexWriterConfig config = newIndexWriterConfig();
+      config.setIndexSort(new Sort(new SortField("sort_field", SortField.Type.INT, true)));
+      config.setSoftDeletesField("soft_delete");
+      // preserves soft-deletes across merges
+      config.setMergePolicy(
+          new SoftDeletesRetentionMergePolicy(
+              "soft_delete", MatchAllDocsQuery::new, config.getMergePolicy()));
+      try (IndexWriter w = new IndexWriter(dir, config)) {
         for (int i = 0; i < liveDocCount; i++) {
           Document doc = new Document();
 
