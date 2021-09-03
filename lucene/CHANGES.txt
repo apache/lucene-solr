@@ -29,6 +29,9 @@ New Features
 ---------------------
 * LUCENE-10083: Analyzer and stemmer for Telugu language (Vinod Singh)
 
+* LUCENE-10035: The SimpleText codec now writes skip lists.
+  (wuda via Adrien Grand)
+
 Improvements
 ---------------------
 
