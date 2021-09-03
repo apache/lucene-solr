@@ -646,7 +646,7 @@ public class Utils {
    * @param is to read
    * @throws IOException on problem with IO
    */
-  private static void readFully(InputStream is) throws IOException {
+  public static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
     while (is.read() != -1) {
     }
