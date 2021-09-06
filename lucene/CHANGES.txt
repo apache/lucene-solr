@@ -121,6 +121,9 @@ Bug Fixes
 
 * LUCENE-10060: Ensure DrillSidewaysQuery instances never get cached. (Greg Miller, Zachary Chen)
 
+* LUCENE-10081: KoreanTokenizer should check the max backtrace gap on whitespaces.
+  (Jim Ferenczi)
+
 Other
 ---------------------
 
