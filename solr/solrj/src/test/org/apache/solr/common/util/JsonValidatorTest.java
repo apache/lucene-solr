@@ -83,7 +83,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
           "   adult : {type: Boolean}," +
           "   name: {type: string}}}");
     });
-    assertTrue(e.getMessage().contains("Unknown type"));
+    assertTrue(e.getMessage().contains("Unknown type int"));
 
     e = expectThrows(Exception.class, () -> {
       new JsonSchemaValidator("{" +
