@@ -18,6 +18,7 @@
 package org.apache.lucene.search.comparators;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
@@ -90,6 +91,26 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
       this.docValues = getNumericDocValues(context, field);
       this.pointValues = canSkipDocuments ? context.reader().getPointValues(field) : null;
       if (pointValues != null) {
+        FieldInfo info = context.reader().getFieldInfos().fieldInfo(field);
+        if (info == null || info.getPointDimensionCount() == 0) {
+          throw new IllegalStateException(
+              "Field "
+                  + field
+                  + " doesn't index points according to FieldInfos yet returns non-null PointValues");
+        } else if (info.getPointDimensionCount() > 1) {
+          throw new IllegalArgumentException(
+              "Field " + field + " is indexed with multiple dimensions, sorting is not supported");
+        } else if (info.getPointNumBytes() != bytesCount) {
+          throw new IllegalArgumentException(
+              "Field "
+                  + field
+                  + " is indexed with "
+                  + info.getPointNumBytes()
+                  + " bytes per dimension, but "
+                  + NumericComparator.this
+                  + " expected "
+                  + bytesCount);
+        }
         this.enableSkipping = true; // skipping is enabled when points are available
         this.maxDoc = context.reader().maxDoc();
         this.maxValueAsBytes = reverse == false ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;

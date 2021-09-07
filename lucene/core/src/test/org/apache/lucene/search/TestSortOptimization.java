@@ -21,6 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.IntRange;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -563,5 +565,55 @@ public class TestSortOptimization extends LuceneTestCase {
     dir.close();
   }
 
+  public void testPointValidation() throws IOException {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+
+    doc.add(new IntPoint("intField", 4));
+    doc.add(new NumericDocValuesField("intField", 4));
+
+    doc.add(new LongPoint("longField", 42));
+    doc.add(new NumericDocValuesField("longField", 42));
+
+    doc.add(new IntRange("intRange", new int[] {1}, new int[] {10}));
+    doc.add(new NumericDocValuesField("intRange", 4));
+
+    writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(reader);
+    SortField sort1 = new SortField("intField", SortField.Type.LONG);
+    sort1.setCanUsePoints();
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            searcher.search(
+                new MatchAllDocsQuery(),
+                1,
+                new Sort(sort1)));
+    SortField sort2 = new SortField("longField", SortField.Type.INT);
+    sort2.setCanUsePoints();
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            searcher.search(
+                new MatchAllDocsQuery(),
+                1,
+                new Sort(sort2)));
+    SortField sort3 = new SortField("intRange", SortField.Type.INT);
+    sort3.setCanUsePoints();
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            searcher.search(
+                new MatchAllDocsQuery(),
+                1,
+                new Sort(sort3)));
+
+    reader.close();
+    dir.close();
+  }
 
 }
