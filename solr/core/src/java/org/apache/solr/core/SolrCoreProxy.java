@@ -23,8 +23,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

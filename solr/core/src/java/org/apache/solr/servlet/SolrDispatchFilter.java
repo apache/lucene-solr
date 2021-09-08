@@ -35,24 +35,30 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadDeadlockDetector;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -213,7 +219,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       metricManager.registerAll(registryName, new OperatingSystemMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "os");
       metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "gc");
       metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "memory");
-      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      registerThreadsMetrics();
+
       MetricsMap sysprops = new MetricsMap(map -> {
         System.getProperties().forEach((k, v) -> {
           if (!hiddenSysProps.contains(k)) {
@@ -224,6 +231,44 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       metricManager.registerGauge(null, registryName, sysprops, metricTag, true, "properties", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
+    }
+  }
+
+  class NoOpThreadsDeadlockDetector extends ThreadDeadlockDetector {
+    @Override
+    public Set<String> getDeadlockedThreads() {
+      return Collections.emptySet();
+    }
+  }
+
+  private void registerThreadsMetrics() throws Exception {
+    boolean threadsDeadlockDetectionEnabled = 
+        System.getProperties().contains("solr.metrics.threads.deadlockdetection.enabled")? 
+            Boolean.valueOf(System.getProperty("solr.metrics.threads.deadlockdetection.enabled"))
+            : false; // enabled by default, unless this sysprop is set to false
+
+    if (!threadsDeadlockDetectionEnabled) {
+      log.info("Threads metrics will not compute thread deadlocks.");
+    }
+    if (System.getProperties().contains("solr.metrics.threads.caching.interval")) {
+      int threadsCachingInterval = Integer.valueOf(System.getProperty("solr.metrics.threads.caching.interval"));
+      log.info("Threads metrics will be cached for " + threadsCachingInterval + " seconds");
+      if (threadsDeadlockDetectionEnabled) {
+        metricManager.registerAll(registryName, 
+            new CachedThreadStatesGaugeSet(threadsCachingInterval, TimeUnit.SECONDS), SolrMetricManager.ResolutionStrategy.IGNORE, "threads");
+      } else {
+        metricManager.registerAll(registryName, 
+            new CachedThreadStatesGaugeSet(ManagementFactory.getThreadMXBean(), new NoOpThreadsDeadlockDetector(),
+                threadsCachingInterval, TimeUnit.SECONDS), SolrMetricManager.ResolutionStrategy.IGNORE, "threads");
+      }
+    } else {
+      if (threadsDeadlockDetectionEnabled) {
+        metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), SolrMetricManager.ResolutionStrategy.IGNORE, "threads");
+      } else {
+        metricManager.registerAll(registryName,
+            new ThreadStatesGaugeSet(ManagementFactory.getThreadMXBean(), new NoOpThreadsDeadlockDetector()),
+            SolrMetricManager.ResolutionStrategy.IGNORE, "threads");
+      }
     }
   }
 

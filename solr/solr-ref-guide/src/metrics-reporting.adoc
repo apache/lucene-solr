@@ -211,6 +211,12 @@ complex objects:
 </metrics>
 ----
 
+=== Disabling deadlock detection or caching threads metrics ===
+The threads metrics in the JVM group can be expensive to compute, as it requires traversing all threads (esp. during deadlock detection). 
+This can be avoided for every call to the metrics API (group=jvm) by setting a higher caching expiration interval (in seconds)
+by passing a system property, e.g. `solr.metrics.threads.caching.interval=5` (to cache the thread metrics for 5 seconds).
+
+Also, thread deadlock detection can be disabled with a system property `solr.metrics.threads.deadlockdetection.enabled=false`.
 
 == Reporters
 
