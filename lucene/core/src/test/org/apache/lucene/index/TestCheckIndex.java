@@ -121,6 +121,7 @@ public class TestCheckIndex extends BaseTestCheckIndex {
         tombstone.add(new NumericDocValuesField("soft_delete", 1));
         w.softUpdateDocument(
             new Term("id", "1"), tombstone, new NumericDocValuesField("soft_delete", 1));
+        w.forceMerge(1);
       }
 
       ByteArrayOutputStream output = new ByteArrayOutputStream();
