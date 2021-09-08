@@ -62,6 +62,8 @@ Improvements
 
 * SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
 
+* SOLR-15572: Improve the default Prometheus exporter config performance. (ab)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
