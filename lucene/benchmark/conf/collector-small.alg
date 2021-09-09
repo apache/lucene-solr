@@ -21,7 +21,7 @@
 #    Fully Qualified Class Name of a Collector with a empty constructor
 #    topScoreDocOrdered - Creates a TopScoreDocCollector that requires in order docs
 #    topScoreDocUnordered - Like above, but allows out of order
-collector.class=coll:topScoreDocOrdered:topScoreDocUnordered:topScoreDocOrdered:topScoreDocUnordered
+collector.class=coll:topScoreDoc
 
 analyzer=org.apache.lucene.analysis.core.WhitespaceAnalyzer
 directory=FSDirectory
