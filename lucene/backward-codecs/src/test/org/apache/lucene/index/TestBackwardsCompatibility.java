@@ -1849,15 +1849,22 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
-    Sort sort = reader.leaves().get(0).reader().getMetaData().getSort();
+    SegmentReader segmentReader = (SegmentReader) reader.leaves().get(0).reader();
+    Sort sort = segmentReader.getMetaData().getSort();
     assertNotNull(sort);
     assertEquals("<long: \"dateDV\">! missingValue=-9223372036854775808", sort.toString());
-    reader.close();
-    CheckIndex.Status status = TestUtil.checkIndex(dir);
-    assertEquals(1, status.segmentInfos.size());
-    assertNotNull(status.segmentInfos.get(0).indexSortStatus.error);
-    assertEquals(status.segmentInfos.get(0).indexSortStatus.error.getMessage(),
+
+    // invalid sort index will cause checkIndex to fail with exception globally
+    expectThrows(RuntimeException.class, () -> {
+      TestUtil.checkIndex(dir);
+    });
+
+    CheckIndex.Status.IndexSortStatus indexSortStatus = CheckIndex.testSort(segmentReader, sort, null, false);
+    assertNotNull(indexSortStatus.error);
+    assertEquals(indexSortStatus.error.getMessage(),
         "segment has indexSort=<long: \"dateDV\">! missingValue=-9223372036854775808 but docID=4 sorts after docID=5");
+
+    reader.close();
     dir.close();
   }
   
