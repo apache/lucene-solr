@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -27,6 +28,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
@@ -49,9 +52,12 @@ import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -395,6 +401,41 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     } else {
       // a distributed request
 
+      rb.setIterative(rb.req.getParams().getInt("iterative", 0));
+
+      Map<String, Object> json = rb.req.getJSON();
+      if (json != null && json.containsKey("iterative_state")) {
+        Map<String, SearchComponent> byKeys = new HashMap<>();
+        for (SearchComponent c : components) {
+          String key = c.stateKey();
+          if (key != null) {
+            byKeys.put(key, c);
+          }
+        }
+        // first read iterative state
+        String iterativeState = (String) json.get("iterative_state");
+        byte[] rawState = Base64.getDecoder().decode(iterativeState);
+        JavaBinCodec codec = new JavaBinCodec();
+        FastInputStream dis = codec.initRead(rawState);
+        int numStates = (int) codec.readVal(dis);
+        for (int i = 0; i < numStates; i++) {
+          String key = (String) codec.readVal(dis);
+          byte[] componentState = (byte[]) codec.readVal(dis);
+          SearchComponent component = byKeys.get(key);
+          if (component != null) {
+            component.fromState(rb, componentState);
+          }
+        }
+        // then remove from json so that distributed costs don't take the network hit from a potentially sizable payload
+        // that is otherwise useless for the underlying shards to handle
+        Map<Object, Object> paramsJson = (Map<Object, Object>) ObjectBuilder.fromJSONStrict(rb.req.getParams().get(JSON));
+        paramsJson.remove("iterative_state");
+        ModifiableSolrParams newParams = new ModifiableSolrParams();
+        newParams.add(rb.req.getParams());
+        newParams.set(JSON, JSONUtil.toJSON(paramsJson));
+        rb.req.setParams(newParams);
+      }
+
       if (rb.outgoing == null) {
         rb.outgoing = new LinkedList<>();
       }
@@ -496,6 +537,27 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
+
+      if (rb.isIterative()) {
+        Map<String, BytesRef> state = new HashMap<>();
+        for (SearchComponent c : components) {
+          byte[] componentState = c.toState(rb);
+          if (componentState != null) {
+            state.put(c.stateKey(), new BytesRef(componentState));
+          }
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        JavaBinCodec codec = new JavaBinCodec(bos, null);
+        codec.writeVal(state.size());
+        for (Map.Entry<String, BytesRef> entry : state.entrySet()) {
+          String key = entry.getKey();
+          BytesRef value = entry.getValue();
+          codec.writeVal(key);
+          codec.writeByteArray(value.bytes, value.offset, value.length);
+        }
+        codec.close();
+        rb.rsp.add("iterative_state", Base64.getEncoder().encodeToString(bos.toByteArray()));
+      }
     }
     
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request

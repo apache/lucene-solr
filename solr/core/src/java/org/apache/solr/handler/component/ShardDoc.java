@@ -16,13 +16,17 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+
 import org.apache.lucene.search.FieldDoc;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 
 public class ShardDoc extends FieldDoc {
   public String shard;
   public String shardAddress;  // TODO
-  
+  public int iterativeStep; // if > 0, indicates an iterative shard doc result
   public int orderInShard;
     // the position of this doc within the shard... this can be used
     // to short-circuit comparisons if the shard is equal, and can
@@ -32,6 +36,10 @@ public class ShardDoc extends FieldDoc {
     // this is currently the uniqueKeyField but
     // may be replaced with internal docid in a future release.
 
+  @SuppressWarnings({"rawtypes"})
+  public NamedList rawSortFieldValues;
+  // raw sort field values strictly for state transmission
+  // raw sort field values will only exist if iterativeStep > 0
   @SuppressWarnings({"rawtypes"})
   public NamedList sortFieldValues;
   // sort field values for *all* docs in a particular shard.
@@ -54,6 +62,23 @@ public class ShardDoc extends FieldDoc {
 
   public ShardDoc() {
     super(-1, Float.NaN);
+  }
+
+  void readState(JavaBinCodec codec, DataInputInputStream dis) throws IOException {
+    shard = (String) codec.readVal(dis);
+    iterativeStep = (int) codec.readVal(dis);
+    orderInShard = (int) codec.readVal(dis);
+    id = codec.readVal(dis);
+    score = (float) codec.readVal(dis);
+  }
+
+  void writeState(JavaBinCodec codec) throws IOException {
+    // NB: sortFieldValues are handled outside since they are shared and positionInResponse has to be set again if used
+    codec.writeVal(shard);
+    codec.writeVal(iterativeStep);
+    codec.writeVal(orderInShard);
+    codec.writeVal(id);
+    codec.writeVal(score);
   }
 
   @Override

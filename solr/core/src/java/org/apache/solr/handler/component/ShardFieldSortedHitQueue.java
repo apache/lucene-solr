@@ -72,9 +72,9 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
   @Override
   protected boolean lessThan(ShardDoc docA, ShardDoc docB) {
-    // If these docs are from the same shard, then the relative order
+    // If these docs are from the same shard and same iteration, then the relative order
     // is how they appeared in the response from that shard.    
-    if (docA.shard == docB.shard) {
+    if (docA.shard.equals(docB.shard) && docA.iterativeStep == docB.iterativeStep) {
       // if docA has a smaller position, it should be "larger" so it
       // comes before docB.
       // This will handle sorting by docid within the same shard
@@ -96,6 +96,10 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
     // smaller docid's beat larger ids, so reverse the natural ordering
     if (c == 0) {
       c = -docA.shard.compareTo(docB.shard);
+      if (c == 0) {
+        // could be an iterative request, break ties by using iterative step
+        c = -Integer.compare(docA.iterativeStep, docB.iterativeStep);
+      }
     }
 
     return c < 0;

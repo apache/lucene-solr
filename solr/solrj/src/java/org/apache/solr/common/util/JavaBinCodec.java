@@ -201,7 +201,7 @@ public class JavaBinCodec implements PushWriter {
     FastInputStream dis = FastInputStream.wrap(is);
     return _init(dis);
   }
-  protected FastInputStream initRead(byte[] buf) throws IOException {
+  public FastInputStream initRead(byte[] buf) throws IOException {
     assert !alreadyUnmarshalled;
     FastInputStream dis = new FastInputStream(null, buf, 0, buf.length);
     return _init(dis);
