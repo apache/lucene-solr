@@ -127,6 +127,8 @@ Bug Fixes
 
 * SOLR-14506: Fix NPE in COLSTATUS for collections using implicit routing. (Austin Weidler, ab)
 
+* SOLR-15620: Download Config button in Schema Designer screen should not require user to re-login when already authenticated (Timothy Potter)
+
 Other Changes
 ---------------------
 * SOLR-15355: Upgrade Hadoop from 3.2.0 to 3.2.2. (Antoine Gruzelle via David Smiley)
