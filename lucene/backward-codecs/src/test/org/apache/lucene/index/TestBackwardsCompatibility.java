@@ -1834,6 +1834,33 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertTrue(firstDate <= lastDate);
   }
 
+  /**
+   * Tests that {@link CheckIndex} can detect invalid sort on sorted indices created
+   * before https://issues.apache.org/jira/browse/LUCENE-8592.
+   */
+  public void testSortedIndexWithInvalidSort() throws Exception {
+    Path path = createTempDir("sorted");
+    String name = "sorted-invalid.7.5.0.zip";
+    InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream(name);
+    assertNotNull("Sorted index index " + name + " not found", resource);
+    TestUtil.unzip(resource, path);
+
+    Directory dir = FSDirectory.open(path);
+
+    DirectoryReader reader = DirectoryReader.open(dir);
+    assertEquals(1, reader.leaves().size());
+    Sort sort = reader.leaves().get(0).reader().getMetaData().getSort();
+    assertNotNull(sort);
+    assertEquals("<long: \"dateDV\">! missingValue=-9223372036854775808", sort.toString());
+    reader.close();
+    CheckIndex.Status status = TestUtil.checkIndex(dir);
+    assertEquals(1, status.segmentInfos.size());
+    assertNotNull(status.segmentInfos.get(0).indexSortStatus.error);
+    assertEquals(status.segmentInfos.get(0).indexSortStatus.error.getMessage(),
+        "segment has indexSort=<long: \"dateDV\">! missingValue=-9223372036854775808 but docID=4 sorts after docID=5");
+    dir.close();
+  }
+  
   static long getValue(BinaryDocValues bdv) throws IOException {
     BytesRef term = bdv.binaryValue();
     int idx = term.offset;
