@@ -92,10 +92,19 @@
         <lst name="query">
           <str name="path">/admin/metrics</str>
           <lst name="params">
-            <str name="group">all</str>
-            <str name="type">all</str>
-            <str name="prefix"></str>
-            <str name="property"></str>
+            <str name="expr">solr\.jetty:.*DefaultHandler.*</str>
+            <str name="expr">solr\.jvm:.*</str>
+            <str name="expr">solr\.node:.*</str>
+            <str name="expr">solr\.overseer:.*</str>
+            <str name="expr">solr\.core\..*:QUERY\..*</str>
+            <str name="expr">solr\.core\..*:ADMIN\..*</str>
+            <str name="expr">solr\.core\..*:CACHE\..*</str>
+            <str name="expr">solr\.core\..*:UPDATE\.updateHandler\..*</str>
+            <str name="expr">solr\.core\..*:CORE\.fs\..*</str>
+            <str name="expr">solr\.core\..*:HIGHLIGHTER\..*</str>
+            <str name="expr">solr\.core\..*:INDEX\..*</str>
+            <str name="expr">solr\.core\..*:REPLICATION\.replication\..*</str>
+            <str name="expr">solr\.core\..*:SEARCHER\.searcher\..*</str>
           </lst>
         </lst>
         <arr name="jsonQueries">

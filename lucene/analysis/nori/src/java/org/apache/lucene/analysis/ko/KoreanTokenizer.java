@@ -670,20 +670,14 @@ public final class KoreanTokenizer extends Tokenizer {
         System.out.println("    " + posData.count + " arcs in");
       }
 
-      // Move to the first character that is not a whitespace.
-      // The whitespaces are added as a prefix for the term that we extract,
-      // this information is then used when computing the cost for the term using
-      // the space penalty factor.
-      // They are removed when the final tokens are generated.
+      // We add single space separator as prefixes of the terms that we extract.
+      // This information is needed to compute the space penalty factor of each term.
+      // These whitespace prefixes are removed when the final tokens are generated, or
+      // added as separated tokens when discardPunctuation is unset.
       if (Character.getType(buffer.get(pos)) == Character.SPACE_SEPARATOR) {
-        int nextChar = buffer.get(++pos);
-        while (nextChar != -1 && Character.getType(nextChar) == Character.SPACE_SEPARATOR) {
-          pos++;
-          nextChar = buffer.get(pos);
+        if (buffer.get(++pos) == -1) {
+          pos = posData.pos;
         }
-      }
-      if (buffer.get(pos) == -1) {
-        pos = posData.pos;
       }
 
       boolean anyMatches = false;

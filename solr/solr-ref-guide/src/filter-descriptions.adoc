@@ -1435,6 +1435,8 @@ This filter constructs shingles, which are token n-grams, from the token stream.
 
 `tokenSeparator`:: (string, default is " ") The string to use when joining adjacent tokens to form a shingle.
 
+`fillerToken`:: (string, default is "_") The character used to fill in for removed stop words in order to preserve position increments.
+
 *Example:*
 
 Default behavior.

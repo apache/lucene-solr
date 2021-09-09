@@ -66,7 +66,9 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     assertTrue(errs.get(0).contains("Missing required attribute"));
     m.put("friendlyIntFld", Boolean.TRUE);
     errs = validator.validateJson(m);
+    assertTrue(errs.get(0).contains("Value is not valid"));
     m.put("friendlyIntFld", "another String");
+    errs = validator.validateJson(m);
     assertTrue(errs.get(0).contains("Value is not valid"));
   }
 
