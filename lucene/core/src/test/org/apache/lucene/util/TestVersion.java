@@ -187,6 +187,19 @@ public class TestVersion extends LuceneTestCase {
     assertTrue(atLeastOne);
   }
 
+  public void testNonFloatingPointCompliantVersionNumbers() throws ParseException {
+    Version version800 = Version.parse("8.0.0");
+    assertTrue(Version.parse("8.10.0").onOrAfter(version800));
+    assertTrue(Version.parse("8.10.0").onOrAfter(Version.parse("8.9.255")));
+    assertTrue(Version.parse("8.128.0").onOrAfter(version800));
+    assertTrue(Version.parse("8.255.0").onOrAfter(version800));
+
+    Version version400 = Version.parse("4.0.0");
+    assertTrue(version800.onOrAfter(version400));
+    assertTrue(Version.parse("8.128.0").onOrAfter(version400));
+    assertFalse(version400.onOrAfter(version800));
+  }
+
   public void testLatestVersionCommonBuild() {
     // common-build.xml sets 'tests.LUCENE_VERSION', if not, we skip this test!
     String commonBuildVersion = System.getProperty("tests.LUCENE_VERSION");
