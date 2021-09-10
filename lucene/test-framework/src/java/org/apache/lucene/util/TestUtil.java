@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -100,9 +103,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
  * General utility methods for Lucene unit tests. 
@@ -282,13 +282,22 @@ public final class TestUtil {
     return checkIndex(dir, true);
   }
 
-  public static CheckIndex.Status checkIndex(Directory dir, boolean doSlowChecks) throws IOException {
-    return checkIndex(dir, doSlowChecks, false, null);
+  public static CheckIndex.Status checkIndex(Directory dir, boolean doSlowChecks)
+      throws IOException {
+    return checkIndex(dir, doSlowChecks, false, true, null);
   }
 
-  /** If failFast is true, then throw the first exception when index corruption is hit, instead of moving on to other fields/segments to
-   *  look for any other corruption.  */
-  public static CheckIndex.Status checkIndex(Directory dir, boolean doSlowChecks, boolean failFast, ByteArrayOutputStream output) throws IOException {
+  /**
+   * If failFast is true, then throw the first exception when index corruption is hit, instead of
+   * moving on to other fields/segments to look for any other corruption.
+   */
+  public static CheckIndex.Status checkIndex(
+      Directory dir,
+      boolean doSlowChecks,
+      boolean failFast,
+      boolean concurrent,
+      ByteArrayOutputStream output)
+      throws IOException {
     if (output == null) {
       output = new ByteArrayOutputStream(1024);
     }
@@ -298,6 +307,11 @@ public final class TestUtil {
       checker.setDoSlowChecks(doSlowChecks);
       checker.setFailFast(failFast);
       checker.setInfoStream(new PrintStream(output, false, IOUtils.UTF_8), false);
+      if (concurrent) {
+        checker.setThreadCount(RandomizedTest.randomIntBetween(2, 5));
+      } else {
+        checker.setThreadCount(1);
+      }
       CheckIndex.Status indexStatus = checker.checkIndex(null);
       
       if (indexStatus == null || indexStatus.clean == false) {

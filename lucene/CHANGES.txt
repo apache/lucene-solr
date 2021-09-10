@@ -15,7 +15,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9662: Make CheckIndex concurrent by parallelizing index check across segments.
+  (Zach Chen, Mike McCandless, Dawid Weiss, Robert Muir)
 
 Optimizations
 ---------------------
@@ -28,6 +30,7 @@ Bug Fixes
 Other
 ---------------------
 (No changes)
+
 
 ======================= Lucene 8.10.0 =======================
 
