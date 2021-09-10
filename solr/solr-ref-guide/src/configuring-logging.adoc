@@ -84,7 +84,11 @@ bin/solr start -f -q
 
 == Permanent Logging Settings
 
-Solr uses http://logging.apache.org/log4j/log4j-{ivy-log4j-version}/[Log4J version {ivy-log4j-version}] for logging which is configured using `server/resources/log4j2.xml`. Take a moment to inspect the contents of the `log4j2.xml` file so that you are familiar with its structure. By default, Solr log messages will be written to `SOLR_LOGS_DIR/solr.log`.
+Solr uses http://logging.apache.org/log4j/2.x/[Log4J version {ivy-log4j-version}] for logging which is configured using `server/resources/log4j2.xml`.
+Take a moment to inspect the contents of the `log4j2.xml` file so that you are familiar with its structure.
+
+By default, Solr log messages will be written to `SOLR_LOGS_DIR/solr.log`.
+The format of the log messages can be changed by https://logging.apache.org/log4j/2.x/manual/layouts.html#PatternLayout[modifying the pattern] used in the `<PatternLayout/>`, or by changing the layout implementation -- e.g., a https://logging.apache.org/log4j/2.x/manual/json-template-layout.html[`<JsonTemplateLayout/>`] can be used to configure JSON formatted log files.
 
 When you're ready to deploy Solr in production, set the variable `SOLR_LOGS_DIR` to the location where you want Solr to write log files, such as `/var/solr/logs`. You may also want to tweak `log4j2.xml`. Note that if you installed Solr as a service using the instructions provided in <<taking-solr-to-production.adoc#,Taking Solr to Production>>, then see `/var/solr/log4j2.xml` instead of the default `server/resources` version.
 

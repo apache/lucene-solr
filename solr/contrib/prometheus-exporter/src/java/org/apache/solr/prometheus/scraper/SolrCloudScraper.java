@@ -138,7 +138,7 @@ public class SolrCloudScraper extends SolrScraper {
   }
 
   private Set<String> getCollections() throws IOException {
-    return solrClient.getClusterStateProvider().getClusterState().getCollectionsMap().keySet();
+    return solrClient.getClusterStateProvider().getClusterState().getCollectionStates().keySet();
   }
 
   @Override

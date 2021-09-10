@@ -3,13 +3,15 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
-======================= Lucene 8.x =======================
+======================= Lucene 8.11.0 =======================
 
 API Changes
 ---------------------
+(No changes)
 
 New Features
 ---------------------
+(No changes)
 
 Improvements
 ---------------------
@@ -19,12 +21,16 @@ Improvements
 
 Optimizations
 ---------------------
+(No changes)
 
 Bug Fixes
 ---------------------
+(No changes)
 
 Other
 ---------------------
+(No changes)
+
 
 ======================= Lucene 8.10.0 =======================
 
@@ -143,6 +149,9 @@ Bug Fixes
   incoming holes in the input token graph (Geoff Lawson)
 
 * LUCENE-10060: Ensure DrillSidewaysQuery instances never get cached. (Greg Miller, Zachary Chen)
+
+* LUCENE-10081: KoreanTokenizer should check the max backtrace gap on whitespaces.
+  (Jim Ferenczi)
 
 Other
 ---------------------

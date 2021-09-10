@@ -149,7 +149,7 @@ public class TestSortingCodecReader extends LuceneTestCase {
         actualNumDocs = iw.getDocStats().numDocs;
       }
       Sort indexSort = RandomPicks.randomFrom(random(), Arrays.asList(
-          new Sort(new SortField("id", SortField.Type.INT),
+          new Sort(new SortField("id", SortField.Type.LONG),
               new SortField("alt_id", SortField.Type.INT)),
           new Sort(new SortedSetSortField("sorted_set_sort_field", false),
               new SortField("alt_id", SortField.Type.INT)),
