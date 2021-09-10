@@ -502,8 +502,7 @@ public final class CheckIndex implements Closeable {
     threadCount = tc;
   }
 
-  // capped threadCount at 4 for default
-  private int threadCount = Math.min(Runtime.getRuntime().availableProcessors(), 4);
+  private int threadCount = Runtime.getRuntime().availableProcessors();
 
   /**
    * Set infoStream where messages should go. If null, no messages are printed. If verbose is true
@@ -3835,7 +3834,7 @@ public final class CheckIndex implements Closeable {
 
     if (opts.indexPath == null) {
       throw new IllegalArgumentException("\nERROR: index path not specified" +
-                         "\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-slow] [-segment X] [-segment Y] [-dir-impl X]\n" +
+                         "\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-exorcise] [-slow] [-segment X] [-segment Y] [-threadCount X] [-dir-impl X]\n" +
                          "\n" +
                          "  -exorcise: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -fast: just verify file checksums, omitting logical integrity checks\n" + 
@@ -3845,6 +3844,9 @@ public final class CheckIndex implements Closeable {
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
                          "              You can't use this with the -exorcise option\n" +
+                         "  -threadCount X: number of threads used to check index concurrently.\n" +
+                         "                  When not specified, this will default to the number of CPU cores.\n" +
+                         "                  When '-threadCount 1' is used, index checking will be performed sequentially.\n" +
                          "  -dir-impl X: use a specific " + FSDirectory.class.getSimpleName() + " implementation. " +
                          "If no package is specified the " + FSDirectory.class.getPackage().getName() + " package will be used.\n" +
                          "\n" +
