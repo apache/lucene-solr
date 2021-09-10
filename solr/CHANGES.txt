@@ -121,6 +121,8 @@ Other Changes
 
 * SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
+* SOLR-15621: index.html for Admin UI should send Solr version in the request for JavaScript files (Timothy Potter)
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
