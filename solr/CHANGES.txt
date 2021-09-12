@@ -32,7 +32,7 @@ Build
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15269: Upgrade httpclient and httpmime to 4.5.13.  (ventry)
 
 ======================= 8.10.1 =======================
 
