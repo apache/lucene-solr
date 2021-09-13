@@ -23,9 +23,12 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.util.ClasspathResourceLoader;
-import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.Version;
+
+import static org.junit.Assert.assertTrue;
 
 public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase {
 
