@@ -28,8 +28,6 @@ import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.Version;
 
-import static org.junit.Assert.assertTrue;
-
 public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testInform() throws Exception {
