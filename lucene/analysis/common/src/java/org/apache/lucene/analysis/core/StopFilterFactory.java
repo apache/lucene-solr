@@ -79,11 +79,6 @@ public class StopFilterFactory extends AbstractWordsFileFilterFactory {
     super(args);
   }
 
-  /** Default ctor for compatibility with SPI */
-  public StopFilterFactory() {
-    throw defaultCtorException();
-  }
-
   public CharArraySet getStopWords() {
     return getWords();
   }

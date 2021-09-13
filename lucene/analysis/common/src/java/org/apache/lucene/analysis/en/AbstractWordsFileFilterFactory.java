@@ -19,10 +19,10 @@ package org.apache.lucene.analysis.en;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 
 /**
  * Abstract parent class for analysis factories that accept a stopwords file as input.
@@ -63,11 +63,6 @@ public abstract class AbstractWordsFileFilterFactory extends TokenFilterFactory
   private final String wordFiles;
   private final String format;
   private final boolean ignoreCase;
-
-  /** Default ctor for compatibility with SPI */
-  protected AbstractWordsFileFilterFactory() {
-    throw defaultCtorException();
-  }
 
   /** Initialize this factory via a set of key-value pairs. */
   public AbstractWordsFileFilterFactory(Map<String, String> args) {

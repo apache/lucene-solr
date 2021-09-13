@@ -47,11 +47,6 @@ public class CommonGramsFilterFactory extends AbstractWordsFileFilterFactory {
     super(args);
   }
 
-  /** Default ctor for compatibility with SPI */
-  public CommonGramsFilterFactory() {
-    throw defaultCtorException();
-  }
-
   public CharArraySet getCommonWords() {
     return getWords();
   }
