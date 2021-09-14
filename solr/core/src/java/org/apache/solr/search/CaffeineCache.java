@@ -243,7 +243,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
     try {
       return cache.get(key, k -> {
-        inserts.increment();
         V value;
         try {
           value = mappingFunction.apply(k);
