@@ -32,7 +32,6 @@ import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.UnInvertedField;
@@ -96,13 +95,9 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
         List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c))
             .collect(Collectors.toList());
         for (Future<UnInvertedField> uifuture : futures) {
-          try {
-            final UnInvertedField uif = uifuture.get();
-          } catch (ExecutionException injection) {
-            SolrException solrException = (SolrException) injection.getCause();
-            assertEquals(ErrorCode.SERVER_ERROR.code, solrException.code());
-            assertSame(solrException.getCause().getClass(), OutOfMemoryError.class);
-          }
+          ExecutionException injection = assertThrows(ExecutionException.class, uifuture::get);
+          Throwable root = SolrException.getRootCause(injection);
+          assertSame(OutOfMemoryError.class, root.getClass());
           assertNull(UnInvertedField.checkUnInvertedField(proto.field(), searcher));
         }
         TestInjection.uifOutOfMemoryError = false;

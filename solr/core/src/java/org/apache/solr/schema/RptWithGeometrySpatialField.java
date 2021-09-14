@@ -163,13 +163,7 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
             throw new IllegalStateException("Leaf " + readerContext.reader() + " is not suited for caching");
           }
           PerSegCacheKey key = new PerSegCacheKey(cacheHelper.getKey(), docId);
-          Shape shape = cache.computeIfAbsent(key, k -> {
-            try {
-              return targetFuncValues.value();
-            } catch (IOException e) {
-              return null;
-            }
-          });
+          Shape shape = cache.computeIfAbsent(key, k -> targetFuncValues.value());
           if (shape != null) {
             //optimize shape on a cache hit if possible. This must be thread-safe and it is.
             if (shape instanceof JtsGeometry) {

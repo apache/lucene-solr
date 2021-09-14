@@ -326,8 +326,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         delta("inserts", parentFilterCache.getValue(), parentsBefore));
 
 
+    assertEquals("true join query was not in fqCache", 0L,
+        delta("hits", filterCache.getValue(), filtersBefore));
     assertEquals("true join query is cached in fqCache", 1L,
-        delta("lookups", filterCache.getValue(), filtersBefore));
+        delta("inserts", filterCache.getValue(), filtersBefore));
   }
   
   private long delta(String key, Map<String,Object> a, Map<String,Object> b) {
