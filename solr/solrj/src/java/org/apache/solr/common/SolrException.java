@@ -20,7 +20,6 @@ import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -137,35 +136,45 @@ public class SolrException extends RuntimeException {
     return getMetadata(ROOT_ERROR_CLASS);
   }
 
-  public void log(Logger log) { log(log,this); }
-  public static void log(Logger log, Throwable e) {
-    String stackTrace = toStr(e);
-    String ignore = doIgnore(e, stackTrace);
-    if (ignore != null) {
-      log.info(ignore);
-      return;
-    }
-    log.error(stackTrace);
-
-  }
-
-  public static void log(Logger log, String msg, Throwable e) {
-    String stackTrace = msg + ':' + toStr(e);
-    String ignore = doIgnore(e, stackTrace);
-    if (ignore != null) {
-      log.info(ignore);
-      return;
-    }
-    log.error(stackTrace);
+  /** @see #ignorePatterns */
+  public void log(Logger log) {
+    log(log,this);
   }
   
-  public static void log(Logger log, String msg) {
-    String ignore = doIgnore(null, msg);
-    if (ignore != null) {
-      log.info(ignore);
-      return;
+  /** @see #ignorePatterns */
+  public static void log(Logger log, Throwable e) {
+    if (log.isErrorEnabled()) {
+      String ignore = doIgnoreToStr(null, e);
+      if (ignore != null) {
+        log.info(ignore);
+        return;
+      }
+      log.error(e.toString(), e); // nowarn (we are inside of isErrorEnabled, toString as msg is ok)
     }
-    log.error(msg);
+  }
+
+  /** @see #ignorePatterns */
+  public static void log(Logger log, String msg, Throwable e) {
+    if (log.isErrorEnabled()) {
+      String ignore = doIgnoreToStr(msg, e);
+      if (ignore != null) {
+        log.info(ignore);
+        return;
+      }
+      log.error(msg, e);
+    }
+  }
+  
+  /** @see #ignorePatterns */
+  public static void log(Logger log, String msg) {
+    if (log.isErrorEnabled()) {
+      String ignore = doIgnoreToStr(msg, null);
+      if (ignore != null) {
+        log.info(ignore);
+        return;
+      }
+      log.error(msg);
+    }
   }
 
   public static String toStr(Throwable e) {
@@ -174,35 +183,62 @@ public class SolrException extends RuntimeException {
     e.printStackTrace(pw);
     pw.flush();
     return cw.toString();
-
-/** This doesn't work for some reason!!!!!
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    e.printStackTrace(pw);
-    pw.flush();
-    System.out.println("The STRING:" + sw.toString());
-    return sw.toString();
-**/
   }
 
-
   /**
-   * For test code - do not log exceptions that match any of these regular expressions.
+   * For test code: If non-null, prevents calls to {@link #log} from logging any msg or exception (stack trace) that matches an included regular expressions.
+   *
    * A {@link java.util.concurrent.CopyOnWriteArraySet is recommended}.
    */
   public static Set<String> ignorePatterns;
 
-  /** Returns null if this exception does not match any ignore patterns, or a message string to use if it does. */
-  public static String doIgnore(Throwable t, String m) {
-    Set<String> ignorePatterns = SolrException.ignorePatterns; // guard against races, albeit unlikely
-    if (ignorePatterns == null || m == null) return null;
+  /** 
+   * Returns null if this exception does not match any ignore patterns; or an INFO message string to log instead if it does.
+   *
+   * @param t the original exception (only used for assertion checking)
+   * @param stacktrace the stringified stack trace of the exception, used for the acutal regex checking
+   * @see #ignorePatterns
+   * @see #toStr
+   */
+  public static String doIgnore(Throwable t, String stacktrace) { 
     if (t != null && t instanceof AssertionError) return null;
+    
+    Set<String> ignorePatterns = SolrException.ignorePatterns; // guard against races, albeit unlikely
+    // legacy public API: caller is required to have already stringified exception...
+    return doIgnoreToStr(ignorePatterns, stacktrace, null);
+  }
 
-    for (String regex : ignorePatterns) {
+  /** @see #doIgnoreToStr(Set, String, Throwable) */
+  private static String doIgnoreToStr(String msg, Throwable t) {
+    if (t != null && t instanceof AssertionError) return null;
+    
+    Set<String> ignorePatterns = SolrException.ignorePatterns; // guard against races, albeit unlikely
+    return doIgnoreToStr(ignorePatterns, msg, t);
+  }
+  
+  /** 
+   * Returns null if the stringToCheck + exceptionToCheck does not match any of the ignore patterns; 
+   * or an INFO message string to log instead if it does.
+   *
+   * @param ignorePats patterns to match against
+   * @param stringToCheck arbitrary string to check against each ignore pattern
+   * @param exceptionToCheck if non-null, will be stringified and concatenated with stringToCheck before testing patterns
+   * @see #ignorePatterns
+   * @see #toStr
+   */
+  private static String doIgnoreToStr(Set<String> ignorePats, String stringToCheck, Throwable exceptionToCheck) {
+    if (null == ignorePats) return null;
+    
+    // we have some patterns, so we can't avoid stringifying exception for checks.
+    if (null != exceptionToCheck) {
+      // legacy concat of msg + throwable...
+      stringToCheck = (null == stringToCheck ? "" : stringToCheck+':') + toStr(exceptionToCheck);
+    }
+    
+    for (String regex : ignorePats) {
       Pattern pattern = Pattern.compile(regex); // TODO why do we compile late; why not up-front?
-      Matcher matcher = pattern.matcher(m);
       
-      if (matcher.find()) return "Ignoring exception matching " + regex;
+      if (pattern.matcher(stringToCheck).find()) return "Ignoring exception matching " + regex;
     }
 
     return null;
