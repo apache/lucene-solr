@@ -25,16 +25,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.util.TestInjection;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,6 +69,13 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  @After
+  @Override
+  public void tearDown() throws Exception {
+    TestInjection.reset();
+    super.tearDown();
+  }
+
   void addInt(SolrInputDocument doc, int l, int u, String... fields) {
     int v=0;
     if (0==l && l==u) {
@@ -79,9 +96,12 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     for (int i=0; i<nDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", ""+i);
-      proc.process(doc);
+      if (proc != null) {
+        proc.process(doc);
+      }
       assertU(adoc(doc));
     }
+    assertU(commit());
   }
 
   @Test
@@ -258,14 +278,10 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // sometimes a very small index, sometimes a very large index
     final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
-    createIndex(numDocs, new DocProcessor() {
-      @Override
-      public void process(SolrInputDocument doc) {
-        // 10% of the docs have missing values
-        if (random().nextInt(10)!=0) addInt(doc, l,u, fields);
-      }
+    createIndex(numDocs, doc -> {
+      // 10% of the docs have missing values
+      if (random().nextInt(10)!=0) addInt(doc, l,u, fields);
     });
-    assertU(commit());
 
     final int numIters = atLeast(1000);
     for (int i=0; i < numIters; i++) {
@@ -355,7 +371,46 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       }
     }
   }
-  
+
+  @Test
+  public void testRangeQueryWithFilterCache() throws Exception {
+    TestInjection.delayBeforeCreatingNewDocSet = 500;
+
+    // sometimes a very small index, sometimes a very large index
+    // final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
+    final int numDocs = 99;
+    createIndex(numDocs, doc -> {
+      addInt(doc, 0, 0, "foo_i");
+    });
+
+    ExecutorService queryService = ExecutorUtil.newMDCAwareFixedThreadPool(4, new SolrNamedThreadFactory("TestRangeQuery"));
+    try (SolrCore core = h.getCoreInc()) {
+      SolrRequestHandler defaultHandler = core.getRequestHandler("");
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("q", "*:*");
+      params.add("fq", "id:[0 TO 222]"); // These should all come from FilterCache
+
+      // 10 threads with 4 executors would be enough for 3 waves, or approximately 1500ms of delay
+      CountDownLatch atLeastOnceCompleted = new CountDownLatch(1);
+      for (int i = 0; i < 10; i++) {
+        queryService.submit(() -> {
+          try (SolrQueryRequest req = req(params)) {
+            core.execute(defaultHandler, req, new SolrQueryResponse());
+          }
+          atLeastOnceCompleted.countDown();
+        });
+      }
+
+      queryService.shutdown(); // No more requests will be queued up
+      atLeastOnceCompleted.await(); // Wait for the first query to complete
+      assertTrue(queryService.awaitTermination(1, TimeUnit.SECONDS)); // All queries after should be very fast
+
+      assertEquals("Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
+    }
+  }
+
+  @Test
   public void testRangeQueryEndpointTO() throws Exception {
     assertEquals("[to TO to]", QParser.getParser("[to TO to]", req("df", "text")).getQuery().toString("text"));
     assertEquals("[to TO to]", QParser.getParser("[to TO TO]", req("df", "text")).getQuery().toString("text"));
@@ -375,6 +430,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     assertEquals("[xx TO to]", QParser.getParser("[xx TO TO]", req("df", "text")).getQuery().toString("text"));
   }
 
+  @Test
   public void testRangeQueryRequiresTO() throws Exception {
     assertEquals("{a TO b}", QParser.getParser("{A TO B}", req("df", "text")).getQuery().toString("text"));
     assertEquals("[a TO b}", QParser.getParser("[A TO B}", req("df", "text")).getQuery().toString("text"));
@@ -398,6 +454,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO]", req("df", "text")).getQuery());
   }
 
+  @Test
   public void testCompareTypesRandomRangeQueries() throws Exception {
     int cardinality = 10000;
     Map<NumberType,String[]> types = new HashMap<>(); //single and multivalued field types
@@ -501,13 +558,9 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   private long doRangeQuery(boolean mv, String start, String end, String field, String[] qRange) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "field_" + (mv?"mv_":"sv_") + field + ":" + start + qRange[0] + " TO " + qRange[1] + end);
-    SolrQueryRequest req = req(params);
-    try {
+    try (SolrQueryRequest req = req(params)) {
       return (long) h.queryAndResponse("", req).getToLog().get("hits");
-    } finally {
-      req.close();
     }
-
   }
 
   private String[] getRandomRange(int max, String fieldName) {

@@ -221,18 +221,7 @@ public class SolrDocumentFetcher {
     Document d;
     if (documentCache != null) {
       final Set<String> getFields = enableLazyFieldLoading ? fields : null;
-      AtomicReference<IOException> exceptionRef = new AtomicReference<>();
-      d = documentCache.computeIfAbsent(i, docId -> {
-        try {
-          return docNC(docId, getFields);
-        } catch (IOException e) {
-          exceptionRef.set(e);
-          return null;
-        }
-      });
-      if (exceptionRef.get() != null) {
-        throw exceptionRef.get();
-      }
+      d = documentCache.computeIfAbsent(i, docId -> docNC(docId, getFields));
       if (d == null) {
         // failed to retrieve due to an earlier exception, try again?
         return docNC(i, fields);

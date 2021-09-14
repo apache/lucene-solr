@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -363,21 +362,9 @@ class JoinQuery extends Query {
 
         if (fromRef != null) {
           final RefCounted<SolrIndexSearcher> ref = fromRef;
-          info.addCloseHook(new Closeable() {
-            @Override
-            public void close() {
-              ref.decref();
-            }
-          });
+          info.addCloseHook(ref::decref);
         }
-
-        info.addCloseHook(new Closeable() {
-          @Override
-          public void close() {
-            fromCore.close();
-          }
-        });
-
+        info.addCloseHook(fromCore);
       }
       this.toSearcher = searcher;
     }

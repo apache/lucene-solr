@@ -59,6 +59,7 @@ import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.TestInjection;
 
 /** @lucene.experimental */
 public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetProducer {
@@ -168,6 +169,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   private DocSet createDocSet(SolrIndexSearcher searcher, long cost) throws IOException {
+    assert TestInjection.injectDocSetDelay();
     int maxDoc = searcher.maxDoc();
     BitDocSet liveDocs = searcher.getLiveDocSet();
     FixedBitSet liveBits = liveDocs.size() == maxDoc ? null : liveDocs.getBits();
@@ -393,13 +395,12 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       // first time, check our filter cache
       boolean doCheck = !checkedFilterCache && context.ord == 0;
       checkedFilterCache = true;
-      SolrIndexSearcher solrSearcher = null;
+      final SolrIndexSearcher solrSearcher;
       if (doCheck && searcher instanceof SolrIndexSearcher) {
-        solrSearcher = (SolrIndexSearcher)searcher;
+        solrSearcher = (SolrIndexSearcher) searcher;
         if (solrSearcher.getFilterCache() == null) {
           doCheck = false;
         } else {
-          solrSearcher = (SolrIndexSearcher)searcher;
           DocSet answer = solrSearcher.getFilterCache().get(SolrRangeQuery.this);
           if (answer != null) {
             filter = answer.getTopFilter();
@@ -407,9 +408,11 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         }
       } else {
         doCheck = false;
+        solrSearcher = null;
       }
       
       if (filter != null) {
+        // I'm not sure this ever happens
         return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));
       }
 
@@ -440,6 +443,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
       if (doCheck) {
         DocSet answer = createDocSet(solrSearcher, count);
+        // This can be a naked put because the cache usually gets checked in SolrIndexSearcher
         solrSearcher.getFilterCache().put(SolrRangeQuery.this, answer);
         filter = answer.getTopFilter();
         return segStates[context.ord] = new SegState(filter.getDocIdSet(context, null));

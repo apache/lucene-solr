@@ -97,7 +97,8 @@
     <filterCache
       size="512"
       initialSize="512"
-      autowarmCount="2"/>
+      autowarmCount="2"
+      async="${solr.filterCache.async:false}"/>
 
     <queryResultCache
       size="512"

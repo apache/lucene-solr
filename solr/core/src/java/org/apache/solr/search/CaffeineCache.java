@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
@@ -25,6 +26,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -33,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
+import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.apache.lucene.util.Accountable;
@@ -40,6 +44,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,20 +77,28 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       + RamUsageEstimator.shallowSizeOfInstance(CacheStats.class)
       + 2 * RamUsageEstimator.shallowSizeOfInstance(LongAdder.class);
 
+  private static final long RAM_BYTES_PER_FUTURE = RamUsageEstimator.shallowSizeOfInstance(CompletableFuture.class);
+
   private Executor executor;
 
   private CacheStats priorStats;
+  private long priorHits;
   private long priorInserts;
+  private long priorLookups;
 
   private String description = "Caffeine Cache";
+  private LongAdder hits;
   private LongAdder inserts;
+  private LongAdder lookups;
   private Cache<K,V> cache;
+  private AsyncCache<K,V> asyncCache;
   private long warmupTime;
   private int maxSize;
   private long maxRamBytes;
   private int initialSize;
   private int maxIdleTimeSec;
   private boolean cleanupThread;
+  private boolean async;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
@@ -104,7 +117,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     super.init(args, regenerator);
     String str = (String) args.get(SIZE_PARAM);
     maxSize = (str == null) ? 1024 : Integer.parseInt(str);
-    str = (String) args.get("initialSize");
+    str = (String) args.get(INITIAL_SIZE_PARAM);
     initialSize = Math.min((str == null) ? 1024 : Integer.parseInt(str), maxSize);
     str = (String) args.get(MAX_IDLE_TIME_PARAM);
     if (str == null) {
@@ -115,9 +128,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     str = (String) args.get(MAX_RAM_MB_PARAM);
     int maxRamMB = str == null ? -1 : Double.valueOf(str).intValue();
     maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
-    str = (String) args.get(CLEANUP_THREAD_PARAM);
-    cleanupThread = str != null && Boolean.parseBoolean(str);
-    if (cleanupThread) {
+    cleanupThread = Boolean.parseBoolean((String) args.get(CLEANUP_THREAD_PARAM));
+    async = Boolean.parseBoolean((String) args.get(ASYNC_PARAM));
+    if (async) {
+      // We record futures in the map to decrease bucket-lock contention, but need computation handled in same thread
+      executor = Runnable::run;
+    } else if (cleanupThread) {
       executor = ForkJoinPool.commonPool();
     } else {
       executor = Runnable::run;
@@ -126,7 +142,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     description = generateDescription(maxSize, initialSize);
 
     cache = buildCache(null);
+    hits = new LongAdder();
     inserts = new LongAdder();
+    lookups = new LongAdder();
 
     initialRamBytes =
         RamUsageEstimator.shallowSizeOfInstance(cache.getClass()) +
@@ -153,7 +171,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     } else {
       builder.maximumSize(maxSize);
     }
-    Cache<K, V> newCache = builder.build();
+    Cache<K, V> newCache;
+    if (async) {
+      asyncCache = builder.buildAsync();
+      newCache = asyncCache.synchronous();
+    } else {
+      newCache = builder.build();
+    }
     if (prev != null) {
       newCache.putAll(prev.asMap());
     }
@@ -179,33 +203,83 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     return cache.getIfPresent(key);
   }
 
-  @Override
-  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
-    return cache.get(key, k -> {
-      inserts.increment();
-      V value = mappingFunction.apply(k);
-      if (value == null) {
-        return null;
+  private V computeAsync(K key, IOFunction<? super K, ? extends V> mappingFunction) throws IOException {
+    CompletableFuture<V> future = new CompletableFuture<>();
+    CompletableFuture<V> result = asyncCache.asMap().putIfAbsent(key, future);
+    lookups.increment();
+    if (result != null) {
+      try {
+        // Another thread is already working on this computation, wait for them to finish
+        V value = result.join();
+        hits.increment();
+        return value;
+      } catch (CompletionException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof IOException) {
+          // Computation had an IOException, likely index problems, so fail this result too
+          throw (IOException) cause;
+        }
+        throw e;
       }
-      ramBytes.add(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-          RamUsageEstimator.sizeOfObject(value, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-      ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
+    }
+    try {
+      // We reserved the slot, so we do the work
+      V value = mappingFunction.apply(key);
+      future.complete(value); // This will update the weight and expiration
+      recordRamBytes(key, null, value);
+      inserts.increment();
       return value;
-    });
+    } catch (RuntimeException | IOException e) {
+      // TimeExceeded exception is runtime and will bubble up from here
+      future.completeExceptionally(e);
+      throw e;
+    }
+  }
+
+  @Override
+  public V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction) throws IOException {
+    if (async) {
+      return computeAsync(key, mappingFunction);
+    }
+
+    try {
+      return cache.get(key, k -> {
+        inserts.increment();
+        V value;
+        try {
+          value = mappingFunction.apply(k);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+        if (value == null) {
+          return null;
+        }
+        recordRamBytes(key, null, value);
+        inserts.increment();
+        return value;
+      });
+    } catch (UncheckedIOException e) {
+      throw e.getCause();
+    }
   }
 
   @Override
   public V put(K key, V val) {
     inserts.increment();
     V old = cache.asMap().put(key, val);
-    ramBytes.add(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(val, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-    if (old != null) {
-      ramBytes.add(- RamUsageEstimator.sizeOfObject(old, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-    } else {
-      ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
-    }
+    recordRamBytes(key, old, val);
     return old;
+  }
+
+  private void recordRamBytes(K key, V oldValue, V newValue) {
+    ramBytes.add(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(newValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+    if (oldValue == null) {
+      ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
+      if (async) ramBytes.add(RAM_BYTES_PER_FUTURE);
+    } else {
+      ramBytes.add(- RamUsageEstimator.sizeOfObject(oldValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+    }
   }
 
   @Override
@@ -303,9 +377,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
     // warm entries
     if (isAutowarmingOn()) {
-      Eviction<K, V> policy = other.cache.policy().eviction().get();
       int size = autowarm.getWarmCount(other.cache.asMap().size());
-      hottest = policy.hottest(size);
+      hottest = other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Collections.emptyMap());
     }
 
     for (Entry<K, V> entry : hottest.entrySet()) {
@@ -321,15 +394,20 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       }
     }
 
+    hits.reset();
     inserts.reset();
-    priorStats = other.cache.stats().plus(other.priorStats);
+    lookups.reset();
+    CacheStats oldStats = other.cache.stats();
+    priorStats = oldStats.plus(other.priorStats);
+    priorHits = oldStats.hitCount() + other.hits.sum() + other.priorHits;
     priorInserts = other.inserts.sum() + other.priorInserts;
+    priorLookups = oldStats.requestCount() + other.lookups.sum() + other.priorLookups;
     warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
   /** Returns the description of this cache. */
   private String generateDescription(int limit, int initialSize) {
-    return String.format(Locale.ROOT, "TinyLfu Cache(maxSize=%d, initialSize=%d%s)",
+    return String.format(Locale.ROOT, "Caffeine Cache(maxSize=%d, initialSize=%d%s)",
         limit, initialSize, isAutowarmingOn() ? (", " + getAutowarmDescription()) : "");
   }
 
@@ -372,11 +450,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     cacheMap = new MetricsMap(map -> {
       if (cache != null) {
         CacheStats stats = cache.stats();
+        long hitCount = stats.hitCount() + hits.sum();
         long insertCount = inserts.sum();
+        long lookupCount = stats.requestCount() + lookups.sum();
 
-        map.put(LOOKUPS_PARAM, stats.requestCount());
-        map.put(HITS_PARAM, stats.hitCount());
-        map.put(HIT_RATIO_PARAM, stats.hitRate());
+        map.put(LOOKUPS_PARAM, lookupCount);
+        map.put(HITS_PARAM, hitCount);
+        map.put(HIT_RATIO_PARAM, hitRate(hitCount, lookupCount));
         map.put(INSERTS_PARAM, insertCount);
         map.put(EVICTIONS_PARAM, stats.evictionCount());
         map.put(SIZE_PARAM, cache.asMap().size());
@@ -385,13 +465,19 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
 
         CacheStats cumulativeStats = priorStats.plus(stats);
-        map.put("cumulative_lookups", cumulativeStats.requestCount());
-        map.put("cumulative_hits", cumulativeStats.hitCount());
-        map.put("cumulative_hitratio", cumulativeStats.hitRate());
+        long cumLookups = priorLookups + lookupCount;
+        long cumHits = priorHits + hitCount;
+        map.put("cumulative_lookups", cumLookups);
+        map.put("cumulative_hits", cumHits);
+        map.put("cumulative_hitratio", hitRate(cumHits, cumLookups));
         map.put("cumulative_inserts", priorInserts + insertCount);
         map.put("cumulative_evictions", cumulativeStats.evictionCount());
       }
     });
     solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
+  }
+
+  private static double hitRate(long hitCount, long lookupCount) {
+    return lookupCount == 0 ? 1.0 : (double) hitCount / lookupCount;
   }
 }
