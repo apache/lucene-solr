@@ -690,16 +690,16 @@ parts supported by the `key` selector. This parameter can be specified multiple 
 any expression. The API guarantees that the output will consist only of unique metric names even if
 multiple expressions match the same metric name. Note: order of multiple `expr` parameters matters here - only the first value of the first matching expression will be recorded, subsequent values for the same metric name
 produced by matching other expressions will be skipped.
-
++
 Fully-qualified expression consists of at least two and at most three regex patterns separated by
 colons: a registry pattern, colon, a metric pattern, and then an optional colon and metric property pattern.
 Colons and other regex meta-characters in names and in regular expressions MUST be escaped using backslash (`\`) character.
-
++
 *NOTE: when this parameter is used, any other selection methods are ignored.*
-
++
 Examples:
 
-* `expr=solr\.core\..*:QUERY\..*\.requestTimes:max_ms`
+* `expr=solr\.core\..\*:QUERY\..*\.requestTimes:max_ms`
 * `expr=solr\.jvm:system\.properties:user\..*`
 
 `compact`:: When false, a more verbose format of the response will be returned. Instead of a response like this:
