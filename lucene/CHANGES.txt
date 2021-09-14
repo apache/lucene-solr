@@ -27,6 +27,11 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Build
+---------------------
+
+* LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
+
 Other
 ---------------------
 
