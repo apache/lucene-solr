@@ -64,6 +64,8 @@ Improvements
 
 * SOLR-15572: Improve the default Prometheus exporter config performance. (ab)
 
+* SOLR-15555: Use async feature of caffeine cache for concurrent duplicate queries. (Mike Drob)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
