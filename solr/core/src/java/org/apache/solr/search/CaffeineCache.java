@@ -128,7 +128,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     int maxRamMB = str == null ? -1 : Double.valueOf(str).intValue();
     maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
     cleanupThread = Boolean.parseBoolean((String) args.get(CLEANUP_THREAD_PARAM));
-    async = Boolean.parseBoolean((String) args.get(ASYNC_PARAM));
+    async = Boolean.parseBoolean((String) args.getOrDefault(ASYNC_PARAM, "true"));
     if (async) {
       // We record futures in the map to decrease bucket-lock contention, but need computation handled in same thread
       executor = Runnable::run;
@@ -228,7 +228,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       recordRamBytes(key, null, value);
       inserts.increment();
       return value;
-    } catch (RuntimeException | IOException e) {
+    } catch (Error | RuntimeException | IOException e) {
       // TimeExceeded exception is runtime and will bubble up from here
       future.completeExceptionally(e);
       throw e;
