@@ -67,7 +67,7 @@ If `blockUnknown` does not appear in the `security.json` file, it will default t
 
 [WARNING]
 ====
-If you set `blockUnknown` to `false`, then *any* request that is not explicitly protected by a permission will be accessible by anonymous users!
+If you set `blockUnknown` to `false`, then *any* request that is not explicitly protected by a permission will be accessible to anonymous users!
 Consequently, you should define a role binding for every <<rule-based-authorization-plugin.adoc#permissions,predefined>> permission you want to protect.
 You can assign the special `role: null` binding for requests that you want to allow anonymous users to access. To protect all endpoints except those with `role:null`,
 you can add a role binding for the `all` permission and place it in the last position in `security.json`.
