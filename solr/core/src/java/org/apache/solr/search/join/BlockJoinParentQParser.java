@@ -17,6 +17,7 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -89,14 +90,18 @@ public class BlockJoinParentQParser extends FiltersQParser {
     // lazily retrieve from solr cache
     BitDocIdSetFilterWrapper result;
     if (parentCache != null) {
-      Filter filter = parentCache.computeIfAbsent(parentList,
-          query -> new BitDocIdSetFilterWrapper(createParentFilter(query)));
-      if (filter instanceof BitDocIdSetFilterWrapper) {
-        result = (BitDocIdSetFilterWrapper) filter;
-      } else {
-        result = new BitDocIdSetFilterWrapper(createParentFilter(parentList));
-        // non-atomic update of existing entry to ensure strong-typing
-        parentCache.put(parentList, result);
+      try {
+        Filter filter = parentCache.computeIfAbsent(parentList,
+            query -> new BitDocIdSetFilterWrapper(createParentFilter(query)));
+        if (filter instanceof BitDocIdSetFilterWrapper) {
+          result = (BitDocIdSetFilterWrapper) filter;
+        } else {
+          result = new BitDocIdSetFilterWrapper(createParentFilter(parentList));
+          // non-atomic update of existing entry to ensure strong-typing
+          parentCache.put(parentList, result);
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException(e); // Shouldn't happen because nothing in here throws
       }
     } else {
       result = new BitDocIdSetFilterWrapper(createParentFilter(parentList));
