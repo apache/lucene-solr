@@ -84,7 +84,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
     private DocIdSetIterator competitiveIterator;
     private long iteratorCost;
-    private int maxDocVisited = 0;
+    private int maxDocVisited = -1;
     private int updateCounter = 0;
 
     public NumericLeafComparator(LeafReaderContext context) throws IOException {
