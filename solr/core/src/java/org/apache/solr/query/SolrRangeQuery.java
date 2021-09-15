@@ -169,7 +169,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   private DocSet createDocSet(SolrIndexSearcher searcher, long cost) throws IOException {
-    assert TestInjection.injectDocSetDelay();
+    assert TestInjection.injectDocSetDelay(this);
     int maxDoc = searcher.maxDoc();
     BitDocSet liveDocs = searcher.getLiveDocSet();
     FixedBitSet liveBits = liveDocs.size() == maxDoc ? null : liveDocs.getBits();

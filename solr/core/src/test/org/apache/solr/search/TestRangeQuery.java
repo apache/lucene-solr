@@ -56,7 +56,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema11.xml");
+    // use a solrconfig that does not have autowarming
+    initCore("solrconfig_perf.xml", "schema11.xml");
   }
 
   @Override
@@ -374,8 +375,6 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testRangeQueryWithFilterCache() throws Exception {
-    TestInjection.delayBeforeCreatingNewDocSet = 500;
-
     // sometimes a very small index, sometimes a very large index
     // final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
     final int numDocs = 99;
@@ -383,30 +382,40 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       addInt(doc, 0, 0, "foo_i");
     });
 
-    ExecutorService queryService = ExecutorUtil.newMDCAwareFixedThreadPool(4, new SolrNamedThreadFactory("TestRangeQuery"));
-    try (SolrCore core = h.getCoreInc()) {
-      SolrRequestHandler defaultHandler = core.getRequestHandler("");
+    // ensure delay comes after createIndex - so we don't affect/count any cache warming from queries left over by other test methods
+    TestInjection.delayBeforeCreatingNewDocSet = TEST_NIGHTLY ? 50 : 500; // Run more queries nightly, so use shorter delay
 
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("q", "*:*");
-      params.add("fq", "id:[0 TO 222]"); // These should all come from FilterCache
+    final int MAX_QUERY_RANGE = 222;                            // Arbitrary number in the middle of the value range
+    final int QUERY_START = TEST_NIGHTLY ? 1 : MAX_QUERY_RANGE; // Either run queries for the full range, or just the last one
+    final int NUM_QUERIES = TEST_NIGHTLY ? 101 : 10;
+    for (int j = QUERY_START ; j <= MAX_QUERY_RANGE; j++) {
+      ExecutorService queryService = ExecutorUtil.newMDCAwareFixedThreadPool(4, new SolrNamedThreadFactory("TestRangeQuery-" + j));
+      try (SolrCore core = h.getCoreInc()) {
+        SolrRequestHandler defaultHandler = core.getRequestHandler("");
 
-      // 10 threads with 4 executors would be enough for 3 waves, or approximately 1500ms of delay
-      CountDownLatch atLeastOnceCompleted = new CountDownLatch(1);
-      for (int i = 0; i < 10; i++) {
-        queryService.submit(() -> {
-          try (SolrQueryRequest req = req(params)) {
-            core.execute(defaultHandler, req, new SolrQueryResponse());
-          }
-          atLeastOnceCompleted.countDown();
-        });
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set("q", "*:*");
+        params.add("fq", "id:[0 TO " + j + "]"); // These should all come from FilterCache
+
+        // Regular: 10 threads with 4 executors would be enough for 3 waves, or approximately 1500ms of delay
+        // Nightly: 101 threads with 4 executors is 26 waves, approximately 1300ms delay
+        CountDownLatch atLeastOnceCompleted = new CountDownLatch(TEST_NIGHTLY ? 30 : 1);
+        for (int i = 0; i < NUM_QUERIES; i++) {
+          queryService.submit(() -> {
+            try (SolrQueryRequest req = req(params)) {
+              core.execute(defaultHandler, req, new SolrQueryResponse());
+            }
+            atLeastOnceCompleted.countDown();
+          });
+        }
+
+        queryService.shutdown(); // No more requests will be queued up
+        atLeastOnceCompleted.await(); // Wait for the first batch of queries to complete
+        assertTrue(queryService.awaitTermination(1, TimeUnit.SECONDS)); // All queries after should be very fast
+
+        assertEquals("Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
       }
-
-      queryService.shutdown(); // No more requests will be queued up
-      atLeastOnceCompleted.await(); // Wait for the first query to complete
-      assertTrue(queryService.awaitTermination(1, TimeUnit.SECONDS)); // All queries after should be very fast
-
-      assertEquals("Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
+      TestInjection.countDocSetDelays.set(0);
     }
   }
 

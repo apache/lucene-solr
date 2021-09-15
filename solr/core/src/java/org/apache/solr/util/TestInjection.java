@@ -585,11 +585,11 @@ public class TestInjection {
     return true;
   }
 
-  public static boolean injectDocSetDelay() {
+  public static boolean injectDocSetDelay(Object query) {
     if (delayBeforeCreatingNewDocSet != null) {
       countDocSetDelays.incrementAndGet();
       try {
-        log.info("Pausing DocSet for {}ms", delayBeforeCreatingNewDocSet);
+        log.info("Pausing DocSet for {}ms: {}", delayBeforeCreatingNewDocSet, query);
         if (log.isDebugEnabled()) {
           log.debug("", new Exception("Stack Trace"));
         }
