@@ -764,7 +764,7 @@
       <!-- If possible, include the GIT hash into manifest: -->
       <exec dir="." executable="${git.exe}" outputproperty="-checkoutid" errorproperty="-giterr" failifexecutionfails="false">
         <arg value="log"/>
-        <arg value="--format=%H"/>
+        <arg value="--format=%h"/>
         <arg value="-n"/>
         <arg value="1"/>
       </exec>

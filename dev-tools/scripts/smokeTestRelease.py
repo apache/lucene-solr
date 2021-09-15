@@ -1223,7 +1223,7 @@ def make_java_config(parser, java9_home):
   return jc(run_java8, java8_home, run_java9, java9_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
-revision_re = re.compile(r'rev([a-f\d]+)')
+revision_re = re.compile(r'rev([a-f\d]{11})')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
