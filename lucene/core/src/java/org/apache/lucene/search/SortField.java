@@ -472,42 +472,61 @@ public class SortField {
    * @return {@link FieldComparator} to use when sorting
    */
   public FieldComparator<?> getComparator(final int numHits, final int sortPos) {
-
+    final FieldComparator<?> fieldComparator;
     switch (type) {
-    case SCORE:
-      return new FieldComparator.RelevanceComparator(numHits);
+      case SCORE:
+        fieldComparator = new FieldComparator.RelevanceComparator(numHits);
+        break;
 
-    case DOC:
-      return new DocComparator(numHits, reverse, sortPos);
+      case DOC:
+        fieldComparator = new DocComparator(numHits, reverse, sortPos);
+        break;
 
-    case INT:
-      return new IntComparator(numHits, field, (Integer) missingValue, reverse, sortPos);
+      case INT:
+        fieldComparator =
+            new IntComparator(numHits, field, (Integer) missingValue, reverse, sortPos);
+        break;
 
-    case FLOAT:
-      return new FloatComparator(numHits, field, (Float) missingValue, reverse, sortPos);
+      case FLOAT:
+        fieldComparator =
+            new FloatComparator(numHits, field, (Float) missingValue, reverse, sortPos);
+        break;
 
-    case LONG:
-      return new LongComparator(numHits, field, (Long) missingValue, reverse, sortPos);
+      case LONG:
+        fieldComparator = new LongComparator(numHits, field, (Long) missingValue, reverse, sortPos);
+        break;
 
-    case DOUBLE:
-      return new DoubleComparator(numHits, field, (Double) missingValue, reverse, sortPos);
+      case DOUBLE:
+        fieldComparator =
+            new DoubleComparator(numHits, field, (Double) missingValue, reverse, sortPos);
+        break;
 
-    case CUSTOM:
-      assert comparatorSource != null;
-      return comparatorSource.newComparator(field, numHits, sortPos, reverse);
+      case CUSTOM:
+        assert comparatorSource != null;
+        fieldComparator = comparatorSource.newComparator(field, numHits, sortPos, reverse);
+        break;
 
-    case STRING:
-      return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == STRING_LAST);
+      case STRING:
+        return new FieldComparator.TermOrdValComparator(
+            numHits, field, missingValue == STRING_LAST);
 
-    case STRING_VAL:
-      return new FieldComparator.TermValComparator(numHits, field, missingValue == STRING_LAST);
+      case STRING_VAL:
+        fieldComparator =
+            new FieldComparator.TermValComparator(numHits, field, missingValue == STRING_LAST);
+        break;
 
-    case REWRITEABLE:
-      throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
-        
-    default:
-      throw new IllegalStateException("Illegal sort type: " + type);
+      case REWRITEABLE:
+        throw new IllegalStateException(
+            "SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
+
+      default:
+        throw new IllegalStateException("Illegal sort type: " + type);
     }
+    if (getCanUsePoints() == false) {
+      // disable skipping functionality of a numeric comparator if we can't use points
+      fieldComparator.disableSkipping();
+    }
+    return fieldComparator;
   }
 
   /**
