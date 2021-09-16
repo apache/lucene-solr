@@ -138,10 +138,6 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       reverseMul[i] = field.reverse ? -1 : 1;
       comparators[i] = field.getComparator(size, i);
     }
-    if (numComparators > 0 && fields[0].getCanUsePoints() == false) {
-      // disable skipping functionality of a numeric comparator if we can't use points
-      comparators[0].disableSkipping();
-    }
     if (numComparators == 1) {
       // inform a comparator that sort is based on this single field
       // to enable some optimizations for skipping over non-competitive documents
