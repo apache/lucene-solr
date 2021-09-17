@@ -33,6 +33,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.ConjunctionDISI;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 
@@ -272,7 +273,7 @@ public class StringValueFacetCounts extends Facets {
       // Assuming the state is valid, ordinalMap should be null since we have one segment:
       assert ordinalMap == null;
 
-      countOneSegment(docValues, hits.context.ord, hits);
+      countOneSegment(docValues, hits.context.ord, hits, null);
     } else {
 
       // Validate state before doing anything else. We only check the first segment since they
@@ -291,7 +292,7 @@ public class StringValueFacetCounts extends Facets {
         MultiDocValues.MultiSortedSetDocValues multiValues =
             (MultiDocValues.MultiSortedSetDocValues) docValues;
 
-        countOneSegment(multiValues.values[i], hits.context.ord, hits);
+        countOneSegment(multiValues.values[i], hits.context.ord, hits, null);
       }
     }
   }
@@ -309,7 +310,7 @@ public class StringValueFacetCounts extends Facets {
       assert ordinalMap == null;
 
       LeafReaderContext context = leaves.get(0);
-      countOneSegment(docValues, context.ord, null);
+      countOneSegment(docValues, context.ord, null, context.reader().getLiveDocs());
     } else {
       // Since we have more than one segment, we should have a non-null ordinalMap and docValues
       // should be a MultiSortedSetDocValues instance:
@@ -321,13 +322,16 @@ public class StringValueFacetCounts extends Facets {
 
       for (int i = 0; i < numLeaves; i++) {
         LeafReaderContext context = leaves.get(i);
-        countOneSegment(multiValues.values[i], context.ord, null);
+        countOneSegment(multiValues.values[i], context.ord, null, context.reader().getLiveDocs());
       }
     }
   }
 
   private void countOneSegment(
-      SortedSetDocValues multiValues, int segmentOrd, FacetsCollector.MatchingDocs hits)
+      SortedSetDocValues multiValues,
+      int segmentOrd,
+      FacetsCollector.MatchingDocs hits,
+      Bits liveDocs)
       throws IOException {
 
     // It's slightly more efficient to work against SortedDocValues if the field is actually
@@ -339,7 +343,7 @@ public class StringValueFacetCounts extends Facets {
     // all doc values for this segment:
     DocIdSetIterator it;
     if (hits == null) {
-      it = valuesIt;
+      it = (liveDocs != null) ? FacetUtils.liveDocsDISI(valuesIt, liveDocs) : valuesIt;
     } else {
       it = ConjunctionDISI.intersectIterators(Arrays.asList(hits.bits.iterator(), valuesIt));
     }

@@ -25,10 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -73,6 +76,38 @@ public class TestStringValueFacetCounts extends FacetTestCase {
     writer.close();
 
     checkFacetResult(expectedCounts, expectedTotalDocCount, searcher, 10, 2, 1, 0);
+
+    IOUtils.close(searcher.getIndexReader(), dir);
+  }
+
+  // See: LUCENE-10070
+  public void testCountAll() throws Exception {
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("foo")));
+    writer.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("field", new BytesRef("foo")));
+    writer.addDocument(doc);
+
+    writer.deleteDocuments(new Term("id", "0"));
+
+    IndexSearcher searcher = newSearcher(writer.getReader());
+    writer.close();
+
+    StringDocValuesReaderState state =
+        new StringDocValuesReaderState(searcher.getIndexReader(), "field");
+
+    StringValueFacetCounts facets = new StringValueFacetCounts(state);
+    assertEquals(
+        "dim=field path=[] value=1 childCount=1\n  foo (1)",
+        facets.getTopChildren(10, "field").toString().trim());
 
     IOUtils.close(searcher.getIndexReader(), dir);
   }
