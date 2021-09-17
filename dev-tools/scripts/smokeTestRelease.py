@@ -173,7 +173,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       match = re.search("Implementation-Version: (.+\r\n .+)", s, re.MULTILINE)
       if match:
         implLine = match.group(1).replace("\r\n ", "")
-        verifyRevision = 'Implementation-Version: %s %s' % (version, gitRevision)
+        verifyRevision = '%s %s' % (version, gitRevision)
         if implLine.find(verifyRevision) == -1:
           raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong git revision?)' % \
                            (desc, verifyRevision))
