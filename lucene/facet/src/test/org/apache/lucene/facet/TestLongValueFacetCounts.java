@@ -25,11 +25,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -67,6 +70,31 @@ public class TestLongValueFacetCounts extends LuceneTestCase {
     assertEquals("dim=field path=[] value=101 childCount=6\n  0 (20)\n  1 (20)\n  2 (20)\n  3 (20)\n  " +
                  "4 (20)\n  9223372036854775807 (1)\n",
                  result.toString());
+    r.close();
+    d.close();
+  }
+
+  // See: LUCENE-10070
+  public void testCountAll() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+
+    for (int i = 0; i < 10; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", String.valueOf(i), Field.Store.NO));
+      doc.add(new NumericDocValuesField("field", i % 2));
+      w.addDocument(doc);
+    }
+
+    w.deleteDocuments(new Term("id", "0"));
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    LongValueFacetCounts facets = new LongValueFacetCounts("field", r, false);
+
+    FacetResult result = facets.getAllChildrenSortByValue();
+    assertEquals("dim=field path=[] value=9 childCount=2\n  0 (4)\n  1 (5)\n", result.toString());
     r.close();
     d.close();
   }
