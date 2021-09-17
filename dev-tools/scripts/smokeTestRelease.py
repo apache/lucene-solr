@@ -170,11 +170,15 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
 
     if gitRevision != 'skip':
       # Make sure this matches the version and git revision we think we are releasing:
-      # TODO: LUCENE-7023: is it OK that Implementation-Version's value now spans two lines?
-      verifyRevision = 'Implementation-Version: %s %s' % (version, gitRevision)
-      if s.find(verifyRevision) == -1:
-        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong git revision?)' % \
+      match = re.search("Implementation-Version: (.+\r\n .+)", s, re.MULTILINE)
+      if match:
+        implLine = match.group(1).replace("\r\n ", "")
+        verifyRevision = 'Implementation-Version: %s %s' % (version, gitRevision)
+        if implLine.find(verifyRevision) == -1:
+          raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong git revision?)' % \
                            (desc, verifyRevision))
+      else:
+        raise RuntimeError('%s is missing Implementation-Version inside its META-INF/MANIFEST.MF' % desc)
 
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
     license = decodeUTF8(z.read(LICENSE_FILE_NAME))
@@ -1223,7 +1227,7 @@ def make_java_config(parser, java9_home):
   return jc(run_java8, java8_home, run_java9, java9_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
-revision_re = re.compile(r'rev([a-f\d]{11})')
+revision_re = re.compile(r'rev([a-f\d]+)')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
