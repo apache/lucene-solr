@@ -4,6 +4,35 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
 
+==================  8.11.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Build
+---------------------
+
+* LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  8.10.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -51,6 +80,21 @@ Improvements
 
 * SOLR-9853: Project multi-valued fields in SQL query results (Timothy Potter)
 
+* SOLR-15599: Upgrade AWS SDK from v1 to v2 for S3 Repository (Houston Putman)
+
+* SOLR-15609: Upgrade log4j to 2.14.1 (hossman)
+
+* SOLR-11752: Support "Accept-Encoding" header to enable response gzip compression
+  (Matthew Sporleder, Houston Putman, Shawn Heisey, Jan Høydahl)
+
+* SOLR-15610: log4j-layout-template-json is now included in solr server, allowing JSON formatted logs to be configurable. (hossman)
+
+* SOLR-15607: Explicitly indent results in Admin Query UI by default (Olvia Falk via Eric Pugh)
+
+* SOLR-15572: Improve the default Prometheus exporter config performance. (ab)
+
+* SOLR-15555: Use async feature of caffeine cache for concurrent duplicate queries. (Mike Drob)
+
 Optimizations
 ---------------------
 * SOLR-15433: Replace transient core cache LRU by Caffeine cache. (Bruno Roustant)
@@ -80,6 +124,18 @@ Bug Fixes
 
 * SOLR-15410: Always use -Xverbosegclog for OpenJ9.  (Colvin Cowie via Eric Pugh)
 
+* SOLR-13209: Fix NPE when no grouping query specified  (Collins Abanda via Mike Drob)
+
+* SOLR-6156: Fix NullPointerException if group.field grouping is used with rows=0 and timeAllowed. (Modassar Ather, Christine Poerschke)
+
+* SOLR-14457: SolrClient leaks connections on compressed responses if the response is malformed (Houston Putman)
+
+* SOLR-15595: Partial results from shard queries needlessly discarded for queries without sort field (Michael Kosten via Mike Drob, Eric Pugh)
+
+* SOLR-14506: Fix NPE in COLSTATUS for collections using implicit routing. (Austin Weidler, ab)
+
+* SOLR-15620: Download Config button in Schema Designer screen should not require user to re-login when already authenticated (Timothy Potter)
+
 Other Changes
 ---------------------
 * SOLR-15355: Upgrade Hadoop from 3.2.0 to 3.2.2. (Antoine Gruzelle via David Smiley)
@@ -93,6 +149,10 @@ Other Changes
 
 * SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
+
+* SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
+
+* SOLR-15621: index.html for Admin UI should send Solr version in the request for JavaScript files (Timothy Potter)
 
 ==================  8.9.0 ==================
 

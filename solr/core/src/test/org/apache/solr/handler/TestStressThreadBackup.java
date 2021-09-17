@@ -316,7 +316,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     final int numRealDocsExpected = Integer.parseInt(m.group());
     
     try (Directory dir = FSDirectory.open(backup.toPath())) {
-      TestUtil.checkIndex(dir, true, true, null);
+      TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals("num real docs in " + backup.toString(),
                      numRealDocsExpected, r.docFreq(new Term("type_s","real")));

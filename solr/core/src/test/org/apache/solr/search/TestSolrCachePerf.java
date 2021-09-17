@@ -16,10 +16,13 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,6 +33,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runners.model.MultipleFailureException;
 
 /**
  *
@@ -65,8 +69,8 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
     // warm-up
     int threads = 10;
     for (int i = 0; i < 10; i++) {
-      doTestGetPutCompute(new HashMap<String, SummaryStatistics>(), new HashMap<String, SummaryStatistics>(), threads, false);
-      doTestGetPutCompute(new HashMap<String, SummaryStatistics>(), new HashMap<String, SummaryStatistics>(), threads, true);
+      doTestGetPutCompute(new HashMap<>(), new HashMap<>(), threads, false);
+      doTestGetPutCompute(new HashMap<>(), new HashMap<>(), threads, true);
     }
     for (int i = 0; i < 100; i++) {
       doTestGetPutCompute(getPutRatio, getPutTime, threads, false);
@@ -108,6 +112,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       CountDownLatch startLatch = new CountDownLatch(1);
       CountDownLatch stopLatch = new CountDownLatch(numThreads * NUM_KEYS);
       List<Thread> runners = new ArrayList<>();
+      Set<Exception> exceptions = ConcurrentHashMap.newKeySet();
       for (int i = 0; i < numThreads; i++) {
         Thread t = new Thread(() -> {
           try {
@@ -128,11 +133,10 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
                 }
               }
               Thread.yield();
-              stopLatch.countDown();
+              stopLatch.countDown(); // Does this need to be in a finally block?
             }
-          } catch (InterruptedException e) {
-            fail(e.toString());
-            return;
+          } catch (InterruptedException | IOException e) {
+            exceptions.add(e);
           }
         });
         t.start();
@@ -145,6 +149,9 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       stop.set(true);
       for (Thread t : runners) {
         t.join();
+      }
+      if (! exceptions.isEmpty()) {
+        throw new MultipleFailureException(new ArrayList<>(exceptions));
       }
       long stopTime = System.nanoTime();
       Map<String, Object> metrics = cache.getMetricsSnapshot();

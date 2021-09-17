@@ -67,38 +67,38 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
     File file = new File(tmp, "content");
     FileUtils.write(file, content, StandardCharsets.UTF_8);
 
-    SliceInputStream slicedStream = new SliceInputStream(new FileInputStream(file), slice);
-    S3IndexInput input = new S3IndexInput(slicedStream, "path", file.length());
+    try (SliceInputStream slicedStream = new SliceInputStream(new FileInputStream(file), slice);
+         S3IndexInput input = new S3IndexInput(slicedStream, "path", file.length())) {
 
-    // Now read the file
-    ByteBuffer buffer;
-    if (directBuffer) {
-      buffer = ByteBuffer.allocateDirect((int) file.length());
-    } else {
-      buffer = ByteBuffer.allocate((int) file.length());
+      // Now read the file
+      ByteBuffer buffer;
+      if (directBuffer) {
+        buffer = ByteBuffer.allocateDirect((int) file.length());
+      } else {
+        buffer = ByteBuffer.allocate((int) file.length());
+      }
+      input.readInternal(buffer);
+
+      // Check the buffer content, in a way that works for both heap and direct buffers
+      buffer.position(0);
+      byte[] bytes = new byte[buffer.remaining()];
+      buffer.get(bytes);
+      assertEquals(content, new String(bytes, Charset.defaultCharset()));
+
+      // Ensure we actually made many calls
+      int expectedReadCount;
+      if (directBuffer) {
+        // For direct buffer, we may be caped by internal buffer if it's smaller than the size
+        // defined by the test
+        expectedReadCount = content.length() / Math.min(slice, S3IndexInput.LOCAL_BUFFER_SIZE) + 1;
+      } else {
+        expectedReadCount = content.length() / slice + 1;
+      }
+      assertEquals(
+          "S3IndexInput did an unexpected number of reads",
+          expectedReadCount,
+          slicedStream.readCount);
     }
-    input.readInternal(buffer);
-    input.close();
-
-    // Check the buffer content, in a way that works for both heap and direct buffers
-    buffer.position(0);
-    byte[] bytes = new byte[buffer.remaining()];
-    buffer.get(bytes);
-    assertEquals(content, new String(bytes, Charset.defaultCharset()));
-
-    // Ensure we actually made many calls
-    int expectedReadCount;
-    if (directBuffer) {
-      // For direct buffer, we may be caped by internal buffer if it's smaller than the size defined
-      // by the test
-      expectedReadCount = content.length() / Math.min(slice, S3IndexInput.LOCAL_BUFFER_SIZE) + 1;
-    } else {
-      expectedReadCount = content.length() / slice + 1;
-    }
-    assertEquals(
-        "S3IndexInput did an unexpected number of reads",
-        expectedReadCount,
-        slicedStream.readCount);
   }
 
   /** Input stream that reads, but not too much in a single call. */
@@ -125,6 +125,12 @@ public class S3IndexInputTest extends SolrTestCaseJ4 {
       readCount++;
       int slicedLength = Math.min(slice, length);
       return super.read(b, off, slicedLength);
+    }
+
+    @Override
+    public void close() throws IOException {
+      input.close();
+      super.close();
     }
   }
 }

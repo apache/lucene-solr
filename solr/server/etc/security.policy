@@ -103,7 +103,8 @@ grant {
   permission java.lang.RuntimePermission "writeFileDescriptor";
   // needed by hadoop http
   permission java.lang.RuntimePermission "getProtectionDomain";
-  // needed by aws s3 sdk
+  // needed by aws s3 sdk (Apache HTTP Client)
+  permission java.lang.RuntimePermission "setFactory";
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
 
   // These two *have* to be spelled out a separate
@@ -199,6 +200,11 @@ grant {
   permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
+
+  // Credentials for S3 Repository
+  permission java.io.FilePermission "${aws.sharedCredentialsFile}", "read,readlink";
+  permission java.io.FilePermission "${aws.configFile}", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.aws${/}-", "read,readlink";
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";

@@ -21,6 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.IntRange;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -29,11 +30,16 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static org.apache.lucene.search.SortField.FIELD_DOC;
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
@@ -563,5 +569,137 @@ public class TestSortOptimization extends LuceneTestCase {
     dir.close();
   }
 
+  public void testPointValidation() throws IOException {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+
+    doc.add(new IntPoint("intField", 4));
+    doc.add(new NumericDocValuesField("intField", 4));
+
+    doc.add(new LongPoint("longField", 42));
+    doc.add(new NumericDocValuesField("longField", 42));
+
+    doc.add(new IntRange("intRange", new int[] {1}, new int[] {10}));
+    doc.add(new NumericDocValuesField("intRange", 4));
+
+    writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(reader);
+    SortField sort1 = new SortField("intField", SortField.Type.LONG);
+    sort1.setCanUsePoints();
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            searcher.search(
+                new MatchAllDocsQuery(),
+                1,
+                new Sort(sort1)));
+    SortField sort2 = new SortField("longField", SortField.Type.INT);
+    sort2.setCanUsePoints();
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            searcher.search(
+                new MatchAllDocsQuery(),
+                1,
+                new Sort(sort2)));
+    SortField sort3 = new SortField("intRange", SortField.Type.INT);
+    sort3.setCanUsePoints();
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            searcher.search(
+                new MatchAllDocsQuery(),
+                1,
+                new Sort(sort3)));
+
+    reader.close();
+    dir.close();
+  }
+
+  public void testMaxDocVisited() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    int numDocs = atLeast(10000);
+    long offset = 100 + random().nextInt(100);
+    long smallestValue = 50 + random().nextInt(50);
+    boolean flushed = false;
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = new Document();
+      doc.add(new NumericDocValuesField("my_field", i + offset));
+      doc.add(new LongPoint("my_field", i + offset));
+      writer.addDocument(doc);
+      if (i >= 5000 && flushed == false) {
+        flushed = true;
+        writer.flush();
+        // Index the smallest value to the first slot of the second segment
+        doc = new Document();
+        doc.add(new NumericDocValuesField("my_field", smallestValue));
+        doc.add(new LongPoint("my_field", smallestValue));
+        writer.addDocument(doc);
+      }
+    }
+    IndexReader reader = DirectoryReader.open(writer);
+    writer.close();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    SortField sortField = new SortField("my_field", SortField.Type.LONG);
+    sortField.setCanUsePoints();
+    TopFieldDocs topDocs =
+        searcher.search(new MatchAllDocsQuery(), 1 + random().nextInt(100), new Sort(sortField));
+    FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[0];
+    assertEquals(smallestValue, ((Long) fieldDoc.fields[0]).intValue());
+    reader.close();
+    dir.close();
+  }
+
+  public void testRandomLong() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    List<Long> seqNos = LongStream.range(0, atLeast(10_000)).boxed().collect(Collectors.toList());
+    Collections.shuffle(seqNos, random());
+    int pendingDocs = 0;
+    for (long seqNo : seqNos) {
+      Document doc = new Document();
+      doc.add(new NumericDocValuesField("seq_no", seqNo));
+      doc.add(new LongPoint("seq_no", seqNo));
+      writer.addDocument(doc);
+      pendingDocs++;
+      if (pendingDocs > 500 && random().nextInt(100) <= 5) {
+        pendingDocs = 0;
+        writer.flush();
+      }
+    }
+    writer.flush();
+    seqNos.sort(Long::compare);
+    IndexReader reader = DirectoryReader.open(writer);
+    writer.close();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    SortField sortField = new SortField("seq_no", SortField.Type.LONG);
+    sortField.setCanUsePoints();
+    int visitedHits = 0;
+    ScoreDoc after = null;
+    while (visitedHits < seqNos.size()) {
+      int batch = 1 + random().nextInt(100);
+      Query query =
+          random().nextBoolean()
+              ? new MatchAllDocsQuery()
+              : LongPoint.newRangeQuery("seq_no", 0, Long.MAX_VALUE);
+      TopDocs topDocs = searcher.searchAfter(after, query, batch, new Sort(sortField));
+      int expectedHits = Math.min(seqNos.size() - visitedHits, batch);
+      assertEquals(expectedHits, topDocs.scoreDocs.length);
+      after = topDocs.scoreDocs[expectedHits - 1];
+      for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+        FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
+        long expectedSeqNo = seqNos.get(visitedHits);
+        assertEquals(expectedSeqNo, ((Long) fieldDoc.fields[0]).intValue());
+        visitedHits++;
+      }
+    }
+    reader.close();
+    dir.close();
+  }
 
 }

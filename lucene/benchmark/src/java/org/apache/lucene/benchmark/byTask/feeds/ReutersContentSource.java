@@ -110,14 +110,16 @@ public class ReutersContentSource extends ContentSource {
 
     int threadIndexSize = Thread.currentThread().getName().length();
     int parallelTaskThreadSize = Constants.PARALLEL_TASK_THREAD_NAME_PREFIX.length();
-
-    // Extract ThreadIndex from unique ThreadName which is set with '"ParallelTaskThread-"+index',
-    // in TaskSequence.java's doParallelTasks()
-    int threadIndex =
-        Integer.parseInt(
-            Thread.currentThread()
-                .getName()
-                .substring(parallelTaskThreadSize + 1, threadIndexSize));
+    int threadIndex = 0;
+    if (docCountArr.length > 1) {
+      // Extract ThreadIndex from unique ThreadName which is set with '"ParallelTaskThread-"+index',
+      // in TaskSequence.java's doParallelTasks()
+      threadIndex =
+          Integer.parseInt(
+              Thread.currentThread()
+                  .getName()
+                  .substring(parallelTaskThreadSize + 1, threadIndexSize));
+    }
 
     assert (threadIndex >= 0 && threadIndex < docCountArr.length)
         : "Please check threadIndex or docCountArr length";

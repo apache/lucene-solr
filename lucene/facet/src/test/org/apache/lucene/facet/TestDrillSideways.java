@@ -214,7 +214,8 @@ public class TestDrillSideways extends FacetTestCase {
 
     // We'll use a CollectorManager to trigger the trickiest caching behavior:
     SimpleCollectorManager collectorManager =
-        new SimpleCollectorManager(10, Comparator.comparing(cr -> cr.id));
+        new SimpleCollectorManager(
+            10, Comparator.comparing(cr -> cr.id), ScoreMode.COMPLETE_NO_SCORES);
     // Make sure our CM produces Collectors that _do not_ need scores to ensure IndexSearcher tries
     // to cache:
     assertFalse(collectorManager.newCollector().scoreMode().needsScores());
@@ -232,7 +233,7 @@ public class TestDrillSideways extends FacetTestCase {
         concurrentResult.facets.getTopChildren(10, "Size").toString());
 
     // Now do the same thing but use a Collector directly:
-    SimpleCollector collector = new SimpleCollector();
+    SimpleCollector collector = new SimpleCollector(ScoreMode.COMPLETE_NO_SCORES);
     // Make sure our Collector _does not_ need scores to ensure IndexSearcher tries to cache:
     assertFalse(collector.scoreMode().needsScores());
     // If we incorrectly cache here, the "sideways" FacetsCollectors will get populated with counts
@@ -1238,6 +1239,12 @@ public class TestDrillSideways extends FacetTestCase {
 
         CollectorManager<SimpleCollector, List<DocAndScore>> manager =
             new SimpleCollectorManager(numDocs, Comparator.comparing(cr -> cr.id));
+        // Because we validate the scores computed through DrillSideways against those found through
+        // a direct search
+        // against IndexSearcher, make sure our Collectors announce themselves as requiring scores.
+        // See conversation
+        // in LUCENE-10060 where this bug was introduced and then discovered:
+        assertTrue(manager.newCollector().scoreMode.needsScores());
         DrillSideways.ConcurrentDrillSidewaysResult<List<DocAndScore>> cr = ds.search(ddq, manager);
         actual.results = cr.collectorResult;
         actual.resultCount = new TotalHits(actual.results.size(), TotalHits.Relation.EQUAL_TO);
@@ -1349,7 +1356,12 @@ public class TestDrillSideways extends FacetTestCase {
 
   private static class SimpleCollector implements Collector {
 
+    private final ScoreMode scoreMode;
     final List<CollectedResult> hits = new ArrayList<>();
+
+    SimpleCollector(ScoreMode scoreMode) {
+      this.scoreMode = scoreMode;
+    }
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -1377,7 +1389,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     @Override
     public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE_NO_SCORES;
+      return scoreMode;
     }
   }
 
@@ -1385,15 +1397,22 @@ public class TestDrillSideways extends FacetTestCase {
       implements CollectorManager<SimpleCollector, List<DocAndScore>> {
     private final int numDocs;
     private final Comparator<CollectedResult> comparator;
+    private final ScoreMode scoreMode;
 
     SimpleCollectorManager(int numDocs, Comparator<CollectedResult> comparator) {
+      this(numDocs, comparator, ScoreMode.COMPLETE);
+    }
+
+    SimpleCollectorManager(
+        int numDocs, Comparator<CollectedResult> comparator, ScoreMode scoreMode) {
       this.numDocs = numDocs;
       this.comparator = comparator;
+      this.scoreMode = scoreMode;
     }
 
     @Override
     public SimpleCollector newCollector() {
-      return new SimpleCollector();
+      return new SimpleCollector(scoreMode);
     }
 
     @Override

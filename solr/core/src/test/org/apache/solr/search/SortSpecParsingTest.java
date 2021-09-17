@@ -192,6 +192,35 @@ public class SortSpecParsingTest extends SolrTestCaseJ4 {
     assertNotNull(spec);
     assertNull(spec.getSort());
 
+    // test includesScore and includesNonScoreDocField methods
+    spec = doParseSortSpec("", req);
+    assertTrue(spec.includesScore());
+    assertFalse(spec.includesNonScoreOrDocField());
+
+    spec = doParseSortSpec("score desc", req);
+    assertTrue(spec.includesScore());
+    assertFalse(spec.includesNonScoreOrDocField());
+
+    spec = doParseSortSpec("score desc, _docid_ asc", req);
+    assertTrue(spec.includesScore());
+    assertFalse(spec.includesNonScoreOrDocField());
+
+    spec = doParseSortSpec("_docid_ desc", req);
+    assertFalse(spec.includesScore());
+    assertFalse(spec.includesNonScoreOrDocField());
+
+    spec = doParseSortSpec("weight desc", req);
+    assertFalse(spec.includesScore());
+    assertTrue(spec.includesNonScoreOrDocField());
+
+    spec = doParseSortSpec("weight desc, score desc", req);
+    assertTrue(spec.includesScore());
+    assertTrue(spec.includesNonScoreOrDocField());
+
+    spec = doParseSortSpec("weight desc, _docid_ desc", req);
+    assertFalse(spec.includesScore());
+    assertTrue(spec.includesNonScoreOrDocField());
+
     req.close();
   }
 

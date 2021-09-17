@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Iterator;
@@ -26,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -35,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,7 +265,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+  public V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction) {
     synchronized (map) {
       if (getState() == State.LIVE) {
         lookups++;
@@ -271,7 +273,12 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       }
       AtomicBoolean newEntry = new AtomicBoolean();
       CacheValue<V> entry = map.computeIfAbsent(key, k -> {
-        V value = mappingFunction.apply(k);
+        V value;
+        try {
+          value = mappingFunction.apply(k);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
         // preserve the semantics of computeIfAbsent
         if (value == null) {
           return null;

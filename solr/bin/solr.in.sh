@@ -198,6 +198,8 @@
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 
+# Jetty GZIP module enabled by default
+#SOLR_GZIP_ENABLED=true
 
 # Settings for common system values that may cause operational imparement when system defaults are used.
 # Solr can use many processes and many file handles. On modern operating systems the savings by leaving
