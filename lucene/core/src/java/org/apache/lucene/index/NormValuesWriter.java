@@ -60,7 +60,7 @@ class NormValuesWriter {
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = pending.ramBytesUsed();
+    final long newBytesUsed = pending.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
