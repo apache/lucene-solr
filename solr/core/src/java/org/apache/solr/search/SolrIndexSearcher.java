@@ -801,15 +801,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * The DocSet returned should <b>not</b> be modified.
    */
   public DocSet getDocSet(Query query) throws IOException {
+    boolean doCache = filterCache != null;
     if (query instanceof ExtendedQuery) {
-      ExtendedQuery eq = (ExtendedQuery) query;
-      if (!eq.getCache()) {
-        if (query instanceof WrappedQuery) {
-          query = ((WrappedQuery) query).getWrappedQuery();
-        }
-        query = QueryUtils.makeQueryable(query);
-        return getDocSetNC(query, null);
+      if (!((ExtendedQuery) query).getCache()) {
+        doCache = false;
       }
+      if (query instanceof WrappedQuery) {
+        query = ((WrappedQuery) query).getWrappedQuery();
+      }
+    }
+
+    if (!doCache) {
+      query = QueryUtils.makeQueryable(query);
+      return getDocSetNC(query, null);
     }
 
     // Get the absolute value (positive version) of this query. If we
@@ -817,14 +821,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     Query absQ = QueryUtils.getAbs(query);
     boolean positive = query == absQ;
 
-    // Differs from 9.0 branch on backport
-    DocSet absAnswer;
-    if (filterCache != null) {
-      // cache negative queries as positive
-      absAnswer = getAndCacheDocSet(absQ);
-    } else {
-      absAnswer = getDocSetNC(absQ, null);
-    }
+    // cache negative queries as positive
+    DocSet absAnswer = getAndCacheDocSet(absQ);
 
     return positive ? absAnswer : getLiveDocSet().andNot(absAnswer);
   }
