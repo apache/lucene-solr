@@ -220,6 +220,69 @@ public class TestMultiCollector extends LuceneTestCase {
     dir.close();
   }
 
+  public void testDisablesSetMinScoreWithEarlyTermination() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    w.addDocument(new Document());
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+
+    Scorable scorer =
+        new Scorable() {
+          @Override
+          public int docID() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public float score() {
+            return 0;
+          }
+
+          @Override
+          public void setMinCompetitiveScore(float minScore) {
+            throw new AssertionError();
+          }
+        };
+
+    Collector collector =
+        new SimpleCollector() {
+          private Scorable scorer;
+          float minScore = 0;
+
+          @Override
+          public ScoreMode scoreMode() {
+            return ScoreMode.TOP_SCORES;
+          }
+
+          @Override
+          public void setScorer(Scorable scorer) throws IOException {
+            this.scorer = scorer;
+          }
+
+          @Override
+          public void collect(int doc) throws IOException {
+            minScore = Math.nextUp(minScore);
+            scorer.setMinCompetitiveScore(minScore);
+          }
+        };
+    for (int numCol = 1; numCol < 4; numCol++) {
+      List<Collector> cols = new ArrayList<>();
+      cols.add(collector);
+      for (int col = 0; col < numCol; col++) {
+        cols.add(new TerminateAfterCollector(new TotalHitCountCollector(), 0));
+      }
+      Collections.shuffle(cols, random());
+      Collector multiCollector = MultiCollector.wrap(cols);
+      LeafCollector leafCollector = multiCollector.getLeafCollector(reader.leaves().get(0));
+      leafCollector.setScorer(scorer);
+      leafCollector.collect(0); // no exception
+    }
+
+    reader.close();
+    dir.close();
+  }
+
   private static class DummyCollector extends SimpleCollector {
 
     boolean collectCalled = false;
@@ -271,7 +334,7 @@ public class TestMultiCollector extends LuceneTestCase {
     assertSame(dc, MultiCollector.wrap(dc));
     assertSame(dc, MultiCollector.wrap(dc, null));
   }
-  
+
   @Test
   public void testCollector() throws Exception {
     // Tests that the collector delegates calls to input collectors properly.
@@ -310,7 +373,7 @@ public class TestMultiCollector extends LuceneTestCase {
 
           @Override
           public void collect(int doc) throws IOException {}
-          
+
         };
       }
 
@@ -318,7 +381,7 @@ public class TestMultiCollector extends LuceneTestCase {
       public ScoreMode scoreMode() {
         return scoreMode;
       }
-      
+
     };
   }
 
@@ -329,7 +392,7 @@ public class TestMultiCollector extends LuceneTestCase {
     iw.commit();
     DirectoryReader reader = iw.getReader();
     iw.close();
-    
+
     final LeafReaderContext ctx = reader.leaves().get(0);
 
     expectThrows(AssertionError.class, () -> {
@@ -354,7 +417,7 @@ public class TestMultiCollector extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   public void testScorerWrappingForTopScores() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
@@ -365,30 +428,30 @@ public class TestMultiCollector extends LuceneTestCase {
     Collector c1 = collector(ScoreMode.TOP_SCORES, MultiCollector.MinCompetitiveScoreAwareScorable.class);
     Collector c2 = collector(ScoreMode.TOP_SCORES, MultiCollector.MinCompetitiveScoreAwareScorable.class);
     MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new ScoreAndDoc());
-    
+
     c1 = collector(ScoreMode.TOP_SCORES, ScoreCachingWrappingScorer.class);
     c2 = collector(ScoreMode.COMPLETE, ScoreCachingWrappingScorer.class);
     MultiCollector.wrap(c1, c2).getLeafCollector(ctx).setScorer(new ScoreAndDoc());
-    
+
     reader.close();
     dir.close();
   }
-  
+
   public void testMinCompetitiveScore() throws IOException {
     float[] currentMinScores = new float[3];
     float[] minCompetitiveScore = new float[1];
     Scorable scorer = new Scorable() {
-      
+
       @Override
       public float score() throws IOException {
         return 0;
       }
-      
+
       @Override
       public int docID() {
         return 0;
       }
-      
+
       @Override
       public void setMinCompetitiveScore(float minScore) throws IOException {
         minCompetitiveScore[0] = minScore;
@@ -413,7 +476,7 @@ public class TestMultiCollector extends LuceneTestCase {
     s0.setMinCompetitiveScore(Float.MAX_VALUE);
     assertEquals(Float.MAX_VALUE, minCompetitiveScore[0], 0);
   }
-  
+
   public void testCollectionTermination() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
@@ -436,25 +499,25 @@ public class TestMultiCollector extends LuceneTestCase {
     assertFalse("c1 should be removed already", c1.collectCalled);
     assertTrue("c2's collect should be called", c2.collectCalled);
     c2.collectCalled = false;
-    
+
     expectThrows(CollectionTerminatedException.class, () -> {
       lc.collect(2);
     });
     assertFalse("c1 should be removed already", c1.collectCalled);
     assertFalse("c2 should be removed already", c2.collectCalled);
-    
+
     reader.close();
     dir.close();
   }
-  
+
   public void testSetScorerOnCollectionTerminationSkipNonCompetitive() throws IOException {
     doTestSetScorerOnCollectionTermination(true);
   }
-  
+
   public void testSetScorerOnCollectionTerminationSkipNoSkips() throws IOException {
     doTestSetScorerOnCollectionTermination(false);
   }
-  
+
   private void doTestSetScorerOnCollectionTermination(boolean allowSkipNonCompetitive) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
@@ -462,10 +525,10 @@ public class TestMultiCollector extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     iw.close();
     final LeafReaderContext ctx = reader.leaves().get(0);
-    
+
     DummyCollector c1 = new TerminatingDummyCollector(1, allowSkipNonCompetitive? ScoreMode.TOP_SCORES : ScoreMode.COMPLETE);
     DummyCollector c2 = new TerminatingDummyCollector(2, allowSkipNonCompetitive? ScoreMode.TOP_SCORES : ScoreMode.COMPLETE);
-    
+
     Collector mc = MultiCollector.wrap(c1, c2);
     LeafCollector lc = mc.getLeafCollector(ctx);
     assertFalse(c1.setScorerCalled);
@@ -476,41 +539,41 @@ public class TestMultiCollector extends LuceneTestCase {
     c1.setScorerCalled = false;
     c2.setScorerCalled = false;
     lc.collect(0); // OK
-    
+
     lc.setScorer(new ScoreAndDoc());
     assertTrue(c1.setScorerCalled);
     assertTrue(c2.setScorerCalled);
     c1.setScorerCalled = false;
     c2.setScorerCalled = false;
-    
+
     lc.collect(1); // OK, but c1 should terminate
     lc.setScorer(new ScoreAndDoc());
     assertFalse(c1.setScorerCalled);
     assertTrue(c2.setScorerCalled);
     c2.setScorerCalled = false;
-    
+
     expectThrows(CollectionTerminatedException.class, () -> {
       lc.collect(2);
     });
     lc.setScorer(new ScoreAndDoc());
     assertFalse(c1.setScorerCalled);
     assertFalse(c2.setScorerCalled);
-    
+
     reader.close();
     dir.close();
   }
-  
+
   private static class TerminatingDummyCollector extends DummyCollector {
-    
+
     private final int terminateOnDoc;
     private final ScoreMode scoreMode;
-    
+
     public TerminatingDummyCollector(int terminateOnDoc, ScoreMode scoreMode) {
       super();
       this.terminateOnDoc = terminateOnDoc;
       this.scoreMode = scoreMode;
     }
-    
+
     @Override
     public void collect(int doc) throws IOException {
       if (doc == terminateOnDoc) {
@@ -518,12 +581,12 @@ public class TestMultiCollector extends LuceneTestCase {
       }
       super.collect(doc);
     }
-    
+
     @Override
     public ScoreMode scoreMode() {
       return scoreMode;
     }
-    
+
   }
 
 }
