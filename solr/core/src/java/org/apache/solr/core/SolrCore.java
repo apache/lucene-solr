@@ -175,6 +175,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MarkerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
@@ -2675,7 +2676,12 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
 
     if (rsp.getToLog().size() > 0) {
       if (requestLog.isInfoEnabled()) {
-        requestLog.info(rsp.getToLogAsString(logid));
+        Object path = rsp.getToLog().get("path");
+        if (path instanceof String) {
+          requestLog.info(MarkerFactory.getMarker((String) path), rsp.getToLogAsString(logid));
+        } else{
+          requestLog.info(rsp.getToLogAsString(logid));
+        }
       }
 
       /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/

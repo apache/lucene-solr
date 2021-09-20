@@ -527,6 +527,13 @@ public class HttpSolrCall {
     try {
       init();
 
+      if (solrReq != null && solrReq.getParams() != null) {
+        String reqId = solrReq.getParams().get(CommonParams.REQUEST_ID);
+        if (reqId != null) {
+          MDCLoggingContext.setReqId(reqId);
+        }
+      }
+
       // Perform authorization here, if:
       //    (a) Authorization is enabled, and
       //    (b) The requested resource is not a known static file
