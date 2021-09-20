@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -162,7 +163,7 @@ public class CacheConfig implements MapSerializable {
 
   public SolrCache newInstance(SolrCore core) {
     try {
-      SolrCache cache = clazz.get().getConstructor().newInstance();
+      SolrCache cache = newInstance(core, clazz.get());
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {
@@ -171,6 +172,16 @@ public class CacheConfig implements MapSerializable {
       // in some cases (like an OOM) we probably should try to continue.
       return null;
     }
+  }
+
+  private SolrCache newInstance(SolrCore core, Class<? extends SolrCache> clazz) throws Exception {
+    for (Constructor<?> con : clazz.getConstructors()) {
+      Class<?>[] types = con.getParameterTypes();
+      if (types.length == 1 && types[0] == SolrCore.class) {
+        return (SolrCache) con.newInstance(core);
+      }
+    }
+    return clazz.getConstructor().newInstance();
   }
 
   @Override
