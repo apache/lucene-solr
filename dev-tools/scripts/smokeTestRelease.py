@@ -170,11 +170,15 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
 
     if gitRevision != 'skip':
       # Make sure this matches the version and git revision we think we are releasing:
-      # TODO: LUCENE-7023: is it OK that Implementation-Version's value now spans two lines?
-      verifyRevision = 'Implementation-Version: %s %s' % (version, gitRevision)
-      if s.find(verifyRevision) == -1:
-        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong git revision?)' % \
+      match = re.search("Implementation-Version: (.+\r\n .+)", s, re.MULTILINE)
+      if match:
+        implLine = match.group(1).replace("\r\n ", "")
+        verifyRevision = '%s %s' % (version, gitRevision)
+        if implLine.find(verifyRevision) == -1:
+          raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong git revision?)' % \
                            (desc, verifyRevision))
+      else:
+        raise RuntimeError('%s is missing Implementation-Version inside its META-INF/MANIFEST.MF' % desc)
 
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
     license = decodeUTF8(z.read(LICENSE_FILE_NAME))
