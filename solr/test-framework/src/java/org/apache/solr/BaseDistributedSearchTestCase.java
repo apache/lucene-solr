@@ -663,11 +663,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    */
   protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
     
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-
-    for (int i = 0; i < q.length; i += 2) {
-      params.add(q[i].toString(), q[i + 1].toString());
-    }
+    final ModifiableSolrParams params = createParams(q);
     return query(setDistribParams, params);
   }
 
@@ -1249,4 +1245,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     Files.createDirectories(jettyHome.toPath().resolve("cores").resolve("collection1"));
   }
 
+  protected ModifiableSolrParams createParams(Object ... q) {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+
+    for (int i = 0; i < q.length; i += 2) {
+      params.add(q[i].toString(), q[i + 1].toString());
+    }
+    return params;
+  }
 }
