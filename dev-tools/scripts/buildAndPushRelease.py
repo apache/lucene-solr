@@ -356,7 +356,11 @@ def main():
     print('Next run the smoker tester:')
     p = re.compile(".*/")
     m = p.match(sys.argv[0])
-    print('%s -u %ssmokeTestRelease.py %s' % (sys.executable, m.group(), url))
+    if not c.sign:
+        signed = "--not-signed"
+    else:
+        signed = ""
+    print('%s -u %ssmokeTestRelease.py %s %s' % (sys.executable, m.group(), signed, url))
 
 if __name__ == '__main__':
   try:
