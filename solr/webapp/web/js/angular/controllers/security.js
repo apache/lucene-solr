@@ -169,6 +169,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   $scope.refresh = function () {
     $scope.hideAll();
 
+    $scope.tls = false;
     $scope.blockUnknown = "false"; // default setting
     $scope.realmName = "solr";
     $scope.forwardCredentials = "false";
@@ -186,6 +187,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.permFilterTypes = ["", "name", "role", "path", "collection"];
 
     System.get(function(data) {
+      $scope.tls = data.security ? data.security["tls"] : false;
       $scope.authenticationPlugin = data.security ? data.security["authenticationPlugin"] : null;
       $scope.authorizationPlugin = data.security ? data.security["authorizationPlugin"] : null;
       $scope.myRoles = data.security ? data.security["roles"] : [];
