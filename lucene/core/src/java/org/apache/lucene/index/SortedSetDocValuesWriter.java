@@ -27,6 +27,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -65,7 +66,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
     pending = PackedLongValues.packedBuilder(PackedInts.COMPACT);
     pendingCounts = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     docsWithField = new DocsWithFieldSet();
-    bytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed();
+    bytesUsed =
+        pending.ramBytesUsed()
+        + pendingCounts.ramBytesUsed()
+        + docsWithField.ramBytesUsed()
+        + RamUsageEstimator.sizeOf(currentValues);
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
@@ -133,7 +138,11 @@ class SortedSetDocValuesWriter extends DocValuesWriter<SortedSetDocValues> {
   }
   
   private void updateBytesUsed() {
-    final long newBytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed();
+    final long newBytesUsed =
+        pending.ramBytesUsed()
+        + pendingCounts.ramBytesUsed()
+        + docsWithField.ramBytesUsed()
+        + RamUsageEstimator.sizeOf(currentValues);
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
