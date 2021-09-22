@@ -32,6 +32,9 @@ Bug Fixes
 * LUCENE-10111: Missing calculating the bytes used of DocsWithFieldSet in NormValuesWriter.
   (Lu Xugang)
 
+* LUCENE-10116: Missing calculating the bytes used of DocsWithFieldSet and currentValues in SortedSetDocValuesWriter.
+  (Lu Xugang)
+
 Build
 ---------------------
 
