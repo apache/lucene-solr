@@ -36,10 +36,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 import static org.apache.lucene.search.SortField.FIELD_DOC;
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
@@ -250,12 +249,14 @@ public class TestSortOptimization extends LuceneTestCase {
       assertTrue(topDocs.totalHits.value < numDocs); // assert that some docs were skipped => optimization was run
     }
 
-    { // test that sorting on a single field with equal values and after parameter uses the optimization
+    { // test that sorting on a single field with equal values and after parameter
+      // doesn't use the optimization
       final int afterValue = 100;
+      final int afterDocID = random().nextInt(5000);
       final SortField sortField = new SortField("my_field1", SortField.Type.INT);
       sortField.setCanUsePoints();
       final Sort sort = new Sort(sortField);
-      FieldDoc after = new FieldDoc(10, Float.NaN, new Integer[] {afterValue});
+      FieldDoc after = new FieldDoc(afterDocID, Float.NaN, new Integer[] {afterValue});
       final TopFieldCollector collector = TopFieldCollector.create(sort, numHits, after, totalHitsThreshold);
       searcher.search(new MatchAllDocsQuery(), collector);
       TopDocs topDocs = collector.topDocs();
@@ -263,8 +264,9 @@ public class TestSortOptimization extends LuceneTestCase {
       for (int i = 0; i < numHits; i++) {
         FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[i];
         assertEquals(100, fieldDoc.fields[0]);
+        assertTrue(fieldDoc.doc > afterDocID);
       }
-      assertTrue(topDocs.totalHits.value < numDocs); // assert that some docs were skipped => optimization was run
+      assertEquals(topDocs.totalHits.value, numDocs);
     }
 
     { // test that sorting on main field with equal values + another field for tie breaks doesn't use optimization
@@ -658,7 +660,21 @@ public class TestSortOptimization extends LuceneTestCase {
   public void testRandomLong() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
-    List<Long> seqNos = LongStream.range(0, atLeast(10_000)).boxed().collect(Collectors.toList());
+    List<Long> seqNos = new ArrayList<>();
+    int iterations = 10000 + random().nextInt(10000);
+    long seqNoGenerator = random().nextInt(1000);
+    for (long i = 0; i < iterations; i++) {
+      int copies = random().nextInt(100) <= 5 ? 1 : 1 + random().nextInt(5);
+      for (int j = 0; j < copies; j++) {
+        seqNos.add(seqNoGenerator);
+      }
+      seqNos.add(seqNoGenerator);
+      seqNoGenerator++;
+      if (random().nextInt(100) <= 5) {
+        seqNoGenerator += random().nextInt(10);
+      }
+    }
+
     Collections.shuffle(seqNos, random());
     int pendingDocs = 0;
     for (long seqNo : seqNos) {
