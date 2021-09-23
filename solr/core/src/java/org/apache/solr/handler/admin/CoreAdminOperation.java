@@ -72,6 +72,12 @@ enum CoreAdminOperation implements CoreAdminOp {
   CREATE_OP(CREATE, it -> {
     assert TestInjection.injectRandomDelayInCoreCreation();
 
+    if (it.handler!=null &&
+        it.handler.coreContainer != null &&
+        it.handler.coreContainer.getZkController() != null &&
+        "true".equals(it.handler.coreContainer.getZkController().isOverseer)) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Cannot create a core in an overseer node");
+    }
     SolrParams params = it.req.getParams();
     log().info("core create command {}", params);
     String coreName = params.required().get(CoreAdminParams.NAME);

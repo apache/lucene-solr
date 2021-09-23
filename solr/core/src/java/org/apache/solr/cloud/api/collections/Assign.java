@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
@@ -546,6 +547,7 @@ public class Assign {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public static class LegacyAssignStrategy implements AssignStrategy {
     @Override
     public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
@@ -558,7 +560,12 @@ public class Assign {
         sortedNodeList.sort(Comparator.comparingInt(Assign.ReplicaCount::weight));
         nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
       }
-
+      for (String s : ZkController.getDedicatedOverseers(solrCloudManager)) {
+        nodeList.remove(s);
+      }
+      if(nodeList.isEmpty()) {
+        throw new Assign.AssignmentException("No nodes available to assign replicas");
+      }
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
       for (String aShard : assignRequest.shardNames)
