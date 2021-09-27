@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.LongIterator;
@@ -116,6 +119,31 @@ public class UniqueAgg extends StrAggValueSource {
     @Override
     public Object getMergedResult() {
       return getLong();
+    }
+
+    @Override
+    public Object getPrototype() {
+      return 0L;
+    }
+
+    @Override
+    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
+      sumUnique = (long) codec.readVal(dis);
+      Collection<Object> valuesCollection = (Collection<Object>) codec.readVal(dis);
+      values = valuesCollection != null ? new HashSet<>(valuesCollection) : null;
+      sumAdded = (long) codec.readVal(dis);
+      shardsMissingSum = (long) codec.readVal(dis);
+      shardsMissingMax = (long) codec.readVal(dis);
+      answer = -1; // recompute answer if needed
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeVal(sumUnique);
+      codec.writeVal(values);
+      codec.writeVal(sumAdded);
+      codec.writeVal(shardsMissingSum); // TODO(clay): check spots that add # shards
+      codec.writeVal(shardsMissingMax);
     }
 
     @Override

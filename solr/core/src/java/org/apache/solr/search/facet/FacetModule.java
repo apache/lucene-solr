@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
@@ -30,6 +31,8 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -313,6 +316,39 @@ public class FacetModule extends SearchComponent {
   }
 
   @Override
+  public String stateKey() {
+    return "facet";
+  }
+
+  @Override
+  public void fromState(ResponseBuilder rb, byte[] state) throws IOException {
+    JavaBinCodec codec = new JavaBinCodec();
+    DataInputInputStream dis = codec.initRead(state);
+    FacetComponentState facetState = getFacetComponentState(rb);
+    if (facetState == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Received state for unconfigured facet");
+    }
+    // reset merger and context assuming full shards, then explicitly set merger state
+    facetState.merger = facetState.facetRequest.createFacetMerger(new Object());
+    facetState.mcontext = new FacetMerger.Context(rb.shards.length);
+    // NB(clay): while the mcontext is initialized above, it solely used for API requirements - but shard refinement is not actually supported for iterative results yet
+    facetState.merger.readState(codec, dis, facetState.mcontext);
+  }
+
+  @Override
+  public byte[] toState(ResponseBuilder rb) throws IOException {
+    FacetComponentState facetState = getFacetComponentState(rb);
+    if (facetState == null || facetState.merger == null) return null;
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    JavaBinCodec codec = new JavaBinCodec(os, (o, c) -> {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown object to serialize " + o.getClass());
+    });
+    facetState.merger.writeState(codec);
+    codec.close();
+    return os.toByteArray();
+  }
+
+  @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
 
@@ -381,6 +417,10 @@ public class FacetModule extends SearchComponent {
       return getDouble();
     }
 
+    @Override
+    public Object getPrototype() {
+      return 0d;
+    }
 
     @Override
     public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
@@ -419,6 +459,21 @@ public class FacetModule extends SearchComponent {
     @Override
     public Object getMergedResult() {
       return val;
+    }
+
+    @Override
+    public Object getPrototype() {
+      return 0L;
+    }
+
+    @Override
+    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
+      val = (long) codec.readVal(dis);
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeVal(val);
     }
 
     @Override
@@ -508,6 +563,29 @@ public class FacetModule extends SearchComponent {
     @Override
     public Object getMergedResult() {
       return bucket.getMergedBucket();
+    }
+
+    @Override
+    public Object getPrototype() {
+      return null;
+    }
+
+    @Override
+    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
+      if ((boolean) codec.readVal(dis)) {
+        bucket = newBucket(null, mcontext);
+        bucket.readState(codec, dis, mcontext);
+      } else {
+        bucket = null;
+      }
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeVal(bucket != null);
+      if (bucket != null) {
+        bucket.writeState(codec);
+      }
     }
   }
 }

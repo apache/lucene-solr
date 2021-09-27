@@ -17,10 +17,13 @@
 
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetBucket {
@@ -191,6 +194,37 @@ public class FacetBucket {
     // reset the "bucketMissing" flag on the way back out.
     mcontext.setBucketWasMissing(parentMissing);
     return refinement;
+  }
+
+  public void readState(JavaBinCodec codec, DataInputInputStream dis, FacetMerger.Context mcontext) throws IOException {
+    count = (long) codec.readVal(dis);
+    int subsLength = (int) codec.readVal(dis);
+    subs = null;
+    for (int i = 0; i < subsLength; i++) {
+      String key = (String) codec.readVal(dis);
+      Object prototype = codec.readVal(dis);
+      if (prototype == null) {
+        prototype = new Object();
+      }
+      // getMerger adds to subs under the hood
+      getMerger(key, prototype).readState(codec, dis, mcontext);
+    }
+  }
+
+  public void writeState(JavaBinCodec codec) throws IOException {
+    // NB: bucket value has to managed separately as it's required for construction and is final
+    codec.writeVal(count);
+    int subsLength = subs != null ? subs.size() : 0;
+    codec.writeVal(subsLength);
+    if (subs != null) {
+      for (Map.Entry<String, FacetMerger> entry : subs.entrySet()) {
+        String key = entry.getKey();
+        FacetMerger sub = entry.getValue();
+        codec.writeVal(key);
+        codec.writeVal(sub.getPrototype());
+        sub.writeState(codec);
+      }
+    }
   }
 
 }

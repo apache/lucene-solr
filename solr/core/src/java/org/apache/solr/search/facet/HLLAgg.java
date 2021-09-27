@@ -23,7 +23,9 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.hll.HLL;
@@ -110,6 +112,22 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     public Object getMergedResult() {
       return getLong();
+    }
+
+    @Override
+    public Object getPrototype() {
+      return 0L;
+    }
+
+    @Override
+    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
+      Object maybeBytes = codec.readVal(dis);
+      aggregate = maybeBytes != null ? HLL.fromBytes((byte[]) maybeBytes) : null;
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeVal(aggregate != null ? aggregate.toBytes() : null);
     }
 
     @Override

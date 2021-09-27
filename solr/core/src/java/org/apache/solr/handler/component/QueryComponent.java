@@ -645,9 +645,7 @@ public class QueryComponent extends SearchComponent
 
   @Override
   public void fromState(ResponseBuilder rb, byte[] state) throws IOException {
-    JavaBinCodec codec = new JavaBinCodec((o, c) -> {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown object to serialize " + o.getClass());
-    });
+    JavaBinCodec codec = new JavaBinCodec();
     DataInputInputStream dis = codec.initRead(state);
     if (rb.grouping()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "cannot do iterative grouping yet");

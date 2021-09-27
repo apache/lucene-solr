@@ -105,7 +105,7 @@ public class SpatialHeatmapFacets {
   }
 
   /** Called by FacetComponent.countFacets which is in turn called by FC's impl of
-   * {@link org.apache.solr.handler.component.SearchComponent#handleResponses(ResponseBuilder, ShardRequest)}. */
+   * {@link SearchComponent#handleResponses(ResponseBuilder, ShardRequest)}. */
   @SuppressWarnings("unchecked")
   public static void distribHandleResponse(LinkedHashMap<String, HeatmapFacet> heatmapFacets, @SuppressWarnings({"rawtypes"})NamedList srsp_facet_counts) {
     NamedList<NamedList<Object>> facet_heatmaps = (NamedList<NamedList<Object>>) srsp_facet_counts.get(RESPONSE_KEY);

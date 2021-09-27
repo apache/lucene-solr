@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -23,6 +24,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.SIMPLE;
 
@@ -37,6 +41,13 @@ public abstract class FacetMerger {
   }
   public abstract void finish(Context mcontext);
   public abstract Object getMergedResult();  // TODO: we should pass mcontext through here as well
+
+  /**
+   * @return a typed object that can be used to infer facet merger type, must be javabin encodable, or null if no specific type is required
+   */
+  public abstract Object getPrototype();
+  public abstract void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException;
+  public abstract void writeState(JavaBinCodec codec) throws IOException;
 
   // This class lets mergers know overall context such as what shard is being merged
   // and what buckets have been seen by what shard.

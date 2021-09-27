@@ -17,6 +17,7 @@
 
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -28,6 +29,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // base class for facets that create a list of buckets that can be sorted
@@ -53,6 +56,31 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         shardHasMoreBuckets = new BitSet(mcontext.numShards);
       }
       shardHasMoreBuckets.set(mcontext.shardNum);
+    }
+  }
+
+  @Override
+  public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
+    int bucketsSize = (int) codec.readVal(dis);
+    buckets = new LinkedHashMap<>(bucketsSize);
+    for (int i = 0; i < bucketsSize; i++) {
+      Comparable key = (Comparable) codec.readVal(dis);
+      FacetBucket b = newBucket(key, mcontext);
+      b.readState(codec, dis, mcontext);
+      buckets.put(key, b);
+    }
+    sortedBuckets = null; // will be recomputed later if needed
+  }
+
+  @Override
+  public void writeState(JavaBinCodec codec) throws IOException {
+    // NB(clay): not marshaling shardHasMoreBuckets as refinement for iterative results isn't properly supported
+    codec.writeVal(buckets.size());
+    for (Map.Entry<Object, FacetBucket> entry : buckets.entrySet()) {
+      Object key = entry.getKey();
+      FacetBucket value = entry.getValue();
+      codec.writeVal(key);
+      value.writeState(codec);
     }
   }
 

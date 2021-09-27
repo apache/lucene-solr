@@ -77,6 +77,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
+  
+  // Indicates the encoding version of iterative state to handle clean encoding/decoding changes.
+  // If desired to change, handling needs to be updated before producing new versions!
+  static final int ITERATIVE_STATE_VERSION = 1;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -443,6 +447,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         byte[] rawState = Base64.getDecoder().decode(iterativeState);
         JavaBinCodec codec = new JavaBinCodec();
         FastInputStream dis = codec.initRead(rawState);
+        // first, read version value
+        int iterativeStateVersion = (int) codec.readVal(dis);
+        if (iterativeStateVersion != ITERATIVE_STATE_VERSION) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("bad iterative state version, got %d, expected %d", iterativeStateVersion, ITERATIVE_STATE_VERSION));
+        }
+        // then any component state
         int numStates = (int) codec.readVal(dis);
         for (int i = 0; i < numStates; i++) {
           String key = (String) codec.readVal(dis);
@@ -574,6 +584,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         JavaBinCodec codec = new JavaBinCodec(bos, null);
+        // first write iterative state version
+        codec.writeVal(ITERATIVE_STATE_VERSION);
+        // then any component state
         codec.writeVal(state.size());
         for (Map.Entry<String, BytesRef> entry : state.entrySet()) {
           String key = entry.getKey();

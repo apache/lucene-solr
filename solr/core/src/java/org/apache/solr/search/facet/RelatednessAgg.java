@@ -33,6 +33,8 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocSet;
@@ -681,6 +683,21 @@ public class RelatednessAgg extends AggValueSource {
     @Override
     public Object getMergedResult() {
       return mergedData.externalize(false);
+    }
+
+    @Override
+    public Object getPrototype() {
+      return null;
+    }
+
+    @Override
+    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "relatedness facet iterative state unsupported");
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "relatedness facet iterative state unsupported");
     }
   }
 
