@@ -36,7 +36,7 @@ If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> b
 
 === Solr 8.10
 
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote810[8.10 Release Notes^]
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote8_10[8.10 Release Notes^]
 for an overview of the main new features of Solr 8.10.
 
 When upgrading to 8.10.x users should be aware of the following major changes from 8.9.
