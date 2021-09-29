@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -465,6 +466,41 @@ public class TestSortOptimization extends LuceneTestCase {
     dir.close();
   }
 
+  public void testDocSortOptimizationWithAfterCollectsAllDocs() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(TEST_NIGHTLY ? 50_000 : 5_000);
+    final boolean multipleSegments = random().nextBoolean();
+    final int numDocsInSegment = numDocs / 10 + random().nextInt(numDocs / 10);
+
+    for (int i = 1; i <= numDocs; ++i) {
+      final Document doc = new Document();
+      writer.addDocument(doc);
+      if (multipleSegments && (i % numDocsInSegment == 0)) {
+        writer.flush();
+      }
+    }
+    writer.flush();
+
+    IndexReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = newSearcher(reader);
+    int visitedHits = 0;
+    ScoreDoc after = null;
+    while (visitedHits < numDocs) {
+      int batch = 1 + random().nextInt(500);
+      Query query = new MatchAllDocsQuery();
+      TopDocs topDocs = searcher.searchAfter(after, query, batch, new Sort(FIELD_DOC));
+      int expectedHits = Math.min(numDocs - visitedHits, batch);
+      assertEquals(expectedHits, topDocs.scoreDocs.length);
+      after = topDocs.scoreDocs[expectedHits - 1];
+      for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+        assertEquals(visitedHits, topDocs.scoreDocs[i].doc);
+        visitedHits++;
+      }
+    }
+    assertEquals(visitedHits, numDocs);
+    IOUtils.close(writer, reader, dir);
+  }
 
   public void testDocSortOptimization() throws IOException {
     final Directory dir = newDirectory();
