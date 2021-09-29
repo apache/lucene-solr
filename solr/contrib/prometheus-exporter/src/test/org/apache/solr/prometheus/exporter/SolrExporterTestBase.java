@@ -25,6 +25,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import org.apache.commons.io.IOUtils;
@@ -45,7 +47,7 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
 
   private SolrExporter solrExporter;
   private CloseableHttpClient httpClient;
-  private int promtheusExporterPort;
+  private int prometheusExporterPort;
 
   @Override
   @After
@@ -59,11 +61,11 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
 
   protected void startMetricsExporterWithConfiguration(String scrapeConfiguration) throws Exception {
     try (ServerSocket socket = new ServerSocket(0)) {
-      promtheusExporterPort = socket.getLocalPort();
+      prometheusExporterPort = socket.getLocalPort();
     }
 
     solrExporter = new SolrExporter(
-        promtheusExporterPort,
+        prometheusExporterPort,
         25,
         10,
         SolrScrapeConfiguration.solrCloud(cluster.getZkServer().getZkAddress()),
@@ -87,8 +89,11 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
     }
   }
 
+  // solr_metrics_jvm_memory_pools_bytes{space="Metaspace",item="max",base_url="http://127.0.0.1:64202/solr",} -1.0
+  private static final Pattern METRIC_LINE_PATTERN = Pattern.compile("(\\w+(?:\\{.*})?)\\s+(\\S+)");
+
   protected Map<String, Double> getAllMetrics() throws URISyntaxException, IOException {
-    URI uri = new URI("http://localhost:" + promtheusExporterPort + "/metrics");
+    URI uri = new URI("http://localhost:" + prometheusExporterPort + "/metrics");
 
     HttpGet request = new HttpGet(uri);
 
@@ -105,11 +110,10 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
             continue;
           }
 
-          String[] parts = currentLine.split(" ");
-
-          assertEquals("Metric must have name and value: " + currentLine, 2, parts.length);
-
-          metrics.put(parts[0], Double.valueOf(parts[1]));
+          Matcher matcher = METRIC_LINE_PATTERN.matcher(currentLine);
+          assertTrue("Malformed metric line: " + currentLine, matcher.find());
+          assertEquals("Metric must have 2 parts, a name and value: " + currentLine, 2, matcher.groupCount());
+          metrics.put(matcher.group(1), Double.valueOf(matcher.group(2)));
         }
       }
     }
