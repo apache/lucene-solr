@@ -123,9 +123,10 @@ public class ZkContainer {
           log.info("Zookeeper client={}", zookeeperHost);
         }
         String confDir = System.getProperty("bootstrap_confdir");
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
+        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+        boolean createRoot = Boolean.getBoolean("createZkChroot");
 
-        if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
+        if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly || createRoot)) {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }

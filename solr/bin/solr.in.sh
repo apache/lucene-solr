@@ -70,6 +70,9 @@
 # Leave empty if not using SolrCloud
 #ZK_HOST=""
 
+# Set to true if your ZK host has a chroot path, and you want to create it automatically.
+#ZK_CREATE_CHROOT=true
+
 # Set the ZooKeeper client timeout (for SolrCloud mode)
 #ZK_CLIENT_TIMEOUT="30000"
 

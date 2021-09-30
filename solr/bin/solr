@@ -377,6 +377,7 @@ function print_usage() {
     echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
     echo "                   If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                   an embedded ZooKeeper instance will be launched."
+    echo "                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
     echo ""
     echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
@@ -2067,6 +2068,10 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     fi
 
     CLOUD_MODE_OPTS+=('-DzkRun')
+  fi
+
+  if [ -n "$ZK_CREATE_CHROOT" ]; then
+    CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
   fi
 
   # and if collection1 needs to be bootstrapped

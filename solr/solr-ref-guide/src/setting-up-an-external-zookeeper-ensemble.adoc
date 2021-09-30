@@ -286,6 +286,8 @@ See the section <<solr-control-script-reference.adoc#create-a-znode-supports-chr
 
 Once the znode is created, it behaves in a similar way to a directory on a filesystem: the data stored by Solr in ZooKeeper is nested beneath the main data directory and won't be mixed with data from another system or process that uses the same ZooKeeper ensemble.
 
+Alternatively, Solr can create the znode automatically as part of the first Solr instance's startup, read below for an example.
+
 === Using the -z Parameter with bin/solr
 
 Pointing Solr at the ZooKeeper ensemble you've created is a simple matter of using the `-z` parameter when using the `bin/solr` script.
@@ -295,6 +297,13 @@ For example, to point the Solr instance to the ZooKeeper you've started on port 
 [source,bash]
 ----
 bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
+----
+
+If the znode does not exist, you can set the ZK_CREATE_CHROOT environment variable to true to create it automatically on start-up:
+
+[source,bash]
+----
+ZK_CREATE_CHROOT=true bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
 ----
 
 === Updating Solr Include Files
