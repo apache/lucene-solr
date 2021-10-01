@@ -159,7 +159,6 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
     final MatchingDocs hits;
     final OrdinalMap ordinalMap;
     final int segOrd;
-    final Bits liveDocs;
 
     public CountOneSegment(LeafReader leafReader, MatchingDocs hits, OrdinalMap ordinalMap, int segOrd) {
       assert leafReader != null;
@@ -167,7 +166,6 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
       this.hits = hits;
       this.ordinalMap = ordinalMap;
       this.segOrd = segOrd;
-      this.liveDocs = leafReader.getLiveDocs();
     }
                            
     @Override
@@ -195,6 +193,10 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
       DocIdSetIterator it;
       if (hits == null) {
         // count all
+        // Initializing liveDocs bits in the constructor leads to a situation where liveDocs bits
+        // get initialized in the calling thread but get used in a different thread leading to an
+        // AssertionError. See LUCENE-10134
+        final Bits liveDocs = leafReader.getLiveDocs();
         it = (liveDocs != null) ? FacetUtils.liveDocsDISI(valuesIt, liveDocs) : valuesIt;
       } else {
         it = ConjunctionDISI.intersectIterators(Arrays.asList(hits.bits.iterator(), valuesIt));

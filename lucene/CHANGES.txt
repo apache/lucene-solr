@@ -37,6 +37,9 @@ Bug Fixes
 
 * LUCENE-10070 Skip deleted docs when accumulating facet counts for all docs. (Ankur Goel, Greg Miller)
 
+* LUCENE-10134: ConcurrentSortedSetDocValuesFacetCounts shouldn't share liveDocs Bits across threads.
+  (Ankur Goel)
+
 Build
 ---------------------
 
