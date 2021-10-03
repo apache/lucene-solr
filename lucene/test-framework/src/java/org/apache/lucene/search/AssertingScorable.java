@@ -47,18 +47,42 @@ public class AssertingScorable extends FilterScorable {
     if (in instanceof AssertingScorable) {
       return in;
     }
-    return new AssertingScorable(in);
+    // If `in` is Scorer, we need to wrap it as a Scorer instead of Scorable because
+    // NumericComparator uses the iterator cost of a Scorer in sort optimization.
+    if (in instanceof Scorer) {
+      return new WrappedScorer((Scorer) in);
+    } else {
+      return new AssertingScorable(in);
+    }
+  }
+
+  private static class WrappedScorer extends FilterScorer {
+    WrappedScorer(Scorer in) {
+      super(in);
+    }
+
+    @Override
+    public float score() throws IOException {
+      return new AssertingScorable(in).score();
+    }
+
+    @Override
+    public void setMinCompetitiveScore(float minScore) throws IOException {
+      in.setMinCompetitiveScore(minScore);
+    }
+
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+      return in.getMaxScore(upTo);
+    }
   }
 
   public static Scorable unwrap(Scorable in) {
     while (true) {
-      if (in instanceof AssertingScorable)
-        in = ((AssertingScorable)in).in;
-      else if (in instanceof AssertingScorer)
-        in = ((AssertingScorer)in).in;
-      else
-        return in;
+      if (in instanceof AssertingScorable) in = ((AssertingScorable) in).in;
+      else if (in instanceof AssertingScorer) in = ((AssertingScorer) in).in;
+      else if (in instanceof WrappedScorer) in = ((WrappedScorer) in).in;
+      else return in;
     }
   }
-
 }
