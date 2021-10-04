@@ -130,6 +130,9 @@ Bug Fixes
 * LUCENE-10081: KoreanTokenizer should check the max backtrace gap on whitespaces.
   (Jim Ferenczi)
 
+* LUCENE-10106: Sort optimization can wrongly skip the first document of
+  each segment (Nhat Nguyen)
+
 Other
 ---------------------
 
