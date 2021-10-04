@@ -171,6 +171,9 @@ Bug Fixes
 * LUCENE-10106: Sort optimization can wrongly skip the first document of
   each segment (Nhat Nguyen)
 
+* LUCENE-10119: Sort optimization with search_after can wrongly skip documents
+  whose values are equal to the last value of the previous page (Nhat Nguyen)
+
 Other
 ---------------------
 
