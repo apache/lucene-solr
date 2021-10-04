@@ -7,7 +7,9 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-10126: Sort optimization with a chunked bulk scorer
+  can wrongly skip documents (Nhat Nguyen, Mayya Sharipova)
 
 ======================= Lucene 8.10.0 =======================
 
