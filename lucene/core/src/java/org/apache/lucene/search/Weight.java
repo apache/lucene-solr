@@ -216,17 +216,23 @@ public abstract class Weight implements SegmentCacheable {
     public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null ? iterator : twoPhase.approximation();
-      DocIdSetIterator collectorIterator = collector.competitiveIterator();
+      DocIdSetIterator competitiveIterator = collector.competitiveIterator();
       DocIdSetIterator filteredIterator;
-      if (collectorIterator == null) {
+      if (competitiveIterator == null) {
         filteredIterator = scorerIterator;
       } else {
+        // Wrap CompetitiveIterator and ScorerIterator start with (i.e., calling nextDoc()) the last
+        // visited docID because ConjunctionDISI might have advanced to it in the previous
+        // scoreRange, but we didn't process due to the range limit of scoreRange.
         if (scorerIterator.docID() != -1) {
-          // Wrap ScorerIterator to start from -1 for conjunction 
           scorerIterator = new StartDISIWrapper(scorerIterator);
         }
+        if (competitiveIterator.docID() != -1) {
+          competitiveIterator = new StartDISIWrapper(competitiveIterator);
+        }
         // filter scorerIterator to keep only competitive docs as defined by collector
-        filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+        filteredIterator =
+            ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, competitiveIterator));
       }
       if (filteredIterator.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
@@ -287,17 +293,15 @@ public abstract class Weight implements SegmentCacheable {
     }
   }
 
-  /**
-   * Wraps an internal docIdSetIterator for it to start with docID = -1
-   */
-  protected static class StartDISIWrapper extends DocIdSetIterator {
+  /** Wraps an internal docIdSetIterator for it to start with the last visited docID */
+  private static class StartDISIWrapper extends DocIdSetIterator {
     private final DocIdSetIterator in;
-    private final int min;
+    private final int startDocID;
     private int docID = -1;
 
-    public StartDISIWrapper(DocIdSetIterator in) {
+    StartDISIWrapper(DocIdSetIterator in) {
       this.in = in;
-      this.min = in.docID();
+      this.startDocID = in.docID();
     }
 
     @Override
@@ -312,8 +316,8 @@ public abstract class Weight implements SegmentCacheable {
 
     @Override
     public int advance(int target) throws IOException {
-      if (target <= min) {
-        return docID = min;
+      if (target <= startDocID) {
+        return docID = startDocID;
       }
       return docID = in.advance(target);
     }
