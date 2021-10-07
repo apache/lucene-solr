@@ -22,7 +22,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15626: The "config-read" permission has been fixed to properly allow access to `/solr/admin/configs?action=LIST` (Jon Senchyna via Eric Pugh)
+
 
 Build
 ---------------------
