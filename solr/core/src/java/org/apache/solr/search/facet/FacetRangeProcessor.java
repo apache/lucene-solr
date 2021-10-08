@@ -18,20 +18,33 @@
 package org.apache.solr.search.facet;
 
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FilterNumericDocValues;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.*;
+import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DocSetBuilder;
 import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.util.DateMathParser;
-
-import java.io.IOException;
-import java.util.*;
 
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
@@ -50,6 +63,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   final Comparable end;
   final String gap;
   final Object ranges;
+  final boolean dv;
 
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> rangeList;
@@ -91,6 +105,17 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       gap = freq.gap.toString();
       ranges = null;
     }
+    dv = freq.dv;
+    if (dv) {
+      if (sf.getType().getNumberType() == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Doc value range facet only supports number types.");
+      }
+      if (sf.multiValued()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Doc value range facet only supports single value types.");
+      }
+    }
 
     // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
     // If mincount>0 then we could *potentially* set our sub mincount to 1...
@@ -116,21 +141,201 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
   }
 
+  /**
+   * A basic interval tree implementation backed by a balanced BST.
+   * Intended to be used solely for facet range accumulation.
+   * TODO: generalize
+   */
+  private static class FacetRangeIntervalTree {
+    private final Node root;
+
+    private FacetRangeIntervalTree(Node root) {
+      this.root = root;
+    }
+    
+    private static FacetRangeIntervalTree create(List<Range> rangeList, List<Range> otherList) {
+      // first combine ranges and preserve index/slot
+      List<Pair<Integer, Range>> intervals = new ArrayList<>();
+      for (int i = 0; i < rangeList.size(); i++) {
+        intervals.add(new Pair<>(i, rangeList.get(i)));
+      }
+      for (int i = 0; i < otherList.size(); i++) {
+        intervals.add(new Pair<>(rangeList.size() + i, otherList.get(i)));
+      }
+      // then sort for conversion to bst
+      intervals.sort((p1, p2) -> {
+        Range r1 = p1.second();
+        Range r2 = p2.second();
+        if (r1.low == null) {
+          return r2.low == null ? 0 : -1;
+        }
+        if (r2.low == null) {
+          return 1;
+        }
+        int res = r1.low.compareTo(r2.low);
+        if (res == 0) {
+          // tie break goes to if either include lower as that is technically a lower low value
+          return r1.includeLower == r2.includeLower ? 0 : (r1.includeLower ? -1 : 1);
+        }
+        return res;
+      });
+      return new FacetRangeIntervalTree(convert(intervals, 0, intervals.size()-1));
+    }
+    
+    private static Node convert(List<Pair<Integer, Range>> intervals, int lo, int hi) {
+      if (lo > hi) {
+        return null;
+      }
+      int mid = (lo + hi) / 2;
+      Node left = convert(intervals, lo, mid-1);
+      Node right = convert(intervals, mid+1, hi);
+      Pair<Integer, Range> p = intervals.get(mid);
+      return Node.create(left, right, p.second(), p.first());
+    }
+    
+    private static int compare(long value, boolean includeValue, boolean high, long oValue, boolean oIncludeValue, boolean oHigh) {
+      if (value > oValue) {
+        return 1;
+      } else if (value < oValue) {
+        return -1;
+      } else {
+        if (includeValue && oIncludeValue) {
+          // both inclusive, same value restriction
+          return 0;
+        } else if (includeValue) {
+          // this inclusive, other exclusive
+          // if other is a high point and exclusive, it must be less (and thus we are higher)
+          // alternatively if it is a low point and exclusive, it must be more (and thus we are lower)
+          return oHigh ? 1 : -1;
+        } else if (oIncludeValue) {
+          // this exclusive, other inclusive
+          // reverse of above
+          return high ? -1 : 1;
+        } else {
+          // both exclusive
+          if (high == oHigh) {
+            return 0;
+          } else {
+            return high ? -1 : 1;
+          }
+        }
+      }
+    }
+    
+    private void accum(long value, int docId, Accumulator accumulator) {
+      accumRec(root, value, docId, accumulator);
+    }
+    
+    private void accumRec(Node node, long value, int docId, Accumulator accumulator) {
+      if (node == null) {
+        return; // past the leaf node
+      }
+      // check if we even need to check this subtree
+      // if the value is greater than any subtree max, no need to traverse further in the subtree 
+      if (compare(value, true, true, node.subtreeMaxValue, node.subtreeIncludeMaxValue, true) > 0) {
+        return;
+      }
+      // at this point, always must go left as there might be ranges that extend past our value
+      accumRec(node.left, value, docId, accumulator);
+      // then check / accumulate current
+      if (node.range.includesDocValue(value)) {
+        accumulator.accumulate(node.slot, docId);
+      }
+      // optionally, go right if the subtree might have lower values equal to or less than us at this point
+      // exit if the current node's low is greater as there would be no right subtree that would match given the sorting
+      if (compare(value, true, true, node.range.dvLow, node.range.includeLower, false) < 0) {
+        return;
+      }
+      accumRec(node.right, value, docId, accumulator);
+    }
+
+    private static class Node {
+      private final Node left;
+      private final Node right;
+      private final Range range;
+      private final int slot;
+      private final long subtreeMaxValue;
+      private final boolean subtreeIncludeMaxValue;
+
+      private Node(Node left, Node right, Range range, int slot, long subtreeMaxValue, boolean subtreeIncludeMaxValue) {
+        this.left = left;
+        this.right = right;
+        this.range = range;
+        this.slot = slot;
+        this.subtreeMaxValue = subtreeMaxValue;
+        this.subtreeIncludeMaxValue = subtreeIncludeMaxValue;
+      }
+
+      private static Node create(Node left, Node right, Range range, int slot) {
+        long max = range.dvHigh;
+        boolean includeMax = range.includeUpper;
+        if (left != null) {
+          if (compare(left.subtreeMaxValue, left.subtreeIncludeMaxValue, true, max, includeMax, true) > 0) {
+            max = left.subtreeMaxValue;
+            includeMax = left.subtreeIncludeMaxValue;
+          }
+        }
+        if (right != null) {
+          if (compare(right.subtreeMaxValue, right.subtreeIncludeMaxValue, true, max, includeMax, true) > 0) {
+            max = right.subtreeMaxValue;
+            includeMax = right.subtreeIncludeMaxValue;
+          }
+        }
+        return new Node(left, right, range, slot, max, includeMax);
+      }
+    }
+    
+    private static class Accumulator {
+      private final int maxDocId;
+      private final SlotAcc.CountSlotAcc countAcc;
+      private final DocSetBuilder[] setBuilders;
+
+      private Accumulator(int maxDocId, SlotAcc.CountSlotAcc countAcc, DocSetBuilder[] setBuilders) {
+        this.maxDocId = maxDocId;
+        this.countAcc = countAcc;
+        this.setBuilders = setBuilders;
+      }
+      
+      void accumulate(int slot, int docId) {
+        countAcc.incrementCount(slot, 1);
+        if (setBuilders != null) {
+          DocSetBuilder setBuilder = setBuilders[slot];
+          if (setBuilder == null) {
+            // DocSetBuilder cost estimate calculation pulled from other usages.
+            setBuilder = new DocSetBuilder(maxDocId, Math.min(64, (maxDocId >>> 10) + 4));
+            setBuilders[slot] = setBuilder;
+          }
+          setBuilder.add(docId);
+        }
+      }
+    }
+  }
+  
   @SuppressWarnings({"rawtypes"})
   private static class Range {
     Object label;
 
     Comparable low;
+    long dvLow;
     Comparable high;
+    long dvHigh;
     boolean includeLower;
     boolean includeUpper;
 
-    public Range(Object label, Comparable low, Comparable high, boolean includeLower, boolean includeUpper) {
+    public Range(Object label, Comparable low, long dvLow, Comparable high, long dvHigh, boolean includeLower, boolean includeUpper) {
       this.label = label;
       this.low = low;
+      this.dvLow = dvLow;
       this.high = high;
+      this.dvHigh = dvHigh;
       this.includeLower = includeLower;
       this.includeUpper = includeUpper;
+    }
+
+    boolean includesDocValue(long test) {
+      int lowc = dvLow == Long.MIN_VALUE && !includeLower ? -1 : Long.compare(dvLow, test);
+      int highc = dvHigh == Long.MAX_VALUE && !includeUpper ? 1 : Long.compare(dvHigh, test);
+      return (lowc < 0 || (lowc == 0 && includeLower)) && (highc > 0 || (highc == 0 && includeUpper));
     }
   }
 
@@ -249,7 +454,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
           (include.contains(FacetParams.FacetRangeInclude.EDGE) && 0 == high.compareTo(end)));
 
-      Range range = new Range(calc.buildRangeLabel(low), low, high, incLower, incUpper);
+      Range range = new Range(calc.buildRangeLabel(low), low, calc.toSortableDocValue(low), high, calc.toSortableDocValue(high), incLower, incUpper);
       rangeList.add( range );
 
       low = high;
@@ -377,7 +582,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'from' is higher than 'to' in range for key: " + key);
     }
 
-    return new Range(key, from, to, includeLower, includeUpper);
+    long dvFrom = from != null ? calc.toSortableDocValue(from) : Long.MIN_VALUE;
+    long dvTo = to != null ? calc.toSortableDocValue(to) : Long.MAX_VALUE;
+    return new Range(key, from, dvFrom, to, dvTo, includeLower && from != null, includeUpper && to != null);
   }
 
   /**
@@ -449,7 +656,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     // not using custom key as it won't work with refine
     // refine would need both low and high values
-    return new Range(rangeStr, start, end, includeLower, includeUpper);
+    long dvStart = start != null ? calc.toSortableDocValue(start) : Long.MIN_VALUE;
+    long dvEnd = end != null ? calc.toSortableDocValue(end) : Long.MAX_VALUE;
+    return new Range(rangeStr, start, dvStart, end, dvEnd, includeLower && start != null, includeUpper && end != null);
   }
 
   /* Fill in sb with a string from i to the first unescaped comma, or n.
@@ -498,12 +707,17 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     createAccs(fcontext.base.size(), slotCount);
 
-    for (int idx = 0; idx<rangeList.size(); idx++) {
-      rangeStats(rangeList.get(idx), idx, hasSubFacets);
-    }
-
-    for (int idx = 0; idx<otherList.size(); idx++) {
-      rangeStats(otherList.get(idx), rangeList.size() + idx, hasSubFacets);
+    if (dv) {
+      // process docs in one pass, dropping into range buckets
+      dvRangeStats(rangeList, otherList, hasSubFacets);
+    } else {
+      // get stats one at a time using queries
+      for (int idx = 0; idx < rangeList.size(); idx++) {
+        rangeStats(rangeList.get(idx), idx, hasSubFacets);
+      }
+      for (int idx = 0; idx < otherList.size(); idx++) {
+        rangeStats(otherList.get(idx), rangeList.size() + idx, hasSubFacets);
+      }
     }
 
 
@@ -539,7 +753,96 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   private Query[] filters;
   private DocSet[] intersections;
+  
   private void rangeStats(Range range, int slot, boolean hasSubFacets) throws IOException {
+    Query rangeQ = getRangeQuery(range);
+    // TODO: specialize count only
+    DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
+    if (hasSubFacets) {
+      filters[slot] = rangeQ;
+      intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
+    }
+    int num = collect(intersection, slot, slotNum -> { return new SlotAcc.SlotContext(rangeQ); });
+    countAcc.incrementCount(slot, num); // TODO: roll this into collect()
+  }
+
+  private void dvRangeStats(List<Range> rangeList, List<Range> otherList, boolean hasSubFacets) throws IOException {
+    final FieldType ft = sf.getType();
+    final String fieldName = sf.getName();
+    final NumberType numericType = ft.getNumberType();
+    if (numericType == null) {
+      throw new IllegalStateException();
+    }
+
+    final IndexReader indexReader = fcontext.searcher.getIndexReader();
+    final int maxDoc = indexReader.maxDoc();
+    final Iterator<LeafReaderContext> ctxIt = indexReader.leaves().iterator();
+    LeafReaderContext ctx = null;
+    NumericDocValues longs = null;
+    DocSetBuilder[] setBuilders = hasSubFacets ? new DocSetBuilder[intersections.length] : null;
+
+    FacetRangeIntervalTree rangeIntervals = FacetRangeIntervalTree.create(rangeList, otherList);
+    FacetRangeIntervalTree.Accumulator accumulator = new FacetRangeIntervalTree.Accumulator(maxDoc, countAcc, setBuilders);
+    
+    for (DocIterator docsIt = fcontext.base.iterator(); docsIt.hasNext(); ) {
+      final int doc = docsIt.nextDoc();
+      if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
+        do {
+          ctx = ctxIt.next();
+        } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
+        assert doc >= ctx.docBase;
+        switch (numericType) {
+          case LONG:
+          case DATE:
+          case INTEGER:
+            longs = DocValues.getNumeric(ctx.reader(), fieldName);
+            break;
+          case FLOAT:
+            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+              @Override
+              public long longValue() throws IOException {
+                return NumericUtils.sortableFloatBits((int) super.longValue());
+              }
+            };
+            break;
+          case DOUBLE:
+            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+              @Override
+              public long longValue() throws IOException {
+                return NumericUtils.sortableDoubleBits(super.longValue());
+              }
+            };
+            break;
+          default:
+            throw new AssertionError();
+        }
+      }
+      final int localDoc = doc - ctx.docBase;
+      int valuesDocID = longs.docID();
+      if (valuesDocID < localDoc) {
+        valuesDocID = longs.advance(localDoc);
+      }
+      if (valuesDocID == localDoc) {
+        long value = longs.longValue();
+        rangeIntervals.accum(value, doc, accumulator);
+      }
+    }
+    if (setBuilders != null) {
+      // finally set the filters and intersection values (only necessary w/ subfacets, setBuilders is always non null in that case)
+      for (int slot = 0; slot < setBuilders.length; slot++) {
+        Query rangeQ = getRangeQuery(slot < rangeList.size() ? rangeList.get(slot) : otherList.get(slot - rangeList.size()));
+        filters[slot] = rangeQ;
+        DocSetBuilder setBuilder = setBuilders[slot];
+        if (setBuilder != null) {
+          intersections[slot] = setBuilder.build(null);
+        } else {
+          intersections[slot] = DocSet.EMPTY;
+        }
+      }
+    }
+  }
+
+  private Query getRangeQuery(Range range) {
     final Query rangeQ;
     {
       final Query rangeQuery = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
@@ -554,14 +857,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         rangeQ = wrappedQuery;
       }
     }
-    // TODO: specialize count only
-    DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
-    if (hasSubFacets) {
-      filters[slot] = rangeQ;
-      intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
-    }
-    int num = collect(intersection, slot, slotNum -> { return new SlotAcc.SlotContext(rangeQ); });
-    countAcc.incrementCount(slot, num); // TODO: roll this into collect()
+    return rangeQ;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -698,6 +994,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     protected abstract Comparable parseAndAddGap(Comparable value, String gap)
         throws java.text.ParseException;
 
+    /**
+     * Converts the corresponding value produced by a {@link Calc} instance into the corresponding sortable doc values
+     * value.
+     */
+    protected abstract long toSortableDocValue(Comparable calcValue);
   }
 
   private static class FloatCalc extends Calc {
@@ -726,6 +1027,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public Float parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap) {
       return ((Number) value).floatValue() + Float.parseFloat(gap);
     }
+
+    @Override
+    protected long toSortableDocValue(Comparable calcValue) {
+      return (long) NumericUtils.floatToSortableInt((float) calcValue);
+    }
   }
 
   private static class DoubleCalc extends Calc {
@@ -753,6 +1059,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public Double parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap) {
       return ((Number) value).doubleValue() + Double.parseDouble(gap);
     }
+
+    @Override
+    protected long toSortableDocValue(Comparable calcValue) {
+      return NumericUtils.doubleToSortableLong((double) calcValue);
+    }
   }
 
   private static class IntCalc extends Calc {
@@ -771,6 +1082,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public Integer parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap) {
       return ((Number) value).intValue() + Integer.parseInt(gap);
     }
+
+    @Override
+    protected long toSortableDocValue(Comparable calcValue) {
+      return (long) calcValue;
+    }
   }
 
   private static class LongCalc extends Calc {
@@ -783,6 +1099,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     @Override
     public Long parseAndAddGap(@SuppressWarnings("rawtypes") Comparable value, String gap) {
       return ((Number) value).longValue() + Long.parseLong(gap);
+    }
+
+    @Override
+    protected long toSortableDocValue(Comparable calcValue) {
+      return (long) calcValue;
     }
   }
 
@@ -821,6 +1142,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       final DateMathParser dmp = new DateMathParser();
       dmp.setNow((Date)value);
       return dmp.parseMath(gap);
+    }
+
+    @Override
+    protected long toSortableDocValue(Comparable calcValue) {
+      return ((Date) calcValue).getTime();
     }
   }
 
@@ -904,6 +1230,10 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     }
 
+    @Override
+    protected long toSortableDocValue(Comparable calcValue) {
+      return 0; // TODO
+    }
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1044,8 +1374,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         (include.contains(FacetParams.FacetRangeInclude.EDGE) && 0 == low.compareTo(start)));
     boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
         (include.contains(FacetParams.FacetRangeInclude.EDGE) && 0 == high.compareTo(max_end)));
-
-    Range range = new Range(calc.buildRangeLabel(low), low, high, incLower, incUpper);
+    
+    Range range = new Range(calc.buildRangeLabel(low), low, calc.toSortableDocValue(low), high, calc.toSortableDocValue(high), incLower, incUpper);
 
     // now refine this range
 
@@ -1071,7 +1401,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
         (!(include.contains(FacetParams.FacetRangeInclude.LOWER) ||
             include.contains(FacetParams.FacetRangeInclude.EDGE))));
-    return new Range(FacetParams.FacetRangeOther.BEFORE.toString(), null, start, false, incUpper);
+    return new Range(FacetParams.FacetRangeOther.BEFORE.toString(), null, Long.MIN_VALUE, start, calc.toSortableDocValue(start), false, incUpper);
   }
 
   /** Helper method for building a "after" Range */
@@ -1082,7 +1412,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final boolean incLower = (include.contains(FacetParams.FacetRangeInclude.OUTER) ||
         (!(include.contains(FacetParams.FacetRangeInclude.UPPER) ||
             include.contains(FacetParams.FacetRangeInclude.EDGE))));
-    return new Range(FacetParams.FacetRangeOther.AFTER.toString(), the_end, null, incLower, false);
+    return new Range(FacetParams.FacetRangeOther.AFTER.toString(), the_end, calc.toSortableDocValue(the_end), null, Long.MAX_VALUE, incLower, false);
   }
 
   /** Helper method for building a "between" Range */
@@ -1094,6 +1424,6 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         include.contains(FacetParams.FacetRangeInclude.EDGE));
     final boolean incUpper = (include.contains(FacetParams.FacetRangeInclude.UPPER) ||
         include.contains(FacetParams.FacetRangeInclude.EDGE));
-    return new Range(FacetParams.FacetRangeOther.BETWEEN.toString(), start, the_end, incLower, incUpper);
+    return new Range(FacetParams.FacetRangeOther.BETWEEN.toString(), start, calc.toSortableDocValue(start), the_end, calc.toSortableDocValue(the_end), incLower, incUpper);
   }
 }

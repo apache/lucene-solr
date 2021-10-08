@@ -187,6 +187,11 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    protected long toSortableDocValue(Comparable calcValue) {
+      return 0; // TODO
+    }
+
   }
 
   FacetRangeProcessor.Calc calc;
