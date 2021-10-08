@@ -30,10 +30,11 @@ public class JettyConfig {
 
   public final int port;
 
+  public final String host;
+
   public final String context;
 
   public final boolean enableV2;
-
 
   public final boolean stopAtShutdown;
   
@@ -47,11 +48,12 @@ public class JettyConfig {
   
   public final int portRetryTime;
 
-  private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
+  private JettyConfig(boolean onlyHttp1, int port, String host, int portRetryTime , String context, boolean stopAtShutdown,
                       Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
                       Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
+    this.host = host;
     this.context = context;
     this.stopAtShutdown = stopAtShutdown;
     this.waitForLoadingCoresToFinishMs = waitForLoadingCoresToFinishMs;
@@ -69,6 +71,7 @@ public class JettyConfig {
   public static Builder builder(JettyConfig other) {
     Builder builder = new Builder();
     builder.port = other.port;
+    builder.host = other.host;
     builder.context = other.context;
     builder.stopAtShutdown = other.stopAtShutdown;
     builder.extraServlets = other.extraServlets;
@@ -81,6 +84,7 @@ public class JettyConfig {
 
     boolean onlyHttp1 = false;
     int port = 0;
+    String host = "127.0.0.1";
     String context = "/solr";
     boolean enableV2 = true;
     boolean stopAtShutdown = true;
@@ -101,6 +105,11 @@ public class JettyConfig {
 
     public Builder setPort(int port) {
       this.port = port;
+      return this;
+    }
+
+    public Builder setHost(String host) {
+      this.host = host;
       return this;
     }
 
@@ -153,7 +162,7 @@ public class JettyConfig {
 
 
     public JettyConfig build() {
-      return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown,
+      return new JettyConfig(onlyHttp1, port, host, portRetryTime, context, stopAtShutdown,
           waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2);
     }
 

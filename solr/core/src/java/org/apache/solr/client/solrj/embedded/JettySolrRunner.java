@@ -320,15 +320,17 @@ public class JettySolrRunner {
 
       connector.setReuseAddress(true);
       connector.setPort(port);
-      connector.setHost("127.0.0.1");
+      connector.setHost(config.host);
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
-      connector.setStopTimeout(0);
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
-      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
+      ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration));
+
+      connector.setReuseAddress(true);
       connector.setPort(port);
+      connector.setHost(config.host);
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       server.setConnectors(new Connector[] {connector});
     }
