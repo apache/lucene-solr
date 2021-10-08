@@ -12,6 +12,18 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Other Changes
+---------------------
+* SOLR-15677: Upgrade the following dependencies with vulnerabilities.
+  - jetty: 9.4.44.v20210927
+  - tika: 1.27
+  - commons-compress: 1.21
+  - netty: 4.1.68.Final
+  - fasterxml.jackson: 2.12.3
+  - errorprone: 2.9.0
+  - gcp-client: 1.32.1
+  (Houston Putman)
+
 ==================  8.10.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
