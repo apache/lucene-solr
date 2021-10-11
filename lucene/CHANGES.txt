@@ -26,9 +26,6 @@ Optimizations
 Bug Fixes
 ---------------------
 
-* LUCENE-10110: MultiCollector now handles single leaf collector that wants to skip low-scoring hits
- but the combined score mode doesn't allow it. (Jim Ferenczi)
-
 * LUCENE-10111: Missing calculating the bytes used of DocsWithFieldSet in NormValuesWriter.
   (Lu Xugang)
 
@@ -54,6 +51,9 @@ Other
 
 Bug Fixes
 ---------------------
+
+* LUCENE-10110: MultiCollector now handles single leaf collector that wants to skip low-scoring hits
+ but the combined score mode doesn't allow it. (Jim Ferenczi)
 
 * LUCENE-10119: Sort optimization with search_after can wrongly skip documents
   whose values are equal to the last value of the previous page (Nhat Nguyen)
