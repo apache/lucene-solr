@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import com.google.common.base.Strings;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -33,7 +34,10 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +46,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -87,7 +92,7 @@ import java.util.Set;
  *
  * @since solr 1.3
  */
-public class ShowFileRequestHandler extends RequestHandlerBase
+public class ShowFileRequestHandler extends RequestHandlerBase implements PermissionNameProvider
 {
   public static final String HIDDEN = "hidden";
   public static final String USE_CONTENT_TYPE = "contentType";
@@ -178,7 +183,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
       ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
-      content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
+      content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
       
       rsp.add(RawResponseWriter.CONTENT, content);
     }
@@ -243,11 +248,31 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       req.setParams(params);
 
       ContentStreamBase content = new ContentStreamBase.FileStream( adminFile );
-      content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
+      content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
 
       rsp.add(RawResponseWriter.CONTENT, content);
     }
     rsp.setHttpCaching(false);
+  }
+
+  /**
+   * Checks content type string and returns it if it is one of allowed types.
+   * The allowed types are all standard mime types.
+   * If an HTML type is requested, it is instead returned as text/plain
+   */
+  public static String getSafeContentType(String contentType) {
+    if (Strings.isNullOrEmpty(contentType)) {
+      log.debug("No contentType specified");
+      return null;
+    }
+    if (!MimeTypes.getKnownMimeTypes().contains(contentType)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Requested content type '" + contentType + "' is not supported.");
+    }
+    if (contentType.toLowerCase(Locale.ROOT).contains("html")) {
+      log.info("Using text/plain instead of {}", contentType);
+      return "text/plain";
+    }
+    return contentType;
   }
 
   //////////////////////// Static methods //////////////////////////////
@@ -336,20 +361,16 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     String fname = req.getParams().get("file", null);
     if( fname == null ) {
       adminFile = configdir;
-    }
-    else {
+    } else {
       fname = fname.replace( '\\', '/' ); // normalize slashes
       if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
         log.error("Can not access: {}", fname);
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
         return null;
       }
-      if( fname.indexOf( ".." ) >= 0 ) {
-        log.error("Invalid path: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Invalid path: "+fname ));
-        return null;
-      }
-      adminFile = new File( configdir, fname );
+      Path filePath = configdir.toPath().resolve(fname);
+      req.getCore().getCoreContainer().assertPathAllowed(filePath);
+      adminFile = filePath.toFile();
     }
     return adminFile;
   }
@@ -367,5 +388,10 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
   }
 }

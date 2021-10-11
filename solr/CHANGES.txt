@@ -32,7 +32,7 @@ Build
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15678: Allow only known content types in ShowFileRequestHandler (janhoy, Gus Heck, Mal Aware)
 
 ======================= 8.10.1 =======================
 
