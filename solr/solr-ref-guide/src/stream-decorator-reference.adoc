@@ -510,28 +510,28 @@ The `/stream` handler supports a small <<stream-api.adoc#plugins,set of commands
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=list
+http://localhost:8983/solr/collection/stream?action=list
 ----
 
 This command will provide a listing of the current daemons running on the specific node along with their current state.
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=stop&id=daemonId
+http://localhost:8983/solr/collection/stream?action=stop&id=daemonId
 ----
 
 This command will stop a specific daemon function but leave it resident in memory.
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=start&id=daemonId
+http://localhost:8983/solr/collection/stream?action=start&id=daemonId
 ----
 
 This command will start a specific daemon function that has been stopped.
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=kill&id=daemonId
+http://localhost:8983/solr/collection/stream?action=kill&id=daemonId
 ----
 
 This command will stop a specific daemon function and remove it from memory.

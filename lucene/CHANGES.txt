@@ -26,9 +26,6 @@ Optimizations
 Bug Fixes
 ---------------------
 
-* LUCENE-10110: MultiCollector now handles single leaf collector that wants to skip low-scoring hits
- but the combined score mode doesn't allow it. (Jim Ferenczi)
-
 * LUCENE-10111: Missing calculating the bytes used of DocsWithFieldSet in NormValuesWriter.
   (Lu Xugang)
 
@@ -40,9 +37,6 @@ Bug Fixes
 * LUCENE-10134: ConcurrentSortedSetDocValuesFacetCounts shouldn't share liveDocs Bits across threads.
   (Ankur Goel)
 
-* LUCENE-10126: Sort optimization with a chunked bulk scorer
-  can wrongly skip documents (Nhat Nguyen, Mayya Sharipova)
-
 Build
 ---------------------
 
@@ -52,6 +46,20 @@ Other
 ---------------------
 
 * LUCENE-10098: Add docs/links to GermanAnalyzer describing how to decompound nouns. (Robert Muir)
+
+======================= Lucene 8.10.1 =======================
+
+Bug Fixes
+---------------------
+
+* LUCENE-10110: MultiCollector now handles single leaf collector that wants to skip low-scoring hits
+ but the combined score mode doesn't allow it. (Jim Ferenczi)
+
+* LUCENE-10119: Sort optimization with search_after can wrongly skip documents
+  whose values are equal to the last value of the previous page (Nhat Nguyen)
+
+* LUCENE-10126: Sort optimization with a chunked bulk scorer
+  can wrongly skip documents (Nhat Nguyen, Mayya Sharipova)
 
 ======================= Lucene 8.10.0 =======================
 
@@ -176,9 +184,6 @@ Bug Fixes
 
 * LUCENE-10106: Sort optimization can wrongly skip the first document of
   each segment (Nhat Nguyen)
-
-* LUCENE-10119: Sort optimization with search_after can wrongly skip documents
-  whose values are equal to the last value of the previous page (Nhat Nguyen)
 
 Other
 ---------------------
