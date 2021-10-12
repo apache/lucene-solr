@@ -239,7 +239,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     when(zkStatusHandler.validateZkRawResponse(ArgumentMatchers.any(), any(), any())).thenAnswer(Answers.CALLS_REAL_METHODS);
 
     // Verifying that parsing the status strings with floating point no longer triggers a NumberFormatException, although floats are still displayed in UI
-    Map<String, Object> mockStatus = zkStatusHandler.getZkStatus("zoo1:2181", ZkDynamicConfig.fromZkConnectString("zoo1:2181"));
+    Map<String, Object> mockStatus = zkStatusHandler.getZkStatus("Zoo1:2181", ZkDynamicConfig.fromZkConnectString("zoo1:2181"));
     String expected = "{\n" +
             "  \"mode\":\"ensemble\",\n" +
             "  \"dynamicReconfig\":true,\n" +
@@ -252,7 +252,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
             "      \"clientPort\":\"2181\",\n" +
             "      \"ok\":true,\n" +
             "      \"zk_server_state\":\"leader\"}],\n" +
-            "  \"zkHost\":\"zoo1:2181\",\n" +
+            "  \"zkHost\":\"Zoo1:2181\",\n" +
             "  \"status\":\"green\"}";
     assertEquals(expected, JSONUtil.toJSON(mockStatus));
   }
