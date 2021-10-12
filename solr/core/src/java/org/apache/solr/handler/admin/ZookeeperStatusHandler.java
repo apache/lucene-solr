@@ -120,10 +120,10 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     } else {
       dynamicReconfig = true;
       List<String> connStringHosts = hostsFromConnectionString.getServers().stream()
-          .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
+          .map(h -> h.resolveClientPortAddress().toLowerCase(Locale.ROOT) + ":" + h.clientPort)
           .sorted().collect(Collectors.toList());
       List<String> dynamicHosts = zkDynamicConfig.getServers().stream()
-          .map(h -> h.resolveClientPortAddress() + ":" +
+          .map(h -> h.resolveClientPortAddress().toLowerCase(Locale.ROOT) + ":" +
                   (h.clientPort != null ? h.clientPort : hostsFromConnectionString.getServers().get(0).clientPort))
           .sorted().collect(Collectors.toList());
       if (!connStringHosts.containsAll(dynamicHosts)) {

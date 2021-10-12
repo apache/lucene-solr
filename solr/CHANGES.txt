@@ -24,6 +24,7 @@ Bug Fixes
 ---------------------
 * SOLR-15626: The "config-read" permission has been fixed to properly allow access to `/solr/admin/configs?action=LIST` (Jon Senchyna via Eric Pugh)
 
+* SOLR-15691: Admin UI raises yellow warning even when only case of hostnames differ (janhoy)
 
 Build
 ---------------------
