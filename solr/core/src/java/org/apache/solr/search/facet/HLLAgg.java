@@ -59,16 +59,16 @@ public class HLLAgg extends StrAggValueSource {
       if (sf.getType().isPointField()) {
         return new SortedNumericAcc(fcontext, getArg(), numSlots);
       } else if (sf.hasDocValues()) {
-        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       } else {
-        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       }
     } else {
       if (sf.getType().getNumberType() != null) {
         // always use hll here since we don't know how many values there are?
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
-        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       }
     }
   }

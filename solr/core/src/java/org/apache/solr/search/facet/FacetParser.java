@@ -546,6 +546,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
         facet.allBuckets = getBoolean(m, "allBuckets", facet.allBuckets);
         facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
         facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
+        facet.mergedBucketsLimit = (int)getLong(m, "mergedBucketsLimit", facet.mergedBucketsLimit);
 
         // TODO: pull up to higher level?
         facet.refine = FacetRequest.RefineMethod.fromObj(m.get("refine"));

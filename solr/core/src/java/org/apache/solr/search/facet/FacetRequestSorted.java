@@ -33,6 +33,11 @@ abstract class FacetRequestSorted extends FacetRequest {
   int overrefine = -1;
   long mincount;
   /**
+   * Number of buckets to preserve when exposing merged state (for iterative querying).
+   * -1 means no limit on merged bucket size
+   */
+  int mergedBucketsLimit = -1;
+  /**
    * The basic sorting to do on buckets, defaults to {@link FacetRequest.FacetSort#COUNT_DESC}
    * @see #prelim_sort
    */

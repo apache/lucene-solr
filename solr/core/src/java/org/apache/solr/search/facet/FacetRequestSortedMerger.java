@@ -75,12 +75,25 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   @Override
   public void writeState(JavaBinCodec codec) throws IOException {
     // NB(clay): not marshaling shardHasMoreBuckets as refinement for iterative results isn't properly supported
-    codec.writeVal(buckets.size());
-    for (Map.Entry<Object, FacetBucket> entry : buckets.entrySet()) {
-      Object key = entry.getKey();
-      FacetBucket value = entry.getValue();
-      codec.writeVal(key);
-      value.writeState(codec);
+    // The two following paths write the same, compatible, encoding.
+    if (freq.mergedBucketsLimit >= 0) {
+      // we must use sorted buckets for best results (which should be available where merged limits are supported)
+      int size = Math.min(sortedBuckets.size(), freq.mergedBucketsLimit);
+      codec.writeVal(size);
+      for (int i = 0; i < size; i++) {
+        FacetBucket bucket = sortedBuckets.get(i);
+        codec.writeVal(bucket.bucketValue);
+        bucket.writeState(codec);
+      }
+    } else {
+      // otherwise, just use the standard buckets object which is always available
+      codec.writeVal(buckets.size());
+      for (Map.Entry<Object, FacetBucket> entry : buckets.entrySet()) {
+        Object key = entry.getKey();
+        FacetBucket value = entry.getValue();
+        codec.writeVal(key);
+        value.writeState(codec);
+      }
     }
   }
 
