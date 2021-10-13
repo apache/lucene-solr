@@ -19,6 +19,8 @@ Improvements
 * LUCENE-9662: Make CheckIndex concurrent by parallelizing index check across segments.
   (Zach Chen, Mike McCandless, Dawid Weiss, Robert Muir)
 
+* LUCENE-10103: Make QueryCache respect Accountable queries. (Haoyu Zhai)
+
 Optimizations
 ---------------------
 (No changes)

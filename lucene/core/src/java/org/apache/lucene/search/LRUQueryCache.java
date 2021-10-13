@@ -301,7 +301,12 @@ public class LRUQueryCache implements QueryCache, Accountable {
     try {
       Query singleton = uniqueQueries.putIfAbsent(query, query);
       if (singleton == null) {
-        onQueryCache(query, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + QUERY_DEFAULT_RAM_BYTES_USED);
+        if (query instanceof Accountable) {
+          onQueryCache(
+              query, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ((Accountable) query).ramBytesUsed());
+        } else {
+          onQueryCache(query, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + QUERY_DEFAULT_RAM_BYTES_USED);
+        }
       } else {
         query = singleton;
       }

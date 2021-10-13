@@ -30,8 +30,10 @@ import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * This class also provides the functionality behind
@@ -41,10 +43,23 @@ import org.apache.lucene.util.DocIdSetBuilder;
  * bit set with matches and builds a Scorer on top of
  * this bit set.
  */
-final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends Query {
+final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends Query
+    implements Accountable {
 
   // mtq that matches 16 terms or less will be executed as a regular disjunction
   private static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
+
+  @Override
+  public long ramBytesUsed() {
+    if (query instanceof Accountable) {
+      return RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+          + RamUsageEstimator.NUM_BYTES_OBJECT_REF
+          + ((Accountable) query).ramBytesUsed();
+    }
+    return RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
+  }
 
   private static class TermAndState {
     final BytesRef term;
