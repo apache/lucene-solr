@@ -25,6 +25,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterNumericDocValues;
@@ -222,11 +223,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       }
     }
     
-    private void accum(long value, int docId, Accumulator accumulator) {
-      accumRec(root, value, docId, accumulator);
+    private void accum(long value, int doc, int localDoc, Accumulator accumulator) throws IOException {
+      accumRec(root, value, doc, localDoc, accumulator);
     }
     
-    private void accumRec(Node node, long value, int docId, Accumulator accumulator) {
+    private void accumRec(Node node, long value, int doc, int localDoc, Accumulator accumulator) throws IOException {
       if (node == null) {
         return; // past the leaf node
       }
@@ -236,17 +237,17 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
         return;
       }
       // at this point, always must go left as there might be ranges that extend past our value
-      accumRec(node.left, value, docId, accumulator);
+      accumRec(node.left, value, doc, localDoc, accumulator);
       // then check / accumulate current
       if (node.range.includesDocValue(value)) {
-        accumulator.accumulate(node.slot, docId);
+        accumulator.accumulate(node.slot, doc, localDoc);
       }
       // optionally, go right if the subtree might have lower values equal to or less than us at this point
       // exit if the current node's low is greater as there would be no right subtree that would match given the sorting
       if (compare(value, true, true, node.range.dvLow, node.range.includeLower, false) < 0) {
         return;
       }
-      accumRec(node.right, value, docId, accumulator);
+      accumRec(node.right, value, doc, localDoc, accumulator);
     }
 
     private static class Node {
@@ -285,29 +286,10 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       }
     }
     
-    private static class Accumulator {
-      private final int maxDocId;
-      private final SlotAcc.CountSlotAcc countAcc;
-      private final DocSetBuilder[] setBuilders;
-
-      private Accumulator(int maxDocId, SlotAcc.CountSlotAcc countAcc, DocSetBuilder[] setBuilders) {
-        this.maxDocId = maxDocId;
-        this.countAcc = countAcc;
-        this.setBuilders = setBuilders;
-      }
-      
-      void accumulate(int slot, int docId) {
-        countAcc.incrementCount(slot, 1);
-        if (setBuilders != null) {
-          DocSetBuilder setBuilder = setBuilders[slot];
-          if (setBuilder == null) {
-            // DocSetBuilder cost estimate calculation pulled from other usages.
-            setBuilder = new DocSetBuilder(maxDocId, Math.min(64, (maxDocId >>> 10) + 4));
-            setBuilders[slot] = setBuilder;
-          }
-          setBuilder.add(docId);
-        }
-      }
+    @FunctionalInterface
+    private interface Accumulator {
+      // Called for each slot matched by a provided doc (the global and local doc are both provided for convenience).
+      void accumulate(int slot, int doc, int localDoc) throws IOException;
     }
   }
   
@@ -779,10 +761,30 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     final Iterator<LeafReaderContext> ctxIt = indexReader.leaves().iterator();
     LeafReaderContext ctx = null;
     NumericDocValues longs = null;
-    DocSetBuilder[] setBuilders = hasSubFacets ? new DocSetBuilder[intersections.length] : null;
+    final int numSlots = rangeList.size() + otherList.size();
+    DocSetBuilder[] setBuilders = hasSubFacets ? new DocSetBuilder[numSlots] : null;
+    SlotAcc.SlotContext[] slotContexts = new SlotAcc.SlotContext[numSlots];
+    // need to set the slot contexts up front
+    for (int slot = 0; slot < numSlots; slot++) {
+      Query rangeQ = getRangeQuery(slot < rangeList.size() ? rangeList.get(slot) : otherList.get(slot - rangeList.size()));
+      slotContexts[slot] = new SlotAcc.SlotContext(rangeQ);
+    }
+    IntFunction<SlotAcc.SlotContext> getSlotContext = (int slot) -> slotContexts[slot];
 
     FacetRangeIntervalTree rangeIntervals = FacetRangeIntervalTree.create(rangeList, otherList);
-    FacetRangeIntervalTree.Accumulator accumulator = new FacetRangeIntervalTree.Accumulator(maxDoc, countAcc, setBuilders);
+    FacetRangeIntervalTree.Accumulator accumulator = (int slot, int doc, int localDoc) -> {
+      countAcc.incrementCount(slot, 1);
+      collect(localDoc, slot, getSlotContext);
+      if (setBuilders != null) {
+        DocSetBuilder setBuilder = setBuilders[slot];
+        if (setBuilder == null) {
+          // DocSetBuilder cost estimate calculation pulled from other usages.
+          setBuilder = new DocSetBuilder(maxDoc, Math.min(64, (maxDoc >>> 10) + 4));
+          setBuilders[slot] = setBuilder;
+        }
+        setBuilder.add(doc);
+      }
+    };
     
     for (DocIterator docsIt = fcontext.base.iterator(); docsIt.hasNext(); ) {
       final int doc = docsIt.nextDoc();
@@ -791,6 +793,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           ctx = ctxIt.next();
         } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
         assert doc >= ctx.docBase;
+        setNextReader(ctx);
         switch (numericType) {
           case LONG:
           case DATE:
@@ -824,20 +827,24 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       }
       if (valuesDocID == localDoc) {
         long value = longs.longValue();
-        rangeIntervals.accum(value, doc, accumulator);
+        rangeIntervals.accum(value, doc, localDoc, accumulator);
       }
     }
-    if (setBuilders != null) {
-      // finally set the filters and intersection values (only necessary w/ subfacets, setBuilders is always non null in that case)
-      for (int slot = 0; slot < setBuilders.length; slot++) {
-        Query rangeQ = getRangeQuery(slot < rangeList.size() ? rangeList.get(slot) : otherList.get(slot - rangeList.size()));
-        filters[slot] = rangeQ;
+    
+    for (int slot = 0; slot < numSlots; slot++) {
+      if (setBuilders != null) {
+        // finally set the filters and intersection doc sets (only necessary w/ subfacets, setBuilders is always non null in that case)
+        filters[slot] = slotContexts[slot].getSlotQuery();
         DocSetBuilder setBuilder = setBuilders[slot];
         if (setBuilder != null) {
           intersections[slot] = setBuilder.build(null);
         } else {
           intersections[slot] = DocSet.EMPTY;
         }
+      }
+      // and collect any zero counts where required (so that zero subfacets will still show up if a corresponding accumulator decides)
+      if (countAcc.getCount(slot) == 0) {
+        collect(DocSet.EMPTY, slot, getSlotContext);
       }
     }
   }
