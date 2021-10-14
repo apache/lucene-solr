@@ -19,14 +19,17 @@ package org.apache.solr.search.grouping.distributed.responseprocessor;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
@@ -71,6 +74,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       groupOffsetDefault = withinGroupSortSpec.getOffset();
     }
     int docsPerGroupDefault = withinGroupSortSpec.getCount();
+    if (rb.isIterative()) {
+      // We must hold onto all grouped docs since later iterations could push earlier grouped docs into the main results.
+      docsPerGroupDefault += groupOffsetDefault;
+      groupOffsetDefault = 0;
+    }
 
     Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {
@@ -151,6 +159,48 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         individualShardInfo.add("maxScore", maxScore);
       }
     }
+
+    if (rb.isIterative()) {
+      // Before we process, we might have preexisting merged top groups that we want to roll into the results.
+      rb.mergedTopGroups.forEach((field, group) -> {
+        List<TopGroups<BytesRef>> topGroups = commandTopGroups.get(field);
+        if (topGroups == null || topGroups.size() == 0) {
+          // null shouldn't happen if the request is the same, but size == 0 theoretically could happen.
+          // In either case, just take the previous iterative results verbatim.
+          topGroups = new ArrayList<>(1);
+          topGroups.add(group);
+          commandTopGroups.put(field, topGroups);
+        } else {
+          // Otherwise, there are results. We might need to shift ours based on any new merged ordering.
+          // WARNING: Iterative grouping is not guaranteed to be accurate when grouping on fields whose groups could 
+          //          contain documents that exist in multiple iterative steps.
+          TopGroups<BytesRef> exemplar = topGroups.get(0);
+          if (exemplar.groups.length < group.groups.length) {
+            throw new IllegalArgumentException("number of groups got smaller after additional iterations, should not be possible");
+          }
+          int groupIdx = 0;
+          GroupDocs<BytesRef>[] newGroups = new GroupDocs[exemplar.groups.length];
+          for (int i = 0; i < exemplar.groups.length; i++) {
+            GroupDocs<BytesRef> exemplarGroupDocs = exemplar.groups[i];
+            if (groupIdx >= group.groups.length) {
+              // we have exhausted the iterative groups, we can just directly set since these are net new
+              newGroups[i] = new GroupDocs<>(Float.NaN, Float.NaN, new TotalHits(0, TotalHits.Relation.EQUAL_TO), null, exemplarGroupDocs.groupValue, null);
+            } else {
+              GroupDocs<BytesRef> groupDocs = group.groups[groupIdx];
+              if (Objects.equals(groupDocs.groupValue, exemplarGroupDocs.groupValue)) {
+                // we can insert in the i slot from the iterative results
+                newGroups[i] = groupDocs;
+                groupIdx++;
+              } else {
+                // the iterative results don't have this value, things are going to need to shift
+                newGroups[i] = new GroupDocs<>(Float.NaN, Float.NaN, new TotalHits(0, TotalHits.Relation.EQUAL_TO), null, exemplarGroupDocs.groupValue, null);
+              }
+            }
+          }
+          commandTopGroups.get(field).add(new TopGroups<>(group.groupSort, group.withinGroupSort, group.totalHitCount, group.totalGroupedHitCount, newGroups, group.maxScore));
+        }
+      });
+    }
     for (Map.Entry<String, List<TopGroups<BytesRef>>> entry : commandTopGroups.entrySet()) {
       List<TopGroups<BytesRef>> topGroups = entry.getValue();
       if (topGroups.isEmpty()) {
@@ -178,7 +228,20 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       int limit = rb.getGroupingSpec().getGroupSortSpec().getCount();
       topN = limit >= 0? limit: Integer.MAX_VALUE;
     }
-
+    if (rb.isIterative()) {
+      // We must hold onto all grouped docs since later iterations could push earlier grouped docs into the main results.
+      topN += start;
+      start = 0;
+      // Additionally, we might have preexisting merged query command results that we want to roll into the results.
+      for (Map.Entry<String, QueryCommandResult> entry : rb.mergedQueryCommandResults.entrySet()) {
+        String queryKey = entry.getKey();
+        if (commandTopDocs.containsKey(queryKey)) {
+          commandTopDocs.get(queryKey).add(entry.getValue());
+        } else {
+          commandTopDocs.put(queryKey, Collections.singletonList(entry.getValue()));
+        }
+      }
+    }
     for (Map.Entry<String, List<QueryCommandResult>> entry : commandTopDocs.entrySet()) {
       List<QueryCommandResult> queryCommandResults = entry.getValue();
       List<TopDocs> topDocs = new ArrayList<>(queryCommandResults.size());

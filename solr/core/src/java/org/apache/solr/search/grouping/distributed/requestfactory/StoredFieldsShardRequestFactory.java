@@ -20,6 +20,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -44,12 +45,12 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
     HashMap<String, Set<ShardDoc>> shardMap = new HashMap<>();
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
       for (GroupDocs<BytesRef> group : topGroups.groups) {
-        mapShardToDocs(shardMap, group.scoreDocs);
+        mapShardToDocs(shardMap, group.scoreDocs, rb.retrievedDocuments);
       }
     }
 
     for (QueryCommandResult queryCommandResult : rb.mergedQueryCommandResults.values()) {
-      mapShardToDocs(shardMap, queryCommandResult.getTopDocs().scoreDocs);
+      mapShardToDocs(shardMap, queryCommandResult.getTopDocs().scoreDocs, rb.retrievedDocuments);
     }
 
     ShardRequest[] shardRequests = new ShardRequest[shardMap.size()];
@@ -82,9 +83,13 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
     return shardRequests;
   }
 
-  private void mapShardToDocs(HashMap<String, Set<ShardDoc>> shardMap, ScoreDoc[] scoreDocs) {
+  private void mapShardToDocs(HashMap<String, Set<ShardDoc>> shardMap, ScoreDoc[] scoreDocs, Map<Object, SolrDocument> retrievedDocuments) {
     for (ScoreDoc scoreDoc : scoreDocs) {
       ShardDoc solrDoc = (ShardDoc) scoreDoc;
+      if (retrievedDocuments.containsKey(solrDoc.id)) {
+        // We already have the document for this shard from a previous response. Skip.
+        continue;
+      }
       Set<ShardDoc> shardDocs = shardMap.get(solrDoc.shard);
       if (shardDocs == null) {
         shardMap.put(solrDoc.shard, shardDocs = new HashSet<>());
