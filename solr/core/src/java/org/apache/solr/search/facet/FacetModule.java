@@ -31,8 +31,8 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -322,8 +322,7 @@ public class FacetModule extends SearchComponent {
 
   @Override
   public void fromState(ResponseBuilder rb, byte[] state) throws IOException {
-    JavaBinCodec codec = new JavaBinCodec();
-    DataInputInputStream dis = codec.initRead(state);
+    JavaBinDecoder codec = new JavaBinDecoder(state);
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Received state for unconfigured facet");
@@ -332,7 +331,7 @@ public class FacetModule extends SearchComponent {
     facetState.merger = facetState.facetRequest.createFacetMerger(new Object());
     facetState.mcontext = new FacetMerger.Context(rb.shards.length);
     // NB(clay): while the mcontext is initialized above, it solely used for API requirements - but shard refinement is not actually supported for iterative results yet
-    facetState.merger.readState(codec, dis, facetState.mcontext);
+    facetState.merger.readState(codec, facetState.mcontext);
   }
 
   @Override
@@ -467,13 +466,13 @@ public class FacetModule extends SearchComponent {
     }
 
     @Override
-    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-      val = (long) codec.readVal(dis);
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      val = codec.readLong();
     }
 
     @Override
     public void writeState(JavaBinCodec codec) throws IOException {
-      codec.writeVal(val);
+      codec.writeLong(val);
     }
 
     @Override
@@ -571,10 +570,10 @@ public class FacetModule extends SearchComponent {
     }
 
     @Override
-    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-      if ((boolean) codec.readVal(dis)) {
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      if (codec.readBoolean()) {
         bucket = newBucket(null, mcontext);
-        bucket.readState(codec, dis, mcontext);
+        bucket.readState(codec, mcontext);
       } else {
         bucket = null;
       }
@@ -582,7 +581,7 @@ public class FacetModule extends SearchComponent {
 
     @Override
     public void writeState(JavaBinCodec codec) throws IOException {
-      codec.writeVal(bucket != null);
+      codec.writeBoolean(bucket != null);
       if (bucket != null) {
         bucket.writeState(codec);
       }

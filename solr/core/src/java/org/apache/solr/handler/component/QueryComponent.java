@@ -67,8 +67,8 @@ import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -647,14 +647,13 @@ public class QueryComponent extends SearchComponent
 
   @Override
   public void fromState(ResponseBuilder rb, byte[] state) throws IOException {
-    JavaBinCodec codec = new JavaBinCodec();
-    DataInputInputStream dis = codec.initRead(state);
+    JavaBinDecoder codec = new JavaBinDecoder(state);
     if (rb.grouping()) {
       QueryGroupingComponentState componentState = new QueryGroupingComponentState(rb);
-      componentState.readState(codec, dis);
+      componentState.readState(codec);
     } else {
       QueryComponentState componentState = new QueryComponentState();
-      componentState.readState(codec, dis, rb.getSortSpec(), rb.req.getSchema());
+      componentState.readState(codec, rb.getSortSpec(), rb.req.getSchema());
       rb.req.getContext().put(QueryComponentState.class, componentState);
     }
   }
@@ -1720,64 +1719,64 @@ public class QueryComponent extends SearchComponent
       this.rb = rb;
     }
 
-    void readState(JavaBinCodec codec, DataInputInputStream dis) throws IOException {
-      rb.totalHitCount = (long) codec.readVal(dis);
-      boolean partialResults = (boolean) codec.readVal(dis);
+    void readState(JavaBinDecoder codec) throws IOException {
+      rb.totalHitCount =  codec.readLong();
+      boolean partialResults = codec.readBoolean();
       if (partialResults) {
         rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       }
       
-      int mergedSearchGroupsSize = (int) codec.readVal(dis);
+      int mergedSearchGroupsSize = codec.readInt();
       rb.mergedSearchGroups.clear();
       rb.mergedGroupCounts.clear();
       for (int i = 0; i < mergedSearchGroupsSize; i++) {
-        String groupKey = (String) codec.readVal(dis);
-        int groupsSize = (int) codec.readVal(dis);
+        String groupKey = (String) codec.readVal();
+        int groupsSize = codec.readInt();
         Collection<SearchGroup<BytesRef>> groups = new ArrayList<>(groupsSize);
         for (int j = 0; j < groupsSize; j++) {
           SearchGroup<BytesRef> group = new SearchGroup<>();
-          byte[] value = (byte[]) codec.readVal(dis);
+          byte[] value = (byte[]) codec.readVal();
           group.groupValue = new BytesRef(value);
-          group.sortValues = ((Collection) codec.readVal(dis)).toArray();
+          group.sortValues = ((Collection) codec.readVal()).toArray();
           groups.add(group);
         }
         rb.mergedSearchGroups.put(groupKey, groups);
-        Long groupCount = (Long) codec.readVal(dis);
+        Long groupCount = (Long) codec.readVal();
         if (groupCount != null) {
           rb.mergedGroupCounts.put(groupKey, groupCount);
         }
       }
       
-      int mergedTopGroupsSize = (int) codec.readVal(dis);
+      int mergedTopGroupsSize = codec.readInt();
       rb.mergedTopGroups.clear();
       for (int i = 0; i < mergedTopGroupsSize; i++) {
-        String groupKey = (String) codec.readVal(dis);
-        TopGroups<BytesRef> topGroups = readTopGroups(codec, dis);
+        String groupKey = (String) codec.readVal();
+        TopGroups<BytesRef> topGroups = readTopGroups(codec);
         rb.mergedTopGroups.put(groupKey, topGroups);
       }
       
-      int mergedQueryCommandResultsSize = (int) codec.readVal(dis);
+      int mergedQueryCommandResultsSize = codec.readInt();
       rb.mergedQueryCommandResults.clear();
       for (int i = 0; i < mergedQueryCommandResultsSize; i++) {
-        String queryKey = (String) codec.readVal(dis);
-        QueryCommandResult queryCommandResult = readQueryCommandResult(codec, dis, rb.getGroupingSpec().getWithinGroupSortSpec());
+        String queryKey = (String) codec.readVal();
+        QueryCommandResult queryCommandResult = readQueryCommandResult(codec, rb.getGroupingSpec().getWithinGroupSortSpec());
         rb.mergedQueryCommandResults.put(queryKey, queryCommandResult);
       }
       
       rb.retrievedDocuments.clear();
-      rb.retrievedDocuments.putAll((Map<Object, SolrDocument>) codec.readVal(dis));
+      rb.retrievedDocuments.putAll((Map<Object, SolrDocument>) codec.readVal());
     }
 
     void writeState(JavaBinCodec codec) throws IOException {
-      codec.writeVal(rb.totalHitCount);
+      codec.writeLong(rb.totalHitCount);
       boolean partialResults = Boolean.TRUE.equals(rb.rsp.getResponseHeader().asShallowMap().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-      codec.writeVal(partialResults);
+      codec.writeBoolean(partialResults);
       
-      codec.writeVal(rb.mergedSearchGroups.size());
+      codec.writeInt(rb.mergedSearchGroups.size());
       for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
         String groupKey = entry.getKey();
         codec.writeVal(groupKey);
-        codec.writeVal(entry.getValue().size());
+        codec.writeInt(entry.getValue().size());
         for (SearchGroup<BytesRef> group : entry.getValue()) {
           codec.writeByteArray(group.groupValue.bytes, group.groupValue.offset, group.groupValue.length);
           codec.writeVal(group.sortValues);
@@ -1785,14 +1784,14 @@ public class QueryComponent extends SearchComponent
         codec.writeVal(rb.mergedGroupCounts.get(groupKey));
       }
       
-      codec.writeVal(rb.mergedTopGroups.size());
+      codec.writeInt(rb.mergedTopGroups.size());
       for (Map.Entry<String, TopGroups<BytesRef>> entry : rb.mergedTopGroups.entrySet()) {
         String groupKey = entry.getKey();
         codec.writeVal(groupKey);
         writeTopGroups(codec, entry.getValue());
       }
       
-      codec.writeVal(rb.mergedQueryCommandResults.size());
+      codec.writeInt(rb.mergedQueryCommandResults.size());
       for (Map.Entry<String, QueryCommandResult> entry : rb.mergedQueryCommandResults.entrySet()) {
         String queryKey = entry.getKey();
         codec.writeVal(queryKey);
@@ -1803,13 +1802,13 @@ public class QueryComponent extends SearchComponent
     }
 
     void writeTopGroups(JavaBinCodec codec, TopGroups<BytesRef> topGroups) throws IOException {
-      codec.writeVal(topGroups.totalHitCount);
-      codec.writeVal(topGroups.totalGroupedHitCount);
-      codec.writeVal(topGroups.maxScore);
-      codec.writeVal(topGroups.groups.length);
+      codec.writeLong(topGroups.totalHitCount);
+      codec.writeLong(topGroups.totalGroupedHitCount);
+      codec.writeFloat(topGroups.maxScore);
+      codec.writeInt(topGroups.groups.length);
       for (GroupDocs<BytesRef> group : topGroups.groups) {
-        codec.writeVal(group.score);
-        codec.writeVal(group.maxScore);
+        codec.writeFloat(group.score);
+        codec.writeFloat(group.maxScore);
         writeTotalHits(codec, group.totalHits);
         codec.writeByteArray(group.groupValue.bytes, group.groupValue.offset, group.groupValue.length);
         codec.writeVal(group.groupSortValues);
@@ -1817,70 +1816,70 @@ public class QueryComponent extends SearchComponent
       }
     }
 
-    TopGroups<BytesRef> readTopGroups(JavaBinCodec codec, DataInputInputStream dis) throws IOException {
+    TopGroups<BytesRef> readTopGroups(JavaBinDecoder codec) throws IOException {
       SortField[] groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort().getSort();
       SortField[] withinGroupSort = rb.getGroupingSpec().getWithinGroupSortSpec().getSort().getSort();
-      long totalHitCount = (long) codec.readVal(dis);
-      long totalGroupedHitCount = (long) codec.readVal(dis);
-      float maxScore = (float) codec.readVal(dis);
-      int groupsSize = (int) codec.readVal(dis);
+      long totalHitCount =  codec.readLong();
+      long totalGroupedHitCount = codec.readLong();
+      float maxScore = codec.readFloat();
+      int groupsSize = codec.readInt();
       GroupDocs<BytesRef>[] groups = new GroupDocs[groupsSize];
       for (int i = 0; i < groupsSize; i++) {
         // TODO(clay): are any of these duplicated??
-        float score = (float) codec.readVal(dis);
-        float topGroupsMaxScore = (float) codec.readVal(dis);
-        TotalHits totalHits = readTotalHits(codec, dis);
-        BytesRef groupValue = new BytesRef((byte[]) codec.readVal(dis));
-        Collection groupSortValuesCollection = ((Collection) codec.readVal(dis));
+        float score = codec.readFloat();
+        float topGroupsMaxScore = codec.readFloat();
+        TotalHits totalHits = readTotalHits(codec);
+        BytesRef groupValue = new BytesRef((byte[]) codec.readVal());
+        Collection groupSortValuesCollection = ((Collection) codec.readVal());
         Object[] groupSortValues = groupSortValuesCollection != null ? groupSortValuesCollection.toArray() : null;
-        ScoreDoc[] scoreDocs = readScoreDocs(codec, dis);
+        ScoreDoc[] scoreDocs = readScoreDocs(codec );
         groups[i] = new GroupDocs<>(score, topGroupsMaxScore, totalHits, scoreDocs, groupValue, groupSortValues);
       }
       return new TopGroups<>(groupSort, withinGroupSort, totalHitCount, totalGroupedHitCount, groups, maxScore);
     }
 
     private void writeQueryCommandResult(JavaBinCodec codec, QueryCommandResult queryCommandResult) throws IOException {
-      codec.writeVal(queryCommandResult.getMatches());
-      codec.writeVal(queryCommandResult.getMaxScore());
+      codec.writeLong(queryCommandResult.getMatches());
+      codec.writeFloat(queryCommandResult.getMaxScore());
       TopDocs topDocs = queryCommandResult.getTopDocs();
       writeTotalHits(codec, topDocs.totalHits);
       writeScoreDocs(codec, topDocs.scoreDocs);
     }
 
-    private QueryCommandResult readQueryCommandResult(JavaBinCodec codec, DataInputInputStream dis, SortSpec sortSpec) throws IOException {
-      long matches = (long) codec.readVal(dis);
-      float maxScore = (float) codec.readVal(dis);
-      TotalHits totalHits = readTotalHits(codec, dis);
-      ScoreDoc[] scoreDocs = readScoreDocs(codec, dis);
+    private QueryCommandResult readQueryCommandResult(JavaBinDecoder codec, SortSpec sortSpec) throws IOException {
+      long matches = codec.readLong();
+      float maxScore = codec.readFloat();
+      TotalHits totalHits = readTotalHits(codec);
+      ScoreDoc[] scoreDocs = readScoreDocs(codec);
       TopFieldDocs topFieldDocs = new TopFieldDocs(totalHits, scoreDocs, sortSpec.getSort().getSort());
       return new QueryCommandResult(topFieldDocs, matches, maxScore);
     }
 
     private void writeTotalHits(JavaBinCodec codec, TotalHits totalHits) throws IOException {
-      codec.writeVal(totalHits.value);
-      codec.writeVal(totalHits.relation.ordinal());
+      codec.writeLong(totalHits.value);
+      codec.writeInt(totalHits.relation.ordinal());
     }
 
-    private TotalHits readTotalHits(JavaBinCodec codec, DataInputInputStream dis) throws IOException {
-      long totalHitsValue = (long) codec.readVal(dis);
-      TotalHits.Relation totalHitsRelation = TotalHits.Relation.values()[(int) codec.readVal(dis)];
+    private TotalHits readTotalHits(JavaBinDecoder codec) throws IOException {
+      long totalHitsValue = codec.readLong();
+      TotalHits.Relation totalHitsRelation = TotalHits.Relation.values()[codec.readInt()];
       return new TotalHits(totalHitsValue, totalHitsRelation);
     }
 
     private void writeScoreDocs(JavaBinCodec codec, ScoreDoc[] scoreDocs) throws IOException {
-      codec.writeVal(scoreDocs.length);
+      codec.writeInt(scoreDocs.length);
       for (ScoreDoc scoreDoc : scoreDocs) {
         ShardDoc shardDoc = (ShardDoc) scoreDoc;
         shardDoc.writeState(codec);
       }
     }
 
-    private ScoreDoc[] readScoreDocs(JavaBinCodec codec, DataInputInputStream dis) throws IOException {
-      int scoreDocsSize = (int) codec.readVal(dis);
+    private ScoreDoc[] readScoreDocs(JavaBinDecoder codec) throws IOException {
+      int scoreDocsSize = codec.readInt();
       ScoreDoc[] scoreDocs = new ScoreDoc[scoreDocsSize];
       for (int j = 0; j < scoreDocsSize; j++) {
         ShardDoc shardDoc = new ShardDoc();
-        shardDoc.readState(codec, dis);
+        shardDoc.readState(codec);
         scoreDocs[j] = shardDoc;
       }
       return scoreDocs;
@@ -1896,17 +1895,17 @@ public class QueryComponent extends SearchComponent
     public boolean partialResults;
     public Boolean segmentTerminatedEarly;
 
-    void readState(JavaBinCodec codec, DataInputInputStream dis, SortSpec ss, IndexSchema schema) throws IOException {
-      int shardDocsSize = (int) codec.readVal(dis);
+    void readState(JavaBinDecoder codec, SortSpec ss, IndexSchema schema) throws IOException {
+      int shardDocsSize = codec.readInt();
       shardDocs = new ArrayList<>(shardDocsSize);
       List<Integer> sortFieldIndexes = new ArrayList<>();
       for (int i = 0; i < shardDocsSize; i++) {
         ShardDoc sdoc = new ShardDoc();
-        sdoc.readState(codec, dis);
+        sdoc.readState(codec);
         shardDocs.add(sdoc);
-        sortFieldIndexes.add((int) codec.readVal(dis));
+        sortFieldIndexes.add(codec.readInt());
       }
-      List<NamedList> rawSortFieldValues = (List<NamedList>) codec.readVal(dis);
+      List<NamedList> rawSortFieldValues = (List<NamedList>) codec.readVal();
       List<NamedList> sortFieldValues = rawSortFieldValues.stream().map(v -> unmarshalSortValues(ss, v, schema)).collect(Collectors.toList());
       for (int i = 0; i < sortFieldIndexes.size(); i++) {
         int index = sortFieldIndexes.get(i);
@@ -1914,18 +1913,18 @@ public class QueryComponent extends SearchComponent
         sdoc.rawSortFieldValues = rawSortFieldValues.get(index);
         sdoc.sortFieldValues = sortFieldValues.get(index);
       }
-      responseDocsById = (Map<String, SolrDocument>) codec.readVal(dis);
-      numFound = (long) codec.readVal(dis);
-      numFoundExact = (boolean) codec.readVal(dis);
-      maxScore = (Float) codec.readVal(dis);
-      partialResults = (boolean) codec.readVal(dis);
-      segmentTerminatedEarly = (Boolean) codec.readVal(dis);
+      responseDocsById = (Map<String, SolrDocument>) codec.readVal();
+      numFound = codec.readLong();
+      numFoundExact = codec.readBoolean();
+      maxScore = (Float) codec.readVal();
+      partialResults = codec.readBoolean();
+      segmentTerminatedEarly = (Boolean) codec.readVal();
     }
 
     void writeState(JavaBinCodec codec) throws IOException {
       Map<String, Integer> sortFieldValuesByIterativeShard = new HashMap<>();
       List<NamedList> rawSortFieldValues = new ArrayList<>();
-      codec.writeVal(shardDocs.size());
+      codec.writeInt(shardDocs.size());
       for (ShardDoc sdoc : shardDocs) {
         // first write shard doc
         sdoc.writeState(codec);
@@ -1936,14 +1935,14 @@ public class QueryComponent extends SearchComponent
           sortFieldValuesByIterativeShard.put(key, index);
         }
         // then write the index into the sort field values
-        codec.writeVal(index);
+        codec.writeInt(index);
       }
       codec.writeVal(rawSortFieldValues);
       codec.writeVal(responseDocsById);
-      codec.writeVal(numFound);
-      codec.writeVal(numFoundExact);
+      codec.writeLong(numFound);
+      codec.writeBoolean(numFoundExact);
       codec.writeVal(maxScore);
-      codec.writeVal(partialResults);
+      codec.writeBoolean(partialResults);
       codec.writeVal(segmentTerminatedEarly);
     }
   }

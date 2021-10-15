@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetBucket {
@@ -196,26 +196,26 @@ public class FacetBucket {
     return refinement;
   }
 
-  public void readState(JavaBinCodec codec, DataInputInputStream dis, FacetMerger.Context mcontext) throws IOException {
-    count = (long) codec.readVal(dis);
-    int subsLength = (int) codec.readVal(dis);
+  public void readState(JavaBinDecoder codec, FacetMerger.Context mcontext) throws IOException {
+    count = codec.readLong();
+    int subsLength = codec.readInt();
     subs = null;
     for (int i = 0; i < subsLength; i++) {
-      String key = (String) codec.readVal(dis);
-      Object prototype = codec.readVal(dis);
+      String key = (String) codec.readVal();
+      Object prototype = codec.readVal();
       if (prototype == null) {
         prototype = new Object();
       }
       // getMerger adds to subs under the hood
-      getMerger(key, prototype).readState(codec, dis, mcontext);
+      getMerger(key, prototype).readState(codec, mcontext);
     }
   }
 
   public void writeState(JavaBinCodec codec) throws IOException {
     // NB: bucket value has to managed separately as it's required for construction and is final
-    codec.writeVal(count);
+    codec.writeLong(count);
     int subsLength = subs != null ? subs.size() : 0;
-    codec.writeVal(subsLength);
+    codec.writeInt(subsLength);
     if (subs != null) {
       for (Map.Entry<String, FacetMerger> entry : subs.entrySet()) {
         String key = entry.getKey();

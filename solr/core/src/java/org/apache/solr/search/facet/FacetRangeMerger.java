@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
@@ -176,40 +177,40 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
   }
 
   @Override
-  public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-    if ((boolean) codec.readVal(dis)) {
+  public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+    if (codec.readBoolean()) {
       beforeBucket = newBucket(null, mcontext);
-      beforeBucket.readState(codec, dis, mcontext);
+      beforeBucket.readState(codec, mcontext);
     } else {
       beforeBucket = null;
     }
-    if ((boolean) codec.readVal(dis)) {
+    if (codec.readBoolean()) {
       afterBucket = newBucket(null, mcontext);
-      afterBucket.readState(codec, dis, mcontext);
+      afterBucket.readState(codec, mcontext);
     } else {
       afterBucket = null;
     }
-    if ((boolean) codec.readVal(dis)) {
+    if (codec.readBoolean()) {
       betweenBucket = newBucket(null, mcontext);
-      betweenBucket.readState(codec, dis, mcontext);
+      betweenBucket.readState(codec, mcontext);
     } else {
       betweenBucket = null;
     }
-    actual_end = codec.readVal(dis);
-    super.readState(codec, dis, mcontext);
+    actual_end = codec.readVal();
+    super.readState(codec, mcontext);
   }
 
   @Override
   public void writeState(JavaBinCodec codec) throws IOException {
-    codec.writeVal(beforeBucket != null);
+    codec.writeBoolean(beforeBucket != null);
     if (beforeBucket != null) {
       beforeBucket.writeState(codec);
     }
-    codec.writeVal(afterBucket != null);
+    codec.writeBoolean(afterBucket != null);
     if (afterBucket != null) {
       afterBucket.writeState(codec);
     }
-    codec.writeVal(betweenBucket != null);
+    codec.writeBoolean(betweenBucket != null);
     if (betweenBucket != null) {
       betweenBucket.writeState(codec);
     }

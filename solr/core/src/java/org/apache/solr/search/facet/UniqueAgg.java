@@ -30,6 +30,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.LongIterator;
@@ -131,23 +132,23 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
-    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-      sumUnique = (long) codec.readVal(dis);
-      Collection<Object> valuesCollection = (Collection<Object>) codec.readVal(dis);
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      sumUnique = codec.readLong();
+      Collection<Object> valuesCollection = (Collection<Object>) codec.readVal();
       values = valuesCollection != null ? new HashSet<>(valuesCollection) : null;
-      sumAdded = (long) codec.readVal(dis);
-      shardsMissingSum = (long) codec.readVal(dis);
-      shardsMissingMax = (long) codec.readVal(dis);
+      sumAdded = codec.readLong();
+      shardsMissingSum = codec.readLong();
+      shardsMissingMax = codec.readLong();
       answer = -1; // recompute answer if needed
     }
 
     @Override
     public void writeState(JavaBinCodec codec) throws IOException {
-      codec.writeVal(sumUnique);
+      codec.writeLong(sumUnique);
       codec.writeVal(values);
-      codec.writeVal(sumAdded);
-      codec.writeVal(shardsMissingSum); // TODO(clay): check spots that add # shards
-      codec.writeVal(shardsMissingMax);
+      codec.writeLong(sumAdded);
+      codec.writeLong(shardsMissingSum);
+      codec.writeLong(shardsMissingMax);
     }
 
     @Override

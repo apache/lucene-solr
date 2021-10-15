@@ -34,8 +34,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
@@ -495,8 +495,8 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-      byte[] arr = (byte[]) codec.readVal(dis);
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      byte[] arr = (byte[]) codec.readVal();
       digest = AVLTreeDigest.fromBytes(ByteBuffer.wrap(arr));
     }
 

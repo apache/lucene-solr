@@ -201,7 +201,7 @@ public class JavaBinCodec implements PushWriter {
     FastInputStream dis = FastInputStream.wrap(is);
     return _init(dis);
   }
-  public FastInputStream initRead(byte[] buf) throws IOException {
+  protected FastInputStream initRead(byte[] buf) throws IOException {
     assert !alreadyUnmarshalled;
     FastInputStream dis = new FastInputStream(null, buf, 0, buf.length);
     return _init(dis);
@@ -1095,16 +1095,15 @@ public class JavaBinCodec implements PushWriter {
     return false;
   }
 
-  protected void writeBoolean(boolean val) throws IOException {
+  public void writeBoolean(boolean val) throws IOException {
     if (val) daos.writeByte(BOOL_TRUE);
     else daos.writeByte(BOOL_FALSE);
   }
 
-  protected void writeDouble(double val) throws IOException {
+  public void writeDouble(double val) throws IOException {
     daos.writeByte(DOUBLE);
     daos.writeDouble(val);
   }
-
 
   public void writeMap(Map<?,?> val) throws IOException {
     writeTag(MAP, val.size());

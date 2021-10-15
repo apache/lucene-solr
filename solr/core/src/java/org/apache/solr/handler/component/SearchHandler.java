@@ -30,8 +30,8 @@ import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
@@ -445,18 +445,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         // first read iterative state
         String iterativeState = (String) json.get("iterative_state");
         byte[] rawState = Base64.getDecoder().decode(iterativeState);
-        JavaBinCodec codec = new JavaBinCodec();
-        FastInputStream dis = codec.initRead(rawState);
+        JavaBinDecoder codec = new JavaBinDecoder(rawState);
         // first, read version value
-        int iterativeStateVersion = (int) codec.readVal(dis);
+        int iterativeStateVersion = codec.readInt();
         if (iterativeStateVersion != ITERATIVE_STATE_VERSION) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("bad iterative state version, got %d, expected %d", iterativeStateVersion, ITERATIVE_STATE_VERSION));
         }
         // then any component state
-        int numStates = (int) codec.readVal(dis);
+        int numStates = codec.readInt();
         for (int i = 0; i < numStates; i++) {
-          String key = (String) codec.readVal(dis);
-          byte[] componentState = (byte[]) codec.readVal(dis);
+          String key = (String) codec.readVal();
+          byte[] componentState = (byte[]) codec.readVal();
           SearchComponent component = byKeys.get(key);
           if (component != null) {
             component.fromState(rb, componentState);
@@ -585,9 +584,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         JavaBinCodec codec = new JavaBinCodec(bos, null);
         // first write iterative state version
-        codec.writeVal(ITERATIVE_STATE_VERSION);
+        codec.writeInt(ITERATIVE_STATE_VERSION);
         // then any component state
-        codec.writeVal(state.size());
+        codec.writeInt(state.size());
         for (Map.Entry<String, BytesRef> entry : state.entrySet()) {
           String key = entry.getKey();
           BytesRef value = entry.getValue();

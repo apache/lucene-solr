@@ -21,13 +21,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 
@@ -168,39 +166,39 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   }
 
   @Override
-  public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-    if ((boolean) codec.readVal(dis)) {
+  public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+    if (codec.readBoolean()) {
       missingBucket = newBucket(null, mcontext);
-      missingBucket.readState(codec, dis, mcontext);
+      missingBucket.readState(codec, mcontext);
     } else {
       missingBucket = null;
     }
-    if ((boolean) codec.readVal(dis)) {
+    if (codec.readBoolean()) {
       allBuckets = newBucket(null, mcontext);
-      allBuckets.readState(codec, dis, mcontext);
+      allBuckets.readState(codec, mcontext);
     } else {
       allBuckets = null;
     }
-    if ((boolean) codec.readVal(dis)) {
+    if (codec.readBoolean()) {
       numBuckets = new HLLAgg("hll_merger").createFacetMerger(0L);
-      numBuckets.readState(codec, dis, mcontext);
+      numBuckets.readState(codec, mcontext);
     } else {
       numBuckets = null;
     }
-    super.readState(codec, dis, mcontext);
+    super.readState(codec, mcontext);
   }
 
   @Override
   public void writeState(JavaBinCodec codec) throws IOException {
-    codec.writeVal(missingBucket != null);
+    codec.writeBoolean(missingBucket != null);
     if (missingBucket != null) {
       missingBucket.writeState(codec);
     }
-    codec.writeVal(allBuckets != null);
+    codec.writeBoolean(allBuckets != null);
     if (allBuckets != null) {
       allBuckets.writeState(codec);
     }
-    codec.writeVal(numBuckets != null);
+    codec.writeBoolean(numBuckets != null);
     if (numBuckets != null) {
       numBuckets.writeState(codec);
     }

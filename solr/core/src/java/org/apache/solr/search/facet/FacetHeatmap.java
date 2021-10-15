@@ -40,8 +40,8 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
@@ -350,9 +350,9 @@ public class FacetHeatmap extends FacetRequest {
       }
 
       @Override
-      public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-        mergedResult = (NamedList) codec.readVal(dis);
-        counts = (int[]) codec.readVal(dis);
+      public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+        mergedResult = (NamedList) codec.readVal();
+        counts = (int[]) codec.readVal();
       }
 
       @Override

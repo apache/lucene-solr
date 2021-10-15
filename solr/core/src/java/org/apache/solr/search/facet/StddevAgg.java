@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
 
@@ -87,17 +87,17 @@ public class StddevAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-      count = (long) codec.readVal(dis);
-      sumSq = (double) codec.readVal(dis);
-      sum = (double) codec.readVal(dis);
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      count = codec.readLong();
+      sumSq = codec.readDouble();
+      sum = codec.readDouble();
     }
 
     @Override
     public void writeState(JavaBinCodec codec) throws IOException {
-      codec.writeVal(count);
-      codec.writeVal(sumSq);
-      codec.writeVal(sum);
+      codec.writeLong(count);
+      codec.writeDouble(sumSq);
+      codec.writeDouble(sum);
     }
 
     @Override

@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.search.FieldDoc;
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 
 public class ShardDoc extends FieldDoc {
@@ -65,23 +65,23 @@ public class ShardDoc extends FieldDoc {
     super(-1, Float.NaN);
   }
 
-  void readState(JavaBinCodec codec, DataInputInputStream dis) throws IOException {
-    shard = (String) codec.readVal(dis);
-    iterativeStep = (int) codec.readVal(dis);
-    orderInShard = (int) codec.readVal(dis);
-    id = codec.readVal(dis);
-    score = (float) codec.readVal(dis);
-    Collection fieldsCollection = (Collection) codec.readVal(dis);
+  void readState(JavaBinDecoder codec) throws IOException {
+    shard = (String) codec.readVal();
+    iterativeStep = codec.readInt();
+    orderInShard = codec.readInt();
+    id = codec.readVal();
+    score = codec.readFloat();
+    Collection fieldsCollection = (Collection) codec.readVal();
     fields = fieldsCollection != null ? fieldsCollection.toArray() : null;
   }
 
   void writeState(JavaBinCodec codec) throws IOException {
     // NB: sortFieldValues are handled outside since they are shared and positionInResponse has to be set again if used
     codec.writeVal(shard);
-    codec.writeVal(iterativeStep);
-    codec.writeVal(orderInShard);
+    codec.writeInt(iterativeStep);
+    codec.writeInt(orderInShard);
     codec.writeVal(id);
-    codec.writeVal(score);
+    codec.writeFloat(score);
     codec.writeVal(fields);
   }
 

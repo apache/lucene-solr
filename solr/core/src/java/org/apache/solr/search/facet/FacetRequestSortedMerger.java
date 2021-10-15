@@ -29,8 +29,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // base class for facets that create a list of buckets that can be sorted
@@ -60,13 +60,13 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   }
 
   @Override
-  public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-    int bucketsSize = (int) codec.readVal(dis);
+  public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+    int bucketsSize = codec.readInt();
     buckets = new LinkedHashMap<>(bucketsSize);
     for (int i = 0; i < bucketsSize; i++) {
-      Comparable key = (Comparable) codec.readVal(dis);
+      Comparable key = (Comparable) codec.readVal();
       FacetBucket b = newBucket(key, mcontext);
-      b.readState(codec, dis, mcontext);
+      b.readState(codec, mcontext);
       buckets.put(key, b);
     }
     sortedBuckets = null; // will be recomputed later if needed
@@ -79,7 +79,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     if (freq.mergedBucketsLimit >= 0) {
       // we must use sorted buckets for best results (which should be available where merged limits are supported)
       int size = Math.min(sortedBuckets.size(), freq.mergedBucketsLimit);
-      codec.writeVal(size);
+      codec.writeInt(size);
       for (int i = 0; i < size; i++) {
         FacetBucket bucket = sortedBuckets.get(i);
         codec.writeVal(bucket.bucketValue);
@@ -87,7 +87,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       }
     } else {
       // otherwise, just use the standard buckets object which is always available
-      codec.writeVal(buckets.size());
+      codec.writeInt(buckets.size());
       for (Map.Entry<Object, FacetBucket> entry : buckets.entrySet()) {
         Object key = entry.getKey();
         FacetBucket value = entry.getValue();

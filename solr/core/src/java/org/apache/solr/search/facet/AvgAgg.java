@@ -27,8 +27,8 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
 
@@ -85,15 +85,15 @@ public class AvgAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public void readState(JavaBinCodec codec, DataInputInputStream dis, Context mcontext) throws IOException {
-      num = (long) codec.readVal(dis);
-      sum = (double) codec.readVal(dis);
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      num = codec.readLong();
+      sum = codec.readDouble();
     }
 
     @Override
     public void writeState(JavaBinCodec codec) throws IOException {
-      codec.writeVal(num);
-      codec.writeVal(sum);
+      codec.writeLong(num);
+      codec.writeDouble(sum);
     }
 
     @Override
