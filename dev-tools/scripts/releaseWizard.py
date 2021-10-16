@@ -1974,6 +1974,25 @@ def prepare_announce_solr(todo):
     return True
 
 
+def check_artifacts_available(todo):
+  try:
+    cdnUrl = expand_jinja("https://dlcdn.apache.org/lucene/java/{{ release_version }}/lucene-{{ release_version }}-src.tgz.asc")
+    load(cdnUrl)
+    print("Found %s" % cdnUrl)
+  except Exception as e:
+    print("Could not fetch %s (%s)" % (cdnUrl, e))
+    return False
+
+  try:
+    mavenUrl = expand_jinja("https://repo1.maven.org/maven2/org/apache/lucene/lucene-core/{{ release_version }}/lucene-core-{{ release_version }}.pom.asc")
+    load(mavenUrl)
+    print("Found %s" % mavenUrl)
+  except Exception as e:
+    print("Could not fetch %s (%s)" % (mavenUrl, e))
+    return False
+
+  return True
+
 def set_java_home(version):
     os.environ['JAVA_HOME'] = state.get_java_home_for_version(version)
     os.environ['JAVACMD'] = state.get_java_cmd_for_version(version)

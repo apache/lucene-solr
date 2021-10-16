@@ -163,25 +163,6 @@ and prints a regular expression that will match all of them
       --no-git    Do not run "git" at all
       --iters N   Number of iterations per test suite (default: 5)
 
-### poll-mirrors.py
-
-    usage: poll-mirrors.py [-h] [-version VERSION] [-path PATH]
-                           [-interval INTERVAL] [-details] [-once]
-    
-    Periodically checks that all Lucene/Solr mirrors contain either a copy of a
-    release or a specified path
-    
-    optional arguments:
-      -h, --help            show this help message and exit
-      -version VERSION, -v VERSION
-                            Lucene/Solr version to check
-      -path PATH, -p PATH   instead of a versioned release, check for
-                            some/explicit/path
-      -interval INTERVAL, -i INTERVAL
-                            seconds to wait before re-querying mirrors
-      -details, -d          print missing mirror URLs
-      -once, -o             run only once
-
 ### githubPRs.py
 
     usage: githubPRs.py [-h] [--json] [--token TOKEN]
