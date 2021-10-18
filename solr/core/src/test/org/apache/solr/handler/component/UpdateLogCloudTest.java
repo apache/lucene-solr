@@ -29,6 +29,8 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,20 +42,30 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-
-    // decide collection name ...
-    COLLECTION = "collection"+(1+random().nextInt(100)) ;
-
     // create and configure cluster
     configureCluster(NUM_SHARDS*NUM_REPLICAS /* nodeCount */)
     .addConfig("conf", configset("cloud-dynamic"))
     .configure();
+  }
+
+  @Before
+  public void beforeTest() throws Exception {
+
+    // decide collection name ...
+    COLLECTION = "collection"+(1+random().nextInt(100)) ;
 
     // create an empty collection
     CollectionAdminRequest
     .createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
     .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
+  }
+
+  @After
+  public void afterTest() throws Exception {
+    CollectionAdminRequest
+    .deleteCollection(COLLECTION)
+    .process(cluster.getSolrClient());
   }
 
   @Test
