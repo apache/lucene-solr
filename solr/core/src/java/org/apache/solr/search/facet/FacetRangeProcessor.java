@@ -1092,7 +1092,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     protected long toSortableDocValue(Comparable calcValue) {
-      return (long) calcValue;
+      return ((Integer) calcValue).longValue();
     }
   }
 
