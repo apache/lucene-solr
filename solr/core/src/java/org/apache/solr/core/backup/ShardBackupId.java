@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core.backup;
 
+import java.util.Arrays;
+
 /**
  * Represents the ID of a particular backup point for a particular shard.
  *
@@ -55,12 +57,14 @@ public class ShardBackupId {
 
     public static ShardBackupId from(String idString) {
         final String[] idComponents = idString.split("_");
-        if (idComponents.length != 3) {
+        if (idComponents.length < 3 || ! idString.startsWith("md_")) {
             throw new IllegalArgumentException("Unable to parse invalid ShardBackupId: " + idString);
         }
 
-        final BackupId containingBackupId = new BackupId(Integer.parseInt(idComponents[2]));
-        return new ShardBackupId(idComponents[1], containingBackupId);
+        final String backupIdString = idComponents[idComponents.length - 1]; // Backup ID is always the last component
+        final String shardId = String.join("_", Arrays.asList(idComponents).subList(1, idComponents.length - 1));
+        final BackupId containingBackupId = new BackupId(Integer.parseInt(backupIdString));
+        return new ShardBackupId(shardId, containingBackupId);
     }
 
     public static ShardBackupId fromShardMetadataFilename(String filenameString) {

@@ -10,7 +10,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15696: Incremental backups no longer fail on collections where a 'SPLITSHARD' operation previously occurred. (Jason Gerlowski)
 
 ==================  8.10.1 ==================
 
