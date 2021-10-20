@@ -37,15 +37,33 @@ public class HLLAgg extends StrAggValueSource {
   protected HLLFactory factory;
 
   public HLLAgg(String field) {
+    this(field, new HLLFactory());
+  }
+  
+  public HLLAgg(String field, int log2m, int regwidth) {
+    this(field, new HLLFactory(log2m, regwidth));
+  }
+  
+  public HLLAgg(String field, HLLFactory factory) {
     super("hll", field);
-    factory = new HLLFactory();
+    this.factory = factory;
   }
 
   // factory for the hyper-log-log algorithm.
   // TODO: make stats component HllOptions inherit from this?
   public static class HLLFactory {
-    int log2m = 13;
-    int regwidth = 6;
+    final int log2m;
+    final int regwidth;
+    
+    public HLLFactory() {
+      this(13, 6);
+    }
+
+    public HLLFactory(int log2m, int regwidth) {
+      this.log2m = log2m;
+      this.regwidth = regwidth;
+    }
+
     public HLL getHLL() {
       return new HLL(log2m, regwidth, -1 /* auto explict threshold */,
           false /* no sparse representation */, HLLType.EMPTY);
