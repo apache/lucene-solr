@@ -105,7 +105,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     final QueryRequest reqV = new QueryRequest(params("qt","/get", "getVersions","12345"));
     final NamedList<?> rspV = solrClient.request(reqV, COLLECTION);
     final List<Long> versions = (List<Long>)rspV.get("versions");
-    assertEquals(numExpected, versions.size());
+    assertEquals(versions.toString(), numExpected, versions.size());
     if (numExpected == 0) {
       return;
     }
