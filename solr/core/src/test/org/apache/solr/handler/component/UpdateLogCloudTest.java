@@ -71,12 +71,18 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
   @Test
   public void test() throws Exception {
 
+    int specialIdx = 0;
+
     final List<SolrClient> solrClients = new ArrayList<>();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      if (!jettySolrRunner.getBaseUrl().toString().equals(
+          getCollectionState(COLLECTION).getLeader("shard1").getBaseUrl())) {
+        specialIdx = solrClients.size();
+      }
       solrClients.add(jettySolrRunner.newClient());
     }
 
-    cluster.getJettySolrRunner(0).stop();
+    cluster.getJettySolrRunner(specialIdx).stop();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     new UpdateRequest()
@@ -85,12 +91,12 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     .deleteByQuery("a_t:three")
     .commit(cluster.getSolrClient(), COLLECTION);
 
-    cluster.getJettySolrRunner(0).start();
+    cluster.getJettySolrRunner(specialIdx).start();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     int idx = 0;
     for (SolrClient solrClient : solrClients) {
-      implTest(solrClient, idx==0 ? 0 : 3);
+      implTest(solrClient, idx==specialIdx ? 0 : 3);
       ++idx;
     }
 
