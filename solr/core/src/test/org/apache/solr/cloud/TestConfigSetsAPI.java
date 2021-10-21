@@ -60,7 +60,7 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -69,6 +69,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Upload;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -83,9 +84,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.TestDynamicLoading;
-import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
@@ -846,6 +848,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   private static String getSecurityJson() throws KeeperException, InterruptedException {
     String securityJson = "{\n" +
             "  'authentication':{\n" +
+            "    'blockUnknown': false,\n" +
             "    'class':'" + MockAuthenticationPlugin.class.getName() + "'},\n" +
             "  'authorization':{\n" +
             "    'class':'" + MockAuthorizationPlugin.class.getName() + "'}}";
@@ -887,84 +890,110 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   private long uploadConfigSet(String configSetName, String suffix, String username,
-      boolean overwrite, boolean cleanup, boolean v2) throws IOException {
+                               boolean overwrite, boolean cleanup, boolean v2) throws IOException {
+    
     // Read zipped sample config
-    ByteBuffer sampleZippedConfig = TestDynamicLoading
-        .getFileContent(
-            createTempZipFile("solr/configsets/upload/"+configSetName), false);
-
-    return uploadGivenConfigSet(sampleZippedConfig, configSetName, suffix, username, overwrite, cleanup, v2);
+    return uploadGivenConfigSet(createTempZipFile("solr/configsets/upload/"+configSetName),
+                                configSetName, suffix, username, overwrite, cleanup, v2);
   }
 
   private long uploadBadConfigSet(String configSetName, String suffix, String username,
-                               boolean overwrite, boolean cleanup, boolean v2) throws IOException {
+                                  boolean overwrite, boolean cleanup, boolean v2) throws IOException {
+    
     // Read single file from sample configs. This should fail the unzipping
-    ByteBuffer sampleBadZippedFile = TestDynamicLoading.getFileContent(TestDynamicLoading.getFile("solr/configsets/upload/regular/solrconfig.xml").getAbsolutePath(), false);
-
-    return uploadGivenConfigSet(sampleBadZippedFile, configSetName, suffix, username, overwrite, cleanup, v2);
+    return uploadGivenConfigSet(SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml"),
+                                configSetName, suffix, username, overwrite, cleanup, v2);
   }
 
-  private long uploadGivenConfigSet(ByteBuffer file, String configSetName, String suffix, String username,
-                               boolean overwrite, boolean cleanup, boolean v2) throws IOException {
-    String uriEnding;
-    boolean usePut = false;
+  private long uploadGivenConfigSet(File file, String configSetName, String suffix, String username,
+                                    boolean overwrite, boolean cleanup, boolean v2) throws IOException {
+      
     if (v2) {
-      uriEnding = "/api/cluster/configs/" + configSetName+suffix + (!overwrite? "?overwrite=false" : "") + (cleanup? "?cleanup=true" : "");
-      usePut = true;
-    } else {
-      uriEnding = "/solr/admin/configs?action=UPLOAD&name="+configSetName+suffix + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : "");
+      // TODO: switch to using V2Request
+    
+      final ByteBuffer fileBytes = TestDynamicLoading.getFileContent(file.getAbsolutePath(), false);
+      final String uriEnding = "/api/cluster/configs/" + configSetName+suffix + (!overwrite? "?overwrite=false" : "") + (cleanup? "?cleanup=true" : "");
+      final boolean usePut = true;
+      Map<?, ?> map = postDataAndGetResponse(cluster.getSolrClient(),
+                                             cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + uriEnding,
+                                             fileBytes, username, usePut);
+      assertNotNull(map);
+      long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      return statusCode;
+      
+    } // else "not" a V2 request...
+    
+    try {
+      return ((ConfigSetAdminResponse)((new Upload())
+                                       .setConfigSetName(configSetName + suffix)
+                                       .setUploadFile(file, "application/zip")
+                                       .setOverwrite(overwrite ? true : null) // expect server default to be 'false'
+                                       .setCleanup(cleanup ? true : null) // expect server default to be 'false'
+                                       .setBasicAuthCredentials(username, username) // for our MockAuthenticationPlugin
+                                       .process(cluster.getSolrClient()))
+              ).getStatus();
+    } catch (SolrServerException e1) {
+      throw new AssertionError("Server error uploading configset: " + e1.toString(), e1);
+    } catch (SolrException e2) {
+      return e2.code();
     }
-
-    @SuppressWarnings({"rawtypes"})
-    Map map = postDataAndGetResponse(cluster.getSolrClient(),
-            cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + uriEnding,
-            file, username, usePut);
-    assertNotNull(map);
-    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
-    return statusCode;
   }
 
   private long uploadSingleConfigSetFile(String configSetName, String suffix, String username,
-                                         String filePath, String uploadPath, boolean overwrite, boolean cleanup, boolean v2) throws IOException {
+                                         String localFilePath, String uploadPath, boolean overwrite, boolean cleanup, boolean v2) throws IOException {
     // Read single file from sample configs
-    ByteBuffer sampleConfigFile = TestDynamicLoading.getFileContent(TestDynamicLoading.getFile(filePath).getAbsolutePath(), false);
+    final File file = SolrTestCaseJ4.getFile(localFilePath);
 
-    String uriEnding;
-    boolean usePut = false;
     if (v2) {
-      uriEnding = "/api/cluster/configs/" + configSetName+suffix + "/" + uploadPath + (!overwrite? "?overwrite=false" : "") + (cleanup? "?cleanup=true" : "");
-      usePut = true;
-    } else {
-      uriEnding = "/solr/admin/configs?action=UPLOAD&name="+configSetName+suffix+"&filePath="+uploadPath + (overwrite? "&overwrite=true" : "") + (cleanup? "&cleanup=true" : "");
-    }
+      // TODO: switch to use V2Request
+      
+      final ByteBuffer sampleConfigFile = TestDynamicLoading.getFileContent(file.getAbsolutePath(), false);
+      final String uriEnding = "/api/cluster/configs/" + configSetName+suffix + "/" + uploadPath + (!overwrite? "?overwrite=false" : "") + (cleanup? "?cleanup=true" : "");
+      final boolean usePut = true;
 
-    @SuppressWarnings({"rawtypes"})
-    Map map = postDataAndGetResponse(cluster.getSolrClient(),
-            cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + uriEnding,
-            sampleConfigFile, username, usePut);
-    assertNotNull(map);
-    long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
-    return statusCode;
+      Map<?, ?> map = postDataAndGetResponse(cluster.getSolrClient(),
+                                             cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + uriEnding,
+                                             sampleConfigFile, username, usePut);
+      assertNotNull(map);
+      long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));
+      return statusCode;
+      
+    } // else "not" a V2 request...
+    
+    try {
+      return ((ConfigSetAdminResponse)((new Upload())
+                                       .setConfigSetName(configSetName + suffix)
+                                       .setFilePath(uploadPath)
+                                       .setUploadFile(file, "application/octet-stream") // NOTE: server doesn't actually care, and test plumbing doesn't tell us
+                                       .setOverwrite(overwrite ? true : null) // expect server default to be 'false'
+                                       .setCleanup(cleanup ? true : null) // expect server default to be 'false'
+                                       .setBasicAuthCredentials(username, username) // for our MockAuthenticationPlugin
+                                       .process(cluster.getSolrClient()))
+              ).getStatus();
+    } catch (SolrServerException e1) {
+      throw new AssertionError("Server error uploading file to configset: " + e1.toString(), e1);
+    } catch (SolrException e2) {
+      return e2.code();
+    }
   }
 
+  
   /**
    * Create a zip file (in the temp directory) containing all the files within the specified directory
-   * and return the path for the zip file.
+   * and return the zip file.
    */
-  private String createTempZipFile(String directoryPath) {
-    File zipFile = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
-        File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
-
-    File directory = TestDynamicLoading.getFile(directoryPath);
-    if (log.isInfoEnabled()) {
-      log.info("Directory: {}", directory.getAbsolutePath());
-    }
+  private File createTempZipFile(String directoryPath) {
     try {
+      final File zipFile = createTempFile("configset","zip").toFile();
+      final File directory = SolrTestCaseJ4.getFile(directoryPath);
+      if (log.isInfoEnabled()) {
+        log.info("Directory: {}", directory.getAbsolutePath());
+      }
       zip (directory, zipFile);
       if (log.isInfoEnabled()) {
         log.info("Zipfile: {}", zipFile.getAbsolutePath());
       }
-      return zipFile.getAbsolutePath();
+      return zipFile;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -1263,11 +1292,20 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
   }
 
-  public static class MockAuthenticationPlugin extends AuthenticationPlugin {
+  public static class MockAuthenticationPlugin extends BasicAuthPlugin {
 
     @Override
-    public void init(Map<String, Object> pluginConfig) {
-
+    public AuthenticationProvider getAuthenticationProvider(Map<String, Object> pluginConfig) {
+      return new AuthenticationProvider() {
+        @Override public void init(Map<String,Object> ignored) { }
+        @Override public ValidatingJsonMap getSpec() { return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec(); }
+        @Override public boolean authenticate(String user, String pwd) {
+          return user.equals(pwd);
+        }
+        @Override public Map<String, String> getPromptHeaders() {
+          return Collections.emptyMap();
+        }
+      };
     }
 
     @Override
@@ -1275,10 +1313,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       if (((HttpServletRequest)request).getHeader("user") != null) {
         final Principal p = new BasicUserPrincipal("solr");
         filterChain.doFilter(wrap((HttpServletRequest)request, p, "solr"), response);
-      } else {
-        filterChain.doFilter(request, response);
+        return true;
       }
-      return true;
+      return super.doAuthenticate(request, response, filterChain);
     }
 
     HttpServletRequest wrap(HttpServletRequest request, Principal principal, String username) {

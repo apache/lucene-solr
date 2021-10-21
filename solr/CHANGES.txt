@@ -14,6 +14,7 @@ New Features
 * SOLR-7642: opt-in support to create ZK chroot on startup (Timothy Potter, Shawn Heisey, Mark Miller, Tomas Eduardo Fernandez Lobbe,
   Jan Høydahl, Steve Molloy, Isabelle Giguere, David Eric Pugh, Gus Heck, Christine Poerschke, Houston Putman)
 
+* SOLR-15708: SolrJ support for ConfigSet uploading (ab, hossman)
 
 Improvements
 ---------------------
