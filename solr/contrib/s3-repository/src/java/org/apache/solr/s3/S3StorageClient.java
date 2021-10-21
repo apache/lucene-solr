@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
-import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
@@ -130,36 +128,28 @@ public class S3StorageClient {
     return clientBuilder.build();
   }
 
-  /** Create a directory in S3. */
+  /** Create a directory in S3, if it does not already exist. */
   void createDirectory(String path) throws S3Exception {
     String sanitizedDirPath = sanitizedDirPath(path);
 
-    if (!parentDirectoryExist(sanitizedDirPath)) {
+    // Only create the directory if it does not already exist
+    if (!pathExists(sanitizedDirPath)) {
       createDirectory(getParentDirectory(sanitizedDirPath));
       // TODO see https://issues.apache.org/jira/browse/SOLR-15359
       //            throw new S3Exception("Parent directory doesn't exist, path=" + path);
-    }
 
-    try {
-      // Create empty object with content type header
-      PutObjectRequest putRequest =
-          PutObjectRequest.builder()
-              .bucket(bucketName)
-              .contentType(S3_DIR_CONTENT_TYPE)
-              .key(sanitizedDirPath)
-              .build();
-      s3Client.putObject(putRequest, RequestBody.empty());
-      // Wait until the object exists to continue
-      s3Client
-          .waiter()
-          .waitUntilObjectExists(
-              builder -> builder.bucket(bucketName).key(sanitizedDirPath),
-              config ->
-                  config
-                      .waitTimeout(Duration.ofSeconds(5))
-                      .backoffStrategy(BackoffStrategy.defaultStrategy()));
-    } catch (SdkClientException ase) {
-      throw handleAmazonException(ase);
+      try {
+        // Create empty object with content type header
+        PutObjectRequest putRequest =
+            PutObjectRequest.builder()
+                .bucket(bucketName)
+                .contentType(S3_DIR_CONTENT_TYPE)
+                .key(sanitizedDirPath)
+                .build();
+        s3Client.putObject(putRequest, RequestBody.empty());
+      } catch (SdkClientException ase) {
+        throw handleAmazonException(ase);
+      }
     }
   }
 

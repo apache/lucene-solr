@@ -83,18 +83,9 @@ public class BackupFilePaths {
      * @throws IOException for issues encountered using repository to create directories
      */
     public void createIncrementalBackupFolders() throws IOException {
-        if (!repository.exists(backupLoc)) {
-            repository.createDirectory(backupLoc);
-        }
-        URI indexDir = getIndexDir();
-        if (!repository.exists(indexDir)) {
-            repository.createDirectory(indexDir);
-        }
-
-        URI shardBackupMetadataDir = getShardBackupMetadataDir();
-        if (!repository.exists(shardBackupMetadataDir)) {
-            repository.createDirectory(shardBackupMetadataDir);
-        }
+        repository.createDirectory(backupLoc);
+        repository.createDirectory(getIndexDir());
+        repository.createDirectory(getShardBackupMetadataDir());
     }
 
     /**

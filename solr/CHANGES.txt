@@ -17,8 +17,7 @@ New Features
 
 Improvements
 ---------------------
-
-* SOLR-15702: Stabilize S3 tests by using waiters after directory creation (Houston Putman)
+(No changes)
 
 Optimizations
 ---------------------
@@ -29,6 +28,8 @@ Bug Fixes
 * SOLR-15626: The "config-read" permission has been fixed to properly allow access to `/solr/admin/configs?action=LIST` (Jon Senchyna via Eric Pugh)
 
 * SOLR-15691: Admin UI raises yellow warning even when only case of hostnames differ (janhoy)
+
+* SOLR-15702: Fix S3Repository to follow BackupRepository.createDirectory() API contract (Houston Putman)
 
 Build
 ---------------------
