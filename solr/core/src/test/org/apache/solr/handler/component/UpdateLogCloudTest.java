@@ -77,6 +77,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     }
 
     cluster.getJettySolrRunner(0).stop();
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     new UpdateRequest()
     .add(sdoc("id", "1", "a_t", "one"))
