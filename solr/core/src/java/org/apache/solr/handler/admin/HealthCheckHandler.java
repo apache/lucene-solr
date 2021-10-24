@@ -66,6 +66,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_REQUIRE_HEALTHY_CORES = "requireHealthyCores";
+  private static final String PARAM_FAIL_IF_EMPTY_CORES = "failIfEmptyCores";
   private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.DOWN, State.RECOVERING);
 
   CoreContainer coreContainer;
@@ -119,8 +120,18 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // Optionally require that all cores on this node are active if param 'requireHealthyCores=true'
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
+      // Optionally require that node has more than 1 cores if param 'failIfEmptyCores=true' with
+      // param 'requireHealthyCores=true'.
+      boolean failIfEmptyCores = req.getParams().getBool(PARAM_FAIL_IF_EMPTY_CORES, false);
+
       Collection<CloudDescriptor> coreDescriptors = cores.getCores().stream()
           .map(c -> c.getCoreDescriptor().getCloudDescriptor()).collect(Collectors.toList());
+      if (failIfEmptyCores && coreDescriptors.isEmpty()) {
+        rsp.add(STATUS, FAILURE);
+        rsp.add("num_cores", 0);
+        rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "there is no core."));
+        return;
+      }
       long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores > 0) {
           rsp.add(STATUS, FAILURE);

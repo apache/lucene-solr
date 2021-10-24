@@ -223,6 +223,33 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testHealthCheckHandlerWithFailIfEmptyParams() throws Exception {
+    @SuppressWarnings({"rawtypes"})
+    SolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());
+    assertEquals(CommonParams.OK,
+        req.process(cluster.getSolrClient()).getResponse().get(CommonParams.STATUS));
+
+    // positive check that returns ok with don't have cores and "requireHealthyCores" param set to false.
+    @SuppressWarnings({"rawtypes"})
+    SolrRequest succreq = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH,
+        params("requireHealthyCores", "false", "failIfEmptyCores", "true"));
+    assertEquals(CommonParams.OK,
+        req.process(cluster.getSolrClient()).getResponse().get(CommonParams.STATUS));
+
+    // negative check that returns fail with don't have cores and both of "requireHealthyCores" and "failIfEmptyCores"
+    // set to true.
+    @SuppressWarnings({"rawtypes"})
+    SolrRequest failreq = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH,
+        params("requireHealthyCores", "true", "failIfEmptyCores", "true"));
+    HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class, () ->
+    {
+      failreq.process(cluster.getSolrClient());
+    });
+    assertTrue(e.getMessage(), e.getMessage().contains("there is no core."));
+    assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
+  }
+
   /* Creates a minimal cloud descriptor for a core */
   private CloudDescriptor mockCD(String collection, String name, String shardId, boolean registered, Replica.State state) {
     Properties props = new Properties();
