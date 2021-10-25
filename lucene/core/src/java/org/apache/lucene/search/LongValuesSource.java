@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.comparators.LongComparator;
 
 /**
@@ -346,6 +347,11 @@ public abstract class LongValuesSource implements SegmentCacheable {
             protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) {
               ctx = context;
               return asNumericDocValues(holder);
+            }
+
+            @Override
+            protected PointValues getPointValues(LeafReaderContext context, String field) {
+              return null;
             }
 
             @Override
