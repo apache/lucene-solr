@@ -60,7 +60,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -138,6 +138,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
@@ -159,6 +160,8 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
+
+import org.apache.commons.io.IOUtils;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
@@ -683,27 +686,41 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  /** Causes an exception matching the regex pattern to not be logged. */
+  private final static Map<String,ErrorLogMuter> errorMuters = new ConcurrentHashMap<>();
+  
+  /** 
+   * Causes any ERROR log messages matching with a substring matching the regex pattern to be filtered out by the ROOT logger
+   *
+   * @see #resetExceptionIgnores
+   * @deprecated use a {@link ErrorLogMuter} instead
+   */
+  @Deprecated
   public static void ignoreException(String pattern) {
-    if (SolrException.ignorePatterns == null) // usually initialized already but in case not...
-      resetExceptionIgnores();
-    SolrException.ignorePatterns.add(pattern);
-  }
-
-  public static void unIgnoreException(String pattern) {
-    if (SolrException.ignorePatterns != null)
-      SolrException.ignorePatterns.remove(pattern);
+    errorMuters.computeIfAbsent(pattern, (pat) -> ErrorLogMuter.regex(pat));
   }
 
   /**
-   * Clears all exception patterns, although keeps {@code "ignore_exception"}.
-   * {@link SolrTestCaseJ4} calls this in {@link AfterClass} so usually tests don't need to call this.
+   * @see #ignoreException
+   * @deprecated use a {@link ErrorLogMuter} instead
    */
-  public static void resetExceptionIgnores() {
-    // CopyOnWrite for safety; see SOLR-11757
-    SolrException.ignorePatterns = new CopyOnWriteArraySet<>(Collections.singleton("ignore_exception"));
+  @Deprecated
+  public static void unIgnoreException(String pattern) {
+    errorMuters.computeIfPresent(pattern, (pat, muter) -> { IOUtils.closeQuietly(muter); return null; } );
   }
-
+  
+  /**
+   * Clears all exception patterns, immediately re-registering {@code "ignore_exception"}.
+   * {@link SolrTestCaseJ4} calls this in both {@link BeforeClass} {@link AfterClass} so usually tests don't need to call this.
+   * 
+   * @see #ignoreException
+   * @deprecated use a {@link ErrorLogMuter} instead
+   */
+  @Deprecated
+  public static void resetExceptionIgnores() {
+    errorMuters.forEach( (k, muter) -> { IOUtils.closeQuietly(muter); errorMuters.remove(k); } );
+    ignoreException("ignore_exception");
+  }
+  
   protected static String getClassName() {
     return getTestClass().getName();
   }

@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -57,53 +58,54 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   }
   
   public void testBadFormat() {
-    ignoreException("Expecting float");
-    assertFailedU(adoc(
+    try (ErrorLogMuter errors = ErrorLogMuter.substring("Expecting float")) {
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, "foo"
         ));
 
-    assertFailedU(adoc(
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, "1.2.3"
         ));
+      assertEquals(2, errors.getCount());
+    }
     
-    unIgnoreException("Expecting float");
-    
-    ignoreException("must be finite");
-    assertFailedU(adoc(
+    try (ErrorLogMuter errors = ErrorLogMuter.substring("must be finite")) {
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, Float.toString(Float.POSITIVE_INFINITY)
         ));
 
-    assertFailedU(adoc(
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, Float.toString(Float.NEGATIVE_INFINITY)
         ));
     
-    assertFailedU(adoc(
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, Float.toString(Float.NaN)
         ));
+      assertEquals(3, errors.getCount());
+    }
     
-    unIgnoreException("must be finite");
-    
-    ignoreException("must be a positive");
-    assertFailedU(adoc(
+    try (ErrorLogMuter errors = ErrorLogMuter.substring("must be a positive")) {
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, Float.toString(-0.0f)
         ));
 
-    assertFailedU(adoc(
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, Float.toString(-1f)
         ));
 
-    assertFailedU(adoc(
+      assertFailedU(adoc(
         "id", "1",
         RANK_1, Float.toString(0.0f)
         ));
-    unIgnoreException("must be a positive");
+      assertEquals(3, errors.getCount());
+    }
   }
   
   public void testAddRandom() {

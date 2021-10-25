@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.*;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -771,26 +772,30 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             ,"//doc[3]/arr[@name='id_i' and .='1001']"
             );
 
-    ignoreException("shouldbeunindexed");
-    ignoreException("nullfirst");
-    ignoreException("abcde12345");
-    ignoreException("aaa");
-
     // Sort parsing exception tests.  (SOLR-6, SOLR-99)
-    assertQEx( "can not sort unindexed fields",
-        req( "q","id_i:1000", "sort", "shouldbeunindexed asc" ), 400 );
+    try (ErrorLogMuter errors = ErrorLogMuter.substring("shouldbeunindexed")) {
+      assertQEx( "can not sort unindexed fields",
+                 req( "q","id_i:1000", "sort", "shouldbeunindexed asc" ), 400 );
+      assertEquals(1, errors.getCount());
+    }
     
-    assertQEx( "invalid query format",
-        req( "q","id_i:1000", "sort", "nullfirst" ), 400 );
+    try (ErrorLogMuter errors = ErrorLogMuter.substring("nullfirst")) {
+      assertQEx( "invalid query format",
+                 req( "q","id_i:1000", "sort", "nullfirst" ), 400 );
+      assertEquals(1, errors.getCount());
+    }
 
-    assertQEx( "unknown sort field",
-        req( "q","id_i:1000", "sort", "abcde12345 asc" ), 400 ); 
+    try (ErrorLogMuter abc = ErrorLogMuter.substring("abcde12345");
+         ErrorLogMuter aaa = ErrorLogMuter.substring("aaa")) {
+      assertQEx( "unknown sort field",
+                 req( "q","id_i:1000", "sort", "abcde12345 asc" ), 400 ); 
 
-    assertQEx( "unknown sort order",
-        req( "q","id_i:1000", "sort", "nullfirst aaa" ), 400 );
-
-    resetExceptionIgnores();
-
+      assertQEx( "unknown sort order",
+                 req( "q","id_i:1000", "sort", "nullfirst aaa" ), 400 );
+      
+      assertEquals(1, abc.getCount());
+      assertEquals(1, aaa.getCount());
+    }
         
     // test prefix query
 

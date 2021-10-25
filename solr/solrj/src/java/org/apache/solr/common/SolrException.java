@@ -136,12 +136,24 @@ public class SolrException extends RuntimeException {
     return getMetadata(ROOT_ERROR_CLASS);
   }
 
-  /** @see #ignorePatterns */
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @see #ignorePatterns 
+   * @deprecated Use the Logger directly
+   */
+  @Deprecated
   public void log(Logger log) {
     log(log,this);
   }
   
-  /** @see #ignorePatterns */
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @see #ignorePatterns 
+   * @deprecated Use the Logger directly
+   */
+  @Deprecated
   public static void log(Logger log, Throwable e) {
     if (log.isErrorEnabled()) {
       String ignore = doIgnoreToStr(null, e);
@@ -153,7 +165,13 @@ public class SolrException extends RuntimeException {
     }
   }
 
-  /** @see #ignorePatterns */
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @see #ignorePatterns 
+   * @deprecated Use the Logger directly
+   */
+  @Deprecated
   public static void log(Logger log, String msg, Throwable e) {
     if (log.isErrorEnabled()) {
       String ignore = doIgnoreToStr(msg, e);
@@ -165,7 +183,13 @@ public class SolrException extends RuntimeException {
     }
   }
   
-  /** @see #ignorePatterns */
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @see #ignorePatterns 
+   * @deprecated Use the Logger directly
+   */
+  @Deprecated
   public static void log(Logger log, String msg) {
     if (log.isErrorEnabled()) {
       String ignore = doIgnoreToStr(msg, null);
@@ -177,6 +201,13 @@ public class SolrException extends RuntimeException {
     }
   }
 
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @see #ignorePatterns 
+   * @deprecated use {@link Throwable#printStackTrace} directly
+   */
+  @Deprecated
   public static String toStr(Throwable e) {
     CharArrayWriter cw = new CharArrayWriter();
     PrintWriter pw = new PrintWriter(cw);
@@ -189,7 +220,10 @@ public class SolrException extends RuntimeException {
    * For test code: If non-null, prevents calls to {@link #log} from logging any msg or exception (stack trace) that matches an included regular expressions.
    *
    * A {@link java.util.concurrent.CopyOnWriteArraySet is recommended}.
+   *
+   * @deprecated use <code>ErrorLogMuter</code> in Solr test-framework.
    */
+  @Deprecated
   public static Set<String> ignorePatterns;
 
   /** 
@@ -199,7 +233,9 @@ public class SolrException extends RuntimeException {
    * @param stacktrace the stringified stack trace of the exception, used for the acutal regex checking
    * @see #ignorePatterns
    * @see #toStr
+   * @deprecated use <code>ErrorLogMuter</code> in Solr test-framework.
    */
+  @Deprecated
   public static String doIgnore(Throwable t, String stacktrace) { 
     if (t != null && t instanceof AssertionError) return null;
     
@@ -208,7 +244,11 @@ public class SolrException extends RuntimeException {
     return doIgnoreToStr(ignorePatterns, stacktrace, null);
   }
 
-  /** @see #doIgnoreToStr(Set, String, Throwable) */
+  /** 
+   * @see #doIgnoreToStr(Set, String, Throwable) 
+   * @deprecated Not needed once {@link #ignorePatterns} is removed
+   */
+  @Deprecated
   private static String doIgnoreToStr(String msg, Throwable t) {
     if (t != null && t instanceof AssertionError) return null;
     
@@ -225,7 +265,9 @@ public class SolrException extends RuntimeException {
    * @param exceptionToCheck if non-null, will be stringified and concatenated with stringToCheck before testing patterns
    * @see #ignorePatterns
    * @see #toStr
+   * @deprecated Not needed once {@link #ignorePatterns} is removed
    */
+  @Deprecated
   private static String doIgnoreToStr(Set<String> ignorePats, String stringToCheck, Throwable exceptionToCheck) {
     if (null == ignorePats) return null;
     

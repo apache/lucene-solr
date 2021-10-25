@@ -46,6 +46,8 @@ Other Changes
 
 * SOLR-15678: Allow only known content types in ShowFileRequestHandler (janhoy, Gus Heck, Mal Aware)
 
+* SOLR-15697: Add ErrorLogMuter to test-framework, deprecating SolrException.ignorePatterns (hossman)
+
 ======================= 8.10.1 =======================
 
 Other Changes

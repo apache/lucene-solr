@@ -177,7 +177,7 @@ ant.fileScanner{
     }
   }
   if (f.name.endsWith('.java')) {
-    if (text.contains('org.slf4j.LoggerFactory')) {
+    if (text.contains('org.slf4j.LoggerFactory') && ! f.name.equals("ErrorLogMuter.java")) {
       if (!validLoggerPattern.matcher(text).find()) {
         reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
       }
