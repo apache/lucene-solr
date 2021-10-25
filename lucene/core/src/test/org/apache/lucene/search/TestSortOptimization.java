@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
@@ -24,6 +25,7 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.IntRange;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
@@ -747,6 +749,86 @@ public class TestSortOptimization extends LuceneTestCase {
         visitedHits++;
       }
     }
+    reader.close();
+    dir.close();
+  }
+
+  // Test that sort on sorted numeric field without sort optimization and
+  // with sort optimization produce the same results
+  public void testSortOptimizationOnSortedNumericField() throws IOException {
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    final int numDocs = atLeast(5000);
+    for (int i = 0; i < numDocs; ++i) {
+      int value = random().nextInt();
+      int value2 = random().nextInt();
+      final Document doc = new Document();
+      doc.add(new SortedNumericDocValuesField("my_field", value));
+      doc.add(new SortedNumericDocValuesField("my_field", value2));
+      doc.add(new LongPoint("my_field", value));
+      doc.add(new LongPoint("my_field", value2));
+      writer.addDocument(doc);
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    writer.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    SortedNumericSelector.Type type =
+        RandomPicks.randomFrom(random(), SortedNumericSelector.Type.values());
+    boolean reverse = random().nextBoolean();
+    final SortField sortField =
+        new SortedNumericSortField("my_field", SortField.Type.LONG, reverse, type);
+    final Sort sort = new Sort(sortField); // sort without sort optimization
+    final SortField sortField2 =
+        new SortedNumericSortField("my_field", SortField.Type.LONG, reverse, type);
+    sortField2.setCanUsePoints();
+    final Sort sort2 = new Sort(sortField2);  // sort with sort optimization
+    Query query = new MatchAllDocsQuery();
+    final int totalHitsThreshold = 3;
+
+    long expectedCollectedHits = 0;
+    long collectedHits = 0;
+    long collectedHits2 = 0;
+    int visitedHits = 0;
+    ScoreDoc after = null;
+    while (visitedHits < numDocs) {
+      int batch = 1 + random().nextInt(100);
+      int expectedHits = Math.min(numDocs - visitedHits, batch);
+
+      final TopFieldCollector collector =
+          TopFieldCollector.create(sort, batch, (FieldDoc) after, totalHitsThreshold);
+      searcher.search(query, collector);
+      TopDocs topDocs = collector.topDocs();
+      ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+
+      final TopFieldCollector collector2 =
+          TopFieldCollector.create(sort2, batch, (FieldDoc) after, totalHitsThreshold);
+      searcher.search(query, collector2);
+      TopDocs topDocs2 = collector2.topDocs();
+      ScoreDoc[] scoreDocs2 = topDocs2.scoreDocs;
+
+      // assert that the resulting hits are the same
+      assertEquals(expectedHits, topDocs.scoreDocs.length);
+      assertEquals(topDocs.scoreDocs.length, topDocs2.scoreDocs.length);
+      for (int i = 0; i < scoreDocs.length; i++) {
+        FieldDoc fieldDoc = (FieldDoc) scoreDocs[i];
+        FieldDoc fieldDoc2 = (FieldDoc) scoreDocs2[i];
+        assertEquals(fieldDoc.fields[0], fieldDoc2.fields[0]);
+        assertEquals(fieldDoc.doc, fieldDoc2.doc);
+        visitedHits++;
+      }
+
+      expectedCollectedHits += numDocs;
+      collectedHits += topDocs.totalHits.value;
+      collectedHits2 += topDocs2.totalHits.value;
+      after = scoreDocs[expectedHits - 1];
+    }
+    assertEquals(visitedHits, numDocs);
+    assertEquals(expectedCollectedHits, collectedHits);
+    // assert that the second sort with optimization collected less or equal hits
+    assertTrue(collectedHits >= collectedHits2);
+    // System.out.println(expectedCollectedHits + "\t" + collectedHits + "\t" + collectedHits2);
+
     reader.close();
     dir.close();
   }

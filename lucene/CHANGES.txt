@@ -41,6 +41,8 @@ Bug Fixes
 
 * LUCENE-10008: Respect ignoreCase in CommonGramsFilterFactory (Vigya Sharma)
 
+* LUCENE-10154: NumericLeafComparator to define getPointValues. (Mayya Sharipova, Adrien Grand)
+
 Build
 ---------------------
 
