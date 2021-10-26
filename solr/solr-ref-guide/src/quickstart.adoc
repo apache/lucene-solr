@@ -1,0 +1,140 @@
+= Quickstart Guide
+:experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Here's a quickstart guide to start Solr, add some documents and perform some searches.
+
+== Starting Solr
+
+Start a Solr node in cluster mode (SolrCloud mode)
+
+[source,subs="verbatim,attributes+"]
+----
+$ bin/solr -c
+
+Waiting up to 180 seconds to see Solr running on port 8983 [\]
+Started Solr server on port 8983 (pid=34942). Happy searching!
+----
+
+To start another Solr node and have it join the cluster alongside the first node,
+
+[source,subs="verbatim,attributes+"]
+----
+$ bin/solr -c -z localhost:9983 -p 8984
+----
+
+An instance of the cluster coordination service, i.e. Zookeeper, was started on port 9983 when the first node was started. To start Zookeeper separately, please refer to XXXX.
+
+== Creating a collection
+
+Like a database system holds data in tables, Solr holds data in collections. A collection can be created as follows:
+
+[source,subs="verbatim,attributes+"]
+----
+$ curl --request POST \
+  --url http://localhost:8983/api/collections \
+  --header 'Content-Type: application/json' \
+  --data '{
+	"create": {
+		"name": "techproducts",
+		"numShards": 1,
+		"replicationFactor": 1
+	}
+}'
+----
+
+== Indexing documents
+
+A single document can be indexed as:
+[source,subs="verbatim,attributes+"]
+----
+$ curl --request POST \
+  --url 'http://localhost:8983/api/collections/techproducts/update' \
+  --header 'Content-Type: application/json' \
+  --data '  {
+    "id" : "978-0641723445",
+    "cat" : ["book","hardcover"],
+    "name" : "The Lightning Thief",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 1,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 12.50,
+    "pages_i" : 384
+  }'
+----
+
+Multiple documents can be indexed in the same request:
+[source,subs="verbatim,attributes+"]
+----
+$ curl --request POST \
+  --url 'http://localhost:8983/api/collections/techproducts/update' \
+  --header 'Content-Type: application/json' \
+  --data '  [
+  {
+    "id" : "978-0641723445",
+    "cat" : ["book","hardcover"],
+    "name" : "The Lightning Thief",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 1,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 12.50,
+    "pages_i" : 384
+  }
+,
+  {
+    "id" : "978-1423103349",
+    "cat" : ["book","paperback"],
+    "name" : "The Sea of Monsters",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 2,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 6.49,
+    "pages_i" : 304
+  }
+]'
+----
+
+A file containing the documents can be indexed as follows:
+[source,subs="verbatim,attributes+"]
+----
+$ curl -X POST -d @example/exampledocs/books.json http://localhost:8983/api/collections/techproducts/update
+----
+
+== Commit
+After documents are indexed into a collection, they are not immediately available for searching. In order to have them searchable, a commit operation (also called `refresh` in other search engines like OpenSearch etc.) is needed. Commits can be scheduled at periodic intervals using auto-commits as follows.
+
+[source,subs="verbatim,attributes+"]
+----
+$ curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
+----
+
+Alternatively, `commit=true` can be passed to calls to `/update` handler (in above examples) to commit immediately after indexing the document. Committing after every document (or a small batch of documents) is not recommended. Here's how one can send a commit:
+[source,subs="verbatim,attributes+"]
+----
+$ curl -X POST http://localhost:8983/api/collections/techproducts/update?commit=true
+----
+
+== Basic search queries
+
+... TODO
