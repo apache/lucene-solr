@@ -1310,10 +1310,6 @@ groups:
       commands_text: Edit DOAP files
       commands:
       - !Command
-        cmd: git remote add lucene https://gitbox.apache.org/repos/asf/lucene.git -f -m main
-        stdout: true
-        comment: Goto lucene main branch
-      - !Command
         cmd: git checkout lucene/main
         stdout: true
         comment: Goto lucene main branch
