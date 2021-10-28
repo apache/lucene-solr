@@ -19,6 +19,8 @@ package org.apache.solr.handler.component;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
+
+import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.List;
@@ -36,9 +38,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 class ShardRequestor implements Callable<ShardResponse> {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final ShardRequest sreq;
   private final String shard;
   private final ModifiableSolrParams params;
@@ -145,6 +151,13 @@ class ShardRequestor implements Callable<ShardResponse> {
     }
 
     ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+
+    if (sreq.params.get("timeAllowed") != null) {
+      if (ssr.elapsedTime >= 2 * sreq.params.getLong("timeAllowed")) {
+        log.warn("Shard request exceeded twice the timeAllowed. Time elapsed: {}, timeAllowed: {}, request: {}",
+            ssr.elapsedTime, sreq.params.get("timeAllowed"), sreq);
+      }
+    }
 
     return httpShardHandler.transfomResponse(sreq, srsp, shard);
   }

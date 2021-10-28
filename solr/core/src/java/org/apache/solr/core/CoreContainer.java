@@ -123,6 +123,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.servlet.TimeOutPatrol;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -263,6 +264,7 @@ public class CoreContainer {
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
+  public final TimeOutPatrol timeoutPatrol = new TimeOutPatrol(this);
 
   private Set<Path> allowPaths;
 
@@ -1055,7 +1057,7 @@ public class CoreContainer {
   }
 
   public void shutdown() {
-
+    IOUtils.closeQuietly(timeoutPatrol);
     ZkController zkController = getZkController();
     if (!isQueryAggregator() && zkController != null) {
       OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
