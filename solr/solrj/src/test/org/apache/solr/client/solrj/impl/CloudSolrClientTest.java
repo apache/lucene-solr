@@ -1121,6 +1121,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
     assertEquals(5, prs.states.size());
 
+    c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+    Replica toDelete = c.getReplica((shard, replica) -> "shard1".equals(shard) && !replica.isLeader());
+    CollectionAdminRequest.deleteReplica(testCollection, "shard1", toDelete.getName()).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 4);
+
     testCollection = "perReplicaState_testv2";
     new V2Request.Builder("/collections")
         .withMethod(POST)
