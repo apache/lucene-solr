@@ -51,11 +51,15 @@ public class LongSet {
     return zeroCount != 0;
   }
 
-  /** Adds an additional value to the set */
-  public void add(long val) {
+  /** Adds an additional value to the set, returns true if the set did not already contain the value. */
+  public boolean add(long val) {
     if (val == 0) {
-      zeroCount = 1;
-      return;
+      if (zeroCount != 0) {
+        return false;
+      } else {
+        zeroCount = 1;
+        return true;
+      }
     }
     if (cardinality >= threshold) {
       rehash();
@@ -73,12 +77,13 @@ public class LongSet {
       if (v == 0) {
         vals[slot] = val;
         cardinality++;
-        break;
+        return true;
       } else if (v == val) {
         // val is already in the set
         break;
       }
     }
+    return false;
   }
 
   private void rehash() {
