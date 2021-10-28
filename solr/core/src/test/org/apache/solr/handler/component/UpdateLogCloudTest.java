@@ -129,7 +129,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
       final QueryRequest reqU = new QueryRequest(params("qt","/get", "getUpdates", minVersion + "..."+maxVersion, "skipDbq", Boolean.toString(skipDbq)));
       final NamedList<?> rspU = solrClient.request(reqU, COLLECTION);
       final List<?> updatesList = (List<?>)rspU.get("updates");
-      assertEquals(updatesList.toString(), numExpected + (skipDbq ? 1 : 0), updatesList.size());
+      assertEquals(updatesList.toString(), numExpected, updatesList.size());
     }
 
   }
