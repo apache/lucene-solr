@@ -131,11 +131,16 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
     }
   }
 
+  /**
+   * Called when we first encounter a new term. We must allocate slies to store the postings (vInt
+   * compressed doc/freq/prox), and also the int pointers to where (in our ByteBlockPool storage)
+   * the postings for this term begin.
+   */
   private void initStreamSlices(int termID, int docID) throws IOException {
     // Init stream slices
-    // TODO: figure out why this is 2*streamCount here. streamCount should be enough?
-    if ((2*streamCount) + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
-      // can we fit all the streams in the current buffer?
+    if (streamCount + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
+      // not enough space remaining in this buffer -- jump to next buffer and lose this remaining
+      // piece
       intPool.nextBuffer();
     }
 

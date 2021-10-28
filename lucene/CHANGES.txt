@@ -23,7 +23,10 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9673: Substantially improve RAM efficiency of how MemoryIndex stores
+  postings in memory, and reduced a bit of RAM overhead in
+  IndexWriter's internal postings book-keeping (mashudong)
 
 Bug Fixes
 ---------------------

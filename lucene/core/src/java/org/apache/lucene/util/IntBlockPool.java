@@ -171,7 +171,7 @@ public final class IntBlockPool {
       
     final int upto = intUpto;
     intUpto += size;
-    buffer[intUpto-1] = 1;
+    buffer[intUpto - 1] = 16;
     return upto;
   }
   
@@ -185,29 +185,25 @@ public final class IntBlockPool {
   
   
   // no need to make this public unless we support different sizes
-  // TODO make the levels and the sizes configurable
+
   /**
    * An array holding the offset into the {@link IntBlockPool#LEVEL_SIZE_ARRAY}
    * to quickly navigate to the next slice level.
    */
-  private final static int[] NEXT_LEVEL_ARRAY = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
-  
-  /**
-   * An array holding the level sizes for int slices.
-   */
-  private final static int[] LEVEL_SIZE_ARRAY = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
-  
-  /**
-   * The first level size for new slices
-   */
-  private final static int FIRST_LEVEL_SIZE = LEVEL_SIZE_ARRAY[0];
+  private static final int[] NEXT_LEVEL_ARRAY = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
+
+  /** An array holding the level sizes for int slices. */
+  private static final int[] LEVEL_SIZE_ARRAY = {2, 4, 8, 16, 16, 32, 32, 64, 64, 128};
+
+  /** The first level size for new slices */
+  private static final int FIRST_LEVEL_SIZE = LEVEL_SIZE_ARRAY[0];
 
   /**
    * Allocates a new slice from the given offset
    */
   private int allocSlice(final int[] slice, final int sliceOffset) {
-    final int level = slice[sliceOffset];
-    final int newLevel = NEXT_LEVEL_ARRAY[level-1];
+    final int level = slice[sliceOffset] & 15;
+    final int newLevel = NEXT_LEVEL_ARRAY[level];
     final int newSize = LEVEL_SIZE_ARRAY[newLevel];
     // Maybe allocate another block
     if (intUpto > INT_BLOCK_SIZE-newSize) {
@@ -222,7 +218,7 @@ public final class IntBlockPool {
     slice[sliceOffset] = offset;
         
     // Write new level:
-    buffer[intUpto-1] = newLevel;
+    buffer[intUpto - 1] = 16 | newLevel;
 
     return newUpto;
   }
@@ -315,9 +311,8 @@ public final class IntBlockPool {
       bufferUpto = startOffset / INT_BLOCK_SIZE;
       bufferOffset = bufferUpto * INT_BLOCK_SIZE;
       this.end = endOffset;
-      upto = startOffset;
-      level = 1;
-      
+      level = 0;
+
       buffer = pool.buffers[bufferUpto];
       upto = startOffset & INT_BLOCK_MASK;
 
@@ -356,7 +351,7 @@ public final class IntBlockPool {
     private void nextSlice() {
       // Skip to our next slice
       final int nextIndex = buffer[limit];
-      level = NEXT_LEVEL_ARRAY[level-1];
+      level = NEXT_LEVEL_ARRAY[level];
       final int newSize = LEVEL_SIZE_ARRAY[level];
 
       bufferUpto = nextIndex / INT_BLOCK_SIZE;
