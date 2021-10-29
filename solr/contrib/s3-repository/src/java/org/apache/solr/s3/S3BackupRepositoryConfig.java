@@ -26,29 +26,36 @@ import org.apache.solr.common.util.NamedList;
  */
 public class S3BackupRepositoryConfig {
 
+  public static final String PROFILE = "s3.profile";
   public static final String BUCKET_NAME = "s3.bucket.name";
   public static final String REGION = "s3.region";
   public static final String ENDPOINT = "s3.endpoint";
   public static final String PROXY_URL = "s3.proxy.url";
   public static final String PROXY_USE_SYSTEM_SETTINGS = "s3.proxy.useSystemSettings";
+  public static final String RETRIES_DISABLE = "s3.retries.disable";
 
+  private final String profile;
   private final String bucketName;
   private final String region;
   private final String proxyURL;
   private final boolean proxyUseSystemSettings;
   private final String endpoint;
+  private final boolean disableRetries;
 
   public S3BackupRepositoryConfig(NamedList<?> config) {
+    profile = getStringConfig(config, PROFILE);
     region = getStringConfig(config, REGION);
     bucketName = getStringConfig(config, BUCKET_NAME);
     proxyURL = getStringConfig(config, PROXY_URL);
     proxyUseSystemSettings = getBooleanConfig(config, PROXY_USE_SYSTEM_SETTINGS, true);
     endpoint = getStringConfig(config, ENDPOINT);
+    disableRetries = getBooleanConfig(config, RETRIES_DISABLE, false);
   }
 
   /** Construct a {@link S3StorageClient} from the provided config. */
   public S3StorageClient buildClient() {
-    return new S3StorageClient(bucketName, region, proxyURL, proxyUseSystemSettings, endpoint);
+    return new S3StorageClient(
+        bucketName, profile, region, proxyURL, proxyUseSystemSettings, endpoint, disableRetries);
   }
 
   private static String getStringConfig(NamedList<?> config, String property) {
@@ -62,10 +69,14 @@ public class S3BackupRepositoryConfig {
   }
 
   private static int getIntConfig(NamedList<?> config, String property) {
+    return getIntConfig(config, property, 0);
+  }
+
+  private static int getIntConfig(NamedList<?> config, String property, int def) {
     String envProp = System.getenv().get(toEnvVar(property));
     if (envProp == null) {
       Object configProp = config.get(property);
-      return configProp instanceof Integer ? (int) configProp : 0;
+      return configProp instanceof Integer ? (int) configProp : def;
     } else {
       return Integer.parseInt(envProp);
     }

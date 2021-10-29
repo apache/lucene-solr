@@ -433,6 +433,18 @@ Either way, if your **location** (or s3 object prefix) starts with a `/`, it wil
 The repository does not allow backup locations that begin with a `/`.
 ====
 
+An example configuration to enable S3 backups and restore can be seen below:
+
+[source,xml]
+----
+<backup>
+  <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
+    <str name="s3.bucket.name">my-s3-bucket</str>
+    <str name="s3.region">us-west-2</str>
+  </repository>
+</backup>
+----
+
 S3BackupRepository accepts the following options (in `solr.xml`) for overall configuration:
 
 `s3.bucket.name`::
@@ -444,6 +456,18 @@ S3BackupRepository accepts the following options (in `solr.xml`) for overall con
 +
 The S3 bucket to read and write all backup files to. Can be overridden by setting `S3_BUCKET_NAME` environment variable.
 
+`s3.profile`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A profile to load AWS settings for from config files.
+Profiles allow for independent settings for multiple S3Repositories.
+Can be overridden by setting `AWS_PROFILE` environment variable or `-Daws.profile` system property.
+For more information on setting configuration per-profile, refer to the https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html#file-format-config[AWS Java SDK documentation]
+
 `s3.region`::
 +
 [%autowidth,frame=none]
@@ -453,7 +477,7 @@ The S3 bucket to read and write all backup files to. Can be overridden by settin
 +
 A valid Amazon S3 region string where your bucket is provisioned. You must have read and write permissions for this bucket.
 For a full list of regions, please reference the https://docs.aws.amazon.com/general/latest/gr/s3.html[S3 documentation].
-Can be overridden by setting `S3_REGION` environment variable.
+Can be overridden by setting `S3_REGION` environment variable, or setting the region in the AWS Configuration file.
 
 `s3.endpoint`::
 +
@@ -465,7 +489,6 @@ Can be overridden by setting `S3_REGION` environment variable.
 Explicit S3 endpoint. Not needed under normal operations when using AWS S3 (the S3 client can infer the endpoint from the `s3.region`).
 This parameter is helpful if using a mock S3 framework and want to explicitly override where S3 requests are routed, such as when using S3Mock.
 Can be overridden by setting `S3_ENDPOINT` environment variable.
-
 
 [NOTE]
 ====
@@ -505,14 +528,28 @@ The supported proxy system properties are:
 * `http.proxyUser`
 * `http.proxyPassword`
 
-An example configuration to enable S3 backups and restore can be seen below:
+`s3.retries.disable`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+Disable retries for all S3 operations. This is not recommended.
 
-[source,xml]
-----
-<backup>
-  <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
-    <str name="s3.bucket.name">my-s3-bucket</str>
-    <str name="s3.region">us-west-2</str>
-  </repository>
-</backup>
-----
+==== S3 Client Configuration
+
+The AWS Java SDKs provide many ways of setting the configuration for an S3 Client.
+The Solr S3Repository allows these configurations to be set via:
+
+* Environment Variables
+* Java System Properties
+* AWS Configuration File (possibly per-profile)
+
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html[These options] include:
+
+* Region
+* Access Keys
+* Retries
+** RetryMode (`LEGACY`, `STANDARD`, `ADAPTIVE`)
+** Max Attempts

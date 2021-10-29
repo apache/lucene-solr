@@ -34,12 +34,14 @@
     <dependency org="software.amazon.awssdk" name="aws-query-protocol" rev="${/software.amazon.awssdk/aws-query-protocol}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="aws-xml-protocol" rev="${/software.amazon.awssdk/aws-xml-protocol}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="http-client-spi" rev="${/software.amazon.awssdk/http-client-spi}" conf="compile"/>
+    <dependency org="software.amazon.awssdk" name="json-utils" rev="${/software.amazon.awssdk/json-utils}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="metrics-spi" rev="${/software.amazon.awssdk/metrics-spi}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="profiles" rev="${/software.amazon.awssdk/profiles}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="protocol-core" rev="${/software.amazon.awssdk/protocol-core}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="regions" rev="${/software.amazon.awssdk/regions}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="s3" rev="${/software.amazon.awssdk/s3}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="sdk-core" rev="${/software.amazon.awssdk/sdk-core}" conf="compile"/>
+    <dependency org="software.amazon.awssdk" name="third-party-jackson-core" rev="${/software.amazon.awssdk/third-party-jackson-core}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="utils" rev="${/software.amazon.awssdk/utils}" conf="compile"/>
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
 

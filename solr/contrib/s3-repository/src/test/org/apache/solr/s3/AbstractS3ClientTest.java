@@ -48,7 +48,13 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
     client =
         new S3StorageClient(
-            BUCKET_NAME, "us-east-1", "", false, "http://localhost:" + S3_MOCK_RULE.getHttpPort());
+            BUCKET_NAME,
+            null,
+            "us-east-1",
+            "",
+            false,
+            "http://localhost:" + S3_MOCK_RULE.getHttpPort(),
+            false);
   }
 
   @After

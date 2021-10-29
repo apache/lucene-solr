@@ -35,15 +35,19 @@ import java.util.stream.Stream;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.retry.RetryMode;
+import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.CommonPrefix;
 import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
@@ -86,11 +90,16 @@ public class S3StorageClient {
 
   S3StorageClient(
       String bucketName,
+      String profile,
       String region,
       String proxyUrl,
       boolean proxyUseSystemSettings,
-      String endpoint) {
-    this(createInternalClient(region, proxyUrl, proxyUseSystemSettings, endpoint), bucketName);
+      String endpoint,
+      boolean disableRetries) {
+    this(
+        createInternalClient(
+            profile, region, proxyUrl, proxyUseSystemSettings, endpoint, disableRetries),
+        bucketName);
   }
 
   @VisibleForTesting
@@ -100,7 +109,17 @@ public class S3StorageClient {
   }
 
   private static S3Client createInternalClient(
-      String region, String proxyUrl, boolean proxyUseSystemSettings, String endpoint) {
+      String profile,
+      String region,
+      String proxyUrl,
+      boolean proxyUseSystemSettings,
+      String endpoint,
+      boolean disableRetries) {
+    S3Configuration.Builder configBuilder = S3Configuration.builder().pathStyleAccessEnabled(true);
+    if (!StringUtils.isEmpty(profile)) {
+      configBuilder.profileName(profile);
+    }
+
     ApacheHttpClient.Builder sdkHttpClientBuilder = ApacheHttpClient.builder();
     // If configured, add proxy
     ProxyConfiguration.Builder proxyConfigurationBuilder = ProxyConfiguration.builder();
@@ -113,17 +132,52 @@ public class S3StorageClient {
     sdkHttpClientBuilder.useIdleConnectionReaper(false);
 
     /*
+     * Retry logic
+     */
+    RetryPolicy retryPolicy;
+    if (disableRetries) {
+      retryPolicy = RetryPolicy.none();
+    } else {
+      RetryMode.Resolver retryModeResolver = RetryMode.resolver();
+      if (!StringUtils.isEmpty(profile)) {
+        retryModeResolver.profileName(profile);
+      }
+      RetryMode retryMode = retryModeResolver.resolve();
+      RetryPolicy.Builder retryPolicyBuilder = RetryPolicy.builder(retryMode);
+
+      // Do not fail fast on rate limiting
+      if (retryMode == RetryMode.ADAPTIVE) {
+        retryPolicyBuilder.fastFailRateLimiting(false);
+      }
+
+      retryPolicy = retryPolicyBuilder.build();
+    }
+
+    /*
+     * Set the default credentials provider
+     */
+    DefaultCredentialsProvider.Builder credentialsProviderBuilder =
+        DefaultCredentialsProvider.builder();
+    if (!StringUtils.isEmpty(profile)) {
+      credentialsProviderBuilder.profileName(profile);
+    }
+
+    /*
      * Default s3 client builder loads credentials from disk and handles token refreshes
      */
     S3ClientBuilder clientBuilder =
         S3Client.builder()
-            .serviceConfiguration(builder -> builder.pathStyleAccessEnabled(true))
+            .credentialsProvider(credentialsProviderBuilder.build())
+            .overrideConfiguration(builder -> builder.retryPolicy(retryPolicy))
+            .serviceConfiguration(configBuilder.build())
             .httpClient(sdkHttpClientBuilder.build());
 
     if (!StringUtils.isEmpty(endpoint)) {
       clientBuilder.endpointOverride(URI.create(endpoint));
     }
-    clientBuilder.region(Region.of(region));
+    if (!StringUtils.isEmpty(region)) {
+      clientBuilder.region(Region.of(region));
+    }
 
     return clientBuilder.build();
   }

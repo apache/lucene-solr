@@ -18,7 +18,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* SOLR-15707: Add the ability to set the AWS Profile per S3Repository (Houston Putman)
 
 Optimizations
 ---------------------
