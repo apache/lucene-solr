@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.tdunning.math.stats.TDigest;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
@@ -1074,20 +1075,47 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<Double> percentiles = new ArrayList<>();
+        // always parse value source first
         ValueSource vs = fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE);
-        while (fp.hasMoreArguments()) {
-          double val = fp.parseDouble();
-          if (val<0 || val>100) {
-            throw new SyntaxError("requested percentile must be between 0 and 100.  got " + val);
+        // then optionally the t-digest configuration
+        String initial = fp.parseArg();
+        PercentileAgg.Digest digest = PercentileAgg.Digest.AVL_TREE;
+        double compression = 100;
+        if (fp.argWasQuoted()) {
+          // optional configuration path
+          // must be a digest and compression param before percentiles
+          switch (initial) {
+            case "avltree":
+              digest = PercentileAgg.Digest.AVL_TREE;
+              break;
+            case "merging":
+              digest = PercentileAgg.Digest.MERGING;
+              break;
+            default:
+              throw new SyntaxError("expected valid digest from: [avltree, merging]");
           }
-          percentiles.add(val);
+          compression = fp.parseDouble();
+        } else {
+          // parse as first percentile
+          try {
+            percentiles.add(Double.parseDouble(initial));
+          } catch (NumberFormatException | NullPointerException e) {
+            throw new SyntaxError("Expected double instead of '" + initial + "' for function percentile");
+          }
         }
-
+        // and finally the percentile arguments
+        while (fp.hasMoreArguments()) {
+          percentiles.add(fp.parseDouble());
+        }
         if (percentiles.isEmpty()) {
           throw new SyntaxError("expected percentile(valsource,percent1[,percent2]*)  EXAMPLE:percentile(myfield,50)");
         }
-
-        return new PercentileAgg(vs, percentiles);
+        for (double val : percentiles) {
+          if (val<0 || val>100) {
+            throw new SyntaxError("requested percentile must be between 0 and 100.  got " + val);
+          }
+        }
+        return PercentileAgg.create(vs, percentiles, digest, compression);
       }
     });
     
