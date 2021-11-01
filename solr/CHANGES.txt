@@ -23,7 +23,9 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-10196: Improve IntroSorter with 3-ways partitioning. (Bruno Roustant)
+
 
 Bug Fixes
 ---------------------

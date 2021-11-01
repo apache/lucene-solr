@@ -25,6 +25,9 @@ public abstract class Sorter {
 
   static final int BINARY_SORT_THRESHOLD = 20;
 
+  /** Below this size threshold, the sub-range is sorted using Insertion sort. */
+  static final int INSERTION_SORT_THRESHOLD = 16;
+
   /** Sole constructor, used for inheritance. */
   protected Sorter() {}
 
@@ -180,7 +183,7 @@ public abstract class Sorter {
   /**
    * A binary sort implementation. This performs {@code O(n*log(n))} comparisons
    * and {@code O(n^2)} swaps. It is typically used by more sophisticated
-   * implementations as a fall-back when the numbers of items to sort has become
+   * implementations as a fall-back when the number of items to sort has become
    * less than {@value #BINARY_SORT_THRESHOLD}.
    */
   void binarySort(int from, int to) {
@@ -203,6 +206,25 @@ public abstract class Sorter {
       }
       for (int j = i; j > l; --j) {
         swap(j - 1, j);
+      }
+    }
+  }
+
+  /**
+   * Sorts between from (inclusive) and to (exclusive) with insertion sort. Runs in {@code O(n^2)}.
+   * It is typically used by more sophisticated implementations as a fall-back when the number of
+   * items to sort becomes less than {@value #INSERTION_SORT_THRESHOLD}.
+   */
+  void insertionSort(int from, int to) {
+    for (int i = from + 1; i < to; ) {
+      int current = i++;
+      int previous;
+      while (compare((previous = current - 1), current) > 0) {
+        swap(previous, current);
+        if (previous == from) {
+          break;
+        }
+        current = previous;
       }
     }
   }
