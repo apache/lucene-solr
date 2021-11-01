@@ -2274,6 +2274,7 @@ public class ZkStateReader implements SolrCloseable {
         //we already have the latest version.
         return false;
       }
+      stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
     }
