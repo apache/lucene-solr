@@ -2269,7 +2269,11 @@ public class ZkStateReader implements SolrCloseable {
       log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
-      Stat stat = new Stat();
+      Stat stat = zkClient.exists(ALIASES, null, true);
+      if (stat.getVersion() <= aliases.getZNodeVersion()) {
+        //we already have the latest version.
+        return false;
+      }
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
     }
