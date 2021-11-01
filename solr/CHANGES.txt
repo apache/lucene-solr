@@ -16,6 +16,8 @@ New Features
 
 * SOLR-15708: SolrJ support for ConfigSet uploading (ab, hossman)
 
+* SOLR-12666: Add authn & authz plugins that supports multiple authentication schemes, such as Bearer and Basic (Timothy Potter, janhoy)
+
 Improvements
 ---------------------
 
