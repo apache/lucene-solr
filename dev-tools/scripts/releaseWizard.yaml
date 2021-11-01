@@ -517,6 +517,41 @@ groups:
         cmd: git add -u .  && git commit -m "Add next minor version {{ next_version }}"  && git push
         logfile: commit-stable.log
   - !Todo
+    id: add_version_minor_on_main
+    title: Add a new minor version on Lucene's main branch
+    types:
+    - major
+    - minor
+    depends: clean_git_checkout
+    vars:
+      next_version: "{{ release_version_major }}.{{ release_version_minor + 1 }}.0"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to add the new minor version {{ next_version }} to Lucene's main branch in the split repo
+      commands:
+      - !Command
+        cmd: git remote add lucene https://gitbox.apache.org/repos/asf/lucene.git -f -m main
+        stdout: true
+        comment: Goto lucene main branch
+        logfile: lucene-main-updates.log
+      - !Command
+        cmd: git checkout main && git pull lucene main && git clean -df && git checkout -- .
+        tee: true
+        logfile: lucene-main-updates.log
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
+        tee: true
+      - !Command
+        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: git add -u . && git commit -m "Add next minor version {{ next_version }}" && git push lucene HEAD:main
+        stdout: true
+        logfile: lucene-main-updates.log
+      - !Command
+        comment: Back to stable branch in shared repo
+        logfile: lucene-main-updates.log
+        cmd: git checkout {{ stable_branch }} && git clean -df && git checkout -- .
+        tee: true
+  - !Todo
     id: sanity_check_doap
     title: Sanity check the DOAP files
     description: |-
@@ -1275,7 +1310,7 @@ groups:
       commands_text: Edit DOAP files
       commands:
       - !Command
-        cmd: git remote add lucene https://gitbox.apache.org/repos/asf/lucene.git && git fetch lucene && git checkout lucene/main
+        cmd: git checkout lucene/main
         stdout: true
         comment: Goto lucene main branch
       - !Command
@@ -1287,14 +1322,14 @@ groups:
         logfile: commit-lucene.log
         stdout: true
       - !Command
-        cmd: git remote add solr https://gitbox.apache.org/repos/asf/solr.git && git fetch solr && git checkout solr/main
-        stdout: true
-        comment: Goto solr main branch
-      - !Command
         cmd: git push lucene HEAD:main
         logfile: push-lucene.log
         stdout: true
         comment: Push the main branch
+      - !Command
+        cmd: git remote add solr https://gitbox.apache.org/repos/asf/solr.git -f -m main && git checkout solr/main
+        stdout: true
+        comment: Goto solr main branch
       - !Command
         cmd: "{{ editor }} dev-tools/doap/solr.rdf"
         comment: Edit Solr DOAP, add version {{ release_version }}
