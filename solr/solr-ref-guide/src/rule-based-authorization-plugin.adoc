@@ -37,10 +37,11 @@ The users that RBAP sees come from whatever authentication plugin has been confi
 
 === Roles
 
-Roles help bridge the gap between users and permissions. The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that logged-in users are mapped to the roles defined by the plugin. There are two implementations of the plugin, which only differs in how the user's roles are obtained:
+Roles help bridge the gap between users and permissions. The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that logged-in users are mapped to the roles defined by the plugin. There are three implementations of the plugin, which only differ in how the user's roles are obtained:
 
 * `RuleBasedAuthorizationPlugin`: The role-to-user mappings must be defined explicitly in `security.json` for every possible authenticated user.
 * `ExternalRoleRuleBasedAuthorizationPlugin`: The role-to-user mappings are managed externally. This plugin expects the AuthenticationPlugin to provide a Principal that has the roles information as well, implementing the `VerifiedUserRoles` interface.
+* `MultiAuthRuleBasedAuthorizationPlugin`: For use with the `MultiAuthPlugin` to source user roles from multiple plugins.
 
 === Permissions
 
@@ -148,6 +149,41 @@ Let's walk through this example:
 <5> The 'admin' role has been defined, and it has permission to edit security settings.
 
 Only requests from users having a JWT token with role "admin" will be granted the `security-edit` permission.
+
+=== Multiple Authorization Plugins
+
+If your `security.json` config uses the `MultiAuthPlugin`, you want to use the `MultiAuthRuleBasedAuthorizationPlugin` to use a different authorization plugin for each authentication plugin.
+
+The following example illustrates using the `MultiAuthRuleBasedAuthorizationPlugin` to configure an authorization plugin for the `Basic` and `Bearer` schemes:
+[source,json]
+----
+{
+  "authorization": {
+    "class": "solr.MultiAuthRuleBasedAuthorizationPlugin",
+    "schemes": [
+      {
+        "scheme": "basic",
+        "class": "solr.RuleBasedAuthorizationPlugin",
+        "user-role": {
+          "k8s-oper": ["k8s"]
+        }
+      },
+      {
+        "scheme": "bearer",
+        "class": "solr.ExternalRoleRuleBasedAuthorizationPlugin"
+      }
+    ],
+    "permissions": []
+  }
+}
+----
+
+It would be uncommon for the same user account to exist in both plugins.
+However, the `MultiAuthRuleBasedAuthorizationPlugin` combines the roles from all plugins together when determining the roles for a user.
+
+Users should take special care to lock down the exact set of endpoints that service accounts need access to when using Basic authentication.
+For example, if the `MultiAuthPlugin` allows a `k8s-oper` user to use Basic authentication (while all other users go through OIDC), then
+the permissions configured for the `k8s-oper` user should only allow access to specific endpoints, such as `/admin/info/system`.
 
 == Permissions
 

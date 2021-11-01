@@ -1,0 +1,27 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/basic-authentication-plugin.html",
+  "description": "Modifies the configuration of the multi-auth plugin. Each command should be wrapped in a single key object that identifies the scheme. The embedded command is then passed to the scheme specific plugin.",
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/security/authentication"
+    ]
+  },
+  "commands": {
+    "set-user": {
+      "type":"object",
+      "description": "The set-user command allows you to add users and change their passwords. Usernames and passwords are expressed as key-value pairs in a JSON object.",
+      "additionalProperties": true
+    },
+    "delete-user": {
+      "description": "Delete a user or a list of users. Passwords do not need to be provided, simply list the users in a JSON array, separated by colons.",
+      "type":"object"
+    },
+    "set-property": {
+      "type":"object",
+      "description": "The set-property command lets you set any of the configuration parameters supported by this plugin"
+    }
+  }
+}

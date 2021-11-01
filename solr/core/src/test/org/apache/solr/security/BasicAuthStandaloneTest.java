@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Properties;
 
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -54,8 +55,8 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private Path ROOT_DIR = Paths.get(TEST_HOME());
-  private Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
+  private static final Path ROOT_DIR = Paths.get(TEST_HOME());
+  private static final Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 
   SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
@@ -145,13 +146,17 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass) throws IOException {
+  static void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass) throws IOException {
     doHttpPost(cl, url, jsonCommand, basicUser, basicPass, 200);
   }
 
-  private void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass, int expectStatusCode) throws IOException {
+  static void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass, int expectStatusCode) throws IOException {
+    doHttpPostWithHeader(cl, url, jsonCommand, getBasicAuthHeader(basicUser, basicPass), expectStatusCode);
+  }
+
+  static void doHttpPostWithHeader(HttpClient cl, String url, String jsonCommand, Header header, int expectStatusCode) throws IOException {
     HttpPost httpPost = new HttpPost(url);
-    setBasicAuthHeader(httpPost, basicUser, basicPass);
+    httpPost.setHeader(header);
     httpPost.setEntity(new ByteArrayEntity(jsonCommand.replaceAll("'", "\"").getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     HttpResponse r = cl.execute(httpPost);
@@ -160,14 +165,21 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
   }
 
-  public static void setBasicAuthHeader(AbstractHttpMessage httpMsg, String user, String pwd) {
+  private static Header getBasicAuthHeader(String user, String pwd) {
     String userPass = user + ":" + pwd;
     String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
-    httpMsg.setHeader(new BasicHeader("Authorization", "Basic " + encoded));
-    log.info("Added Basic Auth security Header {}",encoded );
+    return new BasicHeader("Authorization", "Basic " + encoded);
   }
 
-  private JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
+  public static void setBasicAuthHeader(AbstractHttpMessage httpMsg, String user, String pwd) {
+    final Header basicAuthHeader = getBasicAuthHeader(user, pwd);
+    httpMsg.setHeader(basicAuthHeader);
+    if (log.isInfoEnabled()) {
+      log.info("Added Basic Auth security Header {}", basicAuthHeader.getValue());
+    }
+  }
+
+  static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir().toString());
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir().toString(), nodeProperties, buildJettyConfig("/solr"));
@@ -176,7 +188,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   }
   
   
-  private class SolrInstance {
+  static class SolrInstance {
     String name;
     Integer port;
     Path homeDir;

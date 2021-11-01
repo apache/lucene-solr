@@ -399,7 +399,11 @@ public class CoreContainer {
       }
       log.info("Initializing authorization plugin: {}", klas);
       authorizationPlugin = new SecurityPluginHolder<>(newVersion,
-          getResourceLoader().newInstance(klas, AuthorizationPlugin.class));
+          getResourceLoader().newInstance(klas,
+              AuthorizationPlugin.class,
+              null,
+              new Class<?>[]{CoreContainer.class},
+              new Object[]{this}));
 
       // Read and pass the authorization context to the plugin
       authorizationPlugin.plugin.init(authorizationConf);

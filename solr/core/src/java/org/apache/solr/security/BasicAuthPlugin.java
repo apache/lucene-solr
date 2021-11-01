@@ -274,7 +274,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
    * @param request the servlet request
    * @return true if the request is AJAX request
    */
-  private boolean isAjaxRequest(HttpServletRequest request) {
+  static boolean isAjaxRequest(HttpServletRequest request) {
     return "XMLHttpRequest".equalsIgnoreCase(request.getHeader(X_REQUESTED_WITH_HEADER));
   }
   
