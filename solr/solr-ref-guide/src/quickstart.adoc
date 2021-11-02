@@ -58,6 +58,30 @@ $ curl --request POST \
 }'
 ----
 
+== Defining a schema
+
+Let us define some of the fields that our documents will contain.
+
+[source,subs="verbatim,attributes+"]
+----
+curl --request POST \
+  --url http://localhost:8983/api/collections/techproducts/schema \
+  --header 'Content-Type: application/json' \
+  --data '{
+	"add-field": [
+		{"name": "name", "type": "text_general", "multiValued": false},
+		{"name": "cat", "type": "string", "multiValued": true},
+		{"name": "manu", "type": "string"},
+		{"name": "features", "type": "text_general", "multiValued": true},
+		{"name": "weight", "type": "pfloat"},
+		{"name": "price", "type": "pfloat"},
+		{"name": "popularity", "type": "pint"},
+		{"name": "inStock", "type": "boolean", "stored": true},
+		{"name": "store", "type": "location"}
+	]
+}'
+----
+
 == Indexing documents
 
 A single document can be indexed as:
@@ -118,7 +142,10 @@ $ curl --request POST \
 A file containing the documents can be indexed as follows:
 [source,subs="verbatim,attributes+"]
 ----
-$ curl -X POST -d @example/exampledocs/books.json http://localhost:8983/api/collections/techproducts/update
+$ curl -H "Content-Type: application/json" \
+       -X POST \
+       -d @example/products.json \
+       --url 'http://localhost:8983/api/collections/techproducts/update?commit=true'
 ----
 
 == Commit

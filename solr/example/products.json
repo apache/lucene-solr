@@ -1,0 +1,706 @@
+[
+  {
+    "id": "0553573403",
+    "cat": [
+      "book"
+    ],
+    "name": "A Game of Thrones",
+    "price": 7.99,
+    "inStock": true,
+    "author": [
+      "George R.R. Martin"
+    ],
+    "series_t": "A Song of Ice and Fire",
+    "sequence_i": 1,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "0553579908",
+    "cat": [
+      "book"
+    ],
+    "name": "A Clash of Kings",
+    "price": 7.99,
+    "inStock": true,
+    "author": [
+      "George R.R. Martin"
+    ],
+    "series_t": "A Song of Ice and Fire",
+    "sequence_i": 2,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "055357342X",
+    "cat": [
+      "book"
+    ],
+    "name": "A Storm of Swords",
+    "price": 7.99,
+    "inStock": true,
+    "author": [
+      "George R.R. Martin"
+    ],
+    "series_t": "A Song of Ice and Fire",
+    "sequence_i": 3,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "0553293354",
+    "cat": [
+      "book"
+    ],
+    "name": "Foundation",
+    "price": 7.99,
+    "inStock": true,
+    "author": [
+      "Isaac Asimov"
+    ],
+    "series_t": "Foundation Novels",
+    "sequence_i": 1,
+    "genre_s": "scifi"
+  },
+  {
+    "id": "0812521390",
+    "cat": [
+      "book"
+    ],
+    "name": "The Black Company",
+    "price": 6.99,
+    "inStock": false,
+    "author": [
+      "Glen Cook"
+    ],
+    "series_t": "The Chronicles of The Black Company",
+    "sequence_i": 1,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "0812550706",
+    "cat": [
+      "book"
+    ],
+    "name": "Ender's Game",
+    "price": 6.99,
+    "inStock": true,
+    "author": [
+      "Orson Scott Card"
+    ],
+    "series_t": "Ender",
+    "sequence_i": 1,
+    "genre_s": "scifi"
+  },
+  {
+    "id": "0441385532",
+    "cat": [
+      "book"
+    ],
+    "name": "Jhereg",
+    "price": 7.95,
+    "inStock": false,
+    "author": [
+      "Steven Brust"
+    ],
+    "series_t": "Vlad Taltos",
+    "sequence_i": 1,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "0380014300",
+    "cat": [
+      "book"
+    ],
+    "name": "Nine Princes In Amber",
+    "price": 6.99,
+    "inStock": true,
+    "author": [
+      "Roger Zelazny"
+    ],
+    "series_t": "the Chronicles of Amber",
+    "sequence_i": 1,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "0805080481",
+    "cat": [
+      "book"
+    ],
+    "name": "The Book of Three",
+    "price": 5.99,
+    "inStock": true,
+    "author": [
+      "Lloyd Alexander"
+    ],
+    "series_t": "The Chronicles of Prydain",
+    "sequence_i": 1,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "080508049X",
+    "cat": [
+      "book"
+    ],
+    "name": "The Black Cauldron",
+    "price": 5.99,
+    "inStock": true,
+    "author": [
+      "Lloyd Alexander"
+    ],
+    "series_t": "The Chronicles of Prydain",
+    "sequence_i": 2,
+    "genre_s": "fantasy"
+  },
+  {
+    "id": "978-0641723445",
+    "cat": [
+      "book",
+      "hardcover"
+    ],
+    "name": "The Lightning Thief",
+    "author": [
+      "Rick Riordan"
+    ],
+    "series_t": "Percy Jackson and the Olympians",
+    "sequence_i": 1,
+    "genre_s": "fantasy",
+    "inStock": true,
+    "price": 12.5,
+    "pages_i": 384
+  },
+  {
+    "id": "978-1423103349",
+    "cat": [
+      "book",
+      "paperback"
+    ],
+    "name": "The Sea of Monsters",
+    "author": [
+      "Rick Riordan"
+    ],
+    "series_t": "Percy Jackson and the Olympians",
+    "sequence_i": 2,
+    "genre_s": "fantasy",
+    "inStock": true,
+    "price": 6.49,
+    "pages_i": 304
+  },
+  {
+    "id": "978-1857995879",
+    "cat": [
+      "book",
+      "paperback"
+    ],
+    "name": "Sophie's World : The Greek Philosophers",
+    "author": [
+      "Jostein Gaarder"
+    ],
+    "sequence_i": 1,
+    "genre_s": "fantasy",
+    "inStock": true,
+    "price": 3.07,
+    "pages_i": 64
+  },
+  {
+    "id": "978-1933988177",
+    "cat": [
+      "book",
+      "paperback"
+    ],
+    "name": "Lucene in Action, Second Edition",
+    "author": [
+      "Michael McCandless"
+    ],
+    "sequence_i": 1,
+    "genre_s": "IT",
+    "inStock": true,
+    "price": 30.5,
+    "pages_i": 475
+  },
+  {
+    "id": "GB18030TEST",
+    "name": "Test with some GB18030 encoded characters",
+    "features": [
+      "No accents here",
+      "这是一个功能",
+      "This is a feature (translated)",
+      "这份文件是很有光泽",
+      "This document is very shiny (translated)"
+    ],
+    "price": 0.0,
+    "inStock": true
+  },
+  {
+    "id": "SP2514N",
+    "name": "Samsung SpinPoint P120 SP2514N - hard drive - 250 GB - ATA-133",
+    "manu": "Samsung Electronics Co. Ltd.",
+    "manu_id_s": "samsung",
+    "cat": [
+      "electronics",
+      "hard drive"
+    ],
+    "features": [
+      "7200RPM, 8MB cache, IDE Ultra ATA-133",
+      "NoiseGuard, SilentSeek technology, Fluid Dynamic Bearing (FDB) motor"
+    ],
+    "price": 92.0,
+    "popularity": 6,
+    "inStock": true,
+    "manufacturedate_dt": "2006-02-13T15:26:37Z",
+    "store": "35.0752,-97.032"
+  },
+  {
+    "id": "6H500F0",
+    "name": "Maxtor DiamondMax 11 - hard drive - 500 GB - SATA-300",
+    "manu": "Maxtor Corp.",
+    "manu_id_s": "maxtor",
+    "cat": [
+      "electronics",
+      "hard drive"
+    ],
+    "features": [
+      "SATA 3.0Gb/s, NCQ",
+      "8.5ms seek",
+      "16MB cache"
+    ],
+    "price": 350.0,
+    "popularity": 6,
+    "inStock": true,
+    "store": "45.17614,-93.87341",
+    "manufacturedate_dt": "2006-02-13T15:26:37Z"
+  },
+  {
+    "id": "F8V7067-APL-KIT",
+    "name": "Belkin Mobile Power Cord for iPod w/ Dock",
+    "manu": "Belkin",
+    "manu_id_s": "belkin",
+    "cat": [
+      "electronics",
+      "connector"
+    ],
+    "features": [
+      "car power adapter, white"
+    ],
+    "weight": 4.0,
+    "price": 19.95,
+    "popularity": 1,
+    "inStock": false,
+    "store": "45.18014,-93.87741",
+    "manufacturedate_dt": "2005-08-01T16:30:25Z"
+  },
+  {
+    "id": "IW-02",
+    "name": "iPod & iPod Mini USB 2.0 Cable",
+    "manu": "Belkin",
+    "manu_id_s": "belkin",
+    "cat": [
+      "electronics",
+      "connector"
+    ],
+    "features": [
+      "car power adapter for iPod, white"
+    ],
+    "weight": 2.0,
+    "price": 11.5,
+    "popularity": 1,
+    "inStock": false,
+    "store": "37.7752,-122.4232",
+    "manufacturedate_dt": "2006-02-14T23:55:59Z"
+  },
+  {
+    "id": "MA147LL/A",
+    "name": "Apple 60 GB iPod with Video Playback Black",
+    "manu": "Apple Computer Inc.",
+    "manu_id_s": "apple",
+    "cat": [
+      "electronics",
+      "music"
+    ],
+    "features": [
+      "iTunes, Podcasts, Audiobooks",
+      "Stores up to 15,000 songs, 25,000 photos, or 150 hours of video",
+      "2.5-inch, 320x240 color TFT LCD display with LED backlight",
+      "Up to 20 hours of battery life",
+      "Plays AAC, MP3, WAV, AIFF, Audible, Apple Lossless, H.264 video",
+      "Notes, Calendar, Phone book, Hold button, Date display, Photo wallet, Built-in games, JPEG photo playback, Upgradeable firmware, USB 2.0 compatibility, Playback speed control, Rechargeable capability, Battery level indication"
+    ],
+    "includes": [
+      "earbud headphones, USB cable"
+    ],
+    "weight": 5.5,
+    "price": 399.0,
+    "popularity": 10,
+    "inStock": true,
+    "store": "37.7752,-100.0232",
+    "manufacturedate_dt": "2005-10-12T08:00:00Z"
+  },
+  {
+    "id": "adata",
+    "compName_s": "A-Data Technology",
+    "address_s": "46221 Landing Parkway Fremont, CA 94538"
+  },
+  {
+    "id": "apple",
+    "compName_s": "Apple",
+    "address_s": "1 Infinite Way, Cupertino CA"
+  },
+  {
+    "id": "asus",
+    "compName_s": "ASUS Computer",
+    "address_s": "800 Corporate Way Fremont, CA 94539"
+  },
+  {
+    "id": "ati",
+    "compName_s": "ATI Technologies",
+    "address_s": "33 Commerce Valley Drive East Thornhill, ON L3T 7N6 Canada"
+  },
+  {
+    "id": "belkin",
+    "compName_s": "Belkin",
+    "address_s": "12045 E. Waterfront Drive Playa Vista, CA 90094"
+  },
+  {
+    "id": "canon",
+    "compName_s": "Canon, Inc.",
+    "address_s": "One Canon Plaza Lake Success, NY 11042"
+  },
+  {
+    "id": "corsair",
+    "compName_s": "Corsair Microsystems",
+    "address_s": "46221 Landing Parkway Fremont, CA 94538"
+  },
+  {
+    "id": "dell",
+    "compName_s": "Dell, Inc.",
+    "address_s": "One Dell Way Round Rock, Texas 78682"
+  },
+  {
+    "id": "maxtor",
+    "compName_s": "Maxtor Corporation",
+    "address_s": "920 Disc Drive Scotts Valley, CA 95066"
+  },
+  {
+    "id": "samsung",
+    "compName_s": "Samsung Electronics Co. Ltd.",
+    "address_s": "105 Challenger Rd. Ridgefield Park, NJ 07660-0511"
+  },
+  {
+    "id": "viewsonic",
+    "compName_s": "ViewSonic Corp",
+    "address_s": "381 Brea Canyon Road Walnut, CA 91789-0708"
+  },
+  {
+    "id": "TWINX2048-3200PRO",
+    "name": "CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail",
+    "manu": "Corsair Microsystems Inc.",
+    "manu_id_s": "corsair",
+    "cat": [
+      "electronics",
+      "memory"
+    ],
+    "features": [
+      "CAS latency 2,  2-3-3-6 timing, 2.75v, unbuffered, heat-spreader"
+    ],
+    "price": 185.0,
+    "popularity": 5,
+    "inStock": true,
+    "store": "37.7752,-122.4232",
+    "manufacturedate_dt": "2006-02-13T15:26:37Z",
+    "payloads": [
+      "electronics|6.0 memory|3.0"
+    ]
+  },
+  {
+    "id": "VS1GB400C3",
+    "name": "CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail",
+    "manu": "Corsair Microsystems Inc.",
+    "manu_id_s": "corsair",
+    "cat": [
+      "electronics",
+      "memory"
+    ],
+    "price": 74.99,
+    "popularity": 7,
+    "inStock": true,
+    "store": "37.7752,-100.0232",
+    "manufacturedate_dt": "2006-02-13T15:26:37Z",
+    "payloads": [
+      "electronics|4.0 memory|2.0"
+    ]
+  },
+  {
+    "id": "VDBDB1A16",
+    "name": "A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM",
+    "manu": "A-DATA Technology Inc.",
+    "manu_id_s": "corsair",
+    "cat": [
+      "electronics",
+      "memory"
+    ],
+    "features": [
+      "CAS latency 3,   2.7v"
+    ],
+    "popularity": 0,
+    "inStock": true,
+    "store": "45.18414,-93.88141",
+    "manufacturedate_dt": "2006-02-13T15:26:37Z",
+    "payloads": [
+      "electronics|0.9 memory|0.1"
+    ]
+  },
+  {
+    "id": "USD",
+    "name": "One Dollar",
+    "manu": "Bank of America",
+    "manu_id_s": "boa",
+    "cat": [
+      "currency"
+    ],
+    "features": [
+      "Coins and notes"
+    ],
+    "price_c": [
+      "1,USD"
+    ],
+    "inStock": true
+  },
+  {
+    "id": "EUR",
+    "name": "One Euro",
+    "manu": "European Union",
+    "manu_id_s": "eu",
+    "cat": [
+      "currency"
+    ],
+    "features": [
+      "Coins and notes"
+    ],
+    "price_c": [
+      "1,EUR"
+    ],
+    "inStock": true
+  },
+  {
+    "id": "GBP",
+    "name": "One British Pound",
+    "manu": "U.K.",
+    "manu_id_s": "uk",
+    "cat": [
+      "currency"
+    ],
+    "features": [
+      "Coins and notes"
+    ],
+    "price_c": [
+      "1,GBP"
+    ],
+    "inStock": true
+  },
+  {
+    "id": "NOK",
+    "name": "One Krone",
+    "manu": "Bank of Norway",
+    "manu_id_s": "nor",
+    "cat": [
+      "currency"
+    ],
+    "features": [
+      "Coins and notes"
+    ],
+    "price_c": [
+      "1,NOK"
+    ],
+    "inStock": true
+  },
+  {
+    "id": "VA902B",
+    "name": "ViewSonic VA902B - flat panel display - TFT - 19\"",
+    "manu": "ViewSonic Corp.",
+    "manu_id_s": "viewsonic",
+    "cat": [
+      "electronics and stuff2"
+    ],
+    "features": [
+      "19\" TFT active matrix LCD, 8ms response time, 1280 x 1024 native resolution"
+    ],
+    "weight": 190.4,
+    "price": 279.95,
+    "popularity": 6,
+    "inStock": true,
+    "store": "45.18814,-93.88541"
+  },
+  {
+    "id": "3007WFP",
+    "name": "Dell Widescreen UltraSharp 3007WFP",
+    "manu": "Dell, Inc.",
+    "manu_id_s": "dell",
+    "cat": [
+      "electronics and computer1"
+    ],
+    "features": [
+      "30\" TFT active matrix LCD, 2560 x 1600, .25mm dot pitch, 700:1 contrast"
+    ],
+    "includes": [
+      "USB cable"
+    ],
+    "weight": 401.6,
+    "price": 2199.0,
+    "popularity": 6,
+    "inStock": true,
+    "store": "43.17614,-90.57341"
+  },
+  {
+    "id": "0060248025",
+    "name": "Falling Up",
+    "inStock": true,
+    "author": [
+      "Shel Silverstein"
+    ]
+  },
+  {
+    "id": "0679805273",
+    "name": "Oh, The Places You'll Go",
+    "inStock": true,
+    "author": [
+      "Dr. Seuss"
+    ]
+  },
+  {
+    "id": "0579B002",
+    "name": "Canon PIXMA MP500 All-In-One Photo Printer",
+    "manu": "Canon Inc.",
+    "manu_id_s": "canon",
+    "cat": [
+      "electronics",
+      "multifunction printer",
+      "printer",
+      "scanner",
+      "copier"
+    ],
+    "features": [
+      "Multifunction ink-jet color photo printer",
+      "Flatbed scanner, optical scan resolution of 1,200 x 2,400 dpi",
+      "2.5\" color LCD preview screen",
+      "Duplex Copying",
+      "Printing speed up to 29ppm black, 19ppm color",
+      "Hi-Speed USB",
+      "memory card: CompactFlash, Micro Drive, SmartMedia, Memory Stick, Memory Stick Pro, SD Card, and MultiMediaCard"
+    ],
+    "weight": 352.0,
+    "price": 179.99,
+    "popularity": 6,
+    "inStock": true,
+    "store": "45.19214,-93.89941"
+  },
+  {
+    "id": "9885A004",
+    "name": "Canon PowerShot SD500",
+    "manu": "Canon Inc.",
+    "manu_id_s": "canon",
+    "cat": [
+      "electronics",
+      "camera"
+    ],
+    "features": [
+      "3x zoop, 7.1 megapixel Digital ELPH",
+      "movie clips up to 640x480 @30 fps",
+      "2.0\" TFT LCD, 118,000 pixels",
+      "built in flash, red-eye reduction"
+    ],
+    "includes": [
+      "32MB SD card, USB cable, AV cable, battery"
+    ],
+    "weight": 6.4,
+    "price": 329.95,
+    "popularity": 7,
+    "inStock": true,
+    "manufacturedate_dt": "2006-02-13T15:26:37Z",
+    "store": "45.19614,-93.90341"
+  },
+  {
+    "id": "SOLR1000",
+    "name": "Solr, the Enterprise Search Server",
+    "manu": "Apache Software Foundation",
+    "cat": [
+      "software",
+      "search"
+    ],
+    "features": [
+      "Advanced Full-Text Search Capabilities using Lucene",
+      "Optimized for High Volume Web Traffic",
+      "Standards Based Open Interfaces - XML and HTTP",
+      "Comprehensive HTML Administration Interfaces",
+      "Scalability - Efficient Replication to other Solr Search Servers",
+      "Flexible and Adaptable with XML configuration and Schema",
+      "Good unicode support: héllo (hello with an accent over the e)"
+    ],
+    "price": 0.0,
+    "popularity": 10,
+    "inStock": true,
+    "incubationdate_dt": "2006-01-17T00:00:00Z"
+  },
+  {
+    "id": "UTF8TEST",
+    "name": "Test with some UTF-8 encoded characters",
+    "manu": "Apache Software Foundation",
+    "cat": [
+      "software",
+      "search"
+    ],
+    "features": [
+      "No accents here",
+      "This is an e acute: é",
+      "eaiou with circumflexes: êâîôû",
+      "eaiou with umlauts: ëäïöü",
+      "tag with escaped chars: <nicetag/>",
+      "escaped ampersand: Bonnie & Clyde",
+      "Outside the BMP:𐌈 codepoint=10308, a circle with an x inside. UTF8=f0908c88 UTF16=d800 df08"
+    ],
+    "price": 0.0,
+    "inStock": true
+  },
+  {
+    "id": "EN7800GTX/2DHTV/256M",
+    "name": "ASUS Extreme N7800GTX/2DHTV (256 MB)",
+    "manu": "ASUS Computer Inc.",
+    "manu_id_s": "asus",
+    "cat": [
+      "electronics",
+      "graphics card"
+    ],
+    "features": [
+      "NVIDIA GeForce 7800 GTX GPU/VPU clocked at 486MHz",
+      "256MB GDDR3 Memory clocked at 1.35GHz",
+      "PCI Express x16",
+      "Dual DVI connectors, HDTV out, video input",
+      "OpenGL 2.0, DirectX 9.0"
+    ],
+    "weight": 16.0,
+    "price": 479.95,
+    "popularity": 7,
+    "store": "40.7143,-74.006",
+    "inStock": false,
+    "manufacturedate_dt": "2006-02-13T00:00:00Z"
+  },
+  {
+    "id": "100-435805",
+    "name": "ATI Radeon X1900 XTX 512 MB PCIE Video Card",
+    "manu": "ATI Technologies",
+    "manu_id_s": "ati",
+    "cat": [
+      "electronics",
+      "graphics card"
+    ],
+    "features": [
+      "ATI RADEON X1900 GPU/VPU clocked at 650MHz",
+      "512MB GDDR3 SDRAM clocked at 1.55GHz",
+      "PCI Express x16",
+      "dual DVI, HDTV, svideo, composite out",
+      "OpenGL 2.0, DirectX 9.0"
+    ],
+    "weight": 48.0,
+    "price": 649.99,
+    "popularity": 7,
+    "inStock": false,
+    "manufacturedate_dt": "2006-02-13T00:00:00Z",
+    "store": "40.7143,-74.006"
+  }
+]
