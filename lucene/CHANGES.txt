@@ -28,6 +28,8 @@ Optimizations
   postings in memory, and reduced a bit of RAM overhead in
   IndexWriter's internal postings book-keeping (mashudong)
 
+* LUCENE-10196: Improve IntroSorter with 3-ways partitioning. (Bruno Roustant)
+
 Bug Fixes
 ---------------------
 
