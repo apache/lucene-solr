@@ -44,6 +44,8 @@ Bug Fixes
 
 * SOLR-15676: Fix PeerSync failure due to RealTimeGetComponent returning duplicates. (Ramsey Haddad, Christine Poerschke, David Smiley)
 
+* SOLR-15732: queries to missing collection are slow (noble)
+
 Build
 ---------------------
 
