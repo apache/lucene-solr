@@ -46,6 +46,8 @@ Bug Fixes
 
 * SOLR-15676: Fix PeerSync failure due to RealTimeGetComponent returning duplicates. (Ramsey Haddad, Christine Poerschke, David Smiley)
 
+* SOLR-15766: MultiAuthPlugin should send non-AJAX anonymous requests to the plugin that allows anonymous requests (Timothy Potter, Eric Pugh)
+
 Build
 ---------------------
 
