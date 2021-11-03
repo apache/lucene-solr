@@ -166,6 +166,68 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     }
   };
 
+  $scope.wrapSchemeCmd = function(cmd, data) {
+    var schemeCmd = {};
+    schemeCmd[cmd] = $scope.multiAuthWithBasic ? { "basic": data } : data;
+    return schemeCmd;
+  };
+
+  $scope.findEditableAuthz = function(data) {
+    var authz = data.authorization;
+    if (!authz) {
+      return null;
+    }
+    
+    var authzClass = authz["class"];
+    if (authzClass.endsWith(".RuleBasedAuthorizationPlugin")) {
+      return authz;
+    }
+
+    // go dig around in the schemes list looking for the editable one ...
+    if (authzClass.endsWith(".MultiAuthRuleBasedAuthorizationPlugin")) {
+      if ("schemes" in authz) {
+        for (var i in authz.schemes) {
+          if (authz.schemes[i]["class"].endsWith(".RuleBasedAuthorizationPlugin")) {
+            return authz.schemes[i];
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  $scope.validatePermConfig = function() {
+    $scope.hasPermWarnings = false;
+    $scope.permWarnings = [];
+
+    var namedPerms = $scope.permissionsTable.filter(p => $scope.predefinedPermissions.includes(p.name));
+    // look for named perms with -edit but w/o a -read
+    for (var n in namedPerms) {
+      var perm = namedPerms[n];
+      if (perm.name.endsWith("-edit")) {
+        // see if there is a "-read" too
+        var pfx = perm.name.substring(0, perm.name.indexOf("-edit"));
+        const readPermName = pfx + "-read";
+        var readPerm = namedPerms.find(p => p.name === readPermName);
+        if (!readPerm) {
+          $scope.permWarnings.push(readPermName+" is not protected! In general, if you protect "+perm.name+", you should also protect "+readPermName);
+        }
+      }
+    }
+
+    var hasAll = namedPerms.find(p => p.name === "all");
+    if (hasAll) {
+      if ($scope.permissionsTable[$scope.permissionsTable.length-1].name !== "all") {
+        $scope.permWarnings.push("The 'all' permission should always be the last permission in your config so that more specific permissions are applied first.");
+      }
+    } else {
+      $scope.permWarnings.push("The 'all' permission is not configured! In general, you should assign the 'all' permission to an admin role and list it as the last permission in your config.");
+    }
+
+    $scope.hasPermWarnings = $scope.permWarnings.length > 0;
+  };
+
   $scope.refresh = function () {
     $scope.hideAll();
 
@@ -173,6 +235,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     $scope.blockUnknown = "false"; // default setting
     $scope.realmName = "solr";
     $scope.forwardCredentials = "false";
+    $scope.multiAuthWithBasic = false;
 
     $scope.currentUser = sessionStorage.getItem("auth.username");
 
@@ -214,11 +277,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.getCurrentUserRoles = function() {
-    if ($scope.manageUserRolesEnabled) {
-      return Array.isArray($scope.userRoles[$scope.currentUser]) ? $scope.userRoles[$scope.currentUser] : [$scope.userRoles[$scope.currentUser]];
-    } else {
-      return $scope.myRoles;
-    }
+    return $scope.myRoles;
   };
 
   $scope.hasPermission = function(permissionName) {
@@ -231,20 +290,30 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     // determine if the authorization plugin supports CRUD permissions
     $scope.managePermissionsEnabled =
         ($scope.authorizationPlugin === "org.apache.solr.security.RuleBasedAuthorizationPlugin" ||
-            $scope.authorizationPlugin === "org.apache.solr.security.ExternalRoleRuleBasedAuthorizationPlugin");
+         $scope.authorizationPlugin === "org.apache.solr.security.ExternalRoleRuleBasedAuthorizationPlugin" ||
+         $scope.authorizationPlugin === "org.apache.solr.security.MultiAuthRuleBasedAuthorizationPlugin");
 
     // don't allow CRUD on roles if using external
-    $scope.manageUserRolesEnabled = $scope.authorizationPlugin === "org.apache.solr.security.RuleBasedAuthorizationPlugin";
+    $scope.manageUserRolesEnabled = false;
 
     Security.get({path: "authorization"}, function (data) {
+      //console.log(">> authorization: "+JSON.stringify(data));
+      
       if (!data.authorization) {
         $scope.isSecurityAdminEnabled = false;
         $scope.hasSecurityEditPerm = false;
         return;
       }
 
+      var authz = $scope.findEditableAuthz(data);
+      //console.log(">> authz: "+JSON.stringify(authz));
+      
+      if (authz) {
+        $scope.manageUserRolesEnabled = true;
+      }
+
       if ($scope.manageUserRolesEnabled) {
-        $scope.userRoles = data.authorization["user-role"];
+        $scope.userRoles = authz["user-role"];
         $scope.roles = transposeUserRoles($scope.userRoles);
         $scope.filteredRoles = $scope.roles;
         $scope.roleNames = $scope.roles.map(r => r.name).sort();
@@ -266,33 +335,58 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       }
       $scope.filteredPerms = $scope.permissionsTable;
 
+      // check for issues with perm config
+      $scope.validatePermConfig();
+
+      // use the current user's roles (obtained from System.get) to check if they have the security permissions
+      // Note: the backend will check too so this is only for display purposes
       $scope.hasSecurityEditPerm = $scope.hasPermission("security-edit");
       $scope.hasSecurityReadPerm = $scope.hasSecurityEditPerm || $scope.hasPermission("security-read");
 
-      if ($scope.authenticationPlugin === "org.apache.solr.security.BasicAuthPlugin") {
+      // authentication
+      if ($scope.authenticationPlugin === "org.apache.solr.security.BasicAuthPlugin" || $scope.authenticationPlugin === "org.apache.solr.security.MultiAuthPlugin") {
         $scope.manageUsersEnabled = true;
 
         Security.get({path: "authentication"}, function (data) {
+          // console.log(">> authentication: "+JSON.stringify(data));
+          
           if (!data.authentication) {
-            // TODO: error msg
             $scope.manageUsersEnabled = false;
+            $scope.users = [];
+            $scope.filteredUsers = $scope.users;
+            return;
           }
 
-          $scope.blockUnknown = data.authentication["blockUnknown"] === true ? "true" : "false";
-          $scope.forwardCredentials = data.authentication["forwardCredentials"] === true ? "true" : "false";
+          // find the "basic" scheme if using multi-auth
+          var authn = data.authentication;
+          if ("schemes" in data.authentication) {
+            for (var a in data.authentication.schemes) {
+              if (data.authentication.schemes[a]["scheme"] === "basic") {
+                authn = data.authentication.schemes[a];
+                $scope.multiAuthWithBasic = true;
+                break;
+              }
+            }
+          }
 
-          if ("realm" in data.authentication) {
-            $scope.realmName = data.authentication["realm"];
+          //console.log(">> authn: "+JSON.stringify(authn));
+
+          $scope.blockUnknown = authn["blockUnknown"] === true ? "true" : "false";
+          $scope.forwardCredentials = authn["forwardCredentials"] === true ? "true" : "false";
+
+          if ("realm" in authn) {
+            $scope.realmName = authn["realm"];
           }
 
           var users = [];
-          if (data.authentication.credentials) {
-            for (var u in data.authentication.credentials) {
+          if (authn.credentials) {
+            for (var u in authn.credentials) {
               var roles = $scope.userRoles[u];
               if (!roles) roles = [];
               users.push({"username":u, "roles":roles});
             }
           }
+
           $scope.users = users.sort((a, b) => (a.username > b.username) ? 1 : -1);
           $scope.filteredUsers = $scope.users.slice(0,100); // only display first 100
         }, $scope.errorHandler);
@@ -334,7 +428,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     }
     var userRoles = Array.from(new Set(roles));
     setUserRoles[$scope.upsertUser.username] = userRoles.length > 0 ? userRoles : null;
-    Security.post({path: "authorization"}, { "set-user-role": setUserRoles }, function (data) {
+    var cmdJson = $scope.wrapSchemeCmd("set-user-role", setUserRoles);
+    Security.post({path: "authorization"}, cmdJson, function (data) {
       $scope.toggleUserDialog();
       $scope.refreshSecurityPanel();
     });
@@ -401,16 +496,19 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     if (doSetUser) {
       var setUserJson = {};
       setUserJson[username] = $scope.upsertUser.password.trim();
-      Security.post({path: "authentication"}, { "set-user": setUserJson }, function (data) {
-
+      var cmdJson = $scope.wrapSchemeCmd("set-user", setUserJson);
+      Security.post({path: "authentication"}, cmdJson, function (data) {
         var errorCause = checkError(data);
         if (errorCause != null) {
           $scope.securityAPIError = "create user "+username+" failed due to: "+errorCause;
           $scope.securityAPIErrorDetails = JSON.stringify(data);
           return;
         }
-
-        $scope.updateUserRoles();
+        // TODO: shouldn't need this extra GET, but sometimes the config back from the server doesn't have our new user
+        // and doing this seems to avoid what looks like a race?
+        Security.get({path: "authentication"}, function (data2) {
+          $scope.updateUserRoles();
+        });
       });
     } else {
       $scope.updateUserRoles();
@@ -422,8 +520,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       // remove all roles for the user and the delete the user
       var removeRoles = {};
       removeRoles[$scope.upsertUser.username] = null;
-      Security.post({path: "authorization"}, { "set-user-role": removeRoles }, function (data) {
-        Security.post({path: "authentication"}, {"delete-user": [$scope.upsertUser.username]}, function (data2) {
+      var cmdJson = $scope.wrapSchemeCmd("set-user-role", removeRoles);
+      Security.post({path: "authorization"}, cmdJson, function (data) {
+        var deleteUserCmd = $scope.wrapSchemeCmd("delete-user", [$scope.upsertUser.username]);
+        Security.post({path: "authentication"}, deleteUserCmd, function (data2) {
           $scope.toggleUserDialog();
           $scope.refreshSecurityPanel();
         });
@@ -659,7 +759,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
             return;
           }
           $scope.togglePermDialog();
-          $scope.refreshSecurityPanel();
+          // avoids a weird race with not getting the latest config after an update
+          Security.get({path: "authorization"}, function (ignore) {
+            $scope.refreshSecurityPanel();
+          });
         });
       });
     } else {
@@ -675,7 +778,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         }
 
         $scope.togglePermDialog();
-        $scope.refreshSecurityPanel();
+        // avoids a weird race with not getting the latest config after an update
+        Security.get({path: "authorization"}, function (ignore) {
+          $scope.refreshSecurityPanel();
+        });
       });
     }
   };
@@ -1014,7 +1120,13 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
 
     // go get the latest role mappings ...
     Security.get({path: "authorization"}, function (data) {
-      var userRoles = data.authorization["user-role"];
+      var authz = $scope.findEditableAuthz(data);
+      if (!authz) {
+        $scope.validationError = "User roles not editable via the UI!";
+        return;
+      }
+
+      var userRoles = authz["user-role"];
       var setUserRoles = {};
       for (u in usersForRole) {
         var user = usersForRole[u];
@@ -1026,7 +1138,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
         setUserRoles[user] = currentRoles;
       }
 
-      Security.post({path: "authorization"}, { "set-user-role": setUserRoles }, function (data2) {
+      var cmdJson = $scope.wrapSchemeCmd("set-user-role", setUserRoles);
+      Security.post({path: "authorization"}, cmdJson, function (data2) {
 
         var errorCause = checkError(data2);
         if (errorCause != null) {
@@ -1097,13 +1210,15 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.onBlockUnknownChange = function() {
-    Security.post({path: "authentication"}, { "set-property": { "blockUnknown": $scope.blockUnknown === "true" } }, function (data) {
+    var cmdJson = $scope.wrapSchemeCmd("set-property", { "blockUnknown": $scope.blockUnknown === "true" });
+    Security.post({path: "authentication"}, cmdJson, function (data) {
       $scope.refreshSecurityPanel();
     });
   };
 
   $scope.onForwardCredsChange = function() {
-    Security.post({path: "authentication"}, { "set-property": { "forwardCredentials": $scope.forwardCredentials === "true" } }, function (data) {
+    var cmdJson = $scope.wrapSchemeCmd("set-property", { "forwardCredentials": $scope.forwardCredentials === "true" });
+    Security.post({path: "authentication"}, cmdJson, function (data) {
       $scope.refreshSecurityPanel();
     });
   };

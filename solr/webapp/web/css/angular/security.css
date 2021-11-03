@@ -108,6 +108,13 @@ limitations under the License.
   max-width: 450px;
 }
 
+#securityPanel .table-warn {
+  padding: 3px;
+  text-align: left;
+  word-wrap: break-word;
+  max-width: 90%;
+}
+
 #securityPanel tr.odd
 {
   background-color: #f8f8f8;
@@ -510,6 +517,21 @@ limitations under the License.
   position: absolute;
   left: 210px;
   top: 100px;
+  padding: 6px;
+  width: 380px;
+}
+
+#securityPanel #multiAuthBasicHelp
+{
+  z-index: 200;
+  background-color: #FCF0AD;
+  border: 1px solid #f0f0f0;
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+  position: absolute;
+  left: 210px;
+  top: 70px;
   padding: 6px;
   width: 380px;
 }
