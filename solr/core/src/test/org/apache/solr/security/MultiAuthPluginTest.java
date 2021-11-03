@@ -21,6 +21,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -30,7 +31,9 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -56,7 +59,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
   private static final String authcPrefix = "/admin/authentication";
   private static final String authzPrefix = "/admin/authorization";
-  
+
   final Predicate<Object> NULL_PREDICATE = Objects::isNull;
   SecurityConfHandlerLocalForTesting securityConfHandler;
   JettySolrRunner jetty;
@@ -104,8 +107,19 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.MultiAuthPlugin", 5, user, pass);
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/class", "solr.MultiAuthRuleBasedAuthorizationPlugin", 5, user, pass);
 
-      // For the multi-auth plugin, every command is wrapped with an object that identifies the "scheme"
+      // anonymous requests are blocked by all plugins
+      int statusCode = doHttpGetAnonymous(cl, baseUrl + "/admin/info/system");
+      assertEquals("anonymous get succeeded but should not have", 401, statusCode);
+      // update blockUnknown to allow anonymous for the basic plugin
       String command = "{\n" +
+          "'set-property': { 'basic': {'blockUnknown':false} }\n" +
+          "}";
+      doHttpPost(cl, baseUrl + authcPrefix, command, user, pass, 200);
+      statusCode = doHttpGetAnonymous(cl, baseUrl + "/admin/info/system");
+      assertEquals("anonymous get failed but should have succeeded", 200, statusCode);
+
+      // For the multi-auth plugin, every command is wrapped with an object that identifies the "scheme"
+      command = "{\n" +
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
       // no scheme identified!
@@ -141,25 +155,25 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/schemes[0]/user-role/harry", NOT_NULL_PREDICATE, 5, user, pass);
 
       // give the users role a custom permission
-      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[5]", NULL_PREDICATE, 5, user, pass);
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[6]", NULL_PREDICATE, 5, user, pass);
       command = "{\n" +
           "'set-permission': { 'name':'k8s-zk', 'role':'users', 'collection':null, 'path':'/admin/zookeeper/status' }\n" +
           "}";
       doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 200);
-      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[5]/path", new ExpectedValuePredicate("/admin/zookeeper/status"), 5, user, pass);
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[6]/path", new ExpectedValuePredicate("/admin/zookeeper/status"), 5, user, pass);
 
       command = "{\n" +
-          "'update-permission': { 'index':'6', 'name':'k8s-zk', 'role':'users', 'collection':null, 'path':'/admin/zookeeper/status2' }\n" +
+          "'update-permission': { 'index':'7', 'name':'k8s-zk', 'role':'users', 'collection':null, 'path':'/admin/zookeeper/status2' }\n" +
           "}";
       doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 200);
-      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[5]/path", new ExpectedValuePredicate("/admin/zookeeper/status2"), 5, user, pass);
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[6]/path", new ExpectedValuePredicate("/admin/zookeeper/status2"), 5, user, pass);
 
       // delete the permission
       command = "{\n" +
-          "'delete-permission': 6\n" +
+          "'delete-permission': 7\n" +
           "}";
       doHttpPost(cl, baseUrl + authzPrefix, command, user, pass, 200);
-      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[5]", NULL_PREDICATE, 5, user, pass);
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[6]", NULL_PREDICATE, 5, user, pass);
 
       // delete the user
       command = "{\n" +
@@ -186,6 +200,14 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     }
   }
 
+  private int doHttpGetAnonymous(HttpClient cl, String url) throws IOException {
+    HttpGet httpPost = new HttpGet(url);
+    HttpResponse r = cl.execute(httpPost);
+    int statusCode = r.getStatusLine().getStatusCode();
+    Utils.consumeFully(r.getEntity());
+    return statusCode;
+  }
+
   private static final class MockPrincipal implements Principal, Serializable {
     @Override
     public String getName() {
@@ -203,7 +225,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     @Override
     public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
       Principal principal = new MockPrincipal();
-      request = wrapWithPrincipal((HttpServletRequest)request, principal, "mock");
+      request = wrapWithPrincipal((HttpServletRequest) request, principal, "mock");
       filterChain.doFilter(request, response);
       return true;
     }
