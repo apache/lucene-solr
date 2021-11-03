@@ -18,6 +18,8 @@ New Features
 
 * SOLR-12666: Add authn & authz plugins that supports multiple authentication schemes, such as Bearer and Basic (Timothy Potter, janhoy)
 
+* SOLR-15721: Support editing Basic auth config from the security UI when using the MultiAuthPlugin (Timothy Potter)
+
 Improvements
 ---------------------
 
