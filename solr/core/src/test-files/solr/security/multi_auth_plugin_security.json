@@ -3,7 +3,7 @@
     "class": "solr.MultiAuthPlugin",
     "schemes": [{
       "scheme": "basic",
-      "blockUnknown": false,
+      "blockUnknown": true,
       "class": "solr.BasicAuthPlugin",
       "credentials": {
         "admin": "orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw="
@@ -32,6 +32,12 @@
       }
     ],
     "permissions": [
+      {
+        "name": "k8s-probe-0",
+        "role": null,
+        "collection": null,
+        "path": "/admin/info/system"
+      },
       {
         "name": "read",
         "role": [
