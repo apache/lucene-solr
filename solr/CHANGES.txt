@@ -56,6 +56,8 @@ Other Changes
 
 * SOLR-15697: Add ErrorLogMuter to test-framework, deprecating SolrException.ignorePatterns (hossman)
 
+* SOLR-15761: Remove JdbcStream from Lang (Joel Bernstein)
+
 ======================= 8.10.1 =======================
 
 Other Changes
