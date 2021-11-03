@@ -37,6 +37,7 @@ def invalidPatterns = [
   (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
   (~$/\bTOOD:/$) : 'TOOD instead TODO',
   (~$/\t/$) : 'tabs instead spaces',
+  (~$/[\u202A-\u202E\u2066-\u2069]/$) : 'misuse of RTL/LTR (https://trojansource.codes)',
   (~$/\Q/**\E((?:\s)|(?:\*))*\Q{@inheritDoc}\E((?:\s)|(?:\*))*\Q*/\E/$) : '{@inheritDoc} on its own is unnecessary',
   (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
   (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
