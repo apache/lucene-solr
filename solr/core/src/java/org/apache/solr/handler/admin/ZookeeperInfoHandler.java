@@ -58,6 +58,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -79,7 +81,7 @@ import static org.apache.solr.common.params.CommonParams.WT;
  *
  * @since solr 4.0
  */
-public final class ZookeeperInfoHandler extends RequestHandlerBase {
+public final class ZookeeperInfoHandler extends RequestHandlerBase implements PermissionNameProvider {
   private final CoreContainer cores;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -108,6 +110,18 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
    */
   static enum FilterType {
     none, name, status
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
+    SolrParams params = request.getParams();
+    String path = params.get("path", "");
+    String detail = params.get("detail", "false");
+    if ("/security.json".equalsIgnoreCase(path) && "true".equalsIgnoreCase(detail)) {
+      return PermissionNameProvider.Name.SECURITY_READ_PERM;
+    } else {
+      return PermissionNameProvider.Name.ZK_READ_PERM;
+    }
   }
 
   /**
