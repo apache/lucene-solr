@@ -22,7 +22,9 @@ Solr makes it easy for programmers to develop sophisticated, high-performance se
 
 This section introduces you to the basic Solr architecture and features to help you get up and running quickly. It covers the following topics:
 
-<<solr-tutorial.adoc#,Solr Tutorial>>: This tutorial covers getting Solr up and running
+<<quickstart.adoc#,Quickstart Guide>>: A quickstart guide to get started with Solr
+
+<<solr-tutorial.adoc#,Solr Tutorial>>: A more detailed tutorial than the quickstart guide
 
 <<a-quick-overview.adoc#,A Quick Overview>>: A high-level overview of how Solr works.
 
