@@ -37,6 +37,8 @@ import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+// Some of these tests are too intense for SimpleText
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
 
