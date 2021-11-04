@@ -162,7 +162,10 @@ public final class CryptoKeys {
 
   }
 
-
+  /**
+   * Method copied from blog post https://olabini.se/blog/2006/10/openssl-in-jruby/
+   * where it is released into the Public Domain, also see LICENSE.txt
+   */
   private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
                                         byte[] salt, byte[] data, int count) {
     byte[][] both = new byte[2][];
@@ -241,7 +244,10 @@ public final class CryptoKeys {
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error decoding ", e);
   }
 
-
+  /**
+   * Code copied from a 2019 Stack Overflow post by Maarten Bodewes
+   * https://stackoverflow.com/questions/11783062/how-to-decrypt-file-in-java-encrypted-with-openssl-command-using-aes
+   */
   public static String decodeAES(String base64CipherTxt, String pwd, final int keySizeBits) {
     final Charset ASCII = Charset.forName("ASCII");
     final int INDEX_KEY = 0;
