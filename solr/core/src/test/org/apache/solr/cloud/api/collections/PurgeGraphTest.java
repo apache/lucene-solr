@@ -17,171 +17,178 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
-import com.google.common.collect.ObjectArrays;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.api.collections.DeleteBackupCmd.PurgeGraph;
-import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.BackupFilePaths;
+import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.BackupProperties;
+import org.apache.solr.core.backup.Checksum;
+import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.ShardBackupMetadata;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
+import org.junit.Before;
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.hamcrest.CoreMatchers.hasItems;
+/**
+ * Unit tests for {@link PurgeGraph}
+ */
 public class PurgeGraphTest extends SolrTestCaseJ4 {
-    private static final String[] shardBackupIds = new String[]{"b1_s1", "b1_s2", "b2_s1", "b2_s2", "b3_s1", "b3_s2", "b3_s3"};
+
+    private BackupRepository repository;
+    private URI baseLocationUri;
+    private BackupFilePaths backupPaths;
+
+    @Before
+    public void setUpRepo() throws Exception {
+        repository = new LocalFileSystemRepository();
+        baseLocationUri = repository.createDirectoryURI(createTempDir("backup_files_" + UUID.randomUUID().toString()).toAbsolutePath().toString());
+        backupPaths = new BackupFilePaths(repository, baseLocationUri);
+
+        backupPaths.createIncrementalBackupFolders();
+    }
 
     @Test
-    public void test() throws URISyntaxException, IOException {
-        assumeWorkingMockito();
-        BackupRepository repository = mock(BackupRepository.class);
-        BackupFilePaths paths = mock(BackupFilePaths.class);
-        when(paths.getBackupLocation()).thenReturn(new URI("/temp"));
-        when(paths.getIndexDir()).thenReturn(new URI("/temp/index"));
-        when(paths.getShardBackupMetadataDir()).thenReturn(new URI("/temp/backup_point"));
-
+    public void testGraphBuildingOnNoBackups() throws Exception {
         PurgeGraph purgeGraph = new PurgeGraph();
-        buildCompleteGraph(repository, paths, purgeGraph);
-        purgeGraph.findDeletableNodes(repository, paths);
+        purgeGraph.build(repository, backupPaths.getBackupLocation());
+        purgeGraph.findDeletableNodes(repository, backupPaths);
 
         assertEquals(0, purgeGraph.backupIdDeletes.size());
         assertEquals(0, purgeGraph.shardBackupMetadataDeletes.size());
         assertEquals(0, purgeGraph.indexFileDeletes.size());
-
-        testDeleteUnreferencedFiles(repository, paths, purgeGraph);
-        testMissingBackupPointFiles(repository, paths);
-        testMissingIndexFiles(repository, paths);
     }
 
-    private void testMissingIndexFiles(BackupRepository repository, BackupFilePaths paths) throws IOException {
+    @Test
+    public void testUnreferencedIndexFilesAreDeleted() throws Exception {
+        // Backup 0 files
+        createBackupIdFile(0, "shard1", "shard2");
+        createShardMetadataFile(0, "shard1", "uniqName1", "uniqName2");
+        createShardMetadataFile(0, "shard2", "uniqName3", "uniqName4");
+        // Backup 1 files
+        createBackupIdFile(1, "shard1", "shard2");
+        createShardMetadataFile(1, "shard1", "uniqName5", "uniqName6");
+        createShardMetadataFile(1, "shard2", "uniqName7", "uniqName8");
+        // Valid, referenced index files
+        createUniquelyNamedIndexFile("uniqName1", "uniqName2", "uniqName3", "uniqName4", "uniqName5", "uniqName6", "uniqName7", "uniqName8");
+        // Single orphaned index file
+        createUniquelyNamedIndexFile("someUnreferencedName");
+
         PurgeGraph purgeGraph = new PurgeGraph();
-        buildCompleteGraph(repository, paths, purgeGraph);
-
-        Set<String> indexFiles = purgeGraph.indexFileNodeMap.keySet();
-        when(repository.listAllOrEmpty(same(paths.getIndexDir()))).thenAnswer((Answer<String[]>) invocationOnMock -> {
-            Set<String> newFiles = new HashSet<>(indexFiles);
-            newFiles.remove("s1_102");
-            return newFiles.toArray(new String[0]);
-        });
-        purgeGraph.findDeletableNodes(repository, paths);
-
-        assertEquals(3, purgeGraph.backupIdDeletes.size());
-        assertEquals(shardBackupIds.length, purgeGraph.shardBackupMetadataDeletes.size());
-        assertEquals(purgeGraph.indexFileNodeMap.size(), purgeGraph.indexFileDeletes.size() + 1);
-
-        purgeGraph = new PurgeGraph();
-        buildCompleteGraph(repository, paths, purgeGraph);
-
-        Set<String> indexFiles2 = purgeGraph.indexFileNodeMap.keySet();
-        when(repository.listAllOrEmpty(same(paths.getIndexDir()))).thenAnswer((Answer<String[]>) invocationOnMock -> {
-            Set<String> newFiles = new HashSet<>(indexFiles2);
-            newFiles.remove("s1_101");
-            return newFiles.toArray(new String[0]);
-        });
-        purgeGraph.findDeletableNodes(repository, paths);
-
-        assertEquals(2, purgeGraph.backupIdDeletes.size());
-        assertEquals(4, purgeGraph.shardBackupMetadataDeletes.size());
-        assertTrue(purgeGraph.indexFileDeletes.contains("s1_100"));
-        assertFalse(purgeGraph.indexFileDeletes.contains("s1_101"));
-    }
-
-    private void testMissingBackupPointFiles(BackupRepository repository, BackupFilePaths paths) throws IOException {
-        PurgeGraph purgeGraph = new PurgeGraph();
-        buildCompleteGraph(repository, paths, purgeGraph);
-        when(repository.listAllOrEmpty(same(paths.getShardBackupMetadataDir()))).thenAnswer((Answer<String[]>)
-                invocationOnMock -> Arrays.copyOfRange(shardBackupIds, 1, shardBackupIds.length)
-        );
-        purgeGraph.findDeletableNodes(repository, paths);
-
-        assertEquals(1, purgeGraph.backupIdDeletes.size());
-        assertEquals("b1", purgeGraph.backupIdDeletes.get(0));
-        assertEquals(1, purgeGraph.shardBackupMetadataDeletes.size());
-        assertEquals("b1_s2", purgeGraph.shardBackupMetadataDeletes.get(0));
-        assertTrue(purgeGraph.indexFileDeletes.contains("s1_100"));
-        assertFalse(purgeGraph.indexFileDeletes.contains("s1_101"));
-
-        purgeGraph = new PurgeGraph();
-        buildCompleteGraph(repository, paths, purgeGraph);
-        when(repository.listAllOrEmpty(same(paths.getShardBackupMetadataDir()))).thenAnswer((Answer<String[]>)
-                invocationOnMock -> new String[]{"b1_s1", "b2_s1", "b3_s1", "b3_s2", "b3_s3"}
-        );
-        purgeGraph.findDeletableNodes(repository, paths);
-
-        assertEquals(2, purgeGraph.backupIdDeletes.size());
-        assertTrue(purgeGraph.backupIdDeletes.containsAll(Arrays.asList("b1", "b2")));
-        assertEquals(2, purgeGraph.shardBackupMetadataDeletes.size());
-        assertTrue(purgeGraph.shardBackupMetadataDeletes.containsAll(Arrays.asList("b2_s1", "b1_s1")));
-        assertTrue(purgeGraph.indexFileDeletes.containsAll(Arrays.asList("s1_100", "s1_101")));
-        assertFalse(purgeGraph.indexFileDeletes.contains("s1_102"));
-    }
-
-    private void testDeleteUnreferencedFiles(BackupRepository repository, BackupFilePaths paths,
-                                             PurgeGraph purgeGraph) throws IOException {
-        buildCompleteGraph(repository, paths, purgeGraph);
-        String[] unRefBackupPoints = addUnRefFiles(repository, "b4_s", paths.getShardBackupMetadataDir());
-        String[] unRefIndexFiles = addUnRefFiles(repository, "s4_", paths.getIndexDir());
-
-        purgeGraph.findDeletableNodes(repository, paths);
+        purgeGraph.build(repository, backupPaths.getBackupLocation());
 
         assertEquals(0, purgeGraph.backupIdDeletes.size());
-        assertEquals(unRefBackupPoints.length, purgeGraph.shardBackupMetadataDeletes.size());
-        assertTrue(purgeGraph.shardBackupMetadataDeletes.containsAll(Arrays.asList(unRefBackupPoints)));
-        assertEquals(unRefIndexFiles.length, purgeGraph.indexFileDeletes.size());
-        assertTrue(purgeGraph.indexFileDeletes.containsAll(Arrays.asList(unRefIndexFiles)));
+        assertEquals(0, purgeGraph.shardBackupMetadataDeletes.size());
+        assertEquals(1, purgeGraph.indexFileDeletes.size());
+        assertEquals("someUnreferencedName", purgeGraph.indexFileDeletes.get(0));
     }
 
-    private String[] addUnRefFiles(BackupRepository repository, String prefix, URI dir) {
-        String[] unRefBackupPoints = new String[random().nextInt(10) + 1];
-        for (int i = 0; i < unRefBackupPoints.length; i++) {
-            unRefBackupPoints[i] = prefix + (100 + i);
+    // TODO - this seems a bit extreme - should this really occur by default?
+    @Test
+    public void testEntireBackupPointFlaggedForDeletionIfAnyIndexFilesMissing() throws Exception {
+        // Backup 0 files
+        createBackupIdFile(0, "shard1", "shard2");
+        createShardMetadataFile(0, "shard1", "uniqName1", "uniqName2");
+        createShardMetadataFile(0, "shard2", "uniqName3", "uniqName4");
+        // Valid, referenced index files - 'uniqName3' is missing!
+        createUniquelyNamedIndexFile("uniqName1", "uniqName2", "uniqName4");
+
+        PurgeGraph purgeGraph = new PurgeGraph();
+        purgeGraph.build(repository, backupPaths.getBackupLocation());
+
+        // All files associated with backup '0' should be flagged for deletion since the required file 'uniqName3' is missing.
+        assertEquals(1, purgeGraph.backupIdDeletes.size());
+        assertThat(purgeGraph.backupIdDeletes, hasItems("backup_0.properties"));
+        assertEquals(2, purgeGraph.shardBackupMetadataDeletes.size());
+        assertThat(purgeGraph.shardBackupMetadataDeletes, hasItems("md_shard1_0.json", "md_shard2_0.json"));
+        assertEquals(3, purgeGraph.indexFileDeletes.size());
+        assertThat(purgeGraph.indexFileDeletes, hasItems("uniqName1", "uniqName2", "uniqName4"));
+
+        // If a subsequent backup relies on an index file (uniqName4) that was previously only used by the invalid backup '0', that file will not be flagged for deletion.
+//        createBackupIdFile(1, "shard1", "shard2");
+//        createShardMetadataFile(1, "shard1", "uniqName5", "uniqName6");
+//        createShardMetadataFile(1, "shard2", "uniqName4");
+//        createUniquelyNamedIndexFile("uniqName5", "uniqName6");
+//
+//        assertEquals(1, purgeGraph.backupIdDeletes.size());
+//        assertThat(purgeGraph.backupIdDeletes, hasItems("backup_0.properties"));
+//        assertEquals(2, purgeGraph.shardBackupMetadataDeletes.size());
+//        assertThat(purgeGraph.shardBackupMetadataDeletes, hasItems("md_shard1_0.json", "md_shard2_0.json"));
+//        // NOTE that 'uniqName4' is NOT marked for deletion
+//        assertEquals(2, purgeGraph.indexFileDeletes.size());
+//        assertThat(purgeGraph.indexFileDeletes, hasItems("uniqName1", "uniqName2"));
+    }
+
+    @Test
+    public void testUnreferencedShardMetadataFilesAreDeleted() throws Exception {
+        // Backup 0 files
+        createBackupIdFile(0, "shard1", "shard2");
+        createShardMetadataFile(0, "shard1", "uniqName1", "uniqName2");
+        createShardMetadataFile(0, "shard2", "uniqName3", "uniqName4");
+        // Extra shard unreferenced by backup_0.properties
+        createShardMetadataFile(0, "shard3", "uniqName5", "uniqName6");
+        createUniquelyNamedIndexFile("uniqName1", "uniqName2", "uniqName3", "uniqName4", "uniqName5", "uniqName6");
+
+        PurgeGraph purgeGraph = new PurgeGraph();
+        purgeGraph.build(repository, backupPaths.getBackupLocation());
+
+        assertEquals(0, purgeGraph.backupIdDeletes.size());
+        assertEquals(1, purgeGraph.shardBackupMetadataDeletes.size());
+        assertThat(purgeGraph.shardBackupMetadataDeletes, hasItems("md_shard3_0.json"));
+        assertEquals(2, purgeGraph.indexFileDeletes.size());
+        assertThat(purgeGraph.indexFileDeletes, hasItems("uniqName5", "uniqName6"));
+
+        // If a subsequent backup relies on an index file (uniqName5) that was previously only used by the orphaned 'shard3' metadata file, that file should no longer be flagged for deletion
+//        createBackupIdFile(1, "shard1", "shard2");
+//        createShardMetadataFile(1, "shard1", "uniqName7");
+//        createShardMetadataFile(1, "shard2", "uniqName5", "uniqName8");
+//
+//        purgeGraph = new PurgeGraph();
+//        purgeGraph.build(repository, backupPaths.getBackupLocation());
+//
+//        assertEquals(0, purgeGraph.backupIdDeletes.size());
+//        assertEquals(1, purgeGraph.shardBackupMetadataDeletes.size());
+//        assertThat(purgeGraph.shardBackupMetadataDeletes, hasItems("md_shard3_0.json"));
+//        assertEquals(1, purgeGraph.indexFileDeletes.size());
+//        assertThat(purgeGraph.indexFileDeletes, hasItems("uniqName6"));
+    }
+
+    private void createBackupIdFile(int backupId, String... shardNames) throws Exception {
+        final BackupProperties createdProps = BackupProperties.create("someBackupName", "someCollectionName",
+                "someExtCollectionName", "someConfigName");
+        for (String shardName : shardNames) {
+            createdProps.putAndGetShardBackupIdFor(shardName, backupId);
         }
-        String[] shardBackupMetadataFiles = repository.listAllOrEmpty(dir);
-        when(repository.listAllOrEmpty(same(dir)))
-                .thenAnswer((Answer<String[]>) invocation
-                        -> ObjectArrays.concat(shardBackupMetadataFiles, unRefBackupPoints, String.class));
-        return unRefBackupPoints;
+
+        URI dest = repository.resolve(backupPaths.getBackupLocation(), BackupFilePaths.getBackupPropsName(new BackupId(backupId)));
+        try (Writer propsWriter = new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
+            createdProps.store(propsWriter);
+        }
     }
 
-    private void buildCompleteGraph(BackupRepository repository, BackupFilePaths paths,
-                                    PurgeGraph purgeGraph) throws IOException {
-        when(repository.listAllOrEmpty(same(paths.getShardBackupMetadataDir()))).thenAnswer((Answer<String[]>) invocationOnMock -> shardBackupIds);
-        //logical
+    private void createShardMetadataFile(int backupId, String shardName, String... uniqueIndexFileNames) throws Exception {
+        final ShardBackupMetadata createdShardMetadata = ShardBackupMetadata.empty();
+        for (String uniqueIndexFileName : uniqueIndexFileNames) {
+            createdShardMetadata.addBackedFile(uniqueIndexFileName, uniqueIndexFileName + "_local", new Checksum(1L, 1));
+        }
+        createdShardMetadata.store(repository, backupPaths.getShardBackupMetadataDir(), new ShardBackupId(shardName, new BackupId(backupId)));
+    }
 
-        for (String shardBackupId : shardBackupIds) {
-            purgeGraph.addEdge(purgeGraph.getShardBackupIdNode(shardBackupId),
-                    purgeGraph.getBackupIdNode(shardBackupId.substring(0, 2)));
-            for (int i = 0; i < random().nextInt(30); i++) {
-                String fileName = shardBackupId.substring(3) + "_" + random().nextInt(15);
-                purgeGraph.addEdge(purgeGraph.getShardBackupIdNode(shardBackupId),
-                        purgeGraph.getIndexFileNode(fileName));
+    private void createUniquelyNamedIndexFile(String... uniqNames) throws Exception {
+        for (String uniqName : uniqNames) {
+            final String randomContent = "some value";
+            final URI indexFileUri = repository.resolve(backupPaths.getIndexDir(), uniqName);
+            try (OutputStream os = repository.createOutput(indexFileUri)) {
+                os.write(randomContent.getBytes(StandardCharsets.UTF_8));
             }
         }
-
-        purgeGraph.addEdge(purgeGraph.getShardBackupIdNode("b1_s1"),
-                purgeGraph.getIndexFileNode("s1_100"));
-
-        purgeGraph.addEdge(purgeGraph.getShardBackupIdNode("b1_s1"),
-                purgeGraph.getIndexFileNode("s1_101"));
-        purgeGraph.addEdge(purgeGraph.getShardBackupIdNode("b2_s1"),
-                purgeGraph.getIndexFileNode("s1_101"));
-
-        purgeGraph.addEdge(purgeGraph.getShardBackupIdNode("b1_s1"),
-                purgeGraph.getIndexFileNode("s1_102"));
-        purgeGraph.addEdge(purgeGraph.getShardBackupIdNode("b2_s1"),
-                purgeGraph.getIndexFileNode("s1_102"));
-        purgeGraph.addEdge(purgeGraph.getShardBackupIdNode("b3_s1"),
-                purgeGraph.getIndexFileNode("s1_102"));
-
-        when(repository.listAllOrEmpty(same(paths.getIndexDir()))).thenAnswer((Answer<String[]>) invocationOnMock ->
-                purgeGraph.indexFileNodeMap.keySet().toArray(new String[0]));
     }
 }

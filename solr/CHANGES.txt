@@ -48,6 +48,8 @@ Bug Fixes
 
 * SOLR-15766: MultiAuthPlugin should send non-AJAX anonymous requests to the plugin that allows anonymous requests (Timothy Potter, Eric Pugh)
 
+* SOLR-15706: Incremental backup 'purges' no longer delete all index files(!) (Jason Gerlowski)
+
 Build
 ---------------------
 
