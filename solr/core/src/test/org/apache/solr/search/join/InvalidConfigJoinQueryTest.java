@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -44,19 +46,11 @@ public class InvalidConfigJoinQueryTest extends SolrTestCaseJ4 {
     List<SolrInputDocument> persons = createPersons(3000);
     associate(locations, persons);
 
-    for (SolrInputDocument org : organisations) {
-      assertU(adoc(org));
-    }
-
-    for (SolrInputDocument loc : locations) {
-      assertU(adoc(loc));
-    }
-
-    for (SolrInputDocument per : persons) {
-      assertU(adoc(per));
-    }
-
-    assertU(commit());
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    client.add(organisations);
+    client.add(locations);
+    client.add(persons);
+    client.commit();
 
     assertJQ(
         req("q", "{!join from=id to=locid_s v=$q1}", "q1", "type_s:loc AND id:{!join from=id to=perid_s v=$q2}", "q2",
