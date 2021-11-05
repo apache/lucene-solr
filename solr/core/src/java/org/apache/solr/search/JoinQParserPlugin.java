@@ -587,17 +587,27 @@ class JoinQuery extends Query {
             // if we don't have a bitset yet, or if the resulting set will be too large
             // use the filterCache to get a DocSet
             if (toTermsEnum.docFreq() >= minDocFreqTo || resultBits == null) {
-              // use filter cache
-              DocSet toTermSet = toSearcher.getDocSet(toDeState);
-              resultListDocs += toTermSet.size();
-              if (resultBits != null) {
-                toTermSet.addAllTo(new BitDocSet(resultBits));
-              } else {
-                if (toTermSet instanceof BitDocSet) {
-                  resultBits = ((BitDocSet)toTermSet).bits.clone();
+              try {
+                // use filter cache
+                DocSet toTermSet = toSearcher.getDocSet(toDeState);
+                resultListDocs += toTermSet.size();
+                if (resultBits != null) {
+                  toTermSet.addAllTo(new BitDocSet(resultBits));
                 } else {
-                  resultList.add(toTermSet);
+                  if (toTermSet instanceof BitDocSet) {
+                    resultBits = ((BitDocSet) toTermSet).bits.clone();
+                  } else {
+                    resultList.add(toTermSet);
+                  }
                 }
+              } catch (IllegalStateException e) {
+                CacheConfig cfg = toSearcher.getCore().getSolrConfig().filterCacheConfig;
+                if (cfg != null && "false".equals(cfg.toMap(null).get("async"))) {
+                  throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+                      "Using join queries with synchronous filterCache is not supported! Details can be found in Solr Reference Guide under 'query-settings-in-solrconfig'.",
+                      e);
+                }
+                throw e;
               }
             } else {
               toTermDirectCount++;
