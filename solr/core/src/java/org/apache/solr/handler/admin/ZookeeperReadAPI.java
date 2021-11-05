@@ -148,6 +148,19 @@ public class ZookeeperReadAPI {
   }
 
   /**
+   * Reads content of a znode and adds it to the response
+   */
+  private void readNodeAndAddToResponse(String zkPath, SolrQueryRequest req, SolrQueryResponse rsp) {
+    byte[] d = readPathFromZookeeper(zkPath);
+    if (d == null || d.length == 0) {
+      rsp.add(zkPath, null);
+      return;
+    }
+    req.setParams(SolrParams.wrapDefaults(rawWtParams, req.getParams()));
+    rsp.add(CONTENT, new ContentStreamBase.ByteArrayStream(d, null, guessMime(d[0])));
+  }
+
+  /**
    * Reads a single node from zookeeper and return as byte array
    */
   private byte[] readPathFromZookeeper(String path) {
@@ -160,19 +173,6 @@ public class ZookeeperReadAPI {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unexpected error", e);
     }
     return d;
-  }
-
-  /**
-   * Reads content of a znode and adds it to the response
-   */
-  private void readNodeAndAddToResponse(String zkPath, SolrQueryRequest req, SolrQueryResponse rsp) {
-    byte[] d = readPathFromZookeeper(zkPath);
-    if (d == null || d.length == 0) {
-      rsp.add(zkPath, null);
-      return;
-    }
-    req.setParams(SolrParams.wrapDefaults(rawWtParams, req.getParams()));
-    rsp.add(CONTENT, new ContentStreamBase.ByteArrayStream(d, null, guessMime(d[0])));
   }
 
   private void printStat(MapWriter.EntryWriter ew, Stat stat) throws IOException {
