@@ -174,4 +174,12 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
    * only on implementations that support it, it's a no-op otherwise.
    */
   void setMaxRamMB(int maxRamMB);
+
+  /**
+   * Check if this SolrCache supports async queries - relevant when attempting to cache nested or recursive results.
+   * @return whether this cache is asynchronous
+   */
+  default boolean isAsync() {
+    return false;
+  }
 }

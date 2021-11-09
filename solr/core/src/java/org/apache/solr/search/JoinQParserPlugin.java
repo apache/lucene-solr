@@ -588,6 +588,10 @@ class JoinQuery extends Query {
             // use the filterCache to get a DocSet
             if (toTermsEnum.docFreq() >= minDocFreqTo || resultBits == null) {
               // use filter cache
+              if (! toSearcher.getFilterCache().isAsync()) {
+                throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+                    "Using join queries with synchronous filterCache is not supported! Details can be found in Solr Reference Guide under 'query-settings-in-solrconfig'.");
+              }
               DocSet toTermSet = toSearcher.getDocSet(toDeState);
               resultListDocs += toTermSet.size();
               if (resultBits != null) {

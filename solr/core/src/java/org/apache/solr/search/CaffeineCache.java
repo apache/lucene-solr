@@ -409,6 +409,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         limit, initialSize, isAutowarmingOn() ? (", " + getAutowarmDescription()) : "");
   }
 
+  @Override
+  public boolean isAsync() {
+    return async;
+  }
+
   //////////////////////// SolrInfoBean methods //////////////////////
 
   @Override
