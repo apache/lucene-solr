@@ -43,7 +43,8 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-//    initCore("solrconfig.xml","schema12.xml"); 
+    System.setProperty("solr.filterCache.async", "true");
+//    initCore("solrconfig.xml","schema12.xml");
 
     // File testHome = createTempDir().toFile();
     // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);

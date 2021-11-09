@@ -61,6 +61,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.max.booleanClauses", "42"); // lower for testing
+    System.setProperty("solr.filterCache.async", "true"); // for testLocalParamsInQP
     initCore("solrconfig.xml", "schema12.xml");
     createIndex();
   }
