@@ -410,7 +410,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public boolean isAsync() {
+  public boolean isRecursionSupported() {
     return async;
   }
 
