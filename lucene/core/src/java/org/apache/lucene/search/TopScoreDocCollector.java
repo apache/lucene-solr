@@ -58,15 +58,16 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       // reset the minimum competitive score
+      minCompetitiveScore = 0f;
       docBase = context.docBase;
-      return new ScorerLeafCollector() {
 
+      return new ScorerLeafCollector() {
         @Override
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
-          minCompetitiveScore = 0f;
-          updateMinCompetitiveScore(scorer);
-          if (minScoreAcc != null) {
+          if (minScoreAcc == null) {
+            updateMinCompetitiveScore(scorer);
+          } else {
             updateGlobalMinCompetitiveScore(scorer);
           }
         }
@@ -133,10 +134,22 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      // reset the minimum competitive score
+      minCompetitiveScore = 0f;
       docBase = context.docBase;
       final int afterDoc = after.doc - context.docBase;
 
       return new ScorerLeafCollector() {
+        @Override
+        public void setScorer(Scorable scorer) throws IOException {
+          super.setScorer(scorer);
+          if (minScoreAcc == null) {
+            updateMinCompetitiveScore(scorer);
+          } else {
+            updateGlobalMinCompetitiveScore(scorer);
+          }
+        }
+
         @Override
         public void collect(int doc) throws IOException {
           float score = scorer.score();
@@ -307,7 +320,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       // since we tie-break on doc id and collect in doc id order we can require
       // the next float if the global minimum score is set on a document id that is
       // smaller than the ids in the current leaf
-      float score = docBase > maxMinScore.docID ? Math.nextUp(maxMinScore.score) : maxMinScore.score;
+      float score = docBase >= maxMinScore.docBase ? Math.nextUp(maxMinScore.score) : maxMinScore.score;
       if (score > minCompetitiveScore) {
         assert hitsThresholdChecker.isThresholdReached();
         scorer.setMinCompetitiveScore(score);
@@ -332,7 +345,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           // we don't use the next float but we register the document
           // id so that other leaves can require it if they are after
           // the current maximum
-          minScoreAcc.accumulate(pqTop.doc, pqTop.score);
+          minScoreAcc.accumulate(docBase, pqTop.score);
         }
       }
     }

@@ -19,10 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -43,7 +39,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NamedThreadFactory;
 
 public class TestTopDocsCollector extends LuceneTestCase {
 
@@ -113,26 +108,17 @@ public class TestTopDocsCollector extends LuceneTestCase {
   }
 
   private TopDocsCollector<ScoreDoc> doSearchWithThreshold(int numResults, int thresHold, Query q, IndexReader indexReader) throws IOException {
-    IndexSearcher searcher = new IndexSearcher(indexReader);
+    IndexSearcher searcher = newSearcher(indexReader, true, true, false);
     TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(numResults, thresHold);
     searcher.search(q, tdc);
     return tdc;
   }
 
   private TopDocs doConcurrentSearchWithThreshold(int numResults, int threshold, Query q, IndexReader indexReader) throws IOException {
-    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
-        new NamedThreadFactory("TestTopDocsCollector"));
-    try {
-      IndexSearcher searcher = new IndexSearcher(indexReader, service);
-
-      CollectorManager<TopScoreDocCollector,TopDocs> collectorManager = TopScoreDocCollector.createSharedManager(numResults,
-          null, threshold);
-
-      return searcher.search(q, collectorManager);
-    } finally {
-      service.shutdown();
-    }
+    IndexSearcher searcher = newSearcher(indexReader, true, true, true);
+    CollectorManager<TopScoreDocCollector,TopDocs> collectorManager = TopScoreDocCollector.createSharedManager(numResults,
+            null, threshold);
+    return searcher.search(q, collectorManager);
   }
   
   @Override
@@ -236,8 +222,9 @@ public class TestTopDocsCollector extends LuceneTestCase {
     Float minCompetitiveScore = null;
 
     @Override
-    public void setMinCompetitiveScore(float minCompetitiveScore) {
-      this.minCompetitiveScore = minCompetitiveScore;
+    public void setMinCompetitiveScore(float score) {
+      assert minCompetitiveScore == null || score >= minCompetitiveScore;
+      this.minCompetitiveScore = score;
     }
 
     @Override
@@ -288,9 +275,9 @@ public class TestTopDocsCollector extends LuceneTestCase {
     scorer.doc = 3;
     scorer.score = 0.5f;
     // Make sure we do not call setMinCompetitiveScore for non-competitive hits
-    scorer.minCompetitiveScore = Float.NaN;
+    scorer.minCompetitiveScore = null;
     leafCollector.collect(3);
-    assertTrue(Float.isNaN(scorer.minCompetitiveScore));
+    assertNull(scorer.minCompetitiveScore);
 
     scorer.doc = 4;
     scorer.score = 4;
@@ -535,6 +522,10 @@ public class TestTopDocsCollector extends LuceneTestCase {
     TopDocs topDocs = manager.reduce(Arrays.asList(collector, collector2, collector3));
     assertEquals(11, topDocs.totalHits.value);
     assertEquals(new TotalHits(11, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
+
+    leafCollector.setScorer(scorer);
+    leafCollector2.setScorer(scorer2);
+    leafCollector3.setScorer(scorer3);
 
     reader.close();
     dir.close();

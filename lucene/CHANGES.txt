@@ -48,6 +48,8 @@ Bug Fixes
 
 * LUCENE-10154: NumericLeafComparator to define getPointValues. (Mayya Sharipova, Adrien Grand)
 
+* LUCENE-10208: Ensure that the minimum competitive score does not decrease in concurrent search. (Jim Ferenczi, Adrien Grand)
+
 Build
 ---------------------
 
