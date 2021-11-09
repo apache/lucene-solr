@@ -38,7 +38,6 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
