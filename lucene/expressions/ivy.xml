@@ -25,6 +25,9 @@
     <dependency org="org.antlr" name="antlr4-runtime" rev="${/org.antlr/antlr4-runtime}" conf="compile"/>
     <dependency org="org.ow2.asm" name="asm" rev="${/org.ow2.asm/asm}" conf="compile"/>
     <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile"/>
+    <dependency org="org.springframework.vault" name="spring-vault-core" rev="${/org.springframework.vault/spring-vault-core}" conf="compile" />
+    <dependency org="org.springframework" name="spring-beans" rev="${/org.springframework/spring-beans}" conf="compile" />
+    <dependency org="org.springframework" name="spring-web" rev="${/org.springframework/spring-web}" conf="compile" />
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>
 </ivy-module>

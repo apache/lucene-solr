@@ -55,6 +55,7 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import java.util.Map;
 import java.util.Iterator;
+import org.apache.solr.handler.dataimport.VaultServiceImpl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
@@ -288,20 +289,14 @@ public class JdbcDataSource extends
 
   private void resolveVariables(Context ctx, Properties initProps) {
       final Map<Object, Object> encryptedMap = new HashMap<Object, Object>();
+      VaultServiceImpl vaultService = new VaultServiceImpl();
+      Properties properties = vaultService.readVaultProperties();
       for (final Map.Entry<Object, Object> entry : initProps.entrySet()) {
           if (entry.getValue() != null) {
               final String value = ctx.replaceTokens((String)entry.getValue());
-              if (entry.getKey().toString().endsWith(".encrypted")) {
-                  String cipherKey = System.getProperty("cipherkey");
-                  if (cipherKey == null || cipherKey.length() == 0) {
-                      cipherKey = System.getenv("CIPHER_KEY");
-                  }
-                  if (cipherKey == null || cipherKey.length() == 0) {
-                      throw new RuntimeException("Cipher key not found");
-                  }
-                  final AESCipher aesCipher = new AESCipher(cipherKey);
+              if (entry.getKey().toString().endsWith(".vaultPath")) {
                   final String key = entry.getKey().toString();
-                  encryptedMap.put(key.substring(0, key.lastIndexOf(".")), aesCipher.decrypt(value));
+                  encryptedMap.put(key.substring(0, key.lastIndexOf(".")), properties.getProperty(value));
               }
               else {
                   entry.setValue(value);
@@ -309,7 +304,7 @@ public class JdbcDataSource extends
           }
       }
       for (final Object key2 : encryptedMap.keySet()) {
-          initProps.remove(key2 + ".encrypted");
+          initProps.remove(key2 + ".vaultPath");
       }
       initProps.putAll(encryptedMap);
   }

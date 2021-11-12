@@ -51,6 +51,10 @@
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile"/>
     <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
     <dependency org="io.sgr" name="s2-geometry-library-java" rev="${/io.sgr/s2-geometry-library-java}" conf="compile"/>
+    <dependency org="org.springframework.vault" name="spring-vault-core" rev="${/org.springframework.vault/spring-vault-core}" conf="compile" />
+    <dependency org="org.springframework" name="spring-beans" rev="${/org.springframework/spring-beans}" conf="compile" />
+    <dependency org="org.springframework" name="spring-web" rev="${/org.springframework/spring-web}" conf="compile" />
+    <dependency org="commons-configuration" name="commons-configuration" rev="${/commons-configuration/commons-configuration}" conf="compile"/>
 
     <dependency org="org.apache.logging.log4j" name="log4j-api" rev="${/org.apache.logging.log4j/log4j-api}" conf="compile"/>
     <dependency org="org.apache.logging.log4j" name="log4j-core" rev="${/org.apache.logging.log4j/log4j-core}" conf="compile"/>
