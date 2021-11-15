@@ -40,6 +40,9 @@ Bug Fixes
 
 * SOLR-15696: Incremental backups no longer fail on collections where a 'SPLITSHARD' operation previously occurred. (Jason Gerlowski)
 
+* SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
+  closed fromCore if provided (Mikhail Khludnev, David Smiley)
+
 * SOLR-15628: The SolrException.log() helper method has been fixed to correctly passes the Throwable to the Logger w/o stringification (hossman)
 
 * SOLR-15722: Delete Replica does not delete the Per replica state (noble)
