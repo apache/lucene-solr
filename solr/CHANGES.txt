@@ -6,6 +6,8 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-no
 
 ==================  8.11.1 ==================
 
+* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
+
 Bug Fixes
 ---------------------
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
