@@ -53,17 +53,17 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
     fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal"));
 
-    assertU(add(doc("id", "1", "name", "john", "title", "Director", "dept_s", "Engineering")));
-    assertU(add(doc("id", "2", "name", "mark", "title", "VP", "dept_s", "Marketing")));
-    assertU(add(doc("id", "3", "name", "nancy", "title", "MTS", "dept_s", "Sales")));
-    assertU(add(doc("id", "4", "name", "dave", "title", "MTS", "dept_s", "Support", "dept_s", "Engineering")));
-    assertU(add(doc("id", "5", "name", "tina", "title", "VP", "dept_s", "Engineering")));
+    assertU(add(doc("id", "1", "id_s_dv", "1", "name", "john", "title", "Director", "dept_s", "Engineering")));
+    assertU(add(doc("id", "2", "id_s_dv", "2", "name", "mark", "title", "VP", "dept_s", "Marketing")));
+    assertU(add(doc("id", "3", "id_s_dv", "3", "name", "nancy", "title", "MTS", "dept_s", "Sales")));
+    assertU(add(doc("id", "4", "id_s_dv", "4", "name", "dave", "title", "MTS", "dept_s", "Support", "dept_s", "Engineering")));
+    assertU(add(doc("id", "5", "id_s_dv", "5", "name", "tina", "title", "VP", "dept_s", "Engineering")));
     assertU(commit());
 
-    update(fromCore, add(doc("id", "10", "dept_id_s", "Engineering", "text", "These guys develop stuff", "cat", "dev")));
-    update(fromCore, add(doc("id", "11", "dept_id_s", "Marketing", "text", "These guys make you look good")));
-    update(fromCore, add(doc("id", "12", "dept_id_s", "Sales", "text", "These guys sell stuff")));
-    update(fromCore, add(doc("id", "13", "dept_id_s", "Support", "text", "These guys help customers")));
+    update(fromCore, add(doc("id", "10", "id_s_dv", "10", "dept_id_s", "Engineering", "text", "These guys develop stuff", "cat", "dev")));
+    update(fromCore, add(doc("id", "11", "id_s_dv", "11", "dept_id_s", "Marketing", "text", "These guys make you look good")));
+    update(fromCore, add(doc("id", "12", "id_s_dv", "12", "dept_id_s", "Sales", "text", "These guys sell stuff")));
+    update(fromCore, add(doc("id", "13", "id_s_dv", "13", "dept_id_s", "Support", "text", "These guys help customers")));
     update(fromCore, commit());
 
   }
@@ -90,6 +90,15 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
         "debugQuery", random().nextBoolean() ? "true":"false")
         , "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
+
+    assertJQ(req( "qt", "/export", 
+            "q", joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev", "fl", "id_s_dv",
+            "sort", "id_s_dv asc",
+            "debugQuery", random().nextBoolean() ? "true":"false")
+            , "/response=={'numFound':3,'docs':[{'id_s_dv':'1'},{'id_s_dv':'4'},{'id_s_dv':'5'}]}"
+    );
+    assertFalse(fromCore.isClosed());
+    assertFalse(h.getCore().isClosed());
 
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
