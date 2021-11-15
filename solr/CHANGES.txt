@@ -21,6 +21,8 @@ Bug Fixes
 
 * SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
+* SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

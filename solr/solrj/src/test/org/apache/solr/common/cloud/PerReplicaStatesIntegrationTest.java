@@ -20,6 +20,9 @@ package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
 
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -33,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
 
 
 /**
@@ -149,6 +153,48 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
     } finally {
       cluster.shutdown();
+    }
+
+  }
+
+  public void testMultipleTransitions() throws Exception {
+    String COLL = "prs_modify_op_coll";
+    MiniSolrCloudCluster cluster =
+        configureCluster(2)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+            .configure();
+    PerReplicaStates original = null;
+    try {
+      CollectionAdminRequest.createCollection(COLL, "conf", 3, 1)
+          .setPerReplicaState(Boolean.TRUE)
+          .setMaxShardsPerNode(2)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLL, 3, 3);
+
+      PerReplicaStates prs1 = original =  PerReplicaStates.fetch(ZkStateReader.getCollectionPath(COLL), cluster.getZkClient(), null);
+      log.info("prs1 : {}", prs1);
+
+      CollectionAdminRequest.modifyCollection(COLL,
+          Collections.singletonMap(PER_REPLICA_STATE, "false"))
+          .process(cluster.getSolrClient());
+      cluster.getSolrClient().getZkStateReader().waitForState(COLL, 5, TimeUnit.SECONDS,
+          (liveNodes, collectionState) -> "false".equals(collectionState.getProperties().get(PER_REPLICA_STATE)));
+      CollectionAdminRequest.modifyCollection(COLL,
+          Collections.singletonMap(PER_REPLICA_STATE, "true"))
+          .process(cluster.getSolrClient());
+      cluster.getSolrClient().getZkStateReader().waitForState(COLL, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+        AtomicBoolean anyFail = new AtomicBoolean(false);
+        PerReplicaStates prs2 = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(COLL), cluster.getZkClient(), null);
+        prs2.states.forEachEntry((r, newState) -> {
+          if(newState.getDuplicate() !=null) anyFail.set(true);
+        });
+        return !anyFail.get();
+      });
+
+    } finally {
+      cluster.shutdown();
+
     }
 
   }

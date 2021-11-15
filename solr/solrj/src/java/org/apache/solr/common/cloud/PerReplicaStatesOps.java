@@ -135,13 +135,24 @@ public class PerReplicaStatesOps {
    * Switch a collection from/to perReplicaState=true
    */
   public static PerReplicaStatesOps modifyCollection(DocCollection coll, boolean enable, PerReplicaStates rs) {
-    return new PerReplicaStatesOps(prs -> enable ? enable(coll) : disable(prs)).init(rs);
+    return new PerReplicaStatesOps(prs -> enable ?
+        enable(coll,prs) :
+        disable(prs)).init(rs);
 
   }
 
-  private static List<PerReplicaStates.Operation> enable(DocCollection coll) {
+  private static List<PerReplicaStates.Operation> enable(DocCollection coll, PerReplicaStates prs) {
     List<PerReplicaStates.Operation> result = new ArrayList<>();
-    coll.forEachReplica((s, r) -> result.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(r.getName(), r.getState(), r.isLeader(), 0))));
+    coll.forEachReplica((s, r) -> {
+      PerReplicaStates.State st = prs.states.get(r.getName());
+      int newVer = 0;
+      if (st != null) {
+        result.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, st));
+        newVer = st.version + 1;
+      }
+      result.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD,
+          new PerReplicaStates.State(r.getName(), r.getState(), r.isLeader(), newVer)));
+    });
     return result;
   }
 
