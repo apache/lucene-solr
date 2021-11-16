@@ -453,6 +453,26 @@ public class Assign {
     return nodeNameVsShardCount;
   }
 
+  // throw an exception if all nodes in the supplied list are not live.
+  // Empty list will also fail.
+  // Returns the input
+  private static List<String> checkAnyLiveNodes(List<String> createNodeList, ClusterState clusterState) {
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    if (createNodeList == null) {
+      createNodeList = Collections.emptyList();
+    }
+    boolean anyLiveNodes = false;
+    for (String node : createNodeList) {
+      anyLiveNodes |= liveNodes.contains(node);
+    }
+    if (!anyLiveNodes) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "None of the node(s) specified " + createNodeList + " are currently active in "
+              + liveNodes + ", no action taken.");
+    }
+    return createNodeList; // unmodified, but return for inline use. Only modified if empty, and that will throw an error
+  }
+
   /**
    * Thrown if there is an exception while assigning nodes for replicas
    */
@@ -558,6 +578,9 @@ public class Assign {
         sortedNodeList.sort(Comparator.comparingInt(Assign.ReplicaCount::weight));
         nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
       }
+
+      // Throw an error if there aren't any live nodes.
+      checkAnyLiveNodes(nodeList, solrCloudManager.getClusterStateProvider().getClusterState());
 
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();

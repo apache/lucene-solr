@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
@@ -81,6 +82,8 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     if (target != null && !clusterState.liveNodesContain(target)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target Node: " + target + " is not live");
+    } else if (clusterState.getLiveNodes().size() <= 1) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No nodes other than the source node: " + source + " are live, therefore replicas cannot be moved");
     }
     List<ZkNodeProps> sourceReplicas = getReplicasOfNode(source, clusterState);
     // how many leaders are we moving? for these replicas we have to make sure that either:
@@ -122,7 +125,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
               .assignNrtReplicas(numNrtReplicas)
               .assignTlogReplicas(numTlogReplicas)
               .assignPullReplicas(numPullReplicas)
-              .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()))
+              .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes().stream().filter(node -> !node.equals(source)).collect(Collectors.toList())))
               .build();
           Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
           Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, clusterState.getCollection(sourceCollection));
