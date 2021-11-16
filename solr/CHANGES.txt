@@ -8,7 +8,20 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-no
 
 Bug Fixes
 ---------------------
+* SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
+  closed fromCore if provided (Mikhail Khludnev, David Smiley)
+
+* SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
+
 * SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
+
+Build
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
 
 ==================  8.11.0 ==================
 
