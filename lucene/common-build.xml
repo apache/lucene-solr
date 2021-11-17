@@ -2375,6 +2375,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <arg value="--output"/>
         <targetfile/>
         <arg value="--detach-sig"/>
+        <arg value="--pinentry-mode"/>
+        <arg value="loopback"/>
         <srcfile/>
 
         <fileset dir="@{artifacts.dir}">
