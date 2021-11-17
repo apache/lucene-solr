@@ -8,32 +8,12 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-no
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
-New Features
----------------------
-(No changes)
-
-Improvements
----------------------
-(No changes)
-
-Optimizations
----------------------
-(No changes)
-
 Bug Fixes
 ---------------------
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
   closed fromCore if provided (Mikhail Khludnev, David Smiley)
   
 * SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
-
-Build
----------------------
-(No changes)
-
-Other Changes
----------------------
-(No changes)
 
 ==================  8.11.0 ==================
 
