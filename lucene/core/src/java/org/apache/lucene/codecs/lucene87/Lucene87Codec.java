@@ -50,7 +50,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene87 package documentation for file format details.
+ * @see org.apache.lucene.codecs.lucene86 package documentation for file format details.
  *
  * @lucene.experimental
  */
