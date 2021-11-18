@@ -321,6 +321,10 @@ public class PerReplicaStates implements ReflectMapWriter {
     public int hashCode() {
       return asString.hashCode();
     }
+
+    public State getDuplicate() {
+      return duplicate;
+    }
   }
 
 }

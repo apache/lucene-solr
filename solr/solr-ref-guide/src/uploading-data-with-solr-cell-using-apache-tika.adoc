@@ -319,7 +319,7 @@ An easy way to specify this is to configure the parameter `processor` (under `de
   <lst name="defaults">
     <str name="lowernames">true</str>
     <str name="fmap.content">_text_</str>
-    <str name="processor">uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date</processor>
+    <str name="processor">uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date</str>
   </lst>
 </requestHandler>
 ----
