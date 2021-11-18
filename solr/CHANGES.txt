@@ -15,14 +15,6 @@ Bug Fixes
 
 * SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
 
-Build
----------------------
-(No changes)
-
-Other Changes
----------------------
-(No changes)
-
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
 
 ==================  8.11.0 ==================
