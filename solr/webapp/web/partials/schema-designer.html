@@ -25,10 +25,10 @@ limitations under the License.
       <div id="schema-selector">
         <div class="left">
           <select id="select-schema" placeholder-text-single="'Schema Selector'"
-                  chosen
+                chosen
                 ng-model="currentSchema"
                 ng-change="loadSchema()"
-                ng-options="schema for schema in schemas"></select>
+                ng-options="schema for schema in schemas"><option value=""></option></select>
           <button id="add" class="action" ng-click="showNewSchemaDialog()"><span>New Schema</span></button>
         </div>
         <div class="middle">
@@ -43,7 +43,7 @@ limitations under the License.
                 <input type="text" id="add_name" ng-model="newField.name" focus-when="showAddField" placeholder="enter a name"></p>
 
               <p class="clearfix" ng-show="adding=='field'"><label for="add_type">field type:</label>
-                <select chosen type="text" id="add_type" ng-model="newField.type" ng-options="type for type in types"></select>
+                <select chosen type="text" id="add_type" ng-model="newField.type" ng-options="type for type in types"><option value=""></option></select>
               </p>
               <p class="clearfix" ng-show="adding=='type'"><label for="add_class">class:</label>
                 <input type="text" id="add_class" ng-model="newField.class" placeholder="class name"></p>
@@ -446,7 +446,7 @@ limitations under the License.
             <select id="copy_schema"
                     ng-model="copyFrom"
                     chosen
-                    ng-options="schema for schema in publishedSchemas"></select><a ng-click="showHelp('copyFromHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                    ng-options="schema for schema in publishedSchemas"><option value=""></option></select><a ng-click="showHelp('copyFromHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
             <div id="copyFromHelp" class="help" ng-show="helpId === 'copyFromHelp'" escape-pressed="hideAll()">
               <div class="help">
               <p>Copy an existing Configset (schema, solrconfig.xml, and supporting files) as the starting point for your new schema. The <b>_default</b> Configset includes a schema with field guessing enabled, dynamic fields for common field types, and field types for analyzing text data for a number of common languages supported by Lucene. For more information about Configsets, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/config-sets.html">Configsets</a></div></p>
@@ -535,10 +535,10 @@ limitations under the License.
               <select id="unique_key"
                       placeholder-text-single="'Unique Key Field'"
                       ng-model="updateUniqueKeyField"
-                      chosen
+                      chosen disable-search="true"
                       disabled
                       ng-change="updateUniqueKey()"
-                      ng-options="field for field in possibleIdFields"></select>
+                      ng-options="field for field in possibleIdFields"><option value=""></option></select>
             </div>
             <div class="field-form-right">
               <label for="languages">Language(s):</label>
@@ -646,7 +646,7 @@ limitations under the License.
                             id="field_type"
                             ng-model="selectedNode.type"
                             ng-change="onFieldTypeChanged(type)"
-                            ng-options="type for type in types"></select><a ng-click="showHelp('fieldTypeHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                            ng-options="type for type in types"><option value=""></option></select><a ng-click="showHelp('fieldTypeHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
                     <div id="fieldTypeHelp" class="help" ng-show="helpId === 'fieldTypeHelp'">
                       <div class="help-wider">
                         <p>The field type defines how Solr should interpret data in a field and how the field can be queried. The properties on each field are inherited from the field type if not explicitly overridden in the field definition. In many cases, it's preferable to choose a different field type instead of overriding the field properties. For example, there's typically a multi-valued version of each type, such as <b>strings</b> is the multi-valued version of the <b>string</b> type. For more information about field types, see:
@@ -872,7 +872,7 @@ limitations under the License.
                     ng-model="sampleDocId"
                     chosen
                     ng-change="updateSampleDocId()"
-                    ng-options="id for id in sampleDocIds"></select>
+                    ng-options="id for id in sampleDocIds"><option value=""></option></select>
           </div>
           <div class="field-form">
             <label for="analysis_fieldvalue_index">{{selectedNode.name}}</label>
@@ -959,7 +959,7 @@ limitations under the License.
               </div>
               <div class="field-form-right">
                 <label for="sort" title="Sort field">Sort by</label>
-                <select chosen placeholder-text-single="'Select Field'" id="sort" ng-model="query.sortBy" ng-options="field for field in sortableFields"></select> asc <input type="radio" ng-model="query.sortDir" value="asc"/> desc <input type="radio" ng-model="query.sortDir" value="desc"/>
+                <select chosen placeholder-text-single="'Select Field'" id="sort" ng-model="query.sortBy" ng-options="field for field in sortableFields"><option value=""></option></select> asc <input type="radio" ng-model="query.sortDir" value="asc"/> desc <input type="radio" ng-model="query.sortDir" value="desc"/>
                 <a ng-click="showHelp('querySortHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
                 <div id="querySortHelp" class="help" ng-show="helpId === 'querySortHelp'">
                   <div class="help">
@@ -985,7 +985,7 @@ limitations under the License.
               </div>
               <div class="field-form-right">
                 <label for="hl" title="Highlight">Highlighting</label>
-                <select chosen placeholder-text-single="'Select Field'" id="hl" ng-model="query.highlight" ng-options="field for field in hlFields"></select>
+                <select chosen placeholder-text-single="'Select Field'" id="hl" ng-model="query.highlight" ng-options="field for field in hlFields"><option value=""></option></select>
               </div>
               <div class="field-form-right">
                 <label for="rawParams" title="Additional params">Additional params</label>

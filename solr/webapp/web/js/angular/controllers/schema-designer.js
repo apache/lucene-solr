@@ -18,6 +18,13 @@
 solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, $cookies, $window, Constants, SchemaDesigner, Luke) {
   $scope.resetMenu("schema-designer", Constants.IS_ROOT_PAGE);
 
+  $scope.schemas = [];
+  $scope.publishedSchemas = [];
+  $scope.sampleDocIds = [];
+  $scope.sortableFields = [];
+  $scope.hlFields = [];
+  $scope.types = [];
+
   $scope.onWarning = function (warnMsg, warnDetails) {
     $scope.updateWorking = false;
     delete $scope.updateStatusMessage;
@@ -437,6 +444,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
     if (data.docIds) {
       $scope.sampleDocIds = data.docIds;
+    } else {
+      $scope.sampleDocIds = [];
     }
 
     // Load the Luke schema
