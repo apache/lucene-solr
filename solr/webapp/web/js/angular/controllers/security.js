@@ -19,6 +19,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   $scope.resetMenu("security", Constants.IS_ROOT_PAGE);
 
   $scope.params = [];
+  $scope.filteredPredefinedPermissions = [];
 
   var strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*\-_()[\]])[a-zA-Z0-9!@#$%^&*\-_()[\]]{8,30}$/;
 
@@ -769,6 +770,12 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       var action = isAdd ? "set-permission" : "update-permission";
       var postBody = {};
       postBody[action] = setPermJson;
+
+      // if they have the "all" permission in the last position, then keep it there when adding a new permission
+      if (!setPermJson["before"] && !setPermJson["index"] && $scope.permissionsTable && $scope.permissionsTable.length > 0 && $scope.permissionsTable[$scope.permissionsTable.length-1].name === "all") {
+        setPermJson["before"] = $scope.permissionsTable.length;
+      }
+
       Security.post({path: "authorization"}, postBody, function (data) {
         var errorCause = checkError(data);
         if (errorCause != null) {
