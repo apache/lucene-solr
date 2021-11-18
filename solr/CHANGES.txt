@@ -12,8 +12,10 @@ Bug Fixes
 ---------------------
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
   closed fromCore if provided (Mikhail Khludnev, David Smiley)
-  
+
 * SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
+
+* SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
 
 ==================  8.11.0 ==================
 
