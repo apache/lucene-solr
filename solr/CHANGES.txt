@@ -6,8 +6,6 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-no
 
 ==================  8.11.1 ==================
 
-* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
-
 Bug Fixes
 ---------------------
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
@@ -18,6 +16,8 @@ Bug Fixes
 * SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
 
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
+
+* SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
 ==================  8.11.0 ==================
 
