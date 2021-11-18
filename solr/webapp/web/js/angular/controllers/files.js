@@ -15,8 +15,8 @@
  limitations under the License.
 */
 
-var contentTypeMap = { xml : 'text/xml', html : 'text/html', js : 'text/javascript', json : 'application/json', 'css' : 'text/css' };
-var languages = {js: "javascript", xml:"xml", xsl:"xml", vm: "xml", html: "xml", json: "json", css: "css"};
+var contentTypeMap = { xml : 'application/xml', html : 'application/xml', js : 'application/javascript', json : 'application/json', css : 'text/plain' };
+var languages = {js: "javascript", xml:"xml", xsl:"xml", vm: "xml", html: "xml", json: "json"};
 
 solrAdminApp.controller('FilesController',
     function($scope, $rootScope, $routeParams, $location, Files, Constants) {
@@ -71,7 +71,7 @@ solrAdminApp.controller('FilesController',
             if ($scope.file && $scope.file !== '' && $scope.file.split('').pop()!=='/') {
                 var extension;
                 if ($scope.file === "managed-schema") {
-                  extension = contentTypeMap['xml'];
+                  extension = 'xml';
                 } else {
                   extension = $scope.file.match( /\.(\w+)$/)[1] || '';
                 }
