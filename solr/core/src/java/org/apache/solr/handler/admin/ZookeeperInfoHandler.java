@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
@@ -58,6 +59,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -79,7 +82,8 @@ import static org.apache.solr.common.params.CommonParams.WT;
  *
  * @since solr 4.0
  */
-public final class ZookeeperInfoHandler extends RequestHandlerBase {
+public final class ZookeeperInfoHandler extends RequestHandlerBase implements PermissionNameProvider {
+  private static final String PARAM_DETAIL = "detail";
   private final CoreContainer cores;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -108,6 +112,18 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
    */
   static enum FilterType {
     none, name, status
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
+    SolrParams params = request.getParams();
+    String path = params.get(PATH, "");
+    String detail = params.get(PARAM_DETAIL, "false");
+    if ("/security.json".equalsIgnoreCase(path) && "true".equalsIgnoreCase(detail)) {
+      return PermissionNameProvider.Name.SECURITY_READ_PERM;
+    } else {
+      return PermissionNameProvider.Name.ZK_READ_PERM;
+    }
   }
 
   /**
@@ -184,15 +200,15 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       boolean hasDownedShard = false; // means one or more shards is down
       boolean replicaInRecovery = false;
 
-      Map<String, Object> shards = (Map<String, Object>) collectionState.get("shards");
+      Map<String, Object> shards = (Map<String, Object>) collectionState.get(DocCollection.SHARDS);
       for (Object o : shards.values()) {
         boolean hasActive = false;
         Map<String, Object> shard = (Map<String, Object>) o;
-        Map<String, Object> replicas = (Map<String, Object>) shard.get("replicas");
+        Map<String, Object> replicas = (Map<String, Object>) shard.get(Slice.REPLICAS);
         for (Object value : replicas.values()) {
           Map<String, Object> replicaState = (Map<String, Object>) value;
           Replica.State coreState = Replica.State.getState((String) replicaState.get(ZkStateReader.STATE_PROP));
-          String nodeName = (String) replicaState.get("node_name");
+          String nodeName = (String) replicaState.get(ZkStateReader.NODE_NAME_PROP);
 
           // state can lie to you if the node is offline, so need to reconcile with live_nodes too
           if (!liveNodes.contains(nodeName))
@@ -379,7 +395,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
     }
 
-    String detailS = params.get("detail");
+    String detailS = params.get(PARAM_DETAIL);
     boolean detail = detailS != null && detailS.equals("true");
 
     String dumpS = params.get("dump");

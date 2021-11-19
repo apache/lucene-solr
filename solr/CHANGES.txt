@@ -17,6 +17,8 @@ Bug Fixes
 
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
 
+* SOLR-15768: Set default permissions for the zookeeper endpoints so users won't need to configure custom permissions for these (janhoy)
+
 * SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
 ==================  8.11.0 ==================
