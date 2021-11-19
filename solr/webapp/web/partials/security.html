@@ -137,11 +137,13 @@ limitations under the License.
               </div>
             </div>
             <div id="perm-select"><label for="predefined">Predefined:</label><select id="predefined"
-                chosen
+                chosen disable-search="true" allow-single-deselect="true"
                 ng-change="onPredefinedChanged()"
                 ng-model="selectedPredefinedPermission"
                 ng-disabled="permDialogMode === 'edit'"
-                ng-options="p for p in filteredPredefinedPermissions"></select><span id="add_perm_custom">or Custom: <input ng-disabled="permDialogMode === 'edit'" ng-change="onPredefinedChanged()" type="text" id="add_perm_name" ng-model="upsertPerm.name"><a ng-click="showHelp('permDialogHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
+                ng-options="p for p in filteredPredefinedPermissions">
+              <option value=""></option>
+            </select><span id="add_perm_custom">or Custom: <input ng-disabled="permDialogMode === 'edit'" ng-change="onPredefinedChanged()" type="text" id="add_perm_name" ng-model="upsertPerm.name"><a ng-click="showHelp('permDialogHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
               <div id="permDialogHelp" class="help" ng-show="helpId === 'permDialogHelp'">
                 <div class="help-perm">
                   <p>Permissions allow you to grant access to protected resources to one or more roles. Solr provides a list of <b>predefined</b> permissions to cover common use cases, such as collection administration. Otherwise, you can define a <b>custom permission</b> for fine-grained control over the API path(s), collection(s), request method(s) and params.
