@@ -34,6 +34,41 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.11
+
+See the https://cwiki.apache.org/confluence/display/SOLR/Release+Notes+8.11[8.11 Release Notes^]
+for an overview of the main new features of Solr 8.11.
+
+When upgrading to 8.11.x users should be aware of the following major changes from 8.10.
+
+*Support for Multiple Authentication Schemes*
+
+Two new authentication and authorization plugins provide support for configuring multiple authentication schemes.
+
+The `MultiAuthPlugin` allows combining two or more authentication approaches, such as JWT and Basic authentication.
+
+The `MultiAuthRuleBasedAuthorizationPlugin` is used when the `MultiAuthPlugin` is also in use, and combines the various roles defined for all plugins to determine the proper role assignment for the user account.
+
+For information on configuring these plugins, see the following sections:
+
+* <<basic-authentication-plugin.adoc#combining-basic-authentication-with-other-schemes,Combining Basic Authentication with Other Schemes>>
+* <<rule-based-authorization-plugin.adoc#multiple-authorization-plugins,Multiple Authorization Plugins>>
+
+
+*ZooKeeper chroot*
+
+It's now possible to create the ZooKeeper chroot at startup if it does not already exist.
+See the section <<setting-up-an-external-zookeeper-ensemble.adoc#using-the-z-parameter-with-binsolr,Using the -z Parameter with bin/solr>> for an example.
+
+*Other Changes*
+
+A few other minor changes are worth noting:
+
+* The `config-read` pre-defined permission now correctly governs access for various configuration-related APIs. See also <<rule-based-authorization-plugin.adoc#predefined-permissions,Predefined Permissions>>.
+* The S3BackupRepository supports configuring the AWS Profile, if necessary. See also <<making-and-restoring-backups.adoc#s3backuprepository,S3BackupRepository>>.
+* Additionally, backups will now properly succeed after SPLITSHARD operations, and will correctly handle incremental backup purges.
+* SolrJ now supports uploading configsets.
+
 === Solr 8.10
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote810[8.10 Release Notes^]
