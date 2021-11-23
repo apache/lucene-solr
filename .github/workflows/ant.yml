@@ -3,7 +3,7 @@ name: Ant precommit
 on:
   pull_request:
     branches:
-      - 'branch_8x'
+      - 'branch_8_11'
 jobs:
   test:
     runs-on: ubuntu-latest
