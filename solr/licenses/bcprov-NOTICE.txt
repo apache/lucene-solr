@@ -1,2 +1,0 @@
-Copyright (c) 2000-2006 The Legion Of The Bouncy Castle
-(http://www.bouncycastle.org)

@@ -1,7 +1,0 @@
-abrah* AND linc*
-court* AND law*
-(field OR set) AND theor*
-red AND hot AND chili*
-great* AND guitar*
-(plan* AND train* AND automob*) OR ship*
-international AND airport*

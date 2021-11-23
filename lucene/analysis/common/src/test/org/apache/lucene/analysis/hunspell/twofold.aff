@@ -1,7 +1,0 @@
-SET UTF-8
-
-SFX Y Y 1
-SFX Y 0 s . +PLUR
-
-SFX X Y 1
-SFX X 0 able/Y . +ABLE

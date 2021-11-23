@@ -1,5 +1,0 @@
-
-  <requestHandler name="/includedHandler"
-                  class="solr.SearchHandler" >
-  </requestHandler>
-
