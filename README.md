@@ -24,7 +24,7 @@ project's git repository now:
 - Lucene: <https://gitbox.apache.org/repos/asf/lucene.git>
 - Solr: <https://gitbox.apache.org/repos/asf/solr.git>
 
-Development for buxfixes of 8.11.x releases remains on branch
+Development for bugfixes of 8.11.x releases remains on branch
 `branch_8_11` in the shared repository:
 
 - https://gitbox.apache.org/repos/asf/lucene-solr.git
