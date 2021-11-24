@@ -1,7 +1,0 @@
-SET UTF-8
-FLAG long
-SFX Y1 Y 1
-SFX Y1 0 s .
-
-SFX 1Y Y 1
-SFX 1Y 0 bogus .

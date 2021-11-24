@@ -1,9 +1,0 @@
-{
-  "add-field": {
-    "name":"keywords",
-    "type":"string",
-    "stored":true,
-    "docValues": true,
-    "indexed": false
-  }
-}

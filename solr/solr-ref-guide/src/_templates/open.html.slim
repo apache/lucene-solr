@@ -1,7 +1,0 @@
-- if style == 'abstract'
-  - if abstract_allowed?
-    = block_with_title :class=>'quoteblock abstract'
-      blockquote =content
-- elsif style != 'partintro' || partintro_allowed?
-  = block_with_title :class=>['openblock', (style if style != 'open')]
-    .content.d-flex.flex-row =content

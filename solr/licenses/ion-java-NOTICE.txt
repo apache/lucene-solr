@@ -1,2 +1,0 @@
-Amazon Ion Java
-Copyright 2007-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.

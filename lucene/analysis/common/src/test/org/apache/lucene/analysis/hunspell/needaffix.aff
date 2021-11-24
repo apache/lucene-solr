@@ -1,9 +1,0 @@
-SET UTF-8
-
-NEEDAFFIX Z
-
-PFX Y Y 1
-PFX Y 0 pre . pre+
-
-SFX X Y 1
-SFX X 0 s . +s

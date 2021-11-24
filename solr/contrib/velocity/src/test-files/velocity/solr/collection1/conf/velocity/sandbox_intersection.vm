@@ -1,5 +1,0 @@
-#set($x='')
-#set($sys=$x.class.forName('java.nio.file.Paths'))
-#set($path=$sys.get('/dumbass/denied_location'))
-#set($ex=$path.resolve($path).toRealPath())
-$ex
