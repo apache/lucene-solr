@@ -19,5 +19,6 @@
 
 8.11 was the last minor release of the 8.x series.
 
-You may still push bug fix to `branch_8_11`. However, features and enhancements
-should now go to `main` and `branch_9x`.
+You may still push bug fixes to `branch_8_11`. However, features and
+enhancements should now go to the `main` and `branch_9x` branches of the
+[Lucene](https://github.com/apache/lucene) repository.
