@@ -39,13 +39,23 @@ class SchemaDesignerSettings implements SchemaDesignerConstants {
 
   @SuppressWarnings("unchecked")
   SchemaDesignerSettings(Map<String, Object> stored) {
-    this.isDisabled = (Boolean) stored.getOrDefault(DESIGNER_KEY + DISABLED, false);
+    this.isDisabled = getSettingAsBool(stored, DESIGNER_KEY + DISABLED, false);
     this.publishedVersion = null;
     this.copyFrom = (String) stored.get(DESIGNER_KEY + COPY_FROM_PARAM);
     this.languages = (List<String>) stored.getOrDefault(DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
-    this.dynamicFieldsEnabled = (Boolean) stored.getOrDefault(DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true);
-    this.nestedDocsEnabled = (Boolean) stored.getOrDefault(DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false);
-    this.fieldGuessingEnabled = (Boolean) stored.getOrDefault(AUTO_CREATE_FIELDS, true);
+    this.dynamicFieldsEnabled = getSettingAsBool(stored, DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true);
+    this.nestedDocsEnabled = getSettingAsBool(stored, DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false);
+    this.fieldGuessingEnabled = getSettingAsBool(stored, AUTO_CREATE_FIELDS, true);
+  }
+
+  static boolean getSettingAsBool(final Map<String, Object> stored, final String key, final boolean defaultValue) {
+    boolean settingAsBool = defaultValue;
+    final Object settingValue = stored != null ? stored.get(key) : null;
+    if (settingValue != null) {
+      // covers either a Boolean or String object in the map
+      settingAsBool = Boolean.parseBoolean(settingValue.toString());
+    }
+    return settingAsBool;
   }
 
   Map<String, Object> toMap() {

@@ -114,7 +114,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
       log.error("Failed to get config overlay for {}", configSet, exc);
     }
     Map<String, Object> userProps = overlay != null ? overlay.getUserProps() : Collections.emptyMap();
-    return (boolean) userProps.getOrDefault(DESIGNER_KEY + DISABLED, false);
+    return SchemaDesignerSettings.getSettingAsBool(userProps, DESIGNER_KEY + DISABLED, false);
   }
 
   @SuppressWarnings("unchecked")
@@ -143,15 +143,8 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
       return false; // no URP chain, so can't be enabled
     }
 
-    boolean isEnabled = true;
     ConfigOverlay overlay = solrConfig.getOverlay();
-    if (overlay != null) {
-      Map<String, Object> userProps = overlay.getUserProps();
-      if (userProps != null) {
-        isEnabled = (Boolean) userProps.getOrDefault(AUTO_CREATE_FIELDS, true);
-      }
-    }
-    return isEnabled;
+    return overlay == null || SchemaDesignerSettings.getSettingAsBool(overlay.getUserProps(), AUTO_CREATE_FIELDS, true);
   }
 
   private boolean hasFieldGuessingURPChain(final SolrConfig solrConfig) {
