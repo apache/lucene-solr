@@ -476,13 +476,44 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals("/a/b", perms.getVal("permissions[1]/path"));
     perms.runCmd("{update-permission : {index : 2, method : POST }}", true);
     assertEquals("POST", perms.getVal("permissions[1]/method"));
+    assertEquals("/a/b", perms.getVal("permissions[1]/path"));
+
     perms.runCmd("{set-permission : {name : read, collection : y, role:[guest, dev] ,  before :2}}", true);
     assertNotNull(perms.getVal("permissions[2]"));
     assertEquals("y", perms.getVal("permissions[1]/collection"));
     assertEquals("read", perms.getVal("permissions[1]/name"));
+    assertEquals("POST", perms.getVal("permissions[2]/method"));
+    assertEquals("/a/b", perms.getVal("permissions[2]/path"));
+
     perms.runCmd("{delete-permission : 3}", true);
     assertTrue(captureErrors(perms.parsedCommands).isEmpty());
     assertEquals("y", perms.getVal("permissions[1]/collection"));
+
+    List<Map<String,Object>> permList = (List<Map<String,Object>>)perms.getVal("permissions");
+    assertEquals(2, permList.size());
+    assertEquals("config-edit", perms.getVal("permissions[0]/name"));
+    assertEquals(1, perms.getVal("permissions[0]/index"));
+    assertEquals("read", perms.getVal("permissions[1]/name"));
+    assertEquals(2, perms.getVal("permissions[1]/index"));
+
+    // delete a non-existent permission
+    perms.runCmd("{delete-permission : 3}", false);
+    assertEquals(1, perms.parsedCommands.size());
+    assertEquals(1, perms.parsedCommands.get(0).getErrors().size());
+    assertEquals("No such index: 3", perms.parsedCommands.get(0).getErrors().get(0));
+
+    perms.runCmd("{delete-permission : 1}", true);
+    assertTrue(captureErrors(perms.parsedCommands).isEmpty());
+    permList = (List<Map<String,Object>>)perms.getVal("permissions");
+    assertEquals(1, permList.size());
+    // indexes should have been re-ordered after the delete, so now "read" has index==1
+    assertEquals("read", perms.getVal("permissions[0]/name"));
+    assertEquals(1, perms.getVal("permissions[0]/index"));
+    // delete last remaining
+    perms.runCmd("{delete-permission : 1}", true);
+    assertTrue(captureErrors(perms.parsedCommands).isEmpty());
+    permList = (List<Map<String,Object>>)perms.getVal("permissions");
+    assertEquals(0, permList.size());
   }
 
   static class  Perms {
