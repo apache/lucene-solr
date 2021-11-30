@@ -118,6 +118,11 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase implements 
         DESIGNER_KEY + LANGUAGES_PARAM, Collections.singletonList("en"));
     assertDesignerSettings(expSettings, settings);
     assertTrue("should be disabled", dao.isDesignerDisabled(configSet));
+
+    // handles booleans stored as strings in the overlay
+    Map<String,Object> stored = Map.of(AUTO_CREATE_FIELDS, "false");
+    settings = new SchemaDesignerSettings(stored);
+    assertFalse(settings.fieldGuessingEnabled());
   }
 
   protected void assertDesignerSettings(Map<String, Object> expectedMap, SchemaDesignerSettings actual) {
