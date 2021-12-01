@@ -56,12 +56,12 @@ enum AutorizationEditOperation {
     @Override
     @SuppressWarnings({"unchecked"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-      Integer index = op.getInt("index", null);
-      Integer beforeIdx = op.getInt("before",null);
+      Integer index = op.getInt(INDEX, null);
+      Integer beforeIdx = op.getInt(BEFORE, null);
       Map<String, Object> dataMap = op.getDataMap();
       if (op.hasError()) return null;
       dataMap = getDeepCopy(dataMap, 3);
-      dataMap.remove("before");
+      dataMap.remove(BEFORE);
       if (beforeIdx != null && index != null) {
         op.addError("Cannot use 'index' and 'before together ");
         return null;
@@ -76,18 +76,14 @@ enum AutorizationEditOperation {
         op.addError(e.getMessage());
         return null;
       }
-      if(op.hasError()) return null;
-      @SuppressWarnings({"rawtypes"})
-      List<Map> permissions = getListValue(latestConf, "permissions");
-      setIndex(permissions);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> permissionsCopy = new ArrayList<>();
+      if (op.hasError()) return null;
+
+      List<Map<String, Object>> permissions = AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
+      List<Map<String, Object>> permissionsCopy = new ArrayList<>();
       boolean beforeSatisfied = beforeIdx == null;
       boolean indexSatisfied = index == null;
-      for (int i = 0; i < permissions.size(); i++) {
-        @SuppressWarnings({"rawtypes"})
-        Map perm = permissions.get(i);
-        Integer thisIdx = (Integer) perm.get("index");
+      for (Map<String, Object> perm : permissions) {
+        Integer thisIdx = getIndex(perm);
         if (thisIdx.equals(beforeIdx)) {
           beforeSatisfied = true;
           permissionsCopy.add(dataMap);
@@ -110,26 +106,31 @@ enum AutorizationEditOperation {
         return null;
       }
 
-      if (!permissionsCopy.contains(dataMap)) permissionsCopy.add(dataMap);
-      latestConf.put("permissions", permissionsCopy);
+      // just add the new permission at the end if not already added via index / before
+      if (!permissionsCopy.contains(dataMap)) {
+        permissionsCopy.add(dataMap);
+      }
+
       setIndex(permissionsCopy);
+
+      latestConf.put(PERMISSIONS, permissionsCopy);
       return latestConf;
     }
 
   },
   UPDATE_PERMISSION("update-permission") {
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-      Integer index = op.getInt("index");
+      Integer index = op.getInt(INDEX);
       if (op.hasError()) return null;
-      List<Map> permissions = (List<Map>) getListValue(latestConf, "permissions");
-      setIndex(permissions);
-      for (Map permission : permissions) {
-        if (index.equals(permission.get("index"))) {
-          LinkedHashMap copy = new LinkedHashMap<>(permission);
+
+      List<Map<String, Object>> permissions = AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
+      for (Map<String, Object> permission : permissions) {
+        if (index.equals(getIndex(permission))) {
+          LinkedHashMap<String, Object> copy = new LinkedHashMap<>(permission);
           copy.putAll(op.getDataMap());
           op.setCommandData(copy);
+          latestConf.put(PERMISSIONS, permissions);
           return SET_PERMISSION.edit(latestConf, op);
         }
       }
@@ -139,31 +140,30 @@ enum AutorizationEditOperation {
   },
   DELETE_PERMISSION("delete-permission") {
     @Override
-    @SuppressWarnings({"unchecked"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
       Integer id = op.getInt("");
-      if(op.hasError()) return null;
-      @SuppressWarnings({"rawtypes"})
-      List<Map> p = getListValue(latestConf, "permissions");
-      setIndex(p);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> c = p.stream().filter(map -> !id.equals(map.get("index"))).collect(Collectors.toList());
-      if(c.size() == p.size()){
-        op.addError("No such index :"+ id);
+      if (op.hasError()) return null;
+
+      // find the permission to delete using the "index"
+      List<Map<String, Object>> p = AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
+      if (p.stream().anyMatch(map -> id.equals(getIndex(map)))) {
+        // filter out the deleted index, then re-order the remaining indexes
+        List<Map<String, Object>> c = p.stream().filter(map -> !id.equals(getIndex(map))).collect(Collectors.toList());
+        setIndex(c);
+        latestConf.put(PERMISSIONS, c);
+        return latestConf;
+      } else {
+        op.addError("No such index: " + id);
         return null;
       }
-      latestConf.put("permissions", c);
-      return latestConf;
     }
   };
 
-  public abstract Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op);
+  private static final String PERMISSIONS = "permissions";
+  private static final String INDEX = "index";
+  private static final String BEFORE = "before";
 
   public final String name;
-
-  public String getOperationName() {
-    return name;
-  }
 
   AutorizationEditOperation(String s) {
     this.name = s;
@@ -174,9 +174,30 @@ enum AutorizationEditOperation {
     return null;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  static void setIndex(List<Map> permissionsCopy) {
-    AtomicInteger counter = new AtomicInteger(0);
-    permissionsCopy.stream().forEach(map -> map.put("index", counter.incrementAndGet()));
+  static void setIndex(List<Map<String, Object>> permissionsCopy) {
+    final AtomicInteger counter = new AtomicInteger(0);
+    permissionsCopy.forEach(map -> map.put(INDEX, counter.incrementAndGet()));
+  }
+
+  static Integer getIndex(final Map<String, Object> permission) {
+    final Object idx = permission.get(INDEX);
+    return (idx instanceof Number) ? ((Number) idx).intValue() : -1;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> ensureIndexOnPermissions(Map<String, Object> latestConf) {
+    List<Map<String, Object>> permissions = (List<Map<String, Object>>) getListValue(latestConf, PERMISSIONS);
+    // see if any permissions have "index" set ...
+    if (permissions.stream().noneMatch(map -> map.containsKey(INDEX))) {
+      // "index" not set on the list of permissions, add it now ...
+      setIndex(permissions);
+    }
+    return permissions;
+  }
+
+  public abstract Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op);
+
+  public String getOperationName() {
+    return name;
   }
 }

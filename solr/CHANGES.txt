@@ -21,6 +21,8 @@ Bug Fixes
 
 * SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
 
+* SOLR-13900: Reset index values on authorization rules after deleting by index (Timothy Potter)
+
 * SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
 
 * SOLR-15813: Schema designer not handling `update.autoCreateFields` stored as a string (vs. boolean) in the config overlay (Timothy Potter)
