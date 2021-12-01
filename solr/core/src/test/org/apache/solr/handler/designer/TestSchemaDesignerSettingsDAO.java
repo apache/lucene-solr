@@ -120,7 +120,7 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase implements 
     assertTrue("should be disabled", dao.isDesignerDisabled(configSet));
 
     // handles booleans stored as strings in the overlay
-    Map<String,Object> stored = Map.of(AUTO_CREATE_FIELDS, "false");
+    Map<String,Object> stored = makeMap(AUTO_CREATE_FIELDS, "false");
     settings = new SchemaDesignerSettings(stored);
     assertFalse(settings.fieldGuessingEnabled());
   }
