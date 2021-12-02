@@ -282,8 +282,12 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.hasPermission = function(permissionName) {
-    var rolesForPermission = $scope.permissionsTable.filter(p => permissionName === p.name).flatMap(p => p.roles);
-    return (rolesForPermission.length > 0 && roleMatch(rolesForPermission, $scope.getCurrentUserRoles()));
+    var matched = $scope.permissionsTable.filter(p => permissionName === p.name);
+    if (matched.length === 0 && permissionName !== "all") {
+      // this permission is not explicitly defined, but "all" will apply if it is defined
+      matched = $scope.permissionsTable.filter(p => "all" === p.name);
+    }
+    return matched.length > 0 && roleMatch(matched.flatMap(p => p.roles), $scope.getCurrentUserRoles());
   };
 
   $scope.refreshSecurityPanel = function() {

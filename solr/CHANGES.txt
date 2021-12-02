@@ -27,6 +27,9 @@ Bug Fixes
 
 * SOLR-15813: Schema designer not handling `update.autoCreateFields` stored as a string (vs. boolean) in the config overlay (Timothy Potter)
 
+* SOLR-15825: Security UI 'hasPermission' check should check if the user has the "all" permission if the requested permission is not defined
+  to match how the backend works (Timothy Potter)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
