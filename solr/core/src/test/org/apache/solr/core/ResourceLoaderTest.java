@@ -41,11 +41,18 @@ import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.junit.After;
 
-import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
+import static org.apache.solr.core.SolrResourceLoader.*;
 import static org.hamcrest.core.Is.is;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    setUnsafeResourceLoading(false);
+  }
 
   public void testInstanceDir() throws Exception {
     final Path dir = createTempDir();
@@ -61,13 +68,38 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     Path instanceDir = temp.resolve("instance");
     Files.createDirectories(instanceDir.resolve("conf"));
 
+    setUnsafeResourceLoading(false);
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
-      loader.openResource("../../dummy.txt").close();
-      fail();
-    } catch (IOException ioe) {
-      assertTrue(ioe.getMessage().contains("is outside resource loader dir"));
+      // Path traversal
+      assertTrue(assertThrows(IOException.class, () ->
+          loader.openResource("../../dummy.txt").close()).getMessage().contains("Can't find resource"));
+      assertNull(loader.resourceLocation("../../dummy.txt"));
+
+      // UNC paths
+      assertTrue(assertThrows(SolrResourceNotFoundException.class, () ->
+          loader.openResource("\\\\192.168.10.10\\foo").close()).getMessage().contains("Resource '\\\\192.168.10.10\\foo' could not be loaded."));
+      assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
     }
 
+    setUnsafeResourceLoading(true);
+    try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
+      // Path traversal - unsafe but allowed
+      loader.openResource("../../dummy.txt").close();
+      assertNotNull(loader.resourceLocation("../../dummy.txt"));
+
+      // UNC paths never allowed
+      assertTrue(assertThrows(SolrResourceNotFoundException.class, () ->
+          loader.openResource("\\\\192.168.10.10\\foo").close()).getMessage().contains("Resource '\\\\192.168.10.10\\foo' could not be loaded."));
+      assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
+    }
+  }
+
+  private void setUnsafeResourceLoading(boolean unsafe) {
+    if (unsafe) {
+      System.setProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
+    } else {
+      System.clearProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
+    }
   }
 
   @SuppressWarnings({"unchecked"})
@@ -131,10 +163,10 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     List<String> lines = loader.getLines(fileWithBom);
     assertEquals(1, lines.size());
     assertEquals("BOMsAreEvil", lines.get(0));
-    
+
     loader.close();
   }
-  
+
   public void testWrongEncoding() throws Exception {
     String wrongEncoding = "stopwordsWrongEncoding.txt";
     try(SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {

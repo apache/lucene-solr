@@ -314,7 +314,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    */
   private File locateConfigFile(String resource) {
     String location = config.getResourceLoader().resourceLocation(resource);
-    if (location.equals(resource) || location.startsWith("classpath:"))
+    if (location == null || location.equals(resource) || location.startsWith("classpath:"))
       return null;
     return new File(location);
   }
