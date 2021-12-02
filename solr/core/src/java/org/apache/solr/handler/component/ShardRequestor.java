@@ -140,8 +140,10 @@ class ShardRequestor implements Callable<ShardResponse> {
         srsp.setShardAddress(rsp.getServer());
       }
     } catch (ConnectException cex) {
+      log.warn("Shard request failed : " + cex.getMessage(), cex);
       srsp.setException(cex); //????
     } catch (Exception th) {
+      log.warn("Shard request failed : " + th.getMessage(), th);
       srsp.setException(th);
       if (th instanceof SolrException) {
         srsp.setResponseCode(((SolrException) th).code());
