@@ -233,10 +233,11 @@ IF "%1"=="status" goto get_info
 IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
-IF "%1"=="assert" goto run_assert
-IF "%1"=="autoscaling" goto run_autoscaling
-IF "%1"=="export" goto run_export
-IF "%1"=="package" goto run_package
+IF "%1"=="assert" goto run_solrcli
+IF "%1"=="autoscaling" goto run_solrcli
+IF "%1"=="export" goto run_solrcli
+IF "%1"=="package" goto run_solrcli
+IF "%1"=="api" goto run_solrcli
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd
@@ -313,7 +314,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling, export
+@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling, export, api, package
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -1448,7 +1449,7 @@ echo ZK_HOST: !ZK_HOST!
   org.apache.solr.util.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !ZK_HOST! %HEALTHCHECK_VERBOSE%
 goto done
 
-:run_assert
+:run_solrcli
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
@@ -1457,29 +1458,6 @@ if errorlevel 1 (
    exit /b 1
 )
 goto done
-
-:run_autoscaling
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %* 
-goto done:
-
-:run_export
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %*
-goto done:
-
-:run_package
-REM TODO: Compute the running Solr URL and populate it as a parameter (as has been done for the shell script)
-REM Without that, users will have to supply -solrUrl parameter in every request. Life can be so hard for Windows users!
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %*
-goto done:
 
 :parse_config_args
 IF [%1]==[] goto run_config
@@ -2058,10 +2036,8 @@ FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "versi
   REM Remove surrounding quotes
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
 
-  echo "java version info is !JAVA_VERSION_INFO!"
   REM Extract the major Java version, e.g. 7, 8, 9, 10 ...
   for /f "tokens=1,2 delims=._-" %%a in ("!JAVA_VERSION_INFO!") do (
-    echo "Extracted major version is %%a"
     if %%a GEQ 9 (
       set JAVA_MAJOR_VERSION=%%a
     ) else (
