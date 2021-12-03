@@ -73,7 +73,7 @@ public class AuthToolTest extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     SolrCLI.Tool tool = findTool(args);
     assertTrue(tool instanceof SolrCLI.AuthTool);
-    CommandLine cli = parseCmdLine(args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
     return tool.runTool(cli);
   }
 }
