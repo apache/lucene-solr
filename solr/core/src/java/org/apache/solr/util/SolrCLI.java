@@ -303,7 +303,7 @@ public class SolrCLI {
     try {
       tool = findTool(args);
     } catch (IllegalArgumentException iae) {
-      CLIO.err(iae.getMessage());
+      System.err.println(iae.getMessage());
       System.exit(1);
     }
     CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
