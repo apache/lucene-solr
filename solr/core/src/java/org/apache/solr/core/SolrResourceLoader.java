@@ -77,7 +77,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final String SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM = "solr.allow.unsafe.resourceloading";
-  private boolean allowUnsafeResourceloading;
+  private final boolean allowUnsafeResourceloading;
 
   private String name = "";
   protected URLClassLoader classLoader;
@@ -90,9 +90,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private PackageListeningClassLoader schemaLoader ;
 
   private PackageListeningClassLoader coreReloadingClassLoader ;
-  private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
-  private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
-  private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
+  private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<>());
+  private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<>());
+  private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<>());
 
   private final Properties coreProperties; // gone in 9.0
 
@@ -276,12 +276,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * @throws IOException on error
    */
   public static List<URL> getURLs(Path libDir) throws IOException {
-    return getURLs(libDir, new DirectoryStream.Filter<Path>() {
-      @Override
-      public boolean accept(Path entry) throws IOException {
-        return true;
-      }
-    });
+    return getURLs(libDir, entry -> true);
   }
 
   /**
@@ -293,12 +288,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    */
   public static List<URL> getFilteredURLs(Path libDir, String regex) throws IOException {
     final PathMatcher matcher = libDir.getFileSystem().getPathMatcher("regex:" + regex);
-    return getURLs(libDir, new DirectoryStream.Filter<Path>() {
-      @Override
-      public boolean accept(Path entry) throws IOException {
-        return matcher.matches(entry.getFileName());
-      }
-    });
+    return getURLs(libDir, entry -> matcher.matches(entry.getFileName()));
   }
 
   /** Ensures a directory name always ends with a '/'. */
@@ -514,7 +504,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       }
     }
 
-    Class<? extends T> clazz = null;
+    Class<? extends T> clazz;
     clazz = getPackageClass(cname, expectedType);
     if(clazz != null) return clazz;
     try {
@@ -620,10 +610,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
           "Can not find class: "+cName + " in " + classLoader);
     }
 
-    T obj = null;
+    T obj;
     try {
 
-      Constructor<? extends T> constructor = null;
+      Constructor<? extends T> constructor;
       try {
         constructor = clazz.getConstructor(params);
         obj = constructor.newInstance(args);
@@ -978,7 +968,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
       }
-      try (OutputStream out = new FileOutputStream(confFile);) {
+      try (OutputStream out = new FileOutputStream(confFile)) {
         out.write(content);
       }
       log.info("Written confile {}", resourceName);
