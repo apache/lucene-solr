@@ -172,6 +172,11 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     checkHits(fieldName, "0,0", 100, DistanceUtils.EARTH_MEAN_RADIUS_KM, 0);//doesn't error
   }
 
+  @Test
+  public void testExistsQuery() {
+    assertQ(req("q", fieldName + ":*", "fl", "id," + fieldName));
+  }
+
   private void checkHits(String fieldName, String pt, double distKM, double sphereRadius, int count, int ... docIds) throws ParseException {
     checkHits(fieldName, true, pt, distKM, sphereRadius, count, docIds);
   }

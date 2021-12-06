@@ -1478,13 +1478,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testFieldExistsQueries() throws SyntaxError {
     SolrQueryRequest req = req();
     String[] fieldSuffix = new String[] {
-        "ti", "tf", "td", "tl", "tdt",
-        "pi", "pf", "pd", "pl", "pdt",
-        "i", "f", "d", "l", "dt", "s", "b",
-        "is", "fs", "ds", "ls", "dts", "ss", "bs",
-        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv",
-        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv",
-        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo",
+        "ti", "tf", "td", "tl", "tdt", // trie types
+        "pi", "pf", "pd", "pl", "pdt", // point types
+        "i", "f", "d", "l", "dt", "s", "b", // numeric types
+        "is", "fs", "ds", "ls", "dts", "ss", "bs", // multi-valued
+        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv", // numerics + docValues
+        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv", // multi-docValues
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo", // not indexed
         "t",
         "t_on", "b_norms", "s_norms", "dt_norms", "i_norms", "l_norms", "f_norms", "d_norms"
     };
