@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<schema name="add-schema-fields-update-processor" version="1.6">
+
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="6" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="text" class="solr.TextField" multiValued="true" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
+  <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="_version_" type="long" indexed="true" stored="true"/>
+  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false"/>
+
+  <dynamicField name="*_str" type="string" stored="false" multiValued="true" docValues="true" useDocValuesAsStored="false"/>
+  <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
+  <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>
+  <dynamicField name="*_tl" type="tlong" indexed="true" stored="true"/>
+  <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
+  <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
+  <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
+
+  <dynamicField name="*_pi" type="pint"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pis" type="pints"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pl" type="plong"   indexed="true"  stored="true"/>
+  <dynamicField name="*_pls" type="plongs"   indexed="true"  stored="true"/>
+  <dynamicField name="*_pf" type="pfloat"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pfs" type="pfloats"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pd" type="pdouble" indexed="true"  stored="true"/>
+  <dynamicField name="*_pds" type="pdoubles" indexed="true"  stored="true"/>
+  <dynamicField name="*_pdt" type="pdate"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pdts" type="pdates"  indexed="true"  stored="true"/>
+
+  <uniqueKey>id</uniqueKey>
+
+</schema>
