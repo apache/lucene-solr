@@ -30,6 +30,8 @@ Bug Fixes
 * SOLR-15825: Security UI 'hasPermission' check should check if the user has the "all" permission if the requested permission is not defined
   to match how the backend works (Timothy Potter)
 
+* SOLR-15826: ResourceLoader should better respect allowed paths (janhoy)
+
 * SOLR-15828: AuthTool (in SolrCLI) should include the config-read, collection-admin-read, core-admin-read, and all permissions in the initial security.json
   to avoid warnings in the security UI (Timothy Potter)
 
