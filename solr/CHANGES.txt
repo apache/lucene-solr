@@ -37,6 +37,8 @@ Bug Fixes
 
 * SOLR-15199: Pass thru all command actions not explicitly handled by the bin/solr script, such as 'api', to the SolrCLI Java app (Timothy Potter)
 
+* SOLR-15833: Enable exists queries on spatial types. (Mike Drob, Houston Putman)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

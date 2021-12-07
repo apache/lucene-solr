@@ -52,6 +52,8 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
         "//result/doc[position()=1]/str[.='3']",
         "//result/doc[position()=2]/str[.='1']",
         "//result/doc[position()=10]/str[.='8']");
+
+    assertQ("test exists", req("q", "*:*", "sort", "exists(eff) desc"));
   }
   
   @Test
