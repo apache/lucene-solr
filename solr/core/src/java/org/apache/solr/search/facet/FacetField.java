@@ -16,13 +16,16 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocSet;
 
 public class FacetField extends FacetRequestSorted {
   public static final int DEFAULT_FACET_LIMIT = 10;
@@ -33,6 +36,7 @@ public class FacetField extends FacetRequestSorted {
   String prefix;
   FacetMethod method;
   int cacheDf;  // 0 means "default", -1 means "never cache"
+  Query baseFilter; // if supplied, applied solely for top terms computation, original base used for sub facets/stats
 
   // experimental - force perSeg collection when using dv method, currently for testing purposes only.
   Boolean perSeg;
@@ -71,10 +75,15 @@ public class FacetField extends FacetRequestSorted {
 
   @Override
   @SuppressWarnings("rawtypes")
-  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
+  public FacetProcessor createFacetProcessor(FacetContext fcontext) throws IOException {
     SchemaField sf = fcontext.searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
     boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
+    
+    if (baseFilter != null) {
+      DocSet filteredBase = fcontext.searcher.getDocSet(baseFilter, fcontext.base);
+      fcontext = fcontext.subTemp(baseFilter, filteredBase);
+    }
 
     if (fcontext.facetInfo != null) {
       // refinement... we will end up either skipping the entire facet, or doing calculating only specific facet buckets

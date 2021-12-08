@@ -38,6 +38,7 @@ public class FacetContext {
   Query filter;  // TODO: keep track of as a DocSet or as a Query?
   DocSet base;
   FacetContext parent;
+  boolean temp = false;
   boolean cache = true;
   int flags;
   FacetDebugInfo debugInfo;
@@ -86,6 +87,14 @@ public class FacetContext {
     return parent;
   }
 
+  public FacetContext perm() {
+    FacetContext curr = this;
+    while (curr != null && curr.temp) {
+      curr = curr.parent;
+    }
+    return curr;
+  }
+
   public int getFlags() {
     return flags;
   }
@@ -95,8 +104,26 @@ public class FacetContext {
    * @param domain The resulting set of documents for this facet.
    */
   public FacetContext sub(Query filter, DocSet domain) {
+    return sub(filter, domain, false);
+  }
+
+  /**
+   * Creates a sub facet that exists temporarily. Child facet contexts created from this context skip over this one
+   * and parent one level up.
+   *
+   * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
+   * @param domain The resulting set of documents for this facet.
+   */
+  public FacetContext subTemp(Query filter, DocSet domain) {
+    return sub(filter, domain, true);
+  }
+
+  private FacetContext sub(Query filter, DocSet domain, boolean temp) {
     FacetContext ctx = new FacetContext();
-    ctx.parent = this;
+    // We want the first non temporary context (starting with this) for parent.
+    // Typically we would only skip one context at most if temp contexts are used.
+    ctx.parent = perm();
+    ctx.temp = temp;
     ctx.base = domain;
     ctx.filter = filter;
 

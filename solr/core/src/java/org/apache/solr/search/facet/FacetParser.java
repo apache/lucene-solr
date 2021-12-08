@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Strings;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -550,6 +551,13 @@ public abstract class FacetParser<FacetRequestT extends FacetRequest> {
         facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
         facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
         facet.mergedBucketsLimit = (int)getLong(m, "mergedBucketsLimit", facet.mergedBucketsLimit);
+
+        String rawBaseFilter = getString(m, "baseFilter", "");
+        if (!Strings.isNullOrEmpty(rawBaseFilter)) {
+          QParser parser = QParser.getParser(rawBaseFilter, getSolrRequest());
+          parser.setIsFilter(true);
+          facet.baseFilter = parser.getQuery();
+        }
 
         // TODO: pull up to higher level?
         facet.refine = FacetRequest.RefineMethod.fromObj(m.get("refine"));
