@@ -778,8 +778,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       if (setBuilders != null) {
         DocSetBuilder setBuilder = setBuilders[slot];
         if (setBuilder == null) {
-          // DocSetBuilder cost estimate calculation pulled from other usages.
-          setBuilder = new DocSetBuilder(maxDoc, Math.min(64, (maxDoc >>> 10) + 4));
+          // for costEst assume that the base docs are distributed evenly across the slots
+          long costEst = fcontext.base.size() / numSlots;
+          setBuilder = new DocSetBuilder(maxDoc, costEst);
           setBuilders[slot] = setBuilder;
         }
         setBuilder.add(doc);
