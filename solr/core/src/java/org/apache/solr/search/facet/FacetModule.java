@@ -483,8 +483,8 @@ public class FacetModule extends SearchComponent {
 
 
   // base class for facets that create buckets (and can hence have sub-facets)
-  abstract static class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
-    FacetRequestT freq;
+  public abstract static class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
+    protected FacetRequestT freq;
 
     public FacetBucketMerger(FacetRequestT freq) {
       this.freq = freq;
@@ -493,7 +493,7 @@ public class FacetModule extends SearchComponent {
     /**
      * Bucketval is the representative value for the bucket.  Only applicable to terms and range queries to distinguish buckets.
      */
-    FacetBucket newBucket(@SuppressWarnings("rawtypes") Comparable bucketVal, Context mcontext) {
+    protected FacetBucket newBucket(@SuppressWarnings("rawtypes") Comparable bucketVal, Context mcontext) {
       return new FacetBucket(this, bucketVal, mcontext);
     }
 

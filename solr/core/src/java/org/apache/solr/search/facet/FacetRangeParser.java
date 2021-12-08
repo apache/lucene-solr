@@ -74,4 +74,10 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     return facet;
   }
 
+  public static class Factory implements FacetParserFactory {
+    @Override
+    public FacetParser<?> create(FacetParser<?> parent, String key) {
+      return new FacetRangeParser(parent, key);
+    }
+  }
 }

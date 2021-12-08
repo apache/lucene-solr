@@ -16,8 +16,10 @@
  */
 package org.apache.solr.search.facet;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,15 +28,15 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
-abstract class FacetParser<FacetRequestT extends FacetRequest> {
+public abstract class FacetParser<FacetRequestT extends FacetRequest> {
   protected FacetRequestT facet;
   protected FacetParser<?> parent;
   protected String key;
@@ -59,7 +61,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
     return new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg + " , path="+getPathStr());
   }
 
-  public abstract FacetRequest parse(Object o) throws SyntaxError;
+  public abstract FacetRequestT parse(Object o) throws SyntaxError;
 
   // TODO: put the FacetRequest on the parser object?
   public void parseSubs(Object o) throws SyntaxError {
@@ -134,22 +136,16 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
   }
 
   public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
-    // TODO: a place to register all these facet types?
-
-    switch (type) {
-      case "field":
-      case "terms":
-        return new FacetFieldParser(this, key).parse(args);
-      case "query":
-        return new FacetQueryParser(this, key).parse(args);
-      case "range":
-        return new FacetRangeParser(this, key).parse(args);
-      case "heatmap":
-        return new FacetHeatmap.Parser(this, key).parse(args);
-      case "func":
+    // First check facet parser factories.
+    FacetParserFactory facetParserFactory = getSolrRequest().getCore().getFacetParserFactory(type);
+    if (facetParserFactory != null) {
+      return facetParserFactory.create(this, key).parse(args);
+    }
+    // Then handle special case func directly.
+    if (type.equals("func")) {
         return parseStat(key, args);
     }
-
+    // Otherwise, unknown.
     throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
   }
 
@@ -488,6 +484,13 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
 
       return facet;
     }
+    
+    public static class Factory implements FacetParserFactory {
+      @Override
+      public FacetParser<?> create(FacetParser<?> parent, String key) {
+        return new FacetQueryParser(parent, key);
+      }
+    }
   }
 
   /*** not a separate type of parser for now...
@@ -636,6 +639,23 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
       return facetSort;
     }
 
+    public static class Factory implements FacetParserFactory {
+      @Override
+      public FacetParser<?> create(FacetParser<?> parent, String key) {
+        return new FacetFieldParser(parent, key);
+      }
+    }
   }
 
+  public static final Map<String, Class<? extends FacetParserFactory>> standard_factories;
+
+  static {
+    HashMap<String, Class<? extends FacetParserFactory>> map = new HashMap<>();
+    map.put("field", FacetParser.FacetFieldParser.Factory.class);
+    map.put("terms", FacetParser.FacetFieldParser.Factory.class);
+    map.put("query", FacetParser.FacetQueryParser.Factory.class);
+    map.put("range", FacetRangeParser.Factory.class);
+    map.put("heatmap", FacetHeatmap.Parser.Factory.class);
+    standard_factories = Collections.unmodifiableMap(map);
+  }
 }

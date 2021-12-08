@@ -73,6 +73,7 @@ import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.facet.FacetParserFactory;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.spelling.QueryConverter;
@@ -402,6 +403,7 @@ public class SolrConfig implements MapSerializable {
       .add(new SolrPluginInfo(ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      .add(new SolrPluginInfo(FacetParserFactory.class, "facetParserFactory", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(UpdateRequestProcessorFactory.class, "updateProcessor", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(SolrCache.class, "cache", REQUIRE_NAME, MULTI_OK))
           // TODO: WTF is up with queryConverter???
