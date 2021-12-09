@@ -39,6 +39,8 @@ Bug Fixes
 
 * SOLR-15833: Enable exists queries on spatial types. (Mike Drob, Houston Putman)
 
+* SOLR-15832: Clean-up after publish action in Schema Designer shouldn't fail if .system collection doesn't exist (Timothy Potter)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

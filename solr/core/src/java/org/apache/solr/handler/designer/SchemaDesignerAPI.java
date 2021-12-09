@@ -514,7 +514,12 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
 
     if (req.getParams().getBool(CLEANUP_TEMP_PARAM, true)) {
-      cleanupTemp(configSet);
+      try {
+        cleanupTemp(configSet);
+      } catch (IOException | SolrServerException | SolrException exc) {
+        final String excStr = exc.toString();
+        log.warn("Failed to clean-up temp collection {} due to: {}", mutableId, excStr);
+      }
     }
 
     settings.setDisabled(req.getParams().getBool(DISABLE_DESIGNER_PARAM, false));
@@ -771,11 +776,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       Optional<SchemaField> maybeSchemaField = schemaSuggester.suggestField(normalizedField, sampleValues, schema, langs);
       maybeSchemaField.ifPresent(fieldsToAdd::add);
     }
-
     if (!fieldsToAdd.isEmpty()) {
       schema = (ManagedIndexSchema) schema.addFields(fieldsToAdd);
     }
-    
     return schema;
   }
 
@@ -801,6 +804,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
               "Schema '" + configSet + "' is locked for edits by the schema designer!");
         }
         publishedVersion = configSetHelper.getCurrentSchemaVersion(configSet);
+        log.info("Opening temp copy of {} as {} with publishedVersion {}", configSet, mutableId, publishedVersion);
         // ignore the copyFrom as we're making a mutable temp copy of an already published configSet
         copyConfig(configSet, mutableId);
         copyFrom = null;
@@ -1140,8 +1144,11 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
           mutableId + " configSet not found! Are you sure " + configSet + " was being edited by the schema designer?");
     }
 
-    // check the versions agree
-    configSetHelper.checkSchemaVersion(mutableId, requireSchemaVersionFromClient(req), -1);
+    final int schemaVersionInZk = configSetHelper.getCurrentSchemaVersion(mutableId);
+    if (schemaVersionInZk != -1) {
+      // check the versions agree
+      configSetHelper.checkSchemaVersion(mutableId, requireSchemaVersionFromClient(req), schemaVersionInZk);
+    } // else the stored is -1, can't really enforce here
 
     return mutableId;
   }
