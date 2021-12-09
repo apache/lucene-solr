@@ -24,10 +24,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.parser.SolrQueryParserBase;
@@ -145,6 +147,13 @@ public class TextField extends FieldType {
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     return parseFieldQuery(parser, getQueryAnalyzer(), field.getName(), externalVal);
+  }
+  
+  @Override
+  public Query getFieldTermQuery(QParser parser, SchemaField field, String externalVal) {
+    BytesRefBuilder br = new BytesRefBuilder();
+    readableToIndexed(externalVal, br);
+    return new TermQuery(new Term(field.getName(), br));
   }
 
   @Override

@@ -41,6 +41,8 @@ Bug Fixes
 
 * SOLR-15832: Clean-up after publish action in Schema Designer shouldn't fail if .system collection doesn't exist (Timothy Potter)
 
+* SOLR-8319: Fix NPE in pivot facets, add non-Analyzed query method in FieldType. (Houston Putman, Isabelle Giguere)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

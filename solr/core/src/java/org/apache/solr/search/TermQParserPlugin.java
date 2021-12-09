@@ -20,6 +20,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -48,21 +49,18 @@ public class TermQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() {
         String fname = localParams.get(QueryParsing.F);
+        if (fname == null || fname.isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing field to query");
+        }
         FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
         String val = localParams.get(QueryParsing.V);
-        BytesRefBuilder term;
         if (ft != null) {
-          if (ft.isPointField()) {
-            return ft.getFieldQuery(this, req.getSchema().getField(fname), val);
-          } else {
-            term = new BytesRefBuilder();
-            ft.readableToIndexed(val, term);
-          }
+          return ft.getFieldTermQuery(this, req.getSchema().getField(fname), val);
         } else {
-          term = new BytesRefBuilder();
+          BytesRefBuilder term = new BytesRefBuilder();
           term.copyChars(val);
+          return new TermQuery(new Term(fname, term.get()));
         }
-        return new TermQuery(new Term(fname, term.get()));
       }
     };
   }

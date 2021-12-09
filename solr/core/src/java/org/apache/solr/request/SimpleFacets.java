@@ -904,7 +904,7 @@ public class SimpleFacets {
 
   private int numDocs(String term, final SchemaField sf, final FieldType ft, final DocSet baseDocset) {
     try {
-      return searcher.numDocs(ft.getFieldQuery(null, sf, term), baseDocset);
+      return searcher.numDocs(ft.getFieldTermQuery(null, sf, term), baseDocset);
     } catch (IOException e1) {
       throw new RuntimeException(e1);
     }

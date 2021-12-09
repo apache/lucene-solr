@@ -443,7 +443,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     long val = table.vals[slotNum];
     @SuppressWarnings({"rawtypes"})
     Comparable value = calc.bitsToValue(val);
-    return new SlotContext(sf.getType().getFieldQuery(null, sf, calc.formatValue(value)));
+    return new SlotContext(sf.getType().getFieldTermQuery(null, sf, calc.formatValue(value)));
   };
 
   private void doRehash(LongCounts table) {
