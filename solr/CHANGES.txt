@@ -41,6 +41,8 @@ Bug Fixes
 
 * SOLR-15832: Clean-up after publish action in Schema Designer shouldn't fail if .system collection doesn't exist (Timothy Potter)
 
+* SOLR-15844: Upgrade Velocity from v2.0 to v2.3 to address CVE-2020-13936 (wcmrnd1, janhoy)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
