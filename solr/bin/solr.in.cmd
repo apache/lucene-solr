@@ -208,4 +208,8 @@ REM set SOLR_SECURITY_MANAGER_ENABLED=false
 REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
-REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path"
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
+
+REM Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
+REM then enable the following setting to address CVE-2021-44228
+REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true

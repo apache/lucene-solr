@@ -351,7 +351,7 @@ public class PivotFacetProcessor extends SimpleFacets
       DocSet hasVal = searcher.getDocSet(query);
       return base.andNotSize(hasVal);
     } else {
-      Query query = ft.getFieldQuery(null, field, pivotValue);
+      Query query = ft.getFieldTermQuery(null, field, pivotValue);
       return searcher.numDocs(query, base);
     }
   }
@@ -370,7 +370,7 @@ public class PivotFacetProcessor extends SimpleFacets
       DocSet hasVal = searcher.getDocSet(query);
       return base.andNot(hasVal);
     } else {
-      Query query = ft.getFieldQuery(null, field, pivotValue);
+      Query query = ft.getFieldTermQuery(null, field, pivotValue);
       return searcher.getDocSet(query, base);
     }
   }

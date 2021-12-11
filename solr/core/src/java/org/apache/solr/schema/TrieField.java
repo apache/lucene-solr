@@ -348,16 +348,6 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (!field.indexed() && field.hasDocValues()) {
-      // currently implemented as singleton range
-      return getRangeQuery(parser, field, externalVal, externalVal, true, true);
-    } else {
-      return super.getFieldQuery(parser, field, externalVal);
-    }
-  }
-
-  @Override
   public String storedToReadable(IndexableField f) {
     return toExternal(f);
   }
