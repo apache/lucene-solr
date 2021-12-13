@@ -47,6 +47,8 @@ Bug Fixes
 
 * SOLR-15843: Update Log4J to 2.15 (Mike Drob)
 
+* SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
