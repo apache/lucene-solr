@@ -176,14 +176,14 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
     // The test init properties file turns off being able to use $foreach.index (the implicit loop counter)
     // The foreach.vm template uses $!foreach.index, with ! suppressing the literal "$foreach.index" output
 
-    assertEquals("01", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"foreach")));
-    assertEquals("", h.query(req("q","*:*", "wt","velocityWithInitProps",VelocityResponseWriter.TEMPLATE,"foreach")));
+    assertEquals("01", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"foreach")).trim());
+    assertEquals("", h.query(req("q","*:*", "wt","velocityWithInitProps",VelocityResponseWriter.TEMPLATE,"foreach")).trim());
 
     // Turn off trusted configset, which disables the init properties
     h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(false);
     assertFalse(h.getCoreContainer().getCoreDescriptor(coreName).isConfigSetTrusted());
 
-    assertEquals("01", h.query(req("q","*:*", "wt","velocityWithInitProps",VelocityResponseWriter.TEMPLATE,"foreach")));
+    assertEquals("01", h.query(req("q","*:*", "wt","velocityWithInitProps",VelocityResponseWriter.TEMPLATE,"foreach")).trim());
 
     // set the harness back to the default of trusted
     h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(true);
