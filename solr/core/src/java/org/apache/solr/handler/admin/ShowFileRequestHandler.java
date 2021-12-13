@@ -105,6 +105,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   static {
     KNOWN_MIME_TYPES = new HashSet<>(MimeTypes.getKnownMimeTypes());
     KNOWN_MIME_TYPES.add("text/xml");
+    KNOWN_MIME_TYPES.add("text/javascript");
   }
 
   public ShowFileRequestHandler()
@@ -374,7 +375,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
         return null;
       }
-      Path filePath = configdir.toPath().resolve(fname);
+      // A leading slash is unnecessary but supported and interpreted as start of config dir
+      Path filePath = configdir.toPath().resolve(fname.startsWith("/") ? fname.substring(1) : fname);
       req.getCore().getCoreContainer().assertPathAllowed(filePath);
       adminFile = filePath.toFile();
     }
