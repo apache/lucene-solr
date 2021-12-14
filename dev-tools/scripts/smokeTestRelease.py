@@ -338,7 +338,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
       sigFile = '%s/%s.asc' % (tmpDir, artifact)
       artifactFile = '%s/%s' % (tmpDir, artifact)
       logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
-      run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
+      run('gpg --homedir %s --display-charset utf-8 --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since it's a clean world)
       f = open(logFile)
@@ -353,7 +353,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
           '%s/%s.gpg.trust.import.log' % (tmpDir, project))
       print('    verify trust')
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
-      run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
+      run('gpg --display-charset utf-8 --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
       f = open(logFile)
       for line in f.readlines():
@@ -1088,7 +1088,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile):
       sigFile = '%s.asc' % artifactFile
       # Test sig (this is done with a clean brand-new GPG world)
       logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
-      run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
+      run('gpg --homedir %s --display-charset utf-8 --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since it's a clean world)
       f = open(logFile)
@@ -1103,7 +1103,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile):
       run('gpg --import %s' % keysFile,
           '%s/%s.gpg.trust.import.log' % (tmpDir, project))
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
-      run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
+      run('gpg --display-charset utf-8 --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
       f = open(logFile)
       for line in f.readlines():
