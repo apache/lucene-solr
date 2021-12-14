@@ -350,7 +350,7 @@ class ReleaseState:
         if state.mirrored_versions is None:
             releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
             releases = json.loads(releases_str)['lucene']
-            state.mirrored_versions = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('lucene-'), list(releases.keys())))) ]
+            state.mirrored_versions = [ r for r in list(map(lambda y: y[5:], filter(lambda x: x.startswith('solr-'), list(releases.keys())))) ]
         return state.mirrored_versions
 
     def get_mirrored_versions_to_delete(self):
