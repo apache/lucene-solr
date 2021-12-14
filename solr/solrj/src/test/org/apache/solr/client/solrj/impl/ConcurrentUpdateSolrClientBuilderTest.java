@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
@@ -49,6 +50,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
   /**
    * Test that connection timeout information is passed to the HttpSolrClient that handles non add operations.
    */
+  @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15848")
   @Test(timeout = 10000)
   public void testSocketTimeoutOnCommit() throws IOException, SolrServerException {
     InetAddress localHost = InetAddress.getLocalHost();

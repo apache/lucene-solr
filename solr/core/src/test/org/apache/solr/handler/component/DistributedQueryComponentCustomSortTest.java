@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -46,6 +47,7 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
 
   @Test
   @ShardsFixed(num = 3)
+  @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15848")
   public void test() throws Exception {
     del("*:*");
 
