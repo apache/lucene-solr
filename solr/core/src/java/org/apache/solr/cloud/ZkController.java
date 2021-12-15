@@ -2380,6 +2380,7 @@ public class ZkController implements Closeable {
   @SuppressWarnings("unchecked")
   public static List<String> getDedicatedOverseers(SolrCloudManager scm) {
     try {
+      log.info("getDedicatedOverseers call ");
       VersionedData data = scm.getDistribStateManager().getData(ZkStateReader.ROLES);
       if(data == null || data.getData() == null) return Collections.emptyList();
       Map<String, Object> roles = (Map<String, Object>) Utils.fromJSON(data.getData());
