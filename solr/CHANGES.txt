@@ -34,6 +34,8 @@ Bug Fixes
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
+* SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -152,7 +154,7 @@ Other Changes
   - errorprone: 2.9.0
   - gcp-client: 1.32.1
   (Houston Putman)
-  
+
 * SOLR-15269: Upgrade httpclient and httpmime to 4.5.13.  (ventry)
 
 ==================  8.10.0 ==================
