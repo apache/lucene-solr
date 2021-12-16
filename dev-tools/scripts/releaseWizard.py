@@ -67,7 +67,7 @@ from consolemenu.screen import Screen
 from scriptutil import BranchType, Version, check_ant, download, run
 
 # Solr-to-Java version mapping
-java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
+java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 11}
 editor = None
 
 # Edit this to add other global jinja2 variables or filters
@@ -83,7 +83,10 @@ def expand_jinja(text, vars=None):
         'script_branch': state.script_branch,
         'release_folder': state.get_release_folder(),
         'git_checkout_folder': state.get_git_checkout_folder(),
-        'git_website_folder': state.get_website_git_folder(),
+        'lucene_git_checkout_folder': state.get_lucene_git_checkout_folder(),
+        'solr_git_checkout_folder': state.get_solr_git_checkout_folder(),
+        'git_lucene_website_folder': state.get_lucene_website_git_folder(),
+        'git_solr_website_folder': state.get_solr_website_git_folder(),
         'dist_url_base': 'https://dist.apache.org/repos/dist/dev/lucene',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
         'dist_file_path': state.get_dist_folder(),
@@ -99,7 +102,7 @@ def expand_jinja(text, vars=None):
         'release_version_bugfix': state.release_version_bugfix,
         'release_version_refguide': state.get_refguide_release() ,
         'state': state,
-        'gpg_key' : state.get_gpg_key(),
+        'gpg_key': state.get_gpg_key(),
         'epoch': unix_time_millis(datetime.utcnow()),
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
@@ -350,7 +353,8 @@ class ReleaseState:
         if state.mirrored_versions is None:
             releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
             releases = json.loads(releases_str)['lucene']
-            state.mirrored_versions = [ r for r in list(map(lambda y: y[5:], filter(lambda x: x.startswith('solr-'), list(releases.keys())))) ]
+            vers = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('lucene-'), list(releases.keys())))) ]
+            state.mirrored_versions = vers
         return state.mirrored_versions
 
     def get_mirrored_versions_to_delete(self):
@@ -563,8 +567,20 @@ class ReleaseState:
         folder = os.path.join(self.get_release_folder(), "lucene-solr")
         return folder
 
-    def get_website_git_folder(self):
+    def get_lucene_git_checkout_folder(self):
+        folder = os.path.join(self.get_release_folder(), "lucene")
+        return folder
+
+    def get_solr_git_checkout_folder(self):
+        folder = os.path.join(self.get_release_folder(), "solr")
+        return folder
+
+    def get_lucene_website_git_folder(self):
         folder = os.path.join(self.get_release_folder(), "lucene-site")
+        return folder
+
+    def get_solr_website_git_folder(self):
+        folder = os.path.join(self.get_release_folder(), "solr-site")
         return folder
 
     def get_minor_branch_name(self):
@@ -1389,11 +1405,10 @@ def main():
 
     global lucene_news_file
     global solr_news_file
-    lucene_news_file = os.path.join(state.get_website_git_folder(), 'content', 'core', 'core_news',
+    lucene_news_file = os.path.join(state.get_lucene_website_git_folder(), 'content', 'core', 'core_news',
       "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
-    solr_news_file = os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
+    solr_news_file = os.path.join(state.get_solr_website_git_folder(), 'content', 'solr', 'solr_news',
       "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
-    website_folder = state.get_website_git_folder()
 
     main_menu = UpdatableConsoleMenu(title="Lucene/Solr ReleaseWizard",
                             subtitle=get_releasing_text,

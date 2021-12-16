@@ -107,7 +107,7 @@ templates:
     category: solr/news
     save_as:
 
-    The Lucene PMC is pleased to announce the release of Apache Solr {{ release_version }}.
+    The Lucene and Solr PMCs are pleased to announce the release of Apache Solr {{ release_version }}.
 
     Solr is the popular, blazing fast, open source NoSQL search platform from the Apache Lucene project. Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering, database integration, rich document handling, and geospatial search. Solr is highly scalable, providing fault tolerant distributed search and indexing, and powers the search and navigation features of many of the world's largest internet sites.
 
@@ -122,11 +122,11 @@ templates:
 
     Please refer to the Upgrade Notes in the Solr Ref Guide for information on upgrading from previous Solr versions:
 
-      <https://lucene.apache.org/solr/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
+      <https://solr.apache.org/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
-      <https://lucene.apache.org/solr/{{ release_version_underscore }}/changes/Changes.html>
+      <https://solr.apache.org/docs/{{ release_version_underscore }}/changes/Changes.html>
 
     Solr {{ release_version }} also includes {% if is_feature_release %}features, optimizations and {% endif %}bugfixes in the corresponding Apache Lucene release:
 
@@ -160,11 +160,6 @@ templates:
     {{ line }}
     {%- endfor %}
 
-
-    Note: The Apache Software Foundation uses an extensive mirroring network for
-    distributing releases. It is possible that the mirror you are using may not have
-    replicated the release yet. If that is the case, please try another mirror.
-    This also applies to Maven access.
   announce_solr_mail: |
     The template below can be used to announce the Solr release to the
     internal mailing lists.
@@ -194,11 +189,6 @@ templates:
     {{ line }}
     {%- endfor %}
 
-
-    Note: The Apache Software Foundation uses an extensive mirroring network for
-    distributing releases. It is possible that the mirror you are using may not have
-    replicated the release yet. If that is the case, please try another mirror.
-    This also applies to Maven access.
 # TODOs belong to groups for easy navigation in menus. Todo objects may contain asciidoc
 # descriptions, a number of commands to execute, some links to display, user input to gather
 # etc. Here is the documentation of each type of object. For further details, please consult
@@ -1066,10 +1056,11 @@ groups:
 
 - !TodoGroup
   id: website
-  title: Update the website
+  title: Update the websites
   description: |
     For every release, we publish docs on the website, we need to update the
-    download pages etc. The website is hosted in https://github.com/apache/lucene-site
+    download pages etc. The Lucene website is hosted at https://github.com/apache/lucene-site
+    and the Solr website is hosted at https://github.com/apache/solr-site,
     but the Javadocs and Solr Reference Guide are pushed to SVN and then included
     in the main site through links.
   todos:
@@ -1082,7 +1073,7 @@ groups:
       At the end of the task, the two links below shall work.
     links:
     - http://lucene.apache.org/core/{{ version }}
-    - http://lucene.apache.org/solr/{{ version }}
+    - http://solr.apache.org/docs/{{ version }}
     vars:
       release_tag: releases/lucene-solr/{{ release_version }}
       version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
@@ -1108,33 +1099,57 @@ groups:
         comment: Add docs for Solr
   - !Todo
     id: website_git_clone
-    title: Do a clean git clone of the website repo
+    title: Do a clean git clone of the website repos
     description: This is where we'll commit later updates for the website.
     commands: !Commands
       root_folder: '{{ release_folder }}'
-      commands_text: Run this command to clone the website git repo
+      commands_text: Run these command to clone the website git repos
       remove_files:
-        - '{{ git_website_folder }}'
+        - '{{ git_lucene_website_folder }}'
+        - '{{ git_solr_website_folder }}'
       commands:
         - !Command
           cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene-site.git lucene-site
-          logfile: website_git_clone.log
+          logfile: website_lucene_git_clone.log
+        - !Command
+          cmd: git clone --progress https://gitbox.apache.org/repos/asf/solr-site.git solr-site
+          logfile: website_solr_git_clone.log
   - !Todo
-    id: website_update_versions
-    title: Update website versions
+    id: website_lucene_update_versions
+    title: Update Lucene website versions
     depends: website_git_clone
-    vars:
-      release_tag: releases/lucene-solr/{{ release_version }}
     description: |
-      We need to update the website so that the download pages list the new release, and the
-      "latest" javadoc links point to the new release.
+      We need to update the Lucene website so that the download page list the new release.
 
       Fortunately the only thing you need to change is a few variables in `pelicanconf.py`.
-      If you release a current latest release, change the `LUCENE_LATEST_RELEASE` and `LUCENE_LATEST_RELEASE_DATE`
-      variables.
-      If you relese a bugfix release for previos version, then change the `LUCENE_PREVIOUS_MAJOR_RELEASE` variable.
+
+      As this is a bugfix release, change the `LUCENE_PREVIOUS_MAJOR_RELEASE` variable.
     commands: !Commands
-      root_folder: '{{ git_website_folder }}'
+      root_folder: '{{ git_lucene_website_folder }}'
+      commands_text: Edit pelicanconf.py to update version numbers
+      commands:
+        - !Command
+          cmd: "{{ editor }} pelicanconf.py"
+          comment: Edit the pelicanconf.file
+          stdout: true
+        - !Command
+          cmd: git commit -am "Update version variables for release {{ release_version }}"
+          logfile: commit.log
+          stdout: true
+    post_description: |
+      You will push and verify all changes in a later step
+  - !Todo
+    id: website_solr_update_versions
+    title: Update Solr website versions
+    depends: website_git_clone
+    description: |
+      We need to update the Solr website so that the download page list the new release.
+
+      Fortunately the only thing you need to change is a few variables in `pelicanconf.py`.
+
+      Change the `SOLR_LATEST_RELEASE` or `SOLR_PREVIOUS_MAJOR_RELEASE` variable as necessary.
+    commands: !Commands
+      root_folder: '{{ git_solr_website_folder }}'
       commands_text: Edit pelicanconf.py to update version numbers
       commands:
         - !Command
@@ -1157,7 +1172,7 @@ groups:
       from the Wiki page and format it as Markdown.
     function: prepare_announce_lucene
     commands: !Commands
-      root_folder: '{{ git_website_folder }}'
+      root_folder: '{{ git_lucene_website_folder }}'
       commands_text: |
         Copy the Lucene announcement from https://cwiki.apache.org/confluence/display/LUCENE/Release+Notes
         You have to exit the editor after edit to continue.
@@ -1182,7 +1197,7 @@ groups:
       from the Wiki page and format it as Markdown.
     function: prepare_announce_solr
     commands: !Commands
-      root_folder: '{{ git_website_folder }}'
+      root_folder: '{{ git_solr_website_folder }}'
       commands_text: |
         Copy the Solr announcement from https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
         You have to exit the editor after edit to continue.
@@ -1198,43 +1213,17 @@ groups:
     post_description: |
       You will push and verify all changes in a later step
   - !Todo
-    id: update_other
-    title: Update rest of webpage
-    depends: website_update_versions
-    description: |
-      Update the rest of the web page. Please review all files in the checkout
-      and consider if any need change based on what changes there are in the
-      release you are doing. Things to consider:
-
-      * System requirements
-      * Quickstart and tutorial?
-    commands: !Commands
-      root_folder: '{{ git_website_folder }}'
-      commands_text: |
-        We'll open an editor on the root folder of the site checkout
-        You have to exit the editor after edit to continue.
-      commands:
-        - !Command
-          cmd: "{{ editor }} ."
-          comment: Open an editor on the root folder
-          stdout: true
-        - !Command
-          cmd: git commit -am "Other website changes for release {{ release_version }}"
-          comment: Commit the other changes
-          logfile: commit.log
-          stdout: true
-  - !Todo
-    id: stage_website
-    title: Stage the website changes
+    id: stage_lucene_website
+    title: Stage the Lucene website changes
     depends:
-    - prepare_announce_solr
+    - prepare_announce_lucene
     description: |
       Push the website changes to 'main' branch, and check the staging site.
       You will get a chance to preview the diff of all changes before you push.
       If you need to do changes, do the changes (e.g. by re-running previous step 'Update rest of webpage')
       and commit your changes. Then re-run this step and push when everything is OK.
     commands: !Commands
-      root_folder: '{{ git_website_folder }}'
+      root_folder: '{{ git_lucene_website_folder }}'
       commands_text: |
         Verify that changes look good, and then publish.
         You have to exit the editor after review to continue.
@@ -1244,10 +1233,10 @@ groups:
         stdout: true
       - !Command
         cmd: git diff
-        redirect: "{{ [release_folder, 'website.diff'] | path_join }}"
+        redirect: "{{ [release_folder, 'lucene_website.diff'] | path_join }}"
         comment: Make a diff of all edits. Will open in next step
       - !Command
-        cmd: "{{ editor }} {{ [release_folder, 'website.diff'] | path_join }}"
+        cmd: "{{ editor }} {{ [release_folder, 'lucene_website.diff'] | path_join }}"
         comment: View the diff of the website changes. Abort if you need to do changes.
         stdout: true
       - !Command
@@ -1265,15 +1254,16 @@ groups:
     - https://ci2.apache.org/#/builders/3
     - https://lucene.staged.apache.org
   - !Todo
-    id: publish_website
-    title: Publish the website changes
+    id: publish_lucene_website
+    title: Publish the Lucene website changes
     depends:
-      - stage_website
+      - stage_lucene_website
     description: |
       Push the website changes to 'production' branch. This will build and publish the live site on
       https://lucene.apache.org
     commands: !Commands
-      root_folder: '{{ git_website_folder }}'
+      root_folder: '{{ git_lucene_website_folder }}'
+      confirm_each_command: false
       commands:
         - !Command
           cmd: git checkout production && git pull
@@ -1289,96 +1279,94 @@ groups:
       Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
 
       Verify on https://lucene.apache.org that the site is OK.
-
-      You can now also verify that http://lucene.apache.org/solr/api/solr-core/ and http://lucene.apache.org/core/api/core/
-      redirects to the latest version
     links:
       - https://ci2.apache.org/#/builders/3
       - https://lucene.apache.org
-      - http://lucene.apache.org/solr/api/solr-core/
-      - http://lucene.apache.org/core/api/core/
+  - !Todo
+    id: stage_solr_website
+    title: Stage the Solr website changes
+    depends:
+    - prepare_announce_solr
+    description: |
+      Push the website changes to 'main' branch, and check the staging site.
+      You will get a chance to preview the diff of all changes before you push.
+      If you need to do changes, do the changes (e.g. by re-running previous step 'Update rest of webpage')
+      and commit your changes. Then re-run this step and push when everything is OK.
+    commands: !Commands
+      root_folder: '{{ git_solr_website_folder }}'
+      commands_text: |
+        Verify that changes look good, and then publish.
+        You have to exit the editor after review to continue.
+      commands:
+      - !Command
+        cmd: git checkout main && git status
+        stdout: true
+      - !Command
+        cmd: git diff
+        redirect: "{{ [release_folder, 'solr_website.diff'] | path_join }}"
+        comment: Make a diff of all edits. Will open in next step
+      - !Command
+        cmd: "{{ editor }} {{ [release_folder, 'solr_website.diff'] | path_join }}"
+        comment: View the diff of the website changes. Abort if you need to do changes.
+        stdout: true
+      - !Command
+        cmd: git push origin
+        comment: Push all changes
+        logfile: push-website.log
+    post_description: |
+      Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
+      and view the staged site at https://solr.staged.apache.org
+      Verify that correct links and versions are mentioned in download pages, download buttons etc.
+      If you find anything wrong, then commit and push any changes and check again.
+
+      Next step is to merge the changes to branch 'production' in order to publish the site.
+    links:
+    - https://ci2.apache.org/#/builders/3
+    - https://solr.staged.apache.org
+  - !Todo
+    id: publish_solr_website
+    title: Publish the Solr website changes
+    depends:
+      - stage_solr_website
+    description: |
+      Push the website changes to 'production' branch. This will build and publish the live site on
+      https://solr.apache.org
+    commands: !Commands
+      root_folder: '{{ git_solr_website_folder }}'
+      confirm_each_command: false
+      commands:
+        - !Command
+          cmd: git checkout production && git pull
+          stdout: true
+        - !Command
+          cmd: git merge main
+          stdout: true
+        - !Command
+          cmd: git push origin
+          comment: Push all changes to production branch
+          logfile: push-website.log
+    post_description: |
+      Wait a few minutes for the build to happen. You can follow the site build at https://ci2.apache.org/#/builders/3
+
+      Verify on https://solr.apache.org that the site is OK.
+
+      You can now also verify that http://solr.apache.org/api/solr-core/ redirects to the latest version
+    links:
+      - https://ci2.apache.org/#/builders/3
+      - https://solr.apache.org
+      - http://solr.apache.org/api/solr-core/
   - !Todo
     id: update_doap
     title: Update the DOAP files
     description: |
-      Update the Core & Solr DOAP RDF files on the unstable, stable and release branches to 
-      reflect the new versions (note that the website .htaccess file redirects from their 
-      canonical URLs to their locations in the Lucene/Solr Git source repository - see 
-      dev-tools/doap/README.txt for more info)
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Edit DOAP files
-      commands:
-      - !Command
-        cmd: git checkout lucene/main
-        stdout: true
-        comment: Goto lucene main branch
-      - !Command
-        cmd: "{{ editor }} dev-tools/doap/lucene.rdf"
-        comment: Edit Lucene DOAP, add version {{ release_version }}
-        stdout: true
-      - !Command
-        cmd: git commit dev-tools/doap/lucene.rdf  -m "DOAP changes for release {{ release_version }}"
-        logfile: commit-lucene.log
-        stdout: true
-      - !Command
-        cmd: git push lucene HEAD:main
-        logfile: push-lucene.log
-        stdout: true
-        comment: Push the main branch
-      - !Command
-        cmd: git remote add solr https://gitbox.apache.org/repos/asf/solr.git -f -m main && git checkout solr/main
-        stdout: true
-        comment: Goto solr main branch
-      - !Command
-        cmd: "{{ editor }} dev-tools/doap/solr.rdf"
-        comment: Edit Solr DOAP, add version {{ release_version }}
-        stdout: true
-      - !Command
-        cmd: git commit dev-tools/doap/solr.rdf  -m "DOAP changes for release {{ release_version }}"
-        logfile: commit.log
-        stdout: true
-      - !Command
-        cmd: git push solr HEAD:main
-        logfile: push-solr.log
-        stdout: true
-        comment: Push the main branch
-      - !Command
-        cmd: "git checkout {{ stable_branch }} && git pull"
-        stdout: true
-        comment: Checkout the stable branch
-      - !Command
-        cmd: "git cherry-pick lucene/main solr/main"
-        logfile: commit.log
-        stdout: true
-        comment: Cherrypick the DOAP changes from mains onto the stable branch.
-      - !Command
-        cmd: git show HEAD
-        stdout: true
-        comment: Ensure the only change is adding the new version.
-      - !Command
-        cmd: "git push origin {{ stable_branch }}"
-        logfile: push.log
-        stdout: true
-        comment: Push the stable branch
-      - !Command
-        cmd: "git checkout {{ release_branch }} && git pull"
-        stdout: true
-        comment: Checkout the release branch
-      - !Command
-        cmd: "git cherry-pick lucene/main solr/main"
-        logfile: commit.log
-        stdout: true
-        comment: Cherrypick the DOAP changes from the main branch onto the release branch.
-      - !Command
-        cmd: git show HEAD
-        stdout: true
-        comment: Ensure the only change is adding the new version.
-      - !Command
-        cmd: "git push origin {{ release_branch }}"
-        logfile: push.log
-        stdout: true
-        comment: Push the release branch
+      Update the Lucene & Solr DOAP RDF files on in Lucene and Solr's respective repositories.
+      See https://github.com/apache/lucene/tree/main/dev-tools/doap and
+      https://github.com/apache/solr/tree/main/dev-tools/doap for more info.
+
+      You may also have to update these files on `branch_9x` and `branch_9_X` as well(?)
+
+      NB: This is a manual step. You can choose to edit the file directly in GitHub UI or checkout the
+      repositories.
 - !TodoGroup
   id: announce
   title: Announce the release
@@ -1386,7 +1374,7 @@ groups:
     For feature releases, your announcement should describe the main features included 
     in the release. *Send the announce as Plain-text email, not HTML.*
 
-    This step will generate email templates based on the news files you edited earler for the website.
+    This step will generate email templates based on the news files you edited earlier for the websites.
     Do any last-minute necessary edits to the text as you copy it over to the email.
   todos:
   - !Todo
@@ -1396,7 +1384,7 @@ groups:
       (( template=announce_lucene_mail ))
   - !Todo
     id: announce_solr
-    title: Announce the Solr release (@l.a.o)
+    title: Announce the Solr release (@s.a.o)
     description: |
       (( template=announce_solr_mail ))
   - !Todo
@@ -1442,43 +1430,69 @@ groups:
     id: add_to_apache_reporter
     title: Add the new version to the Apache Release Reporter
     description: |
-      Go to the Apache Release Reporter and add a release for lucene.
+      Go to the Apache Release Reporter and add a release for lucene, and separately for Solr.
       Fill in the same date that you used for the release in previous steps.
-      Do not use a product name prefix for the version, as this is the main release of the lucene PMC.
+      Do not use a product name prefix for the version, as this is the main release of the lucene PMC and the Solr PMC.
       Just use the version of this release: {{ release_version }}
     links:
       - https://reporter.apache.org/addrelease.html?lucene
+      - https://reporter.apache.org/addrelease.html?solr
 - !TodoGroup
   id: post_release
   title: Tasks to do after release.
   description: There are many more tasks to do now that the new version is out there, so hang in there for a few more hours.
   todos:
   - !Todo
-    id: add_version_bugfix
-    title: Add a new bugfix version to stable and unstable branches
+    id: clean_lucene_git_checkout
+    title: Do a clean git clone for lucene main repo
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: Run these commands to make a fresh lucene.git clone in the release folder
+      remove_files:
+      - '{{ lucene_git_checkout_folder }}'
+      commands:
+      - !Command
+        cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene.git lucene
+        logfile: lucene_git_clone.log
+  - !Todo
+    id: clean_solr_git_checkout
+    title: Do a clean git clone for solr main repo
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: Run these commands to make a fresh solr.git clone in the release folder
+      remove_files:
+      - '{{ solr_git_checkout_folder }}'
+      commands:
+      - !Command
+        cmd: git clone --progress https://gitbox.apache.org/repos/asf/solr.git solr
+        logfile: solr_git_clone.log
+  - !Todo
+    id: add_version_bugfix_lucene
+    depends: clean_lucene_git_checkout
+    title: Add a new bugfix version to Lucene stable and unstable branches
     types:
     - bugfix
     commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
+      root_folder: '{{ lucene_git_checkout_folder }}'
       commands_text: |
         Update versions on master and stable branch.
         You may have to hand-edit some files before commit, so go slowly :)
       confirm_each_command: true
       commands:
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
-        comment: Go to master branch
-        logfile: checkout-master.log
+        cmd: git checkout main && git pull && git clean -df && git checkout -- .
+        comment: Go to main branch
+        logfile: checkout-main.log
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ release_version }}
-        logfile: addversion-master.log
+        logfile: addversion-main.log
       - !Command
         cmd: git diff
-        logfile: diff-master.log
+        logfile: diff-main.log
         tee: true
       - !Command
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
-        logfile: commit-master.log
+        logfile: commit-main.log
       - !Command
         cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
         logfile: checkout-stable.log
@@ -1494,45 +1508,123 @@ groups:
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
         logfile: commit-stable.log
   - !Todo
-    id: synchronize_changes
-    title: Synchronize CHANGES.txt
+    id: add_version_bugfix_solr
+    depends: clean_solr_git_checkout
+    title: Add a new bugfix version to Solr stable and unstable branches
+    types:
+    - bugfix
+    commands: !Commands
+      root_folder: '{{ solr_git_checkout_folder }}'
+      commands_text: |
+        Update versions on master and stable branch.
+        You may have to hand-edit some files before commit, so go slowly :)
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout main && git pull && git clean -df && git checkout -- .
+        comment: Go to main branch
+        logfile: checkout-main.log
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ release_version }}
+        logfile: addversion-main.log
+      - !Command
+        cmd: git diff
+        logfile: diff-main.log
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
+        logfile: commit-main.log
+      - !Command
+        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        logfile: checkout-stable.log
+        comment: Now the same for the stable branch
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ release_version }}
+        logfile: addversion-stable.log
+      - !Command
+        cmd: git diff
+        logfile: diff-stable.log
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
+        logfile: commit-stable.log
+  - !Todo
+    id: synchronize_changes_lucene
+    title: Synchronize CHANGES.txt for Lucene
     description: |
       Copy the CHANGES.txt section for this release back to the stable and unstable branches' 
       CHANGES.txt files, removing any duplicate entries, but only from sections for as-yet 
       unreleased versions; leave intact duplicate entries for already-released versions.
+
+      NOTE: These commands are done on the main lucene.git repo, not on the lucene-solr.git
 
       There is a script to generate a regex that will match JIRAs fixed in a release: 
       `releasedJirasRegex.py`. The following examples will print regexes matching all JIRAs 
       fixed in {{ release_version }}, which can then be used to find duplicates in unreleased 
       version sections of the corresponding CHANGES.txt files.
     commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
+      root_folder: '{{ lucene_git_checkout_folder }}'
       commands_text: Synchronize CHANGES.txt
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }}
-        comment: Go to release branch
-        logfile: checkout-release.log
-        stdout: true
+        cmd: git checkout main && git pull && git clean -df && git checkout -- .
+        comment: Go to main branch
+        logfile: checkout-main.log
       - !Command
-        cmd: python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} lucene/CHANGES.txt  && python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} solr/CHANGES.txt
+        cmd: python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} lucene/CHANGES.txt
         tee: true
         comment: Find version regexes
-      - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
-        comment: Go to master branch
-        logfile: checkout-master.log
-      - !Command
-        cmd: "{{ editor }} solr/CHANGES.txt"
-        comment: Edit Solr CHANGES, do necessary changes
-        stdout: true
       - !Command
         cmd: "{{ editor }} lucene/CHANGES.txt"
         comment: Edit Lucene CHANGES, do necessary changes
         stdout: true
       - !Command
         cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
-        logfile: commit-master.log
+        logfile: commit-main.log
+      - !Command
+        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        comment: Go to stable branch
+        logfile: checkout-stable.log
+      - !Command
+        cmd: "{{ editor }} lucene/CHANGES.txt"
+        comment: Edit Lucene CHANGES, do necessary changes
+        stdout: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
+        logfile: commit-stable.log
+  - !Todo
+    id: synchronize_changes_solr
+    title: Synchronize CHANGES.txt for solr
+    description: |
+      Copy the CHANGES.txt section for this release back to the stable and unstable branches'
+      CHANGES.txt files, removing any duplicate entries, but only from sections for as-yet
+      unreleased versions; leave intact duplicate entries for already-released versions.
+
+      NOTE: These commands are done on the main solr.git repo, not on the lucene-solr.git
+
+      There is a script to generate a regex that will match JIRAs fixed in a release:
+      `releasedJirasRegex.py`. The following examples will print regexes matching all JIRAs
+      fixed in {{ release_version }}, which can then be used to find duplicates in unreleased
+      version sections of the corresponding CHANGES.txt files.
+    commands: !Commands
+      root_folder: '{{ solr_git_checkout_folder }}'
+      commands_text: Synchronize CHANGES.txt
+      commands:
+      - !Command
+        cmd: git checkout main && git pull && git clean -df && git checkout -- .
+        comment: Go to main branch
+        logfile: checkout-main.log
+      - !Command
+        cmd: python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} solr/CHANGES.txt
+        tee: true
+        comment: Find version regexes
+      - !Command
+        cmd: "{{ editor }} solr/CHANGES.txt"
+        comment: Edit Solr CHANGES, do necessary changes
+        stdout: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
+        logfile: commit-main.log
       - !Command
         cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
         comment: Go to stable branch
@@ -1540,10 +1632,6 @@ groups:
       - !Command
         cmd: "{{ editor }} solr/CHANGES.txt"
         comment: Edit Solr CHANGES, do necessary changes
-        stdout: true
-      - !Command
-        cmd: "{{ editor }} lucene/CHANGES.txt"
-        comment: Edit Lucene CHANGES, do necessary changes
         stdout: true
       - !Command
         cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
@@ -1617,15 +1705,16 @@ groups:
         logfile: commit.log
   - !Todo
     id: backcompat_stable
-    title: Generate Backcompat Indexes for stable branch
+    title: Generate Backcompat Indexes for stable branch (lucene.git)
     description: |
       Now generate back-compat for stable branch ({{ stable_branch }})
     depends: 
     - increment_release_version
     vars:
       temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
+      version: "{{ set_java_home(master_version) }}"
     commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
+      root_folder: '{{ lucene_git_checkout_folder }}'
       commands_text: Run these commands to add back-compat indices to {{ stable_branch }}
       commands:
       - !Command
@@ -1633,20 +1722,22 @@ groups:
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: ./gradlew clean
       - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
+        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/backward_index/
         logfile: add-backcompat.log
       - !Command
         cmd: git diff --staged
         comment: Check the git diff before committing
         tee: true
       - !Command
+        cmd: ./gradlew tidy
+      - !Command
         cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
   - !Todo
-    id: backcompat_master
-    title: Generate Backcompat Indexes for unstable branch
+    id: backcompat_main
+    title: Generate Backcompat Indexes for unstable branch (lucene.git)
     description: |
       Now generate back-compat for unstable (main) branch.
       Note that this time we do not specify `--no-cleanup` meaning the tmp folder will be deleted
@@ -1656,8 +1747,8 @@ groups:
       temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
       version: "{{ set_java_home(master_version) }}"
     commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add back-compat indices to master
+      root_folder: '{{ lucene_git_checkout_folder }}'
+      commands_text: Run these commands to add back-compat indices to main
       commands:
       - !Command
         cmd: git checkout main && git pull && git clean -df && git checkout -- .
@@ -1673,14 +1764,10 @@ groups:
         comment: Check the git diff before committing
         tee: true
       - !Command
+        cmd: ./gradlew tidy
+      - !Command
         cmd: git commit -m "Add back-compat indices for {{ release_version }}"  && git push
         logfile: commit.log
-    post_description: |
-      When doing a major version release, eg. 8.0.0, you might also need to reenable some 
-      backward compatibility tests for corner cases. To find them, run grep -r assume 
-      lucene/backward-codecs/, which should find tests that have been disabled on master 
-      because there was no released Lucene version to test against.
-      {{ set_java_home(release_version) }}
   - !Todo
     id: jira_release
     title: Mark version as released in JIRA
@@ -1785,7 +1872,7 @@ groups:
       svnpubsub areas `dist/releases/lucene/` and `dist/releases/solr/`. Older releases can be 
       safely deleted, since they are already backed up in the archives.
 
-      Currenlty these versions exist in the distribution directory:
+      Currently these versions exist in the distribution directory:
 
       *{{ mirrored_versions|join(', ') }}*
 
