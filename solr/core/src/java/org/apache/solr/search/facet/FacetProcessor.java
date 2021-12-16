@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -207,23 +208,22 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
     if (excludeSet.size() == 0) return;
 
+    // recompute the base domain
+    fcontext.base = fcontext.searcher.getDocSet(getContextQueries().stream().filter(q -> !excludeSet.containsKey(q)).collect(Collectors.toList()));
+  }
+
+  protected List<Query> getContextQueries() {
     List<Query> qlist = new ArrayList<>();
 
     // TODO: somehow remove responsebuilder dependency
     ResponseBuilder rb = SolrRequestInfo.getRequestInfo().getResponseBuilder();
 
     // add the base query
-    if (!excludeSet.containsKey(rb.getQuery())) {
-      qlist.add(rb.getQuery());
-    }
+    qlist.add(rb.getQuery());
 
     // add the filters
     if (rb.getFilters() != null) {
-      for (Query q : rb.getFilters()) {
-        if (!excludeSet.containsKey(q)) {
-          qlist.add(q);
-        }
-      }
+      qlist.addAll(rb.getFilters());
     }
 
     // now walk back up the context tree
@@ -234,8 +234,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       }
     }
 
-    // recompute the base domain
-    fcontext.base = fcontext.searcher.getDocSet(qlist);
+    return qlist;
   }
 
   /** modifies the context base if there is a join field domain change */
