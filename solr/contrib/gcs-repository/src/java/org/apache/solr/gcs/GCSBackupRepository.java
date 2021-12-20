@@ -83,14 +83,15 @@ public class GCSBackupRepository implements BackupRepository {
             return storage;
 
         try {
-            if (credentialPath == null) {
-                throw new IllegalArgumentException(GCSConfigParser.missingCredentialErrorMsg());
+            if (credentialPath != null) {
+                log.info("Creating GCS client using credential at {}", credentialPath);
+                // 'GoogleCredentials.fromStream' closes the input stream, so we don't
+                GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
+                storageOptionsBuilder.setCredentials(credential);
+            } else {
+                // nowarn compile time string concatenation
+                log.info(GCSConfigParser.missingCredentialMsg()); //nowarn
             }
-
-            log.info("Creating GCS client using credential at {}", credentialPath);
-            // 'GoogleCredentials.fromStream' closes the input stream, so we don't
-            GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
-            storageOptionsBuilder.setCredentials(credential);
             storage = storageOptionsBuilder.build().getService();
         } catch (IOException e) {
             throw new IllegalStateException(e);

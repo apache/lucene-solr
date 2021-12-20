@@ -93,9 +93,11 @@ public class GCSConfigParser {
     return envVars.get(GCS_CREDENTIAL_ENV_VAR_NAME);
   }
 
-  public static String missingCredentialErrorMsg() {
-    return "GCSBackupRepository requires a credential for GCS communication, but none was provided.  Please specify a " +
-            "path to this GCS credential by adding a '" + GCS_CREDENTIAL_PARAM_NAME + "' property to the repository " +
+  public static String missingCredentialMsg() {
+    return "GCSBackupRepository credential path is missing. GCSBackupRepository will only work within GCP when role " +
+            "based access is configured for backup bucket." +
+            "If you'd like to use credentials, set path to this GCS credential by adding a '" +
+            GCS_CREDENTIAL_PARAM_NAME + "' property to the repository " +
             "definition in your solrconfig, or by setting the path value in an env-var named '" +
             GCS_CREDENTIAL_ENV_VAR_NAME + "'";
   }
