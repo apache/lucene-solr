@@ -28,8 +28,8 @@ import java.util.Map;
  * Parses configuration for {@link GCSBackupRepository} from NamedList and environment variables
  */
 public class GCSConfigParser {
-  private static final String GCS_BUCKET_ENV_VAR_NAME = "GCS_BUCKET";
-  private static final String GCS_CREDENTIAL_ENV_VAR_NAME = "GCS_CREDENTIAL_PATH";
+  protected static final String GCS_BUCKET_ENV_VAR_NAME = "GCS_BUCKET";
+  protected static final String GCS_CREDENTIAL_ENV_VAR_NAME = "GCS_CREDENTIAL_PATH";
 
   private static final String GCS_BUCKET_PARAM_NAME = "gcsBucket";
   private static final String GCS_CREDENTIAL_PARAM_NAME = "gcsCredentialPath";

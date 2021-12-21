@@ -68,4 +68,18 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     protected URI getBaseUri() throws URISyntaxException {
         return new URI("tmp");
     }
+
+    @Test
+    public void testInitStoreDoesNotFailWithMissingCredentials()
+    {
+        Map<String, String> config = new HashMap<>();
+        config.put(GCS_BUCKET_ENV_VAR_NAME, "TestBucketName");
+        // explicitely setting credential name to null; will work inside google-cloud project
+        config.put(GCS_CREDENTIAL_ENV_VAR_NAME, null);
+        config.put(BACKUP_LOCATION, "/testPath");
+
+        BackupRepository gcsBackupRepository = getRepository();
+
+        gcsBackupRepository.init(new NamedList<>(config));
+    }
 }
