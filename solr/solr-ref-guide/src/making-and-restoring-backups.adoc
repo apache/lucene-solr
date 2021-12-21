@@ -317,7 +317,7 @@ If both values are absent, the value `solrBackupsBucket` will be used as a defau
 `gcsCredentialPath`::
 A path on the local filesystem (accessible by Solr) to a https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Google Cloud service account key] file.
 If not specified, GCSBackupRepository will use the value of the `GCS_CREDENTIAL_PATH` environment variable.
-If both values are absent, an error will be thrown as GCS requires credentials for most usage.
+If both values are absent, no error will be thrown as running solr in google cloud will handle authentication/authorization internally.
 
 `location`::
 A valid "directory" path in the given GCS bucket to us for backup strage and retrieval.
