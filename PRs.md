@@ -64,3 +64,45 @@ Look at the PR and create it if it looks good.
 # This example's PR was at:
 https://github.com/apache/lucene/pull/2
 ```
+3. Instead of rebasing, you can `git merge` the upstream `main` branch from the new
+project into your existing PR branch, push the result to your own fork of the new
+project, and use that as the basis for creating a PR against the new upstream project.
+
+This approach works cleanly because the `main` branch on each of the new projects is
+a direct descendant of the merge-base (with `lucene-solr/master`) of all existing
+PR branches against the legacy joint `lucene-solr` project.
+
+A benefit of a `merge`-based approach (as opposed to rebasing or applying a patch) is
+that commit history (including commit hashes) is preserved, and remains compatible
+across projects (and in some multi-commit cases, a merge-based approach can also
+avoid the need to "re-resolve" related conflicts in multiple rebased commits).
+
+NOTE: PRs updated in this way, if merged back into the `main` branch, could result
+in an undesirably convoluted (if "correct") commit history. In many cases it may be
+preferable to "squash-merge" such PRs (already a common general practice for merging
+feature branches in these projects).
+
+```
+# clone new upstream project (optionally supplying remote name "apache" instead
+# of "origin")
+git clone --origin apache https://github.com/apache/lucene.git
+cd lucene
+# in Github UI, create ${user}'s fork of new project (as in the "rebase" example)
+# add ${user}'s fork of the new project
+git remote add mynewfork https://github.com/${user}/lucene.git
+git fetch mynewfork
+# add ${user}'s fork of the legacy (joint) project
+git remote add mylegacyfork https://github.com/${user}/lucene-solr.git
+git fetch mylegacyfork
+# get the legacy PR's branch:
+git checkout --no-track mylegacyfork/LUCENE-XXXX -b LUCENE-XXXX
+# merge upstream main branch (a higher `merge.renameLimit` allows `git merge` to
+# complete without the warning that it would otherwise print due to the large
+# number of files deleted across the TLP split)
+git -c merge.renameLimit=7000 merge apache/main
+# after resolving any conflicts and committing the merge,
+# push to ${user}'s new fork
+git push -u mynewfork LUCENE-XXXX
+# in Github UI, create PR from mynewfork/LUCENE-XXXX (against apache/main)
+# as in the "rebase" example
+```
