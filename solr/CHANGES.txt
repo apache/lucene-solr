@@ -10,7 +10,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
 
 ==================  8.11.1 ==================
 
