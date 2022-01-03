@@ -77,6 +77,9 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // NB(clay): not marshaling shardHasMoreBuckets as refinement for iterative results isn't properly supported
     // The two following paths write the same, compatible, encoding.
     if (freq.mergedBucketsLimit >= 0) {
+      if (sortedBuckets == null) {
+        sortBuckets(freq.sort);
+      }
       // we must use sorted buckets for best results (which should be available where merged limits are supported)
       int size = Math.min(sortedBuckets.size(), freq.mergedBucketsLimit);
       codec.writeInt(size);

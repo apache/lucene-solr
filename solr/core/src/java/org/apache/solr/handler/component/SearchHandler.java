@@ -431,7 +431,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     } else {
       // a distributed request
 
-      rb.setIterative(rb.req.getParams().getInt("iterative", 0));
+      rb.setIterative(
+          rb.req.getParams().getInt("iterative", 0), 
+          rb.req.getParams().getBool("iterative.needState", true),
+          rb.req.getParams().getBool("iterative.needResponse", true));
 
       Map<String, Object> json = rb.req.getJSON();
       if (json != null && json.containsKey("iterative_state")) {
@@ -573,7 +576,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
 
-      if (rb.isIterative()) {
+      if (rb.getIterativeNeedState()) {
         Map<String, BytesRef> state = new HashMap<>();
         for (SearchComponent c : components) {
           byte[] componentState = c.toState(rb);

@@ -753,6 +753,10 @@ public class QueryComponent extends SearchComponent
       mergedQueryCommandResults = limitedMergedQueryCommandResults;
     }
 
+    if (rb.isIterative() && !rb.getIterativeNeedResponse()) {
+      return; // no need to write extra data during this stage
+    }
+    
     EndResultTransformer.SolrDocumentSource solrDocumentSource = doc -> {
       ShardDoc solrDoc = (ShardDoc) doc;
       return rb.retrievedDocuments.get(solrDoc.id);
@@ -774,6 +778,10 @@ public class QueryComponent extends SearchComponent
   }
 
   protected void regularFinishStage(ResponseBuilder rb) {
+    if (rb.isIterative() && !rb.getIterativeNeedResponse()) {
+      return; // no need to write extra data during this stage
+    }
+    
     // We may not have been able to retrieve all the docs due to an
     // index change.  Remove any null documents.
     for (Iterator<SolrDocument> iter = rb.getResponseDocs().iterator(); iter.hasNext();) {

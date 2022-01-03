@@ -353,7 +353,7 @@ public class FacetModule extends SearchComponent {
 
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return;
-
+    if (rb.isIterative() && !rb.getIterativeNeedResponse()) return;// no need to write extra data during this stage
     if (facetState.merger != null) {
       // TODO: merge any refinements
       rb.rsp.add("facets", facetState.merger.getMergedResult());
