@@ -57,6 +57,8 @@ Bug Fixes
 
 * SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
 
+* SOLR-15892: Adding Randomization in selecting shard leaders for delete and commit requests for RoutedAlias
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
