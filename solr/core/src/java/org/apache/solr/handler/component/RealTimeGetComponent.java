@@ -44,6 +44,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.solr.search.QueryUtils;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
@@ -209,7 +210,7 @@ public class RealTimeGetComponent extends SearchComponent
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, req);
-            filters.add(fqp.getQuery());
+            filters.add(QueryUtils.makeQueryable(fqp.getQuery()));
           }
         }
         if (!filters.isEmpty()) {

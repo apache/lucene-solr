@@ -12,6 +12,8 @@ Bug Fixes
 ---------------------
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
+* SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

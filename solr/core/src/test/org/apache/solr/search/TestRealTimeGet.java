@@ -212,6 +212,13 @@ public class TestRealTimeGet extends TestRTGBase {
         ,"/response/docs==[{id:'16'},{id:'15'}]"
     );
 
+    assertJQ(req("qt","/get","ids","15,14", "fl","id", "fq","-id:15")
+            ,"/response/docs==[{id:'14'}]"
+    );
+    assertJQ(req("qt","/get","ids","17,16,15,14", "fl","id", "fq","-id:[15 TO 17]")
+            ,"/response/docs==[{id:'14'}]"
+    );
+
     realtimeHolder.decref();
     req.close();
 
