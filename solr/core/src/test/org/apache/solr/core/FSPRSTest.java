@@ -19,8 +19,10 @@ package org.apache.solr.core;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -29,6 +31,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
@@ -36,8 +39,82 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.junit.Ignore;
 
 public class FSPRSTest extends SolrCloudTestCase {
+
+  public void testShardSplit() throws Exception {
+    String COLL = "prs_shard_split";
+    MiniSolrCloudCluster cluster =
+        configureCluster(3)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", configset("conf2"))
+            .configure();
+    int COLL_COUNT = 2;
+    int SPLIT_COUNT = 1;
+    
+    try {
+      for (int i = 0; i < COLL_COUNT; i++) {
+        String C = COLL + i;
+        CollectionAdminRequest.createCollection(C, "conf", 4, 1)
+            .setMaxShardsPerNode(4)
+            .process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(C, 4, 4);
+      }
+      for (int i = 0; i < COLL_COUNT; i++) {
+        String C = COLL + i;
+        CollectionAdminRequest.modifyCollection(C,
+            Collections.singletonMap("perReplicaState", "true"))
+            .process(cluster.getSolrClient());
+        PerReplicaStates prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(C), cluster.getZkClient(), null);
+        assertTrue(prs.states.size() >= 4);
+      }
+
+      for (int i=1; i<3; i++) {
+        JettySolrRunner jetty = cluster.stopJettySolrRunner(i);
+        cluster.startJettySolrRunner(jetty);
+      }
+
+      for (int i = 0; i < SPLIT_COUNT; i++) {
+        String C = COLL + i;
+        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(C);
+        splitShard.setShardName("shard1");
+        NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
+        assertNotNull(response.get("success"));
+        for (int j = 0; j < 100; j++) {
+          DocCollection docCollection = cluster.getSolrClient().getClusterStateProvider().getCollection(C);
+          int shardCount = docCollection.getSlices().size();
+          if (shardCount >= 5) break;
+          else if (j >= 99) fail("split did not produce 2 shards shard count = " + shardCount);
+          Thread.sleep(50);
+        }
+      }
+
+      for (int i = 0; i < COLL_COUNT; i++) {
+        String C = COLL + i;
+        CollectionAdminRequest.modifyCollection(C,
+            Collections.singletonMap("perReplicaState", "false"))
+            .process(cluster.getSolrClient());
+      }
+
+      for (int i = 0; i < COLL_COUNT; i++) {
+        String C = COLL + i;
+        cluster.getSolrClient().getZkStateReader().waitForState(C, 10, TimeUnit.SECONDS, (liveNodes, c) -> {
+          boolean[] result = new boolean[]{true};
+          c.forEachReplica((s, replica) -> {
+            if (!replica.isActive(liveNodes)) result[0] = false;
+          });
+          return result[0];
+        });
+      }
+
+
+    } finally {
+      cluster.shutdown();
+    }
+
+
+  }
 
   public void testIntegration() throws Exception {
     final String SHARD1 = "shard1";
@@ -76,7 +153,7 @@ public class FSPRSTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       String collectionPath = ZkStateReader.getCollectionPath(COLL);
       PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
-      assertTrue(prs.states.size()>0);
+      assertTrue(prs.states.size() > 0);
 
 
       DocCollection collection = cluster.getSolrClient().getClusterStateProvider().getCollection(COLL);
@@ -110,9 +187,9 @@ public class FSPRSTest extends SolrCloudTestCase {
         return prs1.states.size() == 1 && prs1.allActive() && prs1.get(newReplica.getName()).isLeader;
       });
 
-      try(HttpSolrClient client = (HttpSolrClient) qaJetty.newClient()){
+      try (HttpSolrClient client = (HttpSolrClient) qaJetty.newClient()) {
         NavigableObject result = (NavigableObject) Utils.executeGET(client.getHttpClient(),
-            qaJetty.getBaseUrl()+"/"+ COLL+"/select?q=*:*&wt=javabin", Utils.JAVABINCONSUMER
+            qaJetty.getBaseUrl() + "/" + COLL + "/select?q=*:*&wt=javabin", Utils.JAVABINCONSUMER
         );
         Collection<?> l = (Collection<?>) result._get("response", null);
         assertEquals(10, l.size());
@@ -122,15 +199,15 @@ public class FSPRSTest extends SolrCloudTestCase {
       splitShard.setShardName(SHARD1);
       NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
       assertNotNull(response.get("success"));
-      for(int i= 0;i<100;i++) {
+      for (int i = 0; i < 100; i++) {
         DocCollection docCollection = cluster.getSolrClient().getClusterStateProvider().getCollection(COLL);
         int shardCount = docCollection.getSlices().size();
-        if(shardCount >=2) break;
-        else if(i >=99) fail("split did not produce 2 shards shard count = "+shardCount);
+        if (shardCount >= 2) break;
+        else if (i >= 99) fail("split did not produce 2 shards shard count = " + shardCount);
         Thread.sleep(50);
       }
       CountDownLatch latch = new CountDownLatch(1);
-      cluster. getSolrClient().getZkStateReader().registerCollectionStateWatcher(COLL, (liveNodes, collectionState) -> {
+      cluster.getSolrClient().getZkStateReader().registerCollectionStateWatcher(COLL, (liveNodes, collectionState) -> {
         Slice parent = collectionState.getSlice(SHARD1);
         Slice slice10 = collectionState.getSlice(SHARD1_0);
         Slice slice11 = collectionState.getSlice(SHARD1_1);
@@ -149,16 +226,16 @@ public class FSPRSTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLL, 2, 2);
 
-      try(HttpSolrClient client = (HttpSolrClient) qaJetty.newClient()){
+      try (HttpSolrClient client = (HttpSolrClient) qaJetty.newClient()) {
         NavigableObject result = (NavigableObject) Utils.executeGET(client.getHttpClient(),
-            qaJetty.getBaseUrl()+"/"+ COLL+"/select?q=*:*&wt=javabin", Utils.JAVABINCONSUMER
+            qaJetty.getBaseUrl() + "/" + COLL + "/select?q=*:*&wt=javabin", Utils.JAVABINCONSUMER
         );
         Collection<?> l = (Collection<?>) result._get("response", null);
         assertEquals(10, l.size());
       }
 
       latch.await(1, TimeUnit.MINUTES);
-      if (latch.getCount() != 0)  {
+      if (latch.getCount() != 0) {
         // sanity check
         fail("Sub-shards did not become active even after waiting for 1 minute");
       }

@@ -123,9 +123,12 @@ public class CollectionMutator {
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
-        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+        PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, null);
+        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, prs);
+        if(!enable) {
+          coll = updateReplicas(coll, prs);
+        }
       }
-
 
       if (message.containsKey(prop)) {
         hasAnyOps = true;
@@ -162,6 +165,32 @@ public class CollectionMutator {
       return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);
     }
 
+  }
+
+  private DocCollection updateReplicas(DocCollection coll, PerReplicaStates prs) {
+    //we are disabling PRS. Update the replica states
+    Map<String, Slice> modifiedSlices = new HashMap<>();
+    coll.forEachReplica((s, replica) -> {
+      PerReplicaStates.State prsState = prs.states.get(replica.getName());
+      if (prsState != null) {
+        if (prsState.state != replica.getState()) {
+          Slice slice = modifiedSlices.getOrDefault(replica.slice, coll.getSlice(replica.slice));
+          replica = new ReplicaMutator(cloudManager).setState(replica, prsState.state.toString());
+          modifiedSlices.put(replica.slice, slice.copyWith(replica));
+        }
+        if (prsState.isLeader != replica.isLeader()) {
+          Slice slice = modifiedSlices.getOrDefault(replica.slice, coll.getSlice(replica.slice));
+          replica = prsState.isLeader ?
+              new ReplicaMutator(cloudManager).setLeader(replica) :
+              new ReplicaMutator(cloudManager).unsetLeader(replica);
+          modifiedSlices.put(replica.slice, slice.copyWith(replica));
+        }
+      }
+    });
+    if(!modifiedSlices.isEmpty()) {
+      return coll.copyWithSlices(modifiedSlices);
+    }
+    return coll;
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
