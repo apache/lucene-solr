@@ -352,8 +352,9 @@ public class ZkController implements Closeable {
     zkStateReader = new ZkStateReader(zkClient, () -> {
       if (cc != null) cc.securityNodeChanged();
     });
-
+    log.info("initializing ZkControlled");
     init(registerOnReconnect);
+    log.info("initialized ZkCOntroller");
     this.overseerJobQueue = initOverseerJobQueue();
     this.overseerCollectionQueue = initOverseerTaskQueue();
     this.overseerConfigSetQueue = initOverseerConfigSetQueue();
@@ -442,7 +443,9 @@ public class ZkController implements Closeable {
                 createEphemeralLiveNode();
               }
 
+              log.info("Fetching core descriptors");
               List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+              log.info("Core descriptors fetched. Going to register the cores async");
               // re register all descriptors
               ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
               if (descriptors != null) {
@@ -466,6 +469,8 @@ public class ZkController implements Closeable {
                   }
                 }
               }
+              log.info("Cores are being registered in parallel");
+
 
               // notify any other objects that need to know when the session was re-connected
               HashSet<OnReconnect> clonedListeners;
@@ -1180,7 +1185,9 @@ public class ZkController implements Closeable {
     log.info("Register query node as live in ZooKeeper:" + nodePath);
     List<Op> ops = new ArrayList<>(1);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+    log.info("Going to create ephemeral node in live_nodes");
     zkClient.multi(ops, true);
+    log.info("Created ephemeral node in live_nodes");
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
