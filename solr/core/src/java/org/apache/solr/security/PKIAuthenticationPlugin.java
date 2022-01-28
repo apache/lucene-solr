@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -76,6 +77,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * If a number has less than this number of digits, it'll not be considered a timestamp.
+   */
+  private static final int MIN_TIMESTAMP_DIGITS = 10; // a timestamp of 9999999999 is year 1970
+  /**
+   * If a number has more than this number of digits, it'll not be considered a timestamp.
+   */
+  private static final int MAX_TIMESTAMP_DIGITS = 13; // a timestamp of 9999999999999 is year 2286
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
@@ -185,7 +195,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     }
   }
 
-  private static  PKIHeaderData parseCipher(String cipher, PublicKey key) {
+  @VisibleForTesting
+  static PKIHeaderData parseCipher(String cipher, PublicKey key) {
     byte[] bytes;
     try {
       bytes = CryptoKeys.decryptRSA(Base64.base64ToByteArray(cipher), key);
@@ -195,7 +206,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     }
     String s = new String(bytes, UTF_8).trim();
     int splitPoint = s.lastIndexOf(' ');
-    if (splitPoint == -1) {
+    int timestampDigits = s.length() - 1 - splitPoint;
+    if (splitPoint == -1 || timestampDigits < MIN_TIMESTAMP_DIGITS || timestampDigits > MAX_TIMESTAMP_DIGITS) {
       log.warn("Invalid cipher {} deciphered data {}", cipher, s);
       return null;
     }
