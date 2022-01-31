@@ -40,6 +40,8 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
@@ -51,6 +53,7 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.DistanceUnits;
 import org.apache.solr.util.SpatialUtils;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -182,6 +185,13 @@ public class FacetHeatmap extends FacetRequest {
       parseCommonParams(argsObj); // e.g. domain change
 
       return this.facet;
+    }
+
+    public static class Factory implements FacetParserFactory {
+      @Override
+      public FacetParser<?> create(FacetParser<?> parent, String key) {
+        return new Parser(parent, key);
+      }
     }
 
   }//class Parser
@@ -340,6 +350,23 @@ public class FacetHeatmap extends FacetRequest {
         mergedResult.add("counts_" + format, formatCountsVal(
             format, (Integer) mergedResult.get("columns"), (Integer) mergedResult.get("rows"), counts, null));//TODO where debugInfo?
         return mergedResult;
+      }
+
+      @Override
+      public Object getPrototype() {
+        return null;
+      }
+
+      @Override
+      public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+        mergedResult = (NamedList) codec.readVal();
+        counts = (int[]) codec.readVal();
+      }
+
+      @Override
+      public void writeState(JavaBinCodec codec) throws IOException {
+        codec.writeVal(mergedResult);
+        codec.writeVal(counts);
       }
     };
   }

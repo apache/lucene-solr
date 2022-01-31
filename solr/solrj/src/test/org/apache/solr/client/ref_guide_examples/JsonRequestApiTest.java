@@ -459,6 +459,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
         .withStatFacet("avg_price", "avg(price)")
         .withStatFacet("min_manufacturedate_dt", "min(manufacturedate_dt)")
         .withStatFacet("num_suppliers", "unique(manu_exact)")
+        .withStatFacet("num_suppliers_10", "unique(manu_exact,10)")
+        .withStatFacet("num_suppliers_0", "unique(manu_exact,0)")
         .withStatFacet("median_weight", "percentile(weight,50)");
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
     //end::solrj-json-metrics-facet-1[]
@@ -469,6 +471,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
     assertEquals(146.66, (double) topLevelFacetingData.getStatValue("avg_price"), 0.5);
     assertEquals(3, topLevelFacetingData.getStatValue("num_suppliers"));
+    assertEquals(3, topLevelFacetingData.getStatValue("num_suppliers_10"));
+    assertEquals(3, topLevelFacetingData.getStatValue("num_suppliers_0"));
     assertEquals(352.0, (double) topLevelFacetingData.getStatValue("median_weight"), 0.5);
 
     Object val = topLevelFacetingData.getStatValue("min_manufacturedate_dt");
@@ -570,7 +574,31 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     SolrClient solrClient = cluster.getSolrClient();
 
     //tag::solrj-json-range-facet-simple[]
-    RangeFacetMap rangeFacet = new RangeFacetMap("price", 0.0, 100.0, 20.0);
+    RangeFacetMap rangeFacet = new RangeFacetMap("price", 0.0, 100.0, 20.0, false);
+    final JsonQueryRequest request = new JsonQueryRequest()
+        .setQuery("*:*")
+        .withFacet("prices", rangeFacet);
+    QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
+    //end::solrj-json-range-facet-simple[]
+
+    assertEquals(0, queryResponse.getStatus());
+    assertEquals(32, queryResponse.getResults().getNumFound());
+    assertEquals(10, queryResponse.getResults().size());
+    final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
+    assertHasFacetWithBucketValues(topLevelFacetingData,"prices",
+        new FacetBucket(0.0f,5),
+        new FacetBucket(20.0f, 0),
+        new FacetBucket(40.0f, 0),
+        new FacetBucket(60.0f, 1),
+        new FacetBucket(80.0f, 1));
+  }
+
+  @Test
+  public void testRangeFacetSimpleDocValues() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+
+    //tag::solrj-json-range-facet-simple[]
+    RangeFacetMap rangeFacet = new RangeFacetMap("price", 0.0, 100.0, 20.0, true);
     final JsonQueryRequest request = new JsonQueryRequest()
         .setQuery("*:*")
         .withFacet("prices", rangeFacet);

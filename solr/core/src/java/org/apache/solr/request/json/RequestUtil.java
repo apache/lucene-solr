@@ -237,7 +237,7 @@ public class RequestUtil {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Expected Map for 'queries', received " + queriesJsonObj);
           }
-        } else if ("params".equals(key) || "facet".equals(key) || pluginJsonKeys.contains(key)) {
+        } else if ("params".equals(key) || "facet".equals(key) || "iterative_state".equals(key) || pluginJsonKeys.contains(key)) {
           // handled elsewhere
           continue;
         } else {

@@ -1541,10 +1541,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // catB: -9.0 -8.2 -5.0 7.800000000000001 11.0
     // all: -9.0 -7.3999999999999995 2.0 8.200000000000001 11.0
     // test sorting by single percentile
+    // use some percentile custom configuration variations
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${num_d},50)'}  }}" +
-                " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_d},50)'}  }} " +
-                " , f3:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${sparse_num_d},50)'}  }} " +
+                " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_d},\"merging\",50,50)'}  }} " +
+                " , f3:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${sparse_num_d},\"avltree\",50,50)'}  }} " +
             "}"
         )
         , "facets=={ 'count':6, " +
@@ -1921,7 +1922,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         , "facets=={ 'count':6, " +
             "sum1:0.0, sumsq1:51.5, avg1:0.0, mind:-5.0, maxd:3.0" +
             ", mini:-5, maxi:3, mins:'a', maxs:'b'" +
-            ", stddev:2.537222891273055, variance:6.4375, median:0.0, perc:[-5.0,2.25,3.0], maxss:'b'" +
+            ", stddev:2.537222891273055, variance:6.4375, median:0.0, perc:[-5.0,2.5,3.0], maxss:'b'" +
             "}"
     );
 

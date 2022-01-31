@@ -67,6 +67,9 @@ public class ResponseBuilder
 
   private boolean needDocList = false;
   private boolean needDocSet = false;
+  private int iterativeStep = 0;
+  private boolean iterativeNeedState = true;
+  private boolean iterativeNeedResponse = true;
   private int fieldFlags = 0;
   //private boolean debug = false;
   private boolean debugTimings, debugQuery, debugResults, debugTrack;
@@ -355,6 +358,28 @@ public class ResponseBuilder
 
   public void setNeedDocSet(boolean needDocSet) {
     this.needDocSet = needDocSet;
+  }
+
+  public boolean isIterative() {
+    return iterativeStep > 0;
+  }
+
+  public int getIterativeStep() {
+    return iterativeStep;
+  }
+  
+  public boolean getIterativeNeedState() {
+    return isIterative() && iterativeNeedState;
+  }
+
+  public boolean getIterativeNeedResponse() {
+    return isIterative() && iterativeNeedResponse;
+  }
+
+  public void setIterative(int iterativeStep, boolean needState, boolean needResponse) {
+    this.iterativeStep = iterativeStep;
+    this.iterativeNeedState = needState;
+    this.iterativeNeedResponse = needResponse;
   }
 
   public QParser getQparser() {

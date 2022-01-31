@@ -401,7 +401,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(300L, aaa0_Bucket.get("countvals"));
     assertEquals(0L, aaa0_Bucket.get("missing"));
     assertEquals(34650.0D, aaa0_Bucket.get("sum"));
-    assertEquals(483.70000000000016D, (double)aaa0_Bucket.get("percentile"), 0.1E-7);
+    assertEquals(486.5D, (double)aaa0_Bucket.get("percentile"), 0.1E-7);
     assertEquals(115.5D, (double) aaa0_Bucket.get("avg"), 0.1E-7);
     assertEquals(1.674585E7D, (double) aaa0_Bucket.get("sumsq"), 0.1E-7);
     // assertEquals(206.4493184076D, (double) aaa0_Bucket.get("stddev"), 0.1E-7); // TODO: SOLR-11725
@@ -442,7 +442,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(35L, tailB_Bucket.get("min"));
     assertEquals(40L, tailB_Bucket.get("max"));
     assertEquals(12L, tailB_Bucket.get("countvals"));
-    assertEquals(39.9D, tailB_Bucket.get("percentile"));
+    assertEquals(40.0D, tailB_Bucket.get("percentile"));
     assertEquals(5L, tailB_Bucket.get("missing"));
     assertEquals(450.0D, tailB_Bucket.get("sum"));
     assertEquals(37.5D, (double) tailB_Bucket.get("avg"), 0.1E-7);

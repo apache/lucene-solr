@@ -78,6 +78,20 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
   }
 
+  /** State key to be used for stateful components */
+  public String stateKey() {
+    return null;
+  }
+
+  /** Initialize from the provided state */
+  public void fromState(ResponseBuilder rb,  byte[] state) throws IOException {
+  }
+
+  /** Produce state that can later be used to initialize with {@link #fromState(ResponseBuilder, byte[])} */
+  public byte[] toState(ResponseBuilder rb) throws IOException {
+    return null;
+  }
+
   /** Called after all responses have been received for this stage.
    * Useful when different requests are sent to each shard.
    */

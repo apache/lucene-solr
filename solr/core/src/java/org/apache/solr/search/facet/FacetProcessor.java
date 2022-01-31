@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -46,16 +47,16 @@ import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 /** Base abstraction for a class that computes facets. This is fairly internal to the module. */
 public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
-  SimpleOrderedMap<Object> response;
-  FacetContext fcontext;
-  FacetRequestT freq;
+  protected SimpleOrderedMap<Object> response;
+  protected FacetContext fcontext;
+  protected FacetRequestT freq;
 
   DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
   LinkedHashMap<String,SlotAcc> accMap;
   SlotAcc[] accs;
-  SlotAcc.CountSlotAcc countAcc;
+  protected SlotAcc.CountSlotAcc countAcc;
 
-  FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
+  public FacetProcessor(FacetContext fcontext, FacetRequestT freq) {
     this.fcontext = fcontext;
     this.freq = freq;
     fcontext.processor = this;
@@ -207,23 +208,22 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
     if (excludeSet.size() == 0) return;
 
+    // recompute the base domain
+    fcontext.base = fcontext.searcher.getDocSet(getContextQueries().stream().filter(q -> !excludeSet.containsKey(q)).collect(Collectors.toList()));
+  }
+
+  protected List<Query> getContextQueries() {
     List<Query> qlist = new ArrayList<>();
 
     // TODO: somehow remove responsebuilder dependency
     ResponseBuilder rb = SolrRequestInfo.getRequestInfo().getResponseBuilder();
 
     // add the base query
-    if (!excludeSet.containsKey(rb.getQuery())) {
-      qlist.add(rb.getQuery());
-    }
+    qlist.add(rb.getQuery());
 
     // add the filters
     if (rb.getFilters() != null) {
-      for (Query q : rb.getFilters()) {
-        if (!excludeSet.containsKey(q)) {
-          qlist.add(q);
-        }
-      }
+      qlist.addAll(rb.getFilters());
     }
 
     // now walk back up the context tree
@@ -234,8 +234,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       }
     }
 
-    // recompute the base domain
-    fcontext.base = fcontext.searcher.getDocSet(qlist);
+    return qlist;
   }
 
   /** modifies the context base if there is a join field domain change */
@@ -333,7 +332,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+  protected int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     int count = 0;
     SolrIndexSearcher searcher = fcontext.searcher;
 
@@ -392,7 +391,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
     }
   }
 
-  void addStats(SimpleOrderedMap<Object> target, int slotNum) throws IOException {
+  protected void addStats(SimpleOrderedMap<Object> target, int slotNum) throws IOException {
     int count = countAcc.getCount(slotNum);
     target.add("count", count);
     if (count > 0 || freq.processEmpty) {
@@ -440,7 +439,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
   }
 
   @SuppressWarnings({"unchecked"})
-  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
+  protected void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
     boolean emptyDomain = domain == null || domain.size() == 0;
 

@@ -37,6 +37,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
  */
 public class MDCLoggingContext {
   public static final String TRACE_ID = "trace_id";
+  public static final String REQ_ID = "rid";
   // When a thread sets context and finds that the context is already set, we should noop and ignore the finally clear
   private static ThreadLocal<Integer> CALL_DEPTH = ThreadLocal.withInitial(() -> 0);
 
@@ -53,6 +54,14 @@ public class MDCLoggingContext {
       MDC.put(TRACE_ID, "t:" + traceId);
     } else {
       MDC.remove(TRACE_ID);
+    }
+  }
+
+  public static void setReqId(String rid) {
+    if (!StringUtils.isEmpty(rid)) {
+      MDC.put(REQ_ID, "rid:" + rid);
+    } else {
+      MDC.remove(REQ_ID);
     }
   }
   
@@ -155,6 +164,7 @@ public class MDCLoggingContext {
       MDC.remove(CORE_NAME_PROP);
       MDC.remove(REPLICA_PROP);
       MDC.remove(SHARD_ID_PROP);
+      MDC.remove(REQ_ID);
     } else {
       CALL_DEPTH.set(used - 1);
     }
@@ -167,6 +177,7 @@ public class MDCLoggingContext {
     MDC.remove(SHARD_ID_PROP);
     MDC.remove(NODE_NAME_PROP);
     MDC.remove(TRACE_ID);
+    MDC.remove(REQ_ID);
   }
 
   /** Resets to a cleared state.  Used in-between requests into Solr. */

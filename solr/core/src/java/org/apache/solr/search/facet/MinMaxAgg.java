@@ -31,6 +31,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
@@ -128,6 +130,16 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      val = codec.readDouble();
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeDouble(val);
+    }
+
+    @Override
     protected double getDouble() {
       return val;
     }
@@ -152,6 +164,21 @@ public class MinMaxAgg extends SimpleAggValueSource {
     @Override
     public Object getMergedResult() {
       return val;
+    }
+
+    @Override
+    public Object getPrototype() {
+      return val;
+    }
+
+    @Override
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      val = (Comparable) codec.readVal();
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeVal(val);
     }
 
     @Override

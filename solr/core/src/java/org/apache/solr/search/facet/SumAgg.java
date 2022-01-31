@@ -24,6 +24,8 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
 
@@ -73,6 +75,16 @@ public class SumAgg extends SimpleAggValueSource {
     @Override
     public void merge(Object facetResult, Context mcontext) {
       val += ((Number)facetResult).doubleValue();
+    }
+
+    @Override
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      val = codec.readDouble();
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeDouble(val);
     }
 
     protected double getDouble() {

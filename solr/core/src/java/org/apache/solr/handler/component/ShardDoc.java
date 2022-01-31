@@ -16,13 +16,18 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.lucene.search.FieldDoc;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 
 public class ShardDoc extends FieldDoc {
   public String shard;
   public String shardAddress;  // TODO
-  
+  public int iterativeStep; // if > 0, indicates an iterative shard doc result
   public int orderInShard;
     // the position of this doc within the shard... this can be used
     // to short-circuit comparisons if the shard is equal, and can
@@ -32,6 +37,10 @@ public class ShardDoc extends FieldDoc {
     // this is currently the uniqueKeyField but
     // may be replaced with internal docid in a future release.
 
+  @SuppressWarnings({"rawtypes"})
+  public NamedList rawSortFieldValues;
+  // raw sort field values strictly for state transmission
+  // raw sort field values will only exist if iterativeStep > 0
   @SuppressWarnings({"rawtypes"})
   public NamedList sortFieldValues;
   // sort field values for *all* docs in a particular shard.
@@ -54,6 +63,26 @@ public class ShardDoc extends FieldDoc {
 
   public ShardDoc() {
     super(-1, Float.NaN);
+  }
+
+  void readState(JavaBinDecoder codec) throws IOException {
+    shard = (String) codec.readVal();
+    iterativeStep = codec.readInt();
+    orderInShard = codec.readInt();
+    id = codec.readVal();
+    score = codec.readFloat();
+    Collection fieldsCollection = (Collection) codec.readVal();
+    fields = fieldsCollection != null ? fieldsCollection.toArray() : null;
+  }
+
+  void writeState(JavaBinCodec codec) throws IOException {
+    // NB: sortFieldValues are handled outside since they are shared and positionInResponse has to be set again if used
+    codec.writeVal(shard);
+    codec.writeInt(iterativeStep);
+    codec.writeInt(orderInShard);
+    codec.writeVal(id);
+    codec.writeFloat(score);
+    codec.writeVal(fields);
   }
 
   @Override

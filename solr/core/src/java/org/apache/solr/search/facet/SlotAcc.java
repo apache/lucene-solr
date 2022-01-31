@@ -811,7 +811,7 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  abstract static class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc {
+  public abstract static class CountSlotAcc extends SlotAcc implements ReadOnlyCountSlotAcc {
     public CountSlotAcc(FacetContext fcontext) {
       super(fcontext);
       // assume we are the 'count' by default unless/untill our creator overrides this

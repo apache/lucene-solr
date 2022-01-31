@@ -131,7 +131,8 @@ public class SliceMutator {
 
 
     if (coll.isPerReplicaState()) {
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), PerReplicaStatesOps.deleteReplica(cnn, coll.getPerReplicaStates()) , true);
+      PerReplicaStatesOps replicaOps = PerReplicaStatesOps.deleteReplica(cnn, PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates()) );
+      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), replicaOps, true);
     } else {
       return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
     }

@@ -17,14 +17,15 @@
 
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 
@@ -159,6 +160,50 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     return result;
   }
 
+  @Override
+  public Object getPrototype() {
+    return null;
+  }
+
+  @Override
+  public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+    if (codec.readBoolean()) {
+      missingBucket = newBucket(null, mcontext);
+      missingBucket.readState(codec, mcontext);
+    } else {
+      missingBucket = null;
+    }
+    if (codec.readBoolean()) {
+      allBuckets = newBucket(null, mcontext);
+      allBuckets.readState(codec, mcontext);
+    } else {
+      allBuckets = null;
+    }
+    if (codec.readBoolean()) {
+      numBuckets = new HLLAgg("hll_merger").createFacetMerger(0L);
+      numBuckets.readState(codec, mcontext);
+    } else {
+      numBuckets = null;
+    }
+    super.readState(codec, mcontext);
+  }
+
+  @Override
+  public void writeState(JavaBinCodec codec) throws IOException {
+    codec.writeBoolean(missingBucket != null);
+    if (missingBucket != null) {
+      missingBucket.writeState(codec);
+    }
+    codec.writeBoolean(allBuckets != null);
+    if (allBuckets != null) {
+      allBuckets.writeState(codec);
+    }
+    codec.writeBoolean(numBuckets != null);
+    if (numBuckets != null) {
+      numBuckets.writeState(codec);
+    }
+    super.writeState(codec);
+  }
 
   @Override
   public void finish(Context mcontext) {
@@ -194,46 +239,5 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       refinement.put(label, bucketRefinement);
     }
     return refinement;
-  }
-
-  private static class FacetNumBucketsMerger extends FacetMerger {
-    long sumBuckets;
-    long shardsMissingSum;
-    long shardsTruncatedSum;
-    Set<Object> values;
-
-    @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public void merge(Object facetResult, Context mcontext) {
-      SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
-      long numBuckets = ((Number)map.get("numBuckets")).longValue();
-      sumBuckets += numBuckets;
-
-      List vals = (List)map.get("vals");
-      if (vals != null) {
-        if (values == null) {
-          values = new HashSet<>(vals.size()*4);
-        }
-        values.addAll(vals);
-        if (numBuckets > values.size()) {
-          shardsTruncatedSum += numBuckets - values.size();
-        }
-      } else {
-        shardsMissingSum += numBuckets;
-      }
-    }
-
-    @Override
-    public void finish(Context mcontext) {
-      // nothing to do
-    }
-
-    @Override
-    public Object getMergedResult() {
-      long exactCount = values == null ? 0 : values.size();
-      return exactCount + shardsMissingSum + shardsTruncatedSum;
-      // TODO: reduce count by (at least) number of buckets that fail to hit mincount (after merging)
-      // that should make things match for most of the small tests at least
-    }
   }
 }

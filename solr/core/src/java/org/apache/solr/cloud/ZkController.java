@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -53,6 +54,7 @@ import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -244,6 +246,8 @@ public class ZkController implements Closeable {
 
   private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent = new ConcurrentHashMap<>();
 
+  public  final String isOverseer  ;
+
   @Deprecated
   // keeps track of replicas that have been asked to recover by leaders running on this node
   private final Map<String, String> replicasInLeaderInitiatedRecovery = new HashMap<String, String>();
@@ -298,7 +302,7 @@ public class ZkController implements Closeable {
   @SuppressWarnings({"unchecked"})
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientConnectTimeout, CloudConfig cloudConfig, final CurrentCoreDescriptorProvider registerOnReconnect)
       throws InterruptedException, TimeoutException, IOException {
-
+    isOverseer = System.getProperty("overseer.node");
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
 
@@ -348,8 +352,9 @@ public class ZkController implements Closeable {
     zkStateReader = new ZkStateReader(zkClient, () -> {
       if (cc != null) cc.securityNodeChanged();
     });
-
+    log.info("initializing ZkControlled");
     init(registerOnReconnect);
+    log.info("initialized ZkCOntroller");
     this.overseerJobQueue = initOverseerJobQueue();
     this.overseerCollectionQueue = initOverseerTaskQueue();
     this.overseerConfigSetQueue = initOverseerConfigSetQueue();
@@ -438,7 +443,9 @@ public class ZkController implements Closeable {
                 createEphemeralLiveNode();
               }
 
+              log.info("Fetching core descriptors");
               List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
+              log.info("Core descriptors fetched. Going to register the cores async");
               // re register all descriptors
               ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
               if (descriptors != null) {
@@ -462,6 +469,8 @@ public class ZkController implements Closeable {
                   }
                 }
               }
+              log.info("Cores are being registered in parallel");
+
 
               // notify any other objects that need to know when the session was re-connected
               HashSet<OnReconnect> clonedListeners;
@@ -1176,7 +1185,9 @@ public class ZkController implements Closeable {
     log.info("Register query node as live in ZooKeeper:" + nodePath);
     List<Op> ops = new ArrayList<>(1);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+    log.info("Going to create ephemeral node in live_nodes");
     zkClient.multi(ops, true);
+    log.info("Created ephemeral node in live_nodes");
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
@@ -2373,25 +2384,42 @@ public class ZkController implements Closeable {
     }
   }
 
+  @SuppressWarnings("unchecked")
+  public static List<String> getDedicatedOverseers(SolrCloudManager scm) {
+    try {
+      log.info("getDedicatedOverseers call ");
+      VersionedData data = scm.getDistribStateManager().getData(ZkStateReader.ROLES);
+      if(data == null || data.getData() == null) return Collections.emptyList();
+      Map<String, Object> roles = (Map<String, Object>) Utils.fromJSON(data.getData());
+      return (List<String>) roles.getOrDefault("overseer", Collections.emptyList());
+    } catch (NoSuchElementException | AlreadyClosedException exp) {
+      //roles do not exist or server is shutting down
+      return Collections.emptyList();
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
   public void checkOverseerDesignate() {
     try {
-      byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
-      if (data == null) return;
-      @SuppressWarnings({"rawtypes"})
-      Map roles = (Map) Utils.fromJSON(data);
-      if (roles == null) return;
-      @SuppressWarnings({"rawtypes"})
-      List nodeList = (List) roles.get("overseer");
-      if (nodeList == null) return;
-      if (nodeList.contains(getNodeName())) {
-        ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.ADDROLE.toString().toLowerCase(Locale.ROOT),
-            "node", getNodeName(),
-            "role", "overseer");
-        log.info("Going to add role {} ", props);
-        getOverseerCollectionQueue().offer(Utils.toJSON(props));
+      Boolean isOverseer = this.isOverseer == null ? null : Boolean.parseBoolean(this.isOverseer);
+      List<String> overseerDesignates = getDedicatedOverseers(getSolrCloudManager());
+      CollectionParams.CollectionAction cmd = null;
+      if (isOverseer == null) {
+        if (overseerDesignates.contains(getNodeName())) cmd = CollectionParams.CollectionAction.ADDROLE;
+      } else {
+        if (isOverseer == Boolean.TRUE) {
+          cmd = CollectionParams.CollectionAction.ADDROLE;
+        } else if (isOverseer == Boolean.FALSE) {
+          if (overseerDesignates.contains(getNodeName())) cmd = CollectionParams.CollectionAction.REMOVEROLE;
+        }
       }
-    } catch (NoNodeException nne) {
-      return;
+      if (cmd == null) return;
+      ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, cmd.toLower(),
+          "node", getNodeName(),
+          "role", "overseer");
+      log.info("Going to add/remove role {} ", props);
+      getOverseerCollectionQueue().offer(Utils.toJSON(props));
     } catch (Exception e) {
       log.warn("could not read the overseer designate ", e);
     }
@@ -2597,6 +2625,10 @@ public class ZkController implements Closeable {
       setConfWatcher(confDir, new WatcherImpl(confDir), null);
     }
     return confDirListeners;
+  }
+
+  public boolean hasConfDirectoryListeners(final String confDir) {
+    return confDirectoryListeners.containsKey(confDir) && !confDirectoryListeners.isEmpty();
   }
 
   private final Map<String, Set<Runnable>> confDirectoryListeners = new HashMap<>();

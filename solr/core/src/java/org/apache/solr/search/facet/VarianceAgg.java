@@ -21,6 +21,8 @@ import java.util.List;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
 
@@ -82,7 +84,21 @@ public class VarianceAgg extends SimpleAggValueSource {
     public Object getMergedResult() {
       return this.getDouble();
     }
-    
+
+    @Override
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      count = codec.readLong();
+      sumSq = codec.readDouble();
+      sum = codec.readDouble();
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeLong(count);
+      codec.writeDouble(sumSq);
+      codec.writeDouble(sum);
+    }
+
     @Override
     protected double getDouble() {
       return AggUtil.uncorrectedVariance(sumSq, sum, count);

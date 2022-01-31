@@ -235,3 +235,8 @@
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 # This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"
+
+# Solr computes JVM metrics for threads. Computing these metrics, esp. computing deadlocks etc., requires potentially
+# expensive computations, and can be disabled or cached by setting for a few seconds.
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.metrics.threads.deadlockdetection.enabled=false"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.metrics.threads.caching.interval=2"

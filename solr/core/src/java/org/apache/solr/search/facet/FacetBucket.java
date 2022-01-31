@@ -17,10 +17,13 @@
 
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetBucket {
@@ -28,7 +31,9 @@ public class FacetBucket {
   final FacetModule.FacetBucketMerger parent;
   @SuppressWarnings({"rawtypes"})
   final Comparable bucketValue;
-  final int bucketNumber;  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, across all field buckets)
+  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, across all field buckets)
+  // bucketNumber is only supplied for buckets that could be part of a refinement chain, otherwise the value is -1 signifying no refinement
+  final int bucketNumber;
 
   long count;
   Map<String, FacetMerger> subs;
@@ -37,7 +42,9 @@ public class FacetBucket {
       , @SuppressWarnings("rawtypes") Comparable bucketValue, FacetMerger.Context mcontext) {
     this.parent = parent;
     this.bucketValue = bucketValue;
-    this.bucketNumber = mcontext.getNewBucketNumber(); // TODO: we don't need bucket numbers for all buckets...
+    boolean refineEnabled = parent.freq.doRefine() || !mcontext.getSubsWithRefinement(parent.freq).isEmpty();
+    // only need a bucketNumber where refinement is enabled (either at our level or in a sub)
+    this.bucketNumber = refineEnabled ? mcontext.getNewBucketNumber() : -1;
   }
 
   public long getCount() {
@@ -72,7 +79,9 @@ public class FacetBucket {
   public void mergeBucket(@SuppressWarnings("rawtypes") SimpleOrderedMap bucket, FacetMerger.Context mcontext) {
     // todo: for refinements, we want to recurse, but not re-do stats for intermediate buckets
 
-    mcontext.setShardFlag(bucketNumber);
+    if (bucketNumber >= 0) {
+      mcontext.setShardFlag(bucketNumber);
+    }
 
     // drive merging off the received bucket?
     for (int i=0; i<bucket.size(); i++) {
@@ -191,6 +200,37 @@ public class FacetBucket {
     // reset the "bucketMissing" flag on the way back out.
     mcontext.setBucketWasMissing(parentMissing);
     return refinement;
+  }
+
+  public void readState(JavaBinDecoder codec, FacetMerger.Context mcontext) throws IOException {
+    count = codec.readLong();
+    int subsLength = codec.readInt();
+    subs = null;
+    for (int i = 0; i < subsLength; i++) {
+      String key = (String) codec.readVal();
+      Object prototype = codec.readVal();
+      if (prototype == null) {
+        prototype = new Object();
+      }
+      // getMerger adds to subs under the hood
+      getMerger(key, prototype).readState(codec, mcontext);
+    }
+  }
+
+  public void writeState(JavaBinCodec codec) throws IOException {
+    // NB: bucket value has to managed separately as it's required for construction and is final
+    codec.writeLong(count);
+    int subsLength = subs != null ? subs.size() : 0;
+    codec.writeInt(subsLength);
+    if (subs != null) {
+      for (Map.Entry<String, FacetMerger> entry : subs.entrySet()) {
+        String key = entry.getKey();
+        FacetMerger sub = entry.getValue();
+        codec.writeVal(key);
+        codec.writeVal(sub.getPrototype());
+        sub.writeState(codec);
+      }
+    }
   }
 
 }

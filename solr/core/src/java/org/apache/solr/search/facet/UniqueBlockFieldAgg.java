@@ -22,8 +22,8 @@ import org.apache.solr.schema.SchemaField;
 
 public class UniqueBlockFieldAgg extends UniqueBlockAgg {
 
-  public UniqueBlockFieldAgg(String field) {
-    super(field);
+  public UniqueBlockFieldAgg(String field, int numValsExplicit) {
+    super(field, numValsExplicit);
   }
 
   @Override
@@ -38,7 +38,7 @@ public class UniqueBlockFieldAgg extends UniqueBlockAgg {
         throw new IllegalArgumentException(name+"("+fieldName+
             ") not yet support numbers " + sf);
       } else {
-        return new UniqueBlockSlotAcc(fcontext, sf, numSlots);
+        return new UniqueBlockSlotAcc(fcontext, sf, numSlots, numValsExplicit);
       }
     }
   }

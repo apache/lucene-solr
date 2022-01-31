@@ -137,19 +137,37 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
       }
       hitCountDuringFirstPhase += ((Number) srsp.getSolrResponse().getResponse().get("totalHitCount")).longValue();
     }
-    rb.totalHitCount = hitCountDuringFirstPhase;
+    rb.totalHitCount += hitCountDuringFirstPhase;
     rb.firstPhaseElapsedTime = maxElapsedTime;
     for (Map.Entry<String, List<Collection<SearchGroup<BytesRef>>>> entry : commandSearchGroups.entrySet()) {
       String groupField = entry.getKey();
       List<Collection<SearchGroup<BytesRef>>> topGroups = entry.getValue();
-      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, groupSortSpec.getOffset(), groupSortSpec.getCount(), groupSort);
+
+      int offset = groupSortSpec.getOffset();
+      int count = groupSortSpec.getCount();
+      if (rb.isIterative()) {
+        // We must hold onto all grouped docs since later iterations could push earlier grouped docs into the main results.
+        count += offset;
+        offset = 0;
+        // Additionally, we may already have some groups that we need to merge in as well.
+        Collection<SearchGroup<BytesRef>> existing = rb.mergedSearchGroups.get(groupField);
+        if (existing != null && existing.size() > 0) {
+          topGroups.add(existing);
+        }
+      }
+      
+      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, offset, count, groupSort);
       if (mergedTopGroups == null) {
         continue;
       }
 
       rb.mergedSearchGroups.put(groupField, mergedTopGroups);
       for (SearchGroup<BytesRef> mergedTopGroup : mergedTopGroups) {
-        rb.searchGroupToShards.get(groupField).put(mergedTopGroup, tempSearchGroupToShards.get(groupField).get(mergedTopGroup));
+        Set<String> shards = tempSearchGroupToShards.get(groupField).get(mergedTopGroup);
+        if (rb.isIterative() && shards == null) {
+          continue; // this is a result that existed solely in a previous iteration that should not be fetched again
+        }
+        rb.searchGroupToShards.get(groupField).put(mergedTopGroup, shards);
       }
     }
   }

@@ -523,7 +523,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     assert null != slot.bucketFilter;
     final Query filter = slot.bucketFilter;
-    final DocSet subDomain = fcontext.searcher.getDocSet(filter, fcontext.base);
+    // sub domains should use the permanent context for computing sub facets / stats
+    final DocSet subDomain = fcontext.searcher.getDocSet(filter, fcontext.perm().base);
 
     // if no subFacets, we only need a DocSet
     // otherwise we need more?
@@ -625,8 +626,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       slot.resortSlotNum = slotNum;
       
       assert null != slot.bucketFilter : "null filter for slot=" +slot.bucketVal;
-      
-      final DocSet subDomain = fcontext.searcher.getDocSet(slot.bucketFilter, fcontext.base);
+
+      // sub domains should use the permanent context for computing sub facets / stats
+      final DocSet subDomain = fcontext.searcher.getDocSet(slot.bucketFilter, fcontext.perm().base);
       acc.collect(subDomain, slotNum, s -> { return new SlotContext(slot.bucketFilter); } );
     }
     

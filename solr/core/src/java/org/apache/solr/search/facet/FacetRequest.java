@@ -471,7 +471,7 @@ public abstract class FacetRequest {
   }
 
   @SuppressWarnings("rawtypes")
-  public abstract FacetProcessor createFacetProcessor(FacetContext fcontext);
+  public abstract FacetProcessor createFacetProcessor(FacetContext fcontext) throws IOException;
 
   public abstract FacetMerger createFacetMerger(Object prototype);
 

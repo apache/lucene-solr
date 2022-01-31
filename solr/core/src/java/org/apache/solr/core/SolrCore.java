@@ -144,6 +144,8 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.facet.FacetParser;
+import org.apache.solr.search.facet.FacetParserFactory;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
@@ -175,6 +177,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MarkerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
@@ -187,6 +190,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
 
   public static final String version = "1.0";
+  public static final String DISABLE_ZK_CONFIG_WATCH = "disable.zk.config.watch";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request"); //nowarn
@@ -218,6 +222,7 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
   private final long startNanoTime = System.nanoTime();
   private final RequestHandlers reqHandlers;
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
+  private final PluginBag<FacetParserFactory> facetParserFactories = new PluginBag<>(FacetParserFactory.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
   private final Map<String, UpdateRequestProcessorChain> updateProcessorChains;
   private final SolrCoreMetricManager coreMetricManager;
@@ -1014,6 +1019,7 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
+      loadFacetParserFactories();
       updateProcessors.init(Collections.emptyMap(), this);
 
       // Processors initialized before the handlers
@@ -1618,6 +1624,7 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
     if (reqHandlers != null) reqHandlers.close();
     responseWriters.close();
     searchComponents.close();
+    facetParserFactories.close();
     qParserPlugins.close();
     valueSourceParsers.close();
     transformerFactories.close();
@@ -1889,6 +1896,21 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
    */
   public PluginBag<SearchComponent> getSearchComponents() {
     return searchComponents;
+  }
+
+  /**
+   * Registers the default facet parsers
+   */
+  private void loadFacetParserFactories() {
+    Map<String, FacetParserFactory> instances = createInstances(FacetParser.standard_factories);
+    facetParserFactories.init(instances, this);
+  }
+
+  /**
+   * @return The facet parser factory registered to the given name.
+   */
+  public FacetParserFactory getFacetParserFactory(String name) {
+    return facetParserFactories.get(name);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -2674,7 +2696,12 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
 
     if (rsp.getToLog().size() > 0) {
       if (requestLog.isInfoEnabled()) {
-        requestLog.info(rsp.getToLogAsString(logid));
+        Object path = rsp.getToLog().get("path");
+        if (path instanceof String) {
+          requestLog.info(MarkerFactory.getMarker((String) path), rsp.getToLogAsString(logid));
+        } else{
+          requestLog.info(rsp.getToLogAsString(logid));
+        }
       }
 
       /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/
@@ -3130,6 +3157,8 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
    * to 'touch' the /conf directory by setting some data  so that events are triggered.
    */
   protected void registerConfListener() {
+    //if app wants to disable zk config watch, or it just want zk to update the config but then want to restart node
+    if (Boolean.getBoolean(DISABLE_ZK_CONFIG_WATCH)) return;
     if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
     final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
     if (zkSolrResourceLoader != null)

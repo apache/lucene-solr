@@ -18,6 +18,7 @@
 
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.DataInputInputStream;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
@@ -165,5 +169,52 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
     }
     return result;
 
+  }
+
+  @Override
+  public Object getPrototype() {
+    return null;
+  }
+
+  @Override
+  public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+    if (codec.readBoolean()) {
+      beforeBucket = newBucket(null, mcontext);
+      beforeBucket.readState(codec, mcontext);
+    } else {
+      beforeBucket = null;
+    }
+    if (codec.readBoolean()) {
+      afterBucket = newBucket(null, mcontext);
+      afterBucket.readState(codec, mcontext);
+    } else {
+      afterBucket = null;
+    }
+    if (codec.readBoolean()) {
+      betweenBucket = newBucket(null, mcontext);
+      betweenBucket.readState(codec, mcontext);
+    } else {
+      betweenBucket = null;
+    }
+    actual_end = codec.readVal();
+    super.readState(codec, mcontext);
+  }
+
+  @Override
+  public void writeState(JavaBinCodec codec) throws IOException {
+    codec.writeBoolean(beforeBucket != null);
+    if (beforeBucket != null) {
+      beforeBucket.writeState(codec);
+    }
+    codec.writeBoolean(afterBucket != null);
+    if (afterBucket != null) {
+      afterBucket.writeState(codec);
+    }
+    codec.writeBoolean(betweenBucket != null);
+    if (betweenBucket != null) {
+      betweenBucket.writeState(codec);
+    }
+    codec.writeVal(actual_end);
+    super.writeState(codec);
   }
 }

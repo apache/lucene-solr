@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -30,7 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.Streams;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -42,8 +45,11 @@ import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -61,6 +67,8 @@ import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -96,6 +104,7 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder;
+import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommand;
 import org.apache.solr.search.grouping.distributed.command.TopGroupsFieldCommand;
 import org.apache.solr.search.grouping.distributed.requestfactory.SearchGroupsRequestFactory;
@@ -632,6 +641,44 @@ public class QueryComponent extends SearchComponent
   }
 
   @Override
+  public String stateKey() {
+    return "query";
+  }
+
+  @Override
+  public void fromState(ResponseBuilder rb, byte[] state) throws IOException {
+    JavaBinDecoder codec = new JavaBinDecoder(state);
+    if (rb.grouping()) {
+      QueryGroupingComponentState componentState = new QueryGroupingComponentState(rb);
+      componentState.readState(codec);
+    } else {
+      QueryComponentState componentState = new QueryComponentState();
+      componentState.readState(codec, rb.getSortSpec(), rb.req.getSchema());
+      rb.req.getContext().put(QueryComponentState.class, componentState);
+    }
+  }
+
+  @Override
+  public byte[] toState(ResponseBuilder rb) throws IOException {
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    JavaBinCodec codec = new JavaBinCodec(os, (o, c) -> {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown object to serialize " + o.getClass());
+    });
+    if (rb.grouping()) {
+      QueryGroupingComponentState componentState = new QueryGroupingComponentState(rb);
+      componentState.writeState(codec);
+    } else {
+      QueryComponentState componentState = (QueryComponentState) rb.req.getContext().get(QueryComponentState.class);
+      if (componentState == null) {
+        return null;
+      }
+      componentState.writeState(codec);
+    }
+    codec.close();
+    return os.toByteArray();
+  }
+
+  @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
       return;
@@ -657,6 +704,59 @@ public class QueryComponent extends SearchComponent
       rb.resultIds = new HashMap<>();
     }
 
+    Map<String, TopGroups<BytesRef>> mergedTopGroups = rb.mergedTopGroups;
+    Map<String, QueryCommandResult> mergedQueryCommandResults = rb.mergedQueryCommandResults;
+    if (rb.isIterative()) {
+      // When iterative, we hold onto more data up front, but may need to slice off the offset at the end.
+      SortSpec groupSort = rb.getGroupingSpec().getGroupSortSpec();
+      int groupOffset = groupSort.getOffset();
+      SortSpec withinGroupSort = rb.getGroupingSpec().getWithinGroupSortSpec();
+      int withinGroupOffset = withinGroupSort.getOffset();
+      // We have to make copies of most wrapper objects due to immutability.
+      
+      // First, limit merged top groups.
+      Map<String, TopGroups<BytesRef>> limitedMergedTopGroups = new HashMap<>();
+      for (Map.Entry<String, TopGroups<BytesRef>> topGroupsEntry : mergedTopGroups.entrySet()) {
+        TopGroups<BytesRef> topGroups = topGroupsEntry.getValue();
+        // Adjust top group values based on offset.
+        int groupsCount = topGroups.groups.length > groupOffset ? topGroups.groups.length - groupOffset : 0;
+        GroupDocs<BytesRef>[] limitedGroups = new GroupDocs[groupsCount];
+        for (int i = 0; i < groupsCount; i++) {
+          GroupDocs<BytesRef> group = topGroups.groups[groupOffset + i];
+          // Adjust top docs for each group based on offset. 
+          int scoreDocsCount = group.scoreDocs.length > withinGroupOffset ? group.scoreDocs.length - withinGroupOffset : 0;
+          ScoreDoc[] limitedScoreDocs = scoreDocsCount > 0
+              ? Arrays.copyOfRange(group.scoreDocs, withinGroupOffset, withinGroupOffset + scoreDocsCount)
+              : new ScoreDoc[0];
+          limitedGroups[i] = new GroupDocs<>(group.score, group.maxScore, group.totalHits, limitedScoreDocs, group.groupValue, group.groupSortValues);
+        }
+        TopGroups<BytesRef> limitedTopGroups = new TopGroups<>(
+            topGroups.groupSort, topGroups.withinGroupSort, topGroups.totalHitCount, topGroups.totalGroupedHitCount, limitedGroups, topGroups.maxScore);
+        limitedMergedTopGroups.put(topGroupsEntry.getKey(), limitedTopGroups);
+      }
+      mergedTopGroups = limitedMergedTopGroups;
+      
+      // Then, limit merged queries.
+      Map<String, QueryCommandResult> limitedMergedQueryCommandResults = new HashMap<>();
+      for (Map.Entry<String, QueryCommandResult> topGroupsEntry : mergedQueryCommandResults.entrySet()) {
+        QueryCommandResult queryCommandResult = topGroupsEntry.getValue();
+        TopDocs topDocs = queryCommandResult.getTopDocs();
+        int scoreDocsCount = topDocs.scoreDocs.length > withinGroupOffset ? topDocs.scoreDocs.length - withinGroupOffset : 0;
+        ScoreDoc[] limitedScoreDocs = scoreDocsCount > 0
+            ? Arrays.copyOfRange(topDocs.scoreDocs, withinGroupOffset, withinGroupOffset + scoreDocsCount)
+            : new ScoreDoc[0];
+        TopDocs limitedTopDocs = new TopFieldDocs(topDocs.totalHits, limitedScoreDocs, withinGroupSort.getSort().getSort());
+        QueryCommandResult limitedQueryCommandResult = new QueryCommandResult(
+            limitedTopDocs, queryCommandResult.getMatches(), queryCommandResult.getMaxScore());
+        limitedMergedQueryCommandResults.put(topGroupsEntry.getKey(), limitedQueryCommandResult);
+      }
+      mergedQueryCommandResults = limitedMergedQueryCommandResults;
+    }
+
+    if (rb.isIterative() && !rb.getIterativeNeedResponse()) {
+      return; // no need to write extra data during this stage
+    }
+    
     EndResultTransformer.SolrDocumentSource solrDocumentSource = doc -> {
       ShardDoc solrDoc = (ShardDoc) doc;
       return rb.retrievedDocuments.get(solrDoc.id);
@@ -672,12 +772,16 @@ public class QueryComponent extends SearchComponent
       return;
     }
     Map<String, Object> combinedMap = new LinkedHashMap<>();
-    combinedMap.putAll(rb.mergedTopGroups);
-    combinedMap.putAll(rb.mergedQueryCommandResults);
+    combinedMap.putAll(mergedTopGroups);
+    combinedMap.putAll(mergedQueryCommandResults);
     endResultTransformer.transform(combinedMap, rb, solrDocumentSource);
   }
 
   protected void regularFinishStage(ResponseBuilder rb) {
+    if (rb.isIterative() && !rb.getIterativeNeedResponse()) {
+      return; // no need to write extra data during this stage
+    }
+    
     // We may not have been able to retrieve all the docs due to an
     // index change.  Remove any null documents.
     for (Iterator<SolrDocument> iter = rb.getResponseDocs().iterator(); iter.hasNext();) {
@@ -845,12 +949,27 @@ public class QueryComponent extends SearchComponent
         shardInfo = new SimpleOrderedMap<>();
         rb.rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);
       }
-      
+
       long numFound = 0;
       boolean hitCountIsExact = true;
       Float maxScore=null;
       boolean thereArePartialResults = false;
       Boolean segmentTerminatedEarly = null;
+      Map<String, SolrDocument> responseDocsById = null;
+
+      {
+        QueryComponentState componentState = (QueryComponentState) rb.req.getContext().get(QueryComponentState.class);
+        if (componentState != null) {
+          componentState.shardDocs.forEach(queue::insertWithOverflow);
+          responseDocsById = componentState.responseDocsById;
+          numFound = componentState.numFound;
+          hitCountIsExact = componentState.numFoundExact;
+          maxScore = componentState.maxScore;
+          thereArePartialResults = componentState.partialResults;
+          segmentTerminatedEarly = componentState.segmentTerminatedEarly;
+        }
+      }
+
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
         NamedList<?> responseHeader = null;
@@ -928,7 +1047,7 @@ public class QueryComponent extends SearchComponent
 
         @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
-        if (sortFieldValues.size()==0 && // we bypass merging this response only if it's partial itself
+        if ((null == sortFieldValues || sortFieldValues.size()==0) && // we bypass merging this response only if it's partial itself
                             thisResponseIsPartial) { // but not the previous one!!
           continue; //fsv timeout yields empty sort_vlaues
         }
@@ -960,6 +1079,7 @@ public class QueryComponent extends SearchComponent
           ShardDoc shardDoc = new ShardDoc();
           shardDoc.id = id;
           shardDoc.shard = srsp.getShard();
+          shardDoc.iterativeStep = rb.getIterativeStep();
           shardDoc.orderInShard = i;
           Object scoreObj = doc.getFieldValue("score");
           if (scoreObj != null) {
@@ -970,26 +1090,33 @@ public class QueryComponent extends SearchComponent
             }
           }
 
+          if (rb.isIterative()) {
+            shardDoc.rawSortFieldValues = sortFieldValues;
+          }
           shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
           queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
-      
+
+      if (rb.isIterative()) {
+        // Only need to hold onto copy of results if iterative.
+        QueryComponentState componentState = new QueryComponentState();
+        componentState.shardDocs = Streams.stream(queue.iterator()).collect(Collectors.toList());
+        componentState.numFound = numFound;
+        componentState.numFoundExact = hitCountIsExact;
+        componentState.maxScore = maxScore;
+        componentState.partialResults = thereArePartialResults;
+        componentState.segmentTerminatedEarly = segmentTerminatedEarly;
+        // It's okay to always overwrite as this is the full state at this point.
+        rb.req.getContext().put(QueryComponentState.class, componentState);
+      }
+
       // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
       // So we want to pop the last documents off the queue to get
       // the docs offset -> queuesize
       int resultSize = queue.size() - ss.getOffset();
       resultSize = Math.max(0, resultSize);  // there may not be any docs in range
-
-      Map<Object,ShardDoc> resultIds = new HashMap<>();
-      for (int i=resultSize-1; i>=0; i--) {
-        ShardDoc shardDoc = queue.pop();
-        shardDoc.positionInResponse = i;
-        // Need the toString() for correlation with other lists that must
-        // be strings (like keys in highlighting, explain, etc)
-        resultIds.put(shardDoc.id.toString(), shardDoc);
-      }
 
       // Add hits for distributed requests
       // https://issues.apache.org/jira/browse/SOLR-3518
@@ -1002,6 +1129,20 @@ public class QueryComponent extends SearchComponent
       responseDocs.setStart(ss.getOffset());
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);
+
+    Map<Object,ShardDoc> resultIds = new HashMap<>();
+    for (int i=resultSize-1; i>=0; i--) {
+      ShardDoc shardDoc = queue.pop();
+      shardDoc.positionInResponse = i;
+      // Need the toString() for correlation with other lists that must
+      // be strings (like keys in highlighting, explain, etc)
+      String id = shardDoc.id.toString();
+      resultIds.put(id, shardDoc);
+      // If we already have the response doc, let's use it rather than refetching.
+      if (responseDocsById != null && responseDocsById.containsKey(id)) {
+        responseDocs.set(shardDoc.positionInResponse, responseDocsById.get(id));
+      }
+    }
 
       // save these results in a private area so we can access them
       // again when retrieving stored fields.
@@ -1128,6 +1269,10 @@ public class QueryComponent extends SearchComponent
     // for each shard, collect the documents for that shard.
     HashMap<String, Collection<ShardDoc>> shardMap = new HashMap<>();
     for (ShardDoc sdoc : rb.resultIds.values()) {
+      // iterative requests do not need to re-fetch documents from shards that are already held
+      if (rb.getResponseDocs().get(sdoc.positionInResponse) != null) {
+        continue;
+      }
       Collection<ShardDoc> shardDocs = shardMap.get(sdoc.shard);
       if (shardDocs == null) {
         shardDocs = new ArrayList<>();
@@ -1237,6 +1382,24 @@ public class QueryComponent extends SearchComponent
             }
             rb.getResponseDocs().set(sdoc.positionInResponse, doc);
           }
+        }
+      }
+
+      if (rb.isIterative()) {
+        // first we need the shard docs by position
+        ShardDoc[] shardDocs = new ShardDoc[rb.resultIds.size()];
+        for (ShardDoc sdoc : rb.resultIds.values()) {
+          shardDocs[sdoc.positionInResponse] = sdoc;
+        }
+        QueryComponentState componentState = (QueryComponentState) rb.req.getContext().get(QueryComponentState.class);
+        componentState.responseDocsById = new HashMap<>();
+        // at this point we should have all of the response docs, any null ones are ignored later anyways
+        for (int i = 0; i < rb.getResponseDocs().size(); i++) {
+          SolrDocument doc = rb.getResponseDocs().get(i);
+          if (doc == null) {
+            continue;
+          }
+          componentState.responseDocsById.put(shardDocs[i].id.toString(), doc);
         }
       }
     }
@@ -1554,6 +1717,241 @@ public class QueryComponent extends SearchComponent
     @Override
     public float score() throws IOException {
       return score;
+    }
+  }
+
+  class QueryGroupingComponentState {
+    private final ResponseBuilder rb;
+
+    QueryGroupingComponentState(ResponseBuilder rb) {
+      this.rb = rb;
+    }
+
+    void readState(JavaBinDecoder codec) throws IOException {
+      rb.totalHitCount =  codec.readLong();
+      boolean partialResults = codec.readBoolean();
+      if (partialResults) {
+        rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      }
+      
+      int mergedSearchGroupsSize = codec.readInt();
+      rb.mergedSearchGroups.clear();
+      rb.mergedGroupCounts.clear();
+      for (int i = 0; i < mergedSearchGroupsSize; i++) {
+        String groupKey = (String) codec.readVal();
+        int groupsSize = codec.readInt();
+        Collection<SearchGroup<BytesRef>> groups = new ArrayList<>(groupsSize);
+        for (int j = 0; j < groupsSize; j++) {
+          SearchGroup<BytesRef> group = new SearchGroup<>();
+          byte[] value = (byte[]) codec.readVal();
+          group.groupValue = new BytesRef(value);
+          group.sortValues = ((Collection) codec.readVal()).toArray();
+          groups.add(group);
+        }
+        rb.mergedSearchGroups.put(groupKey, groups);
+        Long groupCount = (Long) codec.readVal();
+        if (groupCount != null) {
+          rb.mergedGroupCounts.put(groupKey, groupCount);
+        }
+      }
+      
+      int mergedTopGroupsSize = codec.readInt();
+      rb.mergedTopGroups.clear();
+      for (int i = 0; i < mergedTopGroupsSize; i++) {
+        String groupKey = (String) codec.readVal();
+        TopGroups<BytesRef> topGroups = readTopGroups(codec);
+        rb.mergedTopGroups.put(groupKey, topGroups);
+      }
+      
+      int mergedQueryCommandResultsSize = codec.readInt();
+      rb.mergedQueryCommandResults.clear();
+      for (int i = 0; i < mergedQueryCommandResultsSize; i++) {
+        String queryKey = (String) codec.readVal();
+        QueryCommandResult queryCommandResult = readQueryCommandResult(codec, rb.getGroupingSpec().getWithinGroupSortSpec());
+        rb.mergedQueryCommandResults.put(queryKey, queryCommandResult);
+      }
+      
+      rb.retrievedDocuments.clear();
+      rb.retrievedDocuments.putAll((Map<Object, SolrDocument>) codec.readVal());
+    }
+
+    void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeLong(rb.totalHitCount);
+      boolean partialResults = Boolean.TRUE.equals(rb.rsp.getResponseHeader().asShallowMap().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+      codec.writeBoolean(partialResults);
+      
+      codec.writeInt(rb.mergedSearchGroups.size());
+      for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
+        String groupKey = entry.getKey();
+        codec.writeVal(groupKey);
+        codec.writeInt(entry.getValue().size());
+        for (SearchGroup<BytesRef> group : entry.getValue()) {
+          codec.writeByteArray(group.groupValue.bytes, group.groupValue.offset, group.groupValue.length);
+          codec.writeVal(group.sortValues);
+        }
+        codec.writeVal(rb.mergedGroupCounts.get(groupKey));
+      }
+      
+      codec.writeInt(rb.mergedTopGroups.size());
+      for (Map.Entry<String, TopGroups<BytesRef>> entry : rb.mergedTopGroups.entrySet()) {
+        String groupKey = entry.getKey();
+        codec.writeVal(groupKey);
+        writeTopGroups(codec, entry.getValue());
+      }
+      
+      codec.writeInt(rb.mergedQueryCommandResults.size());
+      for (Map.Entry<String, QueryCommandResult> entry : rb.mergedQueryCommandResults.entrySet()) {
+        String queryKey = entry.getKey();
+        codec.writeVal(queryKey);
+        writeQueryCommandResult(codec, entry.getValue());
+      }
+      
+      codec.writeVal(rb.retrievedDocuments);
+    }
+
+    void writeTopGroups(JavaBinCodec codec, TopGroups<BytesRef> topGroups) throws IOException {
+      codec.writeLong(topGroups.totalHitCount);
+      codec.writeLong(topGroups.totalGroupedHitCount);
+      codec.writeFloat(topGroups.maxScore);
+      codec.writeInt(topGroups.groups.length);
+      for (GroupDocs<BytesRef> group : topGroups.groups) {
+        codec.writeFloat(group.score);
+        codec.writeFloat(group.maxScore);
+        writeTotalHits(codec, group.totalHits);
+        codec.writeByteArray(group.groupValue.bytes, group.groupValue.offset, group.groupValue.length);
+        codec.writeVal(group.groupSortValues);
+        writeScoreDocs(codec, group.scoreDocs);
+      }
+    }
+
+    TopGroups<BytesRef> readTopGroups(JavaBinDecoder codec) throws IOException {
+      SortField[] groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort().getSort();
+      SortField[] withinGroupSort = rb.getGroupingSpec().getWithinGroupSortSpec().getSort().getSort();
+      long totalHitCount =  codec.readLong();
+      long totalGroupedHitCount = codec.readLong();
+      float maxScore = codec.readFloat();
+      int groupsSize = codec.readInt();
+      GroupDocs<BytesRef>[] groups = new GroupDocs[groupsSize];
+      for (int i = 0; i < groupsSize; i++) {
+        // TODO(clay): are any of these duplicated??
+        float score = codec.readFloat();
+        float topGroupsMaxScore = codec.readFloat();
+        TotalHits totalHits = readTotalHits(codec);
+        BytesRef groupValue = new BytesRef((byte[]) codec.readVal());
+        Collection groupSortValuesCollection = ((Collection) codec.readVal());
+        Object[] groupSortValues = groupSortValuesCollection != null ? groupSortValuesCollection.toArray() : null;
+        ScoreDoc[] scoreDocs = readScoreDocs(codec );
+        groups[i] = new GroupDocs<>(score, topGroupsMaxScore, totalHits, scoreDocs, groupValue, groupSortValues);
+      }
+      return new TopGroups<>(groupSort, withinGroupSort, totalHitCount, totalGroupedHitCount, groups, maxScore);
+    }
+
+    private void writeQueryCommandResult(JavaBinCodec codec, QueryCommandResult queryCommandResult) throws IOException {
+      codec.writeLong(queryCommandResult.getMatches());
+      codec.writeFloat(queryCommandResult.getMaxScore());
+      TopDocs topDocs = queryCommandResult.getTopDocs();
+      writeTotalHits(codec, topDocs.totalHits);
+      writeScoreDocs(codec, topDocs.scoreDocs);
+    }
+
+    private QueryCommandResult readQueryCommandResult(JavaBinDecoder codec, SortSpec sortSpec) throws IOException {
+      long matches = codec.readLong();
+      float maxScore = codec.readFloat();
+      TotalHits totalHits = readTotalHits(codec);
+      ScoreDoc[] scoreDocs = readScoreDocs(codec);
+      TopFieldDocs topFieldDocs = new TopFieldDocs(totalHits, scoreDocs, sortSpec.getSort().getSort());
+      return new QueryCommandResult(topFieldDocs, matches, maxScore);
+    }
+
+    private void writeTotalHits(JavaBinCodec codec, TotalHits totalHits) throws IOException {
+      codec.writeLong(totalHits.value);
+      codec.writeInt(totalHits.relation.ordinal());
+    }
+
+    private TotalHits readTotalHits(JavaBinDecoder codec) throws IOException {
+      long totalHitsValue = codec.readLong();
+      TotalHits.Relation totalHitsRelation = TotalHits.Relation.values()[codec.readInt()];
+      return new TotalHits(totalHitsValue, totalHitsRelation);
+    }
+
+    private void writeScoreDocs(JavaBinCodec codec, ScoreDoc[] scoreDocs) throws IOException {
+      codec.writeInt(scoreDocs.length);
+      for (ScoreDoc scoreDoc : scoreDocs) {
+        ShardDoc shardDoc = (ShardDoc) scoreDoc;
+        shardDoc.writeState(codec);
+      }
+    }
+
+    private ScoreDoc[] readScoreDocs(JavaBinDecoder codec) throws IOException {
+      int scoreDocsSize = codec.readInt();
+      ScoreDoc[] scoreDocs = new ScoreDoc[scoreDocsSize];
+      for (int j = 0; j < scoreDocsSize; j++) {
+        ShardDoc shardDoc = new ShardDoc();
+        shardDoc.readState(codec);
+        scoreDocs[j] = shardDoc;
+      }
+      return scoreDocs;
+    }
+  }
+
+  class QueryComponentState {
+    public List<ShardDoc> shardDocs = new ArrayList<>();
+    public Map<String, SolrDocument> responseDocsById = new HashMap<>();
+    public long numFound;
+    public boolean numFoundExact;
+    public Float maxScore;
+    public boolean partialResults;
+    public Boolean segmentTerminatedEarly;
+
+    void readState(JavaBinDecoder codec, SortSpec ss, IndexSchema schema) throws IOException {
+      int shardDocsSize = codec.readInt();
+      shardDocs = new ArrayList<>(shardDocsSize);
+      List<Integer> sortFieldIndexes = new ArrayList<>();
+      for (int i = 0; i < shardDocsSize; i++) {
+        ShardDoc sdoc = new ShardDoc();
+        sdoc.readState(codec);
+        shardDocs.add(sdoc);
+        sortFieldIndexes.add(codec.readInt());
+      }
+      List<NamedList> rawSortFieldValues = (List<NamedList>) codec.readVal();
+      List<NamedList> sortFieldValues = rawSortFieldValues.stream().map(v -> unmarshalSortValues(ss, v, schema)).collect(Collectors.toList());
+      for (int i = 0; i < sortFieldIndexes.size(); i++) {
+        int index = sortFieldIndexes.get(i);
+        ShardDoc sdoc = shardDocs.get(i);
+        sdoc.rawSortFieldValues = rawSortFieldValues.get(index);
+        sdoc.sortFieldValues = sortFieldValues.get(index);
+      }
+      responseDocsById = (Map<String, SolrDocument>) codec.readVal();
+      numFound = codec.readLong();
+      numFoundExact = codec.readBoolean();
+      maxScore = (Float) codec.readVal();
+      partialResults = codec.readBoolean();
+      segmentTerminatedEarly = (Boolean) codec.readVal();
+    }
+
+    void writeState(JavaBinCodec codec) throws IOException {
+      Map<String, Integer> sortFieldValuesByIterativeShard = new HashMap<>();
+      List<NamedList> rawSortFieldValues = new ArrayList<>();
+      codec.writeInt(shardDocs.size());
+      for (ShardDoc sdoc : shardDocs) {
+        // first write shard doc
+        sdoc.writeState(codec);
+        String key = String.format("%d:%s", sdoc.iterativeStep, sdoc.shard);
+        int index = sortFieldValuesByIterativeShard.getOrDefault(key, rawSortFieldValues.size());
+        if (index == rawSortFieldValues.size()) {
+          rawSortFieldValues.add(sdoc.rawSortFieldValues);
+          sortFieldValuesByIterativeShard.put(key, index);
+        }
+        // then write the index into the sort field values
+        codec.writeInt(index);
+      }
+      codec.writeVal(rawSortFieldValues);
+      codec.writeVal(responseDocsById);
+      codec.writeLong(numFound);
+      codec.writeBoolean(numFoundExact);
+      codec.writeVal(maxScore);
+      codec.writeBoolean(partialResults);
+      codec.writeVal(segmentTerminatedEarly);
     }
   }
 }

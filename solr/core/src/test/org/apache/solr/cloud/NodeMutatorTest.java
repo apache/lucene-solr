@@ -43,7 +43,7 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
 
   @Test
   public void downNodeReportsAllImpactedCollectionsAndNothingElse() throws IOException {
-    NodeMutator nm = new NodeMutator();
+    NodeMutator nm = new NodeMutator(null);
 
     //We use 2 nodes with maxShardsPerNode as 1
     //Collection1: 2 shards X 1 replica = replica1 on node1 and replica2 on node2

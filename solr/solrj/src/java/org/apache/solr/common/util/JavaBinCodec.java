@@ -1095,16 +1095,15 @@ public class JavaBinCodec implements PushWriter {
     return false;
   }
 
-  protected void writeBoolean(boolean val) throws IOException {
+  public void writeBoolean(boolean val) throws IOException {
     if (val) daos.writeByte(BOOL_TRUE);
     else daos.writeByte(BOOL_FALSE);
   }
 
-  protected void writeDouble(double val) throws IOException {
+  public void writeDouble(double val) throws IOException {
     daos.writeByte(DOUBLE);
     daos.writeDouble(val);
   }
-
 
   public void writeMap(Map<?,?> val) throws IOException {
     writeTag(MAP, val.size());

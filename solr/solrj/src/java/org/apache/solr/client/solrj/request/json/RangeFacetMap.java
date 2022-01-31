@@ -26,7 +26,7 @@ import java.util.Map;
  * Ready for use with {@link JsonQueryRequest#withFacet(String, Map)}
  */
 public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
-  public RangeFacetMap(String field, long start, long end, long gap) {
+  public RangeFacetMap(String field, long start, long end, long gap, boolean dv) {
     super("range");
 
     if (field == null) {
@@ -43,9 +43,12 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
     put("start", start);
     put("end", end);
     put("gap", gap);
+    if (dv) {
+      put("dv", true);
+    }
   }
 
-  public RangeFacetMap(String field, double start, double end, double gap) {
+  public RangeFacetMap(String field, double start, double end, double gap, boolean dv) {
     super("range");
 
     if (field == null) {
@@ -62,6 +65,9 @@ public class RangeFacetMap extends JsonFacetMap<RangeFacetMap> {
     put("start", start);
     put("end", end);
     put("gap", gap);
+    if (dv) {
+      put("dv", true);
+    }
   }
 
   /**

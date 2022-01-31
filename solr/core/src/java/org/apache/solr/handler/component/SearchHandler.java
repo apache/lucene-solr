@@ -16,9 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -27,6 +29,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
@@ -34,6 +39,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
@@ -49,9 +55,12 @@ import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -68,6 +77,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
+  
+  // Indicates the encoding version of iterative state to handle clean encoding/decoding changes.
+  // If desired to change, handling needs to be updated before producing new versions!
+  static final int ITERATIVE_STATE_VERSION = 1;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -284,6 +297,27 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
+    final boolean ridTaggingDisabled = req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
+    final String reqId = ridTaggingDisabled ? null : getOrGenerateRequestId(req);
+    if (reqId != null) { //update MDC with reqId if it's generated here
+      MDCLoggingContext.setReqId(reqId);
+    }
+
+    boolean isShardRequest = req.getParams().getBool(ShardParams.IS_SHARD, false);
+    if (isShardRequest) {
+      //log a simple message on start
+      log.info("Start Forwarded Search Query");
+      SolrParams filteredParams = removeVerboseParams(req.getParams());
+      rsp.getToLog().asShallowMap(false).put("params", "{" + filteredParams + "}"); //replace "params" with the filtered version
+    } else {
+      // Then it is the first time this req hitting Solr - not a req distributed by another higher level req.
+      // We have to log the query here as
+      // 1. It's useful to know the query before the processing start in case if the query stalls
+      // 2. The existing logging in SolrCore does not contain the query as query construction happens after the log
+      //    entries are added to rsp.toLog
+      log.info("Start External Search Query: {}", req.getParamString());
+    }
+
     List<SearchComponent> components  = getComponents();
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
@@ -324,7 +358,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
 
-    tagRequestWithRequestId(rb);
+    if (reqId != null) {
+      tagRequestWithRequestId(rb, reqId);
+    }
 
     if (timer == null) {
       // non-debugging prepare phase
@@ -394,6 +430,49 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       }
     } else {
       // a distributed request
+
+      rb.setIterative(
+          rb.req.getParams().getInt("iterative", 0), 
+          rb.req.getParams().getBool("iterative.needState", true),
+          rb.req.getParams().getBool("iterative.needResponse", true));
+
+      Map<String, Object> json = rb.req.getJSON();
+      if (json != null && json.containsKey("iterative_state")) {
+        Map<String, SearchComponent> byKeys = new HashMap<>();
+        for (SearchComponent c : components) {
+          String key = c.stateKey();
+          if (key != null) {
+            byKeys.put(key, c);
+          }
+        }
+        // first read iterative state
+        String iterativeState = (String) json.get("iterative_state");
+        byte[] rawState = Base64.getDecoder().decode(iterativeState);
+        JavaBinDecoder codec = new JavaBinDecoder(rawState);
+        // first, read version value
+        int iterativeStateVersion = codec.readInt();
+        if (iterativeStateVersion != ITERATIVE_STATE_VERSION) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("bad iterative state version, got %d, expected %d", iterativeStateVersion, ITERATIVE_STATE_VERSION));
+        }
+        // then any component state
+        int numStates = codec.readInt();
+        for (int i = 0; i < numStates; i++) {
+          String key = (String) codec.readVal();
+          byte[] componentState = (byte[]) codec.readVal();
+          SearchComponent component = byKeys.get(key);
+          if (component != null) {
+            component.fromState(rb, componentState);
+          }
+        }
+        // then remove from json so that distributed costs don't take the network hit from a potentially sizable payload
+        // that is otherwise useless for the underlying shards to handle
+        Map<Object, Object> paramsJson = (Map<Object, Object>) ObjectBuilder.fromJSONStrict(rb.req.getParams().get(JSON));
+        paramsJson.remove("iterative_state");
+        ModifiableSolrParams newParams = new ModifiableSolrParams();
+        newParams.add(rb.req.getParams());
+        newParams.set(JSON, JSONUtil.toJSON(paramsJson));
+        rb.req.setParams(newParams);
+      }
 
       if (rb.outgoing == null) {
         rb.outgoing = new LinkedList<>();
@@ -496,6 +575,30 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
+
+      if (rb.getIterativeNeedState()) {
+        Map<String, BytesRef> state = new HashMap<>();
+        for (SearchComponent c : components) {
+          byte[] componentState = c.toState(rb);
+          if (componentState != null) {
+            state.put(c.stateKey(), new BytesRef(componentState));
+          }
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        JavaBinCodec codec = new JavaBinCodec(bos, null);
+        // first write iterative state version
+        codec.writeInt(ITERATIVE_STATE_VERSION);
+        // then any component state
+        codec.writeInt(state.size());
+        for (Map.Entry<String, BytesRef> entry : state.entrySet()) {
+          String key = entry.getKey();
+          BytesRef value = entry.getValue();
+          codec.writeVal(key);
+          codec.writeByteArray(value.bytes, value.offset, value.length);
+        }
+        codec.close();
+        rb.rsp.add("iterative_state", Base64.getEncoder().encodeToString(bos.toByteArray()));
+      }
     }
     
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
@@ -530,18 +633,33 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
-  private void tagRequestWithRequestId(ResponseBuilder rb) {
-    final boolean ridTaggingDisabled = rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
-    if (! ridTaggingDisabled) {
-      String rid = getOrGenerateRequestId(rb.req);
-      if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
-        ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
-        params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it
-        rb.req.setParams(params);
+  private static final List<String> VERBOSE_LOGGING_PARAMS = Arrays.asList("fq", "json");
+  private SolrParams removeVerboseParams(final SolrParams params) {
+    // Filter params by removing kv of VERBOSE_LOGGING_PARAMS, so that we can then call toString
+    SolrParams filteredParams = new SolrParams() {
+      @Override
+      public Iterator<String> getParameterNamesIterator() {
+        return Iterators.filter(params.getParameterNamesIterator(), s -> !VERBOSE_LOGGING_PARAMS.contains(s));
       }
-      if (rb.isDistrib) {
-        rb.rsp.addToLog(CommonParams.REQUEST_ID, rid); //to see it in the logs of the landing core
+
+      @Override
+      public String get(String param) {
+        return params.get(param);
       }
+
+      @Override
+      public String[] getParams(String param) {
+        return params.getParams(param);
+      }
+    };
+    return filteredParams;
+  }
+
+  private void tagRequestWithRequestId(ResponseBuilder rb, String rid) {
+    if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
+      ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
+      params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it
+      rb.req.setParams(params);
     }
   }
 

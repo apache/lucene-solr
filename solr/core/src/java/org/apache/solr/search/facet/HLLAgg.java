@@ -24,6 +24,8 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.JavaBinDecoder;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.hll.HLL;
@@ -35,15 +37,33 @@ public class HLLAgg extends StrAggValueSource {
   protected HLLFactory factory;
 
   public HLLAgg(String field) {
+    this(field, new HLLFactory());
+  }
+  
+  public HLLAgg(String field, int log2m, int regwidth) {
+    this(field, new HLLFactory(log2m, regwidth));
+  }
+  
+  public HLLAgg(String field, HLLFactory factory) {
     super("hll", field);
-    factory = new HLLFactory();
+    this.factory = factory;
   }
 
   // factory for the hyper-log-log algorithm.
   // TODO: make stats component HllOptions inherit from this?
   public static class HLLFactory {
-    int log2m = 13;
-    int regwidth = 6;
+    final int log2m;
+    final int regwidth;
+    
+    public HLLFactory() {
+      this(13, 6);
+    }
+
+    public HLLFactory(int log2m, int regwidth) {
+      this.log2m = log2m;
+      this.regwidth = regwidth;
+    }
+
     public HLL getHLL() {
       return new HLL(log2m, regwidth, -1 /* auto explict threshold */,
           false /* no sparse representation */, HLLType.EMPTY);
@@ -57,16 +77,16 @@ public class HLLAgg extends StrAggValueSource {
       if (sf.getType().isPointField()) {
         return new SortedNumericAcc(fcontext, getArg(), numSlots);
       } else if (sf.hasDocValues()) {
-        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       } else {
-        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       }
     } else {
       if (sf.getType().getNumberType() != null) {
         // always use hll here since we don't know how many values there are?
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
-        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, 0, fcontext.isShard() ? factory : null);
       }
     }
   }
@@ -110,6 +130,22 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     public Object getMergedResult() {
       return getLong();
+    }
+
+    @Override
+    public Object getPrototype() {
+      return 0L;
+    }
+
+    @Override
+    public void readState(JavaBinDecoder codec, Context mcontext) throws IOException {
+      Object maybeBytes = codec.readVal();
+      aggregate = maybeBytes != null ? HLL.fromBytes((byte[]) maybeBytes) : null;
+    }
+
+    @Override
+    public void writeState(JavaBinCodec codec) throws IOException {
+      codec.writeVal(aggregate != null ? aggregate.toBytes() : null);
     }
 
     @Override
