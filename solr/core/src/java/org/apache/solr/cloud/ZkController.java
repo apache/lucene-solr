@@ -354,13 +354,19 @@ public class ZkController implements Closeable {
     });
     log.info("initializing ZkControlled");
     init(registerOnReconnect);
-    log.info("initialized ZkCOntroller");
+    log.info("initialized ZkController");
+
+    log.info("initializing overseer job queue");
     this.overseerJobQueue = initOverseerJobQueue();
+    log.info("initializing overseer task queue");
     this.overseerCollectionQueue = initOverseerTaskQueue();
+    log.info("initializing overseer config set queue");
     this.overseerConfigSetQueue = initOverseerConfigSetQueue();
 
+    log.info("initializing NodesSysPropsCacher");
     this.sysPropsCacher = new NodesSysPropsCacher( getNodeStateProvider(),
         getNodeName(), zkStateReader);
+    log.info("initialized NodesSysPropsCacher");
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -378,7 +384,11 @@ public class ZkController implements Closeable {
   }
 
   protected NodeStateProvider getNodeStateProvider() {
-    return getSolrCloudManager().getNodeStateProvider();
+    SolrCloudManager solrCloudManager = getSolrCloudManager();
+    log.info("Getting node state provider");
+    NodeStateProvider provider = solrCloudManager.getNodeStateProvider();
+    log.info("Node state provider is : " + (provider != null ? provider.getClass().getName() : null));
+    return provider;
   }
 
   protected SolrZkClient getSolrZkClient(int zkClientConnectTimeout,
@@ -789,6 +799,7 @@ public class ZkController implements Closeable {
       if (cloudManager != null) {
         return cloudManager;
       }
+      log.info("Initializing cloud manager");
       cloudSolrClient = new CloudSolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader)).withSocketTimeout(30000).withConnectionTimeout(15000)
           .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
           .withConnectionTimeout(15000).withSocketTimeout(30000).build();
@@ -797,6 +808,7 @@ public class ZkController implements Closeable {
           cloudSolrClient,
           cc.getObjectCache());
       cloudManager.getClusterStateProvider().connect();
+      log.info("Initialized cloud manager");
     }
     return cloudManager;
   }
