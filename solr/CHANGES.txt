@@ -44,6 +44,8 @@ Bug Fixes
 
 * SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
 
+* SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
