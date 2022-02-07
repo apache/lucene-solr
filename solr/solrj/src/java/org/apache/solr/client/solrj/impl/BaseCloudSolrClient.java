@@ -71,7 +71,6 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -84,6 +83,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -1088,7 +1088,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(reqParams);
 
-    final Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
+    final ClusterStateProvider provider = getClusterStateProvider();
+    final String urlScheme = provider.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
+    final Set<String> liveNodes = provider.getLiveNodes();
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...
 
@@ -1096,12 +1098,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
-        theUrlList.add(UrlScheme.INSTANCE.getBaseUrlForNodeName(liveNodesList.get(0)));
+        theUrlList.add(Utils.getBaseUrlForNodeName(liveNodesList.get(0), urlScheme));
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
       for (String liveNode : liveNodes) {
-        theUrlList.add(UrlScheme.INSTANCE.getBaseUrlForNodeName(liveNode));
+        theUrlList.add(Utils.getBaseUrlForNodeName(liveNode, urlScheme));
       }
 
     } else { // Typical...

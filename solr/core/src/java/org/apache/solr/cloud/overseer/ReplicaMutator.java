@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -336,7 +337,11 @@ public class ReplicaMutator {
     String shardState = (String) replicaProps.remove(ZkStateReader.SHARD_STATE_PROP);
     String shardParent = (String) replicaProps.remove(ZkStateReader.SHARD_PARENT_PROP);
 
-
+    String nodeName = (String)replicaProps.get(ZkStateReader.NODE_NAME_PROP);
+    if (nodeName != null) {
+      String baseUrl = Utils.getBaseUrlForNodeName(nodeName, cloudManager.getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
+      replicaProps.put(ZkStateReader.BASE_URL_PROP, baseUrl);
+    }
     Replica replica = new Replica(coreNodeName, replicaProps, collectionName, sliceName);
 
     log.debug("Will update state for replica: {}", replica);

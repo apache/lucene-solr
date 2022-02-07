@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL
 public class ClusterStateTest extends SolrTestCaseJ4 {
 
   @Test
@@ -42,8 +43,10 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     Map<String,Slice> slices = new HashMap<>();
     Map<String,Replica> sliceToProps = new HashMap<>();
     Map<String,Object> props = new HashMap<>();
-    props.put("node_name", "node1:10000_solr");
-    props.put("core", "core1");
+    String nodeName = "node1:10000_solr";
+    props.put(ZkStateReader.NODE_NAME_PROP, nodeName);
+    props.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(nodeName, "http"));
+    props.put(ZkStateReader.CORE_NAME_PROP, "core1");
 
     props.put("prop1", "value");
     props.put("prop2", "value2");

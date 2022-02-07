@@ -33,7 +33,7 @@ import java.util.Set;
 
 import com.codahale.metrics.Gauge;
 import org.apache.lucene.LucenePackage;
-import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -349,7 +349,10 @@ public class SystemInfoHandler extends RequestHandlerBase
       }
     }
 
-    info.add("tls", UrlScheme.HTTPS.equals(UrlScheme.INSTANCE.getUrlScheme()));
+    if (cc != null && cc.getZkController() != null) {
+      String urlScheme = cc.getZkController().zkStateReader.getClusterProperty(ZkStateReader.BASE_URL_PROP, "http");
+      info.add("tls", ZkStateReader.HTTPS.equals(urlScheme));
+    }
 
     return info;
   }

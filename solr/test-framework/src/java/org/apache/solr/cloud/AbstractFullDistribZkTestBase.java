@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
@@ -73,7 +74,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -262,12 +262,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT)) {
         try {
           zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
-              Utils.toJSON(Collections.singletonMap(URL_SCHEME, "https")),
+              Utils.toJSON(Collections.singletonMap(URL_SCHEME, HTTPS)),
               CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(ZkStateReader.CLUSTER_PROPS,
               null, null, true));
-          zkStateReader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus(URL_SCHEME, "https")), true);
+          zkStateReader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus(URL_SCHEME, HTTPS)), true);
         }
       }
     }
@@ -2014,7 +2014,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         final ZkNodeProps node = shardEntry.getValue();
         final String nodeName = node.getStr(ZkStateReader.NODE_NAME_PROP);
         if (clusterState.liveNodesContain(nodeName)) {
-          return ZkCoreNodeProps.getCoreUrl(UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName), collection);
+          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection);
         }
       }
     }

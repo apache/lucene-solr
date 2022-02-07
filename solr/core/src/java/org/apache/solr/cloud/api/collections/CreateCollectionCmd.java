@@ -271,6 +271,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
               ZkStateReader.NODE_NAME_PROP, nodeName,
+              ZkStateReader.BASE_URL_PROP, baseUrl,
               ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
               CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
           if (isPRS) {

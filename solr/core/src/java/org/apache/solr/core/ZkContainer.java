@@ -36,7 +36,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -46,9 +45,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS_PORT_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
+import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 /**
@@ -144,9 +142,6 @@ public class ZkContainer {
           if (StringUtils.isNotEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient()).setClusterProperty(URL_SCHEME, HTTPS);
-            UrlScheme.INSTANCE.setUrlScheme(HTTPS);
-          } else {
-            UrlScheme.INSTANCE.setUrlScheme(System.getProperty(URL_SCHEME, HTTP));
           }
 
           if (zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {

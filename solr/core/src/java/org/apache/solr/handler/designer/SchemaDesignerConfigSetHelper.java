@@ -71,7 +71,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -547,7 +546,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
 
     if (baseUrl == null) {
-      baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName(cc.getZkController().getNodeName());
+      baseUrl = zkStateReader().getBaseUrlForNodeName(cc.getZkController().getNodeName());
     }
 
     return baseUrl;

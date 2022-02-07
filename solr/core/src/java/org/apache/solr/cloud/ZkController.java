@@ -129,6 +129,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
@@ -946,8 +947,11 @@ public class ZkController implements Closeable {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
 
+      // note: Can't read cluster properties until createClusterState ^ is called
+      final String urlSchemeFromClusterProp = zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
+
       // this must happen after zkStateReader has initialized the cluster props
-      this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
+      this.baseURL = Utils.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
 
       checkForExistingEphemeralNode();
       registerLiveNodesListener();
@@ -1502,6 +1506,7 @@ public class ZkController implements Closeable {
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    props.put(ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()));
     props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
 
 
@@ -1601,6 +1606,7 @@ public class ZkController implements Closeable {
       props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
       props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+      props.put(ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()));
       props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
       props.put(ZkStateReader.COLLECTION_PROP, collection);
       props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
@@ -1731,6 +1737,7 @@ public class ZkController implements Closeable {
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
           OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
           ZkStateReader.NODE_NAME_PROP, getNodeName(),
+          ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()),
           ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
           ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       overseerJobQueue.offer(Utils.toJSON(m));
@@ -2313,8 +2320,9 @@ public class ZkController implements Closeable {
       ElectionContext prevContext = electionContexts.get(contextKey);
       if (prevContext != null) prevContext.cancelElection();
 
-      String ourUrl = ZkCoreNodeProps.getCoreUrl(UrlScheme.INSTANCE.getBaseUrlForNodeName(getNodeName()), coreName);
-      ZkNodeProps zkProps = new ZkNodeProps(CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
+      String baseUrl = zkStateReader.getBaseUrlForNodeName(getNodeName());
+      String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+      ZkNodeProps zkProps = new ZkNodeProps(CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName, BASE_URL_PROP, baseUrl);
 
       LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
       ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,

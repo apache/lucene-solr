@@ -25,9 +25,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.Utils;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 public class Replica extends ZkNodeProps {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -163,7 +164,6 @@ public class Replica extends ZkNodeProps {
     } else {
       this.state = replicaState.state;
     }
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.nodeName));
   }
 
   public String getCollection(){

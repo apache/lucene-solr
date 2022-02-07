@@ -204,6 +204,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
             ZkStateReader.NODE_NAME_PROP, nodeName,
+            ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(nodeName),
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
             ZkStateReader.COLLECTION_PROP, collection);
@@ -214,6 +215,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
             ZkStateReader.STATE_PROP, stateName.toString(),
             ZkStateReader.NODE_NAME_PROP, nodeName,
+            ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(nodeName),
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
             ZkStateReader.COLLECTION_PROP, collection,
@@ -238,6 +240,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 + shardId + "/election", true);
           } catch (NodeExistsException nee) {}
           ZkNodeProps props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, nodeName,
+              ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(nodeName),
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.SHARD_ID_PROP, shardId,
               ZkStateReader.COLLECTION_PROP, collection,

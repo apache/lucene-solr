@@ -171,6 +171,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     //Simulate a replica being in down state.
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
         ZkStateReader.NODE_NAME_PROP, notLeader.getStr(ZkStateReader.NODE_NAME_PROP),
+        ZkStateReader.BASE_URL_PROP, notLeader.getStr(ZkStateReader.BASE_URL_PROP),
         ZkStateReader.COLLECTION_PROP, "football",
         ZkStateReader.SHARD_ID_PROP, "shard1",
         ZkStateReader.CORE_NAME_PROP, notLeader.getStr(ZkStateReader.CORE_NAME_PROP),

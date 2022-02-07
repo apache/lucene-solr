@@ -235,6 +235,7 @@ public class ClusterStateMockUtil {
     int port = 8982 + Integer.parseInt(node);
     String nodeName = String.format(Locale.ROOT, "baseUrl%s:%d_", node, port);
     replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
+    replicaPropMap.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(nodeName, "http"));
     replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
     replicaPropMap.put(ZkStateReader.CORE_NAME_PROP, sliceName + "_" + replicaName);
     replicaPropMap.put(ZkStateReader.REPLICA_TYPE, replicaType.name());
