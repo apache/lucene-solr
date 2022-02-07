@@ -64,7 +64,6 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -99,6 +98,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
@@ -337,7 +337,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     params.set(ELECTION_NODE_PROP, message.getStr(ELECTION_NODE_PROP));
     params.set(NODE_NAME_PROP, message.getStr(NODE_NAME_PROP));
 
-    String baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
+    String baseUrl = message.getStr(BASE_URL_PROP);
+    if (baseUrl == null) {
+      baseUrl = zkStateReader.getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
+      params.set(BASE_URL_PROP, baseUrl);
+    }
     ShardRequest sreq = new ShardRequest();
     sreq.nodeName = message.getStr(ZkStateReader.CORE_NAME_PROP);
     // yes, they must use same admin handler path everywhere...

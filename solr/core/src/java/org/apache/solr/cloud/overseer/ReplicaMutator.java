@@ -47,7 +47,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
