@@ -41,6 +41,16 @@ for an overview of the main new features of Solr 8.11.
 
 When upgrading to 8.11.x users should be aware of the following major changes from 8.10.
 
+*UrlScheme Deprecated and solr.storeBaseUrl System Property Ineffective*
+
+If you're running Solr 8.8.0+ with `solr.storeBaseUrl=false` (meaning you don't store the `base_url` property for replicas / leaders in Zookeeper),
+then you need to set `solr.storeBaseUrl=true` and then do a rolling restart of your cluster before upgrading to 8.11.2.
+Essentially, you need to restore the `base_url` in stored state in Zookeeper before upgrading to 8.11.2.
+The `UrlScheme` singleton was deprecated in 8.11.2 and removed in Solr 9.0; the URL scheme (`http` or `https`) comes from the cluster state property only.
+The `UrlScheme` class has no effect on server or client behavior and only remains in SolrJ 8.11.2 to avoid client compilation issues when upgrading.
+You are strongly encouraged to update your client application code to not use this class if you are currently using it.
+As of 8.11.2 and all future versions of Solr 9.x, the `base_url` must be stored in Zookeeper (see SOLR-15587 for details).
+
 *Support for Multiple Authentication Schemes*
 
 Two new authentication and authorization plugins provide support for configuring multiple authentication schemes.
