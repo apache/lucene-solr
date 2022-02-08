@@ -19,6 +19,9 @@ Bug Fixes
 
 * SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
+* SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme,
+  only get from ClusterState provider impl (Timothy Potter)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

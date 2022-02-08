@@ -25,9 +25,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL // not useful / needed for this test
 public class ShufflingReplicaListTransformerTest extends SolrTestCase {
 
   private final ShufflingReplicaListTransformer transformer = new ShufflingReplicaListTransformer(random());
@@ -37,10 +40,12 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
     final List<Replica> replicas = new ArrayList<>();
     int counter = 0;
     for (final String url : createRandomUrls()) {
+      String nodeName = "node" + counter + ":8983_";
       Map<String, Object> propMap = new HashMap<>();
       propMap.put("core", "core" + counter);
       propMap.put("type", "NRT");
-      propMap.put("node_name", "node" + counter + ":8983_");
+      propMap.put("node_name", nodeName);
+      propMap.put("base_url", Utils.getBaseUrlForNodeName(nodeName, "http"));
       counter++;
       replicas.add(new Replica(url, propMap, "c1", "s1"));
     }

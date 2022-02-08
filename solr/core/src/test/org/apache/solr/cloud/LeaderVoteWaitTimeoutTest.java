@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -45,6 +46,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.HTTP;
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
@@ -63,7 +67,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     System.setProperty("distribUpdateConnTimeout", "5000");
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
-    System.setProperty("solr.retries.to.followers", "0"); 
+    System.setProperty("solr.retries.to.followers", "0");
   }
 
   @AfterClass
@@ -80,6 +84,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   @Before
   public void setupTest() throws Exception {
     configureCluster(NODE_COUNT)
+        .withProperty(ZkStateReader.URL_SCHEME, System.getProperty(URL_SCHEME, HTTP))
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
 

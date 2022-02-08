@@ -210,7 +210,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.COLLECTION_PROP, createReplica.collectionName,
             ZkStateReader.SHARD_ID_PROP, createReplica.sliceName,
             ZkStateReader.CORE_NAME_PROP, createReplica.coreName,
-            ZkStateReader.NODE_NAME_PROP, createReplica.node
+            ZkStateReader.NODE_NAME_PROP, createReplica.node,
+            ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(createReplica.node)
         ))
         .collect(Collectors.toList());
   }

@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.Test;
@@ -74,6 +74,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             "node4",
             map(
                 ZkStateReader.NODE_NAME_PROP, "node4:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node4:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
             ),"collection1","shard1"
@@ -142,6 +143,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             "node1",
             map(
                 ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node1:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "NRT",
                 ZkStateReader.LEADER_PROP, "true"
@@ -178,14 +180,13 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings("unchecked")
   private static List<Replica> getBasicReplicaList() {
-    UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
-
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.add(
         new Replica(
             "node1",
             map(
                 ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node1:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "NRT",
                 ZkStateReader.LEADER_PROP, "true"
@@ -197,6 +198,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             "node2",
             map(
                 ZkStateReader.NODE_NAME_PROP, "node2:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node2:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
             ),"collection1","shard1"
@@ -207,6 +209,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             "node3",
             map(
                 ZkStateReader.NODE_NAME_PROP, "node3:8983_solr",
+                ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName("node3:8983_solr", "http"),
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"
             ),"collection1","shard1"

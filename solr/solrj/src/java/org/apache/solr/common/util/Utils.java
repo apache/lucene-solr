@@ -756,10 +756,22 @@ public class Utils {
     return isModified;
   }
 
-  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
+  /**
+   * Given a URL string with or without a scheme, return a new URL with the correct scheme applied.
+   * @param url A URL to change the scheme (http|https)
+   * @return A new URL with the correct scheme
+   */
+  public static String applyUrlScheme(final String url, final String urlScheme) {
+    Objects.requireNonNull(url, "URL must not be null!");
+    // heal an incorrect scheme if needed, otherwise return null indicating no change
+    final int at = url.indexOf("://");
+    return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
+  }
+
+  public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
     return getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
-  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme,  boolean isV2) {
+  public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme,  boolean isV2) {
     final int colonAt = nodeName.indexOf(':');
     if (colonAt == -1) {
       throw new IllegalArgumentException("nodeName does not contain expected ':' separator: " + nodeName);

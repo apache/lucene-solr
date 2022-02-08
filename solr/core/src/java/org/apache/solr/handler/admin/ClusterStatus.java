@@ -35,7 +35,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
@@ -317,11 +316,6 @@ public class ClusterStatus {
         }
         if ("true".equals(r.get("leader")) && active) {
           hasLeader = true;
-        }
-        String nodeName = (String)r.get(ZkStateReader.NODE_NAME_PROP);
-        if (nodeName != null) {
-          // UI needs the base_url set
-          r.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName));
         }
       }
       float ratioActive;

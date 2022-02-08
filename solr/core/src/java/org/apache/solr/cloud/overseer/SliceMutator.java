@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,11 +90,14 @@ public class SliceMutator {
     } else {
       coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
     }
+    String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
+    String baseUrl = Utils.getBaseUrlForNodeName(nodeName, cloudManager.getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
     Replica replica = new Replica(coreNodeName,
         makeMap(
             ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
             ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
-            ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP), 
+            ZkStateReader.NODE_NAME_PROP, nodeName,
+            ZkStateReader.BASE_URL_PROP, baseUrl,
             ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, slice);
 
     if (collection.isPerReplicaState()) {
@@ -139,7 +143,7 @@ public class SliceMutator {
   }
 
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
-    String leaderUrl = ZkCoreNodeProps.getCoreUrl(message);
+    String leaderUrl = message.getStr(ZkStateReader.BASE_URL_PROP) != null ? ZkCoreNodeProps.getCoreUrl(message) : null;
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);

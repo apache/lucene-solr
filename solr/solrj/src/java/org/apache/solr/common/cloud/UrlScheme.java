@@ -21,12 +21,15 @@ import java.util.Objects;
 import org.apache.solr.common.util.Utils;
 
 /**
+ * Deprecated ~ do not use!
  * Singleton access to global urlScheme, which although is stored in ZK as a cluster property
  * really should be treated like a static global that is set at initialization and not altered after.
  *
  * Client applications should not use this class directly; it is only included in SolrJ because Replica
  * and ZkNodeProps depend on it.
+ * @deprecated to be removed in Solr 9.0 (see: SOLR-15587)
  */
+@Deprecated
 public enum UrlScheme {
   INSTANCE;
 
