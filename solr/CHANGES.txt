@@ -22,6 +22,9 @@ Bug Fixes
 * SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme,
   only get from ClusterState provider impl (Timothy Potter)
 
+* SOLR-14569: Configuring a shardHandlerFactory on the /select requestHandler results in HTTP 401 when searching on alias
+  in secured Solr. (Isabelle Giguere, Jason Gerlowski, Anshum Gupta, Mark Mark Miller)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

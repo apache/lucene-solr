@@ -148,6 +148,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         public void postClose(SolrCore core) {
         }
       });
+      shardHandlerFactory.setSecurityBuilder(core.getCoreContainer().getPkiAuthenticationSecurityBuilder());
     }
 
     if (core.getCoreContainer().isZooKeeperAware()) {

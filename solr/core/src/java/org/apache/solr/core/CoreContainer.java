@@ -191,7 +191,7 @@ public class CoreContainer {
   private volatile InfoHandler infoHandler;
   protected volatile ConfigSetsHandler configSetsHandler = null;
 
-  private volatile PKIAuthenticationPlugin pkiAuthenticationPlugin;
+  private volatile PKIAuthenticationPlugin pkiAuthenticationSecurityBuilder;
 
   protected volatile Properties containerProperties;
 
@@ -516,13 +516,19 @@ public class CoreContainer {
       // Setup HttpClient for internode communication
       HttpClientBuilderPlugin builderPlugin = ((HttpClientBuilderPlugin) authcPlugin);
       SolrHttpClientBuilder builder = builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
-      shardHandlerFactory.setSecurityBuilder(builderPlugin);
-      updateShardHandler.setSecurityBuilder(builderPlugin);
 
-      // The default http client of the core container's shardHandlerFactory has already been created and
-      // configured using the default httpclient configurer. We need to reconfigure it using the plugin's
-      // http client configurer to set it up for internode communication.
-      log.debug("Reconfiguring HttpClient settings.");
+
+      // this caused plugins like KerberosPlugin to register it's intercepts, but this intercept logic is also
+      // handled by the pki authentication code when it decideds to let the plugin handle auth via it's intercept
+      // - so you would end up with two intercepts
+      // -->
+      //  shardHandlerFactory.setSecurityBuilder(builderPlugin); // calls setup for the authcPlugin
+      //  updateShardHandler.setSecurityBuilder(builderPlugin);
+      // <--
+
+      // This should not happen here at all - it's only currently required due to its affect on http1 clients
+      // in a test or two incorrectly counting on it for their configuration.
+      // -->
 
       SolrHttpClientContextBuilder httpClientBuilder = new SolrHttpClientContextBuilder();
       if (builder.getCredentialsProviderProvider() != null) {
@@ -545,13 +551,16 @@ public class CoreContainer {
       }
 
       HttpClientUtil.setHttpClientRequestContextBuilder(httpClientBuilder);
+
+      // <--
     }
+
     // Always register PKI auth interceptor, which will then delegate the decision of who should secure
     // each request to the configured authentication plugin.
-    if (pkiAuthenticationPlugin != null && !pkiAuthenticationPlugin.isInterceptorRegistered()) {
-      pkiAuthenticationPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
-      shardHandlerFactory.setSecurityBuilder(pkiAuthenticationPlugin);
-      updateShardHandler.setSecurityBuilder(pkiAuthenticationPlugin);
+    if (pkiAuthenticationSecurityBuilder != null && !pkiAuthenticationSecurityBuilder.isInterceptorRegistered()) {
+      pkiAuthenticationSecurityBuilder.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
+      shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
+      updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
     }
   }
 
@@ -606,8 +615,8 @@ public class CoreContainer {
     return containerProperties;
   }
 
-  public PKIAuthenticationPlugin getPkiAuthenticationPlugin() {
-    return pkiAuthenticationPlugin;
+  public PKIAuthenticationPlugin getPkiAuthenticationSecurityBuilder() {
+    return pkiAuthenticationSecurityBuilder;
   }
 
   public SolrMetricManager getMetricManager() {
@@ -716,10 +725,10 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
+      pkiAuthenticationSecurityBuilder = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       // use deprecated API for back-compat, remove in 9.0
-      pkiAuthenticationPlugin.initializeMetrics(
+      pkiAuthenticationSecurityBuilder.initializeMetrics(
           solrMetricsContext.metricManager, solrMetricsContext.registry, solrMetricsContext.tag, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
       packageLoader = new PackageLoader(this);

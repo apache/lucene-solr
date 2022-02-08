@@ -618,8 +618,8 @@ public class HttpSolrCall {
     if(PublicKeyHandler.PATH.equals(path)) return false;
     //admin/info/key is the path where public key is exposed . it is always unsecured
     if ("/".equals(path) || "/solr/".equals(path)) return false; // Static Admin UI files must always be served
-    if (cores.getPkiAuthenticationPlugin() != null && req.getUserPrincipal() != null) {
-      boolean b = cores.getPkiAuthenticationPlugin().needsAuthorization(req);
+    if (cores.getPkiAuthenticationSecurityBuilder() != null && req.getUserPrincipal() != null) {
+      boolean b = cores.getPkiAuthenticationSecurityBuilder().needsAuthorization(req);
       log.debug("PkiAuthenticationPlugin says authorization required : {} ", b);
       return b;
     }
