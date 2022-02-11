@@ -284,7 +284,7 @@ public class BitDocSet extends DocSetBase {
         }
 
         final int base = context.docBase;
-        final int max = base + reader.maxDoc();   // one past the max doc in this segment.
+        final int max = Math.min(bs.length(), base + reader.maxDoc());   // min of bits set (in case we're holding a smaller amount) and one past the max doc in this segment.
 
         return BitsFilteredDocIdSet.wrap(new DocIdSet() {
           @Override
