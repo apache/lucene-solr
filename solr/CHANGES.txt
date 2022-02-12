@@ -36,6 +36,8 @@ Bug Fixes
 
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
 
+* SOLR-15116: Support a HEAD request for managed resources. (Eric Pugh)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
