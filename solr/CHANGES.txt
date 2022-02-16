@@ -27,6 +27,8 @@ Bug Fixes
 
 * SOLR-15974: Remove Calcite's ENUMERABLE_AGGREGATE_RULE as Solr only supports push-down for LogicalAggregate (Timothy Potter, Kiran Chitturi)
 
+* SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

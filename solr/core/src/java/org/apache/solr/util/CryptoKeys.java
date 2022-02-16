@@ -326,6 +326,17 @@ public final class CryptoKeys {
 
   }
 
+  public static boolean verifySha256(byte[] data, byte[] sig, PublicKey key) throws InvalidKeyException, SignatureException {
+    try {
+      Signature signature = Signature.getInstance("SHA256withRSA");
+      signature.initVerify(key);
+      signature.update(data);
+      return signature.verify(sig);
+    } catch (NoSuchAlgorithmException e) {
+      throw new InternalError("SHA256withRSA must be supported by the JVM.");
+    }
+  }
+
   public static class RSAKeyPair {
     private final String pubKeyStr;
     private final PublicKey publicKey;
@@ -372,19 +383,21 @@ public final class CryptoKeys {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
       }
     }
-    public byte[] signSha256(byte[] bytes) throws InvalidKeyException, SignatureException {
+    public byte[] signSha256(byte[] bytes) {
       Signature dsa = null;
       try {
         dsa = Signature.getInstance("SHA256withRSA");
       } catch (NoSuchAlgorithmException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        throw new InternalError("SHA256withRSA is required to be supported by the JVM.", e);
       }
-      dsa.initSign(privateKey);
-      dsa.update(bytes,0,bytes.length);
-      return dsa.sign();
-
+      try {
+        dsa.initSign(privateKey);
+        dsa.update(bytes,0,bytes.length);
+        return dsa.sign();
+      } catch (InvalidKeyException | SignatureException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error generating PKI Signature", e);
+      }
     }
-
   }
 
   public static void main(String[] args) throws Exception {
