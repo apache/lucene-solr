@@ -67,6 +67,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   protected void init() throws Exception {
+    queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     String path = this.path;
     final String fullPath = path = path.substring(7);//strip off '/____v2'
     try {
