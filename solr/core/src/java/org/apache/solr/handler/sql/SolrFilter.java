@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,8 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.sql.functions.ArrayContainsAll;
+import org.apache.solr.handler.sql.functions.ArrayContainsAny;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +122,42 @@ class SolrFilter extends Filter implements SolrRel {
         return translateLike(condition);
       } else if (kind == SqlKind.IS_NOT_NULL || kind == SqlKind.IS_NULL) {
         return translateIsNullOrIsNotNull(condition);
+      } else if (kind == SqlKind.OTHER_FUNCTION) {
+        return translateCustomFunction(condition);
       } else {
+        return null;
+      }
+    }
+
+    protected String translateCustomFunction(RexNode condition) {
+      RexCall call = (RexCall) condition;
+      if (call.op instanceof ArrayContainsAll) {
+        return translateArrayContainsUDF(call, "AND");
+      } else if (call.op instanceof ArrayContainsAny) {
+        return translateArrayContainsUDF(call, "OR");
+      } else  {
+        throw new RuntimeException("Custom function '" + call.op + "' not supported");
+      }
+    }
+
+    private String translateArrayContainsUDF(RexCall call, String booleanOperator) {
+      List<RexNode> operands = call.getOperands();
+      RexInputRef fieldOperand = (RexInputRef) operands.get(0);
+      String fieldName = fieldNames.get(fieldOperand.getIndex());
+      RexNode valuesNode = operands.get(1);
+      if (valuesNode instanceof RexLiteral) {
+        return fieldName + ":\"" + ((RexLiteral) valuesNode).getValueAs(String.class) + "\"";
+      } else if (valuesNode instanceof  RexCall) {
+        RexCall valuesRexCall = (RexCall) operands.get(1);
+        String valuesString =
+                valuesRexCall.getOperands()
+                        .stream()
+                        .map(op -> ((RexLiteral) op).getValueAs(String.class))
+                        .filter(Objects::nonNull)
+                        .map(value -> "\"" + value.trim()  + "\"")
+                        .collect(Collectors.joining(" " + booleanOperator + " "));
+        return fieldName + ":(" + valuesString + ")";
+      } {
         return null;
       }
     }

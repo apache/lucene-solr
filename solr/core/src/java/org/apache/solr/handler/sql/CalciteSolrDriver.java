@@ -20,9 +20,12 @@ import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.Holder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.handler.sql.functions.ArrayContainsAll;
+import org.apache.solr.handler.sql.functions.ArrayContainsAny;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -70,6 +73,7 @@ public class CalciteSolrDriver extends Driver {
 
     Connection connection = super.connect(url, info);
     CalciteConnection calciteConnection = (CalciteConnection) connection;
+    registerUDFs();
 
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
@@ -83,6 +87,12 @@ public class CalciteSolrDriver extends Driver {
     // Set the default schema
     calciteConnection.setSchema(schemaName);
     return calciteConnection;
+  }
+
+  private void registerUDFs() {
+    final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
+    stdOpTab.register(new ArrayContainsAll());
+    stdOpTab.register(new ArrayContainsAny());
   }
 
   public void setSolrClientCache(SolrClientCache solrClientCache) {

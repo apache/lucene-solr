@@ -1333,7 +1333,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     SolrParams sParams = mapParams(CommonParams.QT, "/sql", "stmt",
         "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
-            "min(a_f), max(a_f), avg(a_f) from collection1");
+            "min(a_f), max(a_f), avg(a_f) from collection1 WHERE a_s='hello0");
 
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -2388,6 +2388,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     update.add("id", String.valueOf(maxDocs)); // all multi-valued fields are null
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv IN ('a') AND stringxmv IN ('b')", 10);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a'", 10);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a')", 1);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a' LIMIT 10", 10);
@@ -2501,6 +2502,45 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults(sql, 2);
     sql = "SELECT * FROM $ALIAS WHERE stringxmv IN ('a','d') ORDER BY id ASC LIMIT 10";
     expectResults(sql, 2);
+  }
+
+  @Test
+  public void testCrazyError() throws Exception {
+    new UpdateRequest()
+            .add("id", "1", "name_s", "hello-1", "a_i", "1")
+            .add("id", "1", "name_s", "hello-2", "a_i", "2")
+            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("select count(1) as QUERY_COUNT from $ALIAS WHERE (a_i='1') AND (id='1') AND (name_s='hello-1') HAVING count(1) >= 10", 1);
+  }
+
+  @Test
+  public void testCustomUDFArrayContainsAll() throws Exception {
+    new UpdateRequest()
+            .add("id", "1", "name_s", "hello-1", "a_i", "1", "stringxmv", "a", "stringxmv", "b", "stringxmv", "c")
+            .add("id", "2", "name_s", "hello-2", "a_i", "2", "stringxmv", "c", "stringxmv", "d", "stringxmv", "e")
+            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c'))", 2);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('a', 'b', 'c'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('b', 'c'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'e'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'd', 'e'))", 1);
+  }
+
+  @Test
+  public void testCustomUDFArrayContainsAny() throws Exception {
+    new UpdateRequest()
+            .add("id", "1", "name_s", "hello-1", "a_i", "1", "stringxmv", "a", "stringxmv", "b", "stringxmv", "c")
+            .add("id", "2", "name_s", "hello-2", "a_i", "2", "stringxmv", "c", "stringxmv", "d", "stringxmv", "e")
+            .add("id", "3", "name_s", "hello-3", "a_i", "3", "stringxmv", "e", "stringxmv", "f", "stringxmv", "a")
+            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a'))", 2);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'b', 'c'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'c'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', 'f'))", 3);
   }
 
   @Test
