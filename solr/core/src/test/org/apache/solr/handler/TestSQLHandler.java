@@ -2519,35 +2519,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCustomUDFArrayContainsAll() throws Exception {
-    new UpdateRequest()
-            .add("id", "1", "name_s", "hello-1", "a_i", "1", "stringxmv", "a", "stringxmv", "b", "stringxmv", "c")
-            .add("id", "2", "name_s", "hello-2", "a_i", "2", "stringxmv", "c", "stringxmv", "d", "stringxmv", "e")
-            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c'))", 2);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('a', 'b', 'c'))", 1);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('b', 'c'))", 1);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'e'))", 1);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'd', 'e'))", 1);
-  }
-
-  @Test
-  public void testCustomUDFArrayContainsAny() throws Exception {
-    new UpdateRequest()
-            .add("id", "1", "name_s", "hello-1", "a_i", "1", "stringxmv", "a", "stringxmv", "b", "stringxmv", "c")
-            .add("id", "2", "name_s", "hello-2", "a_i", "2", "stringxmv", "c", "stringxmv", "d", "stringxmv", "e")
-            .add("id", "3", "name_s", "hello-3", "a_i", "3", "stringxmv", "e", "stringxmv", "f", "stringxmv", "a")
-            .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a'))", 2);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'b', 'c'))", 3);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'c'))", 3);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
-    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', 'f'))", 3);
-  }
-
-  @Test
   public void testNotAndOrLogic() throws Exception {
     new UpdateRequest()
         .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
@@ -2615,97 +2586,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
   @Test
   public void testCustomUDFArrayContains() throws Exception {
     new UpdateRequest()
-        .add(
-            "id",
-            "1",
-            "name_s",
-            "hello-1",
-            "a_i",
-            "1",
-            "stringxmv",
-            "a",
-            "stringxmv",
-            "b",
-            "stringxmv",
-            "c",
-            "pdoublexmv",
-            "1.5",
-            "pdoublexmv",
-            "2.5",
-            "longs",
-            "1",
-            "longs",
-            "2")
-        .add(
-            "id",
-            "2",
-            "name_s",
-            "hello-2",
-            "a_i",
-            "2",
-            "stringxmv",
-            "c",
-            "stringxmv",
-            "d",
-            "stringxmv",
-            "e",
-            "pdoublexmv",
-            "1.5",
-            "pdoublexmv",
-            "3.5",
-            "longs",
-            "1",
-            "longs",
-            "3")
-        .add(
-            "id",
-            "3",
-            "name_s",
-            "hello-3",
-            "a_i",
-            "3",
-            "stringxmv",
-            "e",
-            "stringxmv",
-            "f",
-            "stringxmv",
-            "a",
-            "pdoublexmv",
-            "2.5",
-            "pdoublexmv",
-            "3.5",
-            "longs",
-            "2",
-            "longs",
-            "3")
+        .add("id", "1", "name_s", "hello-1", "a_i", "1", "stringxmv", "a", "stringxmv", "b", "stringxmv", "c", "pdoublexmv", "1.5", "pdoublexmv", "2.5", "longs", "1", "longs", "2")
+        .add("id", "2", "name_s", "hello-2", "a_i", "2", "stringxmv", "c", "stringxmv", "d", "stringxmv", "e", "pdoublexmv", "1.5", "pdoublexmv", "3.5", "longs", "1", "longs", "3")
+        .add("id", "3", "name_s", "hello-3", "a_i", "3", "stringxmv", "e", "stringxmv", "f", "stringxmv", "a", "pdoublexmv", "2.5", "pdoublexmv", "3.5", "longs", "2", "longs", "3")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     expectResults("select id, pdoublexmv from $ALIAS", 3);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_all(pdoublexmv, (1.5, 2.5))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(pdoublexmv, (1.5, 2.5))", 1);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(longs, (1, 3))", 1);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, 'c')", 2);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c'))", 2);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('a', 'b', 'c'))", 1);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('b', 'c'))", 1);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'e'))", 1);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'd', 'e'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('a', 'b', 'c'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('b', 'c'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'e'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'd', 'e'))", 1);
 
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_any(pdoublexmv, (1.5, 2.5))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(pdoublexmv, (1.5, 2.5))", 3);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(longs, (1, 3))", 3);
     expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a'))", 2);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'b', 'c'))", 3);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'c'))", 3);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
-    expectResults(
-        "select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', 'f'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'b', 'c'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'c'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', 'f'))", 3);
   }
 }

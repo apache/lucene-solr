@@ -355,10 +355,7 @@ class SolrFilter extends Filter implements SolrRel {
       boolean wrappedQuotes = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
         // restore the * and ? after escaping
-        terms =
-            "\""
-                + ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?")
-                + "\"";
+        terms = "\"" + ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?") + "\"";
         wrappedQuotes = true;
       }
 
@@ -489,8 +486,7 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       RexCall call = (RexCall) node;
-      Pair<String, RexLiteral> binaryTranslated =
-          call.getOperands().size() == 2 ? translateBinary(call) : null;
+      Pair<String, RexLiteral> binaryTranslated = call.getOperands().size() == 2 ? translateBinary(call) : null;
       if (binaryTranslated == null) {
         throw new AssertionError("unsupported predicate expression: " + node);
       }
@@ -498,7 +494,9 @@ class SolrFilter extends Filter implements SolrRel {
       return binaryTranslated;
     }
 
-    /** Translates a call to a binary operator, reversing arguments if necessary. */
+    /**
+     * Translates a call to a binary operator, reversing arguments if necessary.
+     */
     protected Pair<String, RexLiteral> translateBinary(RexCall call) {
       List<RexNode> operands = call.getOperands();
       if (operands.size() != 2) {
@@ -520,8 +518,7 @@ class SolrFilter extends Filter implements SolrRel {
       }
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
-        return translateBinary2(
-            ((RexCall) left).operands.get(0), ((RexCall) right).operands.get(0));
+        return translateBinary2(((RexCall) left).operands.get(0), ((RexCall) right).operands.get(0));
       }
 
       // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
@@ -546,7 +543,9 @@ class SolrFilter extends Filter implements SolrRel {
       throw new AssertionError("cannot translate call " + call);
     }
 
-    /** Translates a call to a binary operator. Returns whether successful. */
+    /**
+     * Translates a call to a binary operator. Returns whether successful.
+     */
     protected Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
       if (log.isDebugEnabled()) {
         log.debug("translateBinary2 left={} right={}", left, right);
@@ -576,7 +575,9 @@ class SolrFilter extends Filter implements SolrRel {
       }
     }
 
-    /** A search node can be an IN or NOT IN clause or a BETWEEN */
+    /**
+     * A search node can be an IN or NOT IN clause or a BETWEEN
+     */
     protected String translateSearch(RexNode condition) {
       final String fieldName = getSolrFieldName(condition);
 
