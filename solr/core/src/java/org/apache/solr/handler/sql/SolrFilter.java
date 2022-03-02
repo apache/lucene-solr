@@ -636,8 +636,7 @@ class SolrFilter extends Filter implements SolrRel {
 
     private final Map<String, String> reverseAggMappings;
 
-    HavingTranslator(
-        RelDataType rowType, Map<String, String> reverseAggMappings, RexBuilder builder) {
+    HavingTranslator(RelDataType rowType, Map<String, String> reverseAggMappings, RexBuilder builder) {
       super(rowType, builder);
       this.reverseAggMappings = reverseAggMappings;
     }
