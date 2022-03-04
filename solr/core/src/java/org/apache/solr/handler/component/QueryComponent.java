@@ -1733,6 +1733,8 @@ public class QueryComponent extends SearchComponent
       if (partialResults) {
         rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       }
+
+      List<SchemaField> groupSortFields = rb.getGroupingSpec().getGroupSortSpec().getSchemaFields();
       
       int mergedSearchGroupsSize = codec.readInt();
       rb.mergedSearchGroups.clear();
@@ -1745,7 +1747,10 @@ public class QueryComponent extends SearchComponent
           SearchGroup<BytesRef> group = new SearchGroup<>();
           byte[] value = (byte[]) codec.readVal();
           group.groupValue = new BytesRef(value);
-          group.sortValues = ((Collection) codec.readVal()).toArray();
+          group.sortValues = new Object[groupSortFields.size()];
+          for (int k = 0; k < groupSortFields.size(); k++) {
+            group.sortValues[k] = groupSortFields.get(k).getType().unmarshalSortValue(codec.readVal());
+          }
           groups.add(group);
         }
         rb.mergedSearchGroups.put(groupKey, groups);
@@ -1779,6 +1784,8 @@ public class QueryComponent extends SearchComponent
       codec.writeLong(rb.totalHitCount);
       boolean partialResults = Boolean.TRUE.equals(rb.rsp.getResponseHeader().asShallowMap().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
       codec.writeBoolean(partialResults);
+
+      List<SchemaField> groupSortFields = rb.getGroupingSpec().getGroupSortSpec().getSchemaFields();
       
       codec.writeInt(rb.mergedSearchGroups.size());
       for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
@@ -1787,7 +1794,9 @@ public class QueryComponent extends SearchComponent
         codec.writeInt(entry.getValue().size());
         for (SearchGroup<BytesRef> group : entry.getValue()) {
           codec.writeByteArray(group.groupValue.bytes, group.groupValue.offset, group.groupValue.length);
-          codec.writeVal(group.sortValues);
+          for (int i = 0; i < groupSortFields.size(); i++) {
+            codec.writeVal(groupSortFields.get(i).getType().marshalSortValue(group.sortValues[i]));
+          }
         }
         codec.writeVal(rb.mergedGroupCounts.get(groupKey));
       }
