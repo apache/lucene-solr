@@ -39,7 +39,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClusterWithSSL() throws Exception {
     System.setProperty("solr.storeBaseUrl", "true");
-    configureCluster(1)
+    configureCluster(2)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
   }
