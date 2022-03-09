@@ -56,6 +56,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     final int expectedReplicas = numShards * rf;
     CollectionAdminRequest.createCollection(collectionId, "conf", numShards, rf)
         .setPerReplicaState(false)
+        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionId, numShards, numShards * rf);
 
