@@ -39,7 +39,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClusterWithSSL() throws Exception {
     System.setProperty("solr.storeBaseUrl", "true");
-    configureCluster(1)
+    configureCluster(2)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
   }
@@ -56,6 +56,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     final int expectedReplicas = numShards * rf;
     CollectionAdminRequest.createCollection(collectionId, "conf", numShards, rf)
         .setPerReplicaState(false)
+        .setMaxShardsPerNode(-1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionId, numShards, numShards * rf);
 
