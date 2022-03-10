@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,6 +84,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private Map<String, String> withCollectionsMap = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
+    log.info("Creating SolrClientNodeStateProvider");
     this.solrClient = solrClient;
     try {
       readReplicaDetails();
@@ -90,6 +92,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     if(log.isDebugEnabled()) INST = this;
+    log.info("Created SolrClientNodeStateProvider");
   }
 
   protected ClusterStateProvider getClusterStateProvider() {
@@ -97,25 +100,39 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
 
   protected void readReplicaDetails() throws IOException {
+    log.info("Started reading replica details");
     ClusterStateProvider clusterStateProvider = getClusterStateProvider();
+    log.info("Got clusterStateProvider " + (clusterStateProvider != null ? clusterStateProvider.getClass().getName() : "null"));
     ClusterState clusterState = clusterStateProvider.getClusterState();
+    log.info("Got clusterState " + clusterState);
     if (clusterState == null) { // zkStateReader still initializing
       return;
     }
     Map<String, ClusterState.CollectionRef> all = clusterStateProvider.getClusterState().getCollectionStates();
+    log.info("Started processing collection states");
+    AtomicInteger atomicCount = new AtomicInteger(0);
+    int collectionCount = all.size();
+    int chunkSize = Math.max(1, collectionCount / 10);
     all.forEach((collName, ref) -> {
+      int currentCount = atomicCount.incrementAndGet();
+      if (currentCount % chunkSize == 0) {
+        log.info("Processing " + currentCount + " of " + collectionCount + " collection(s) for replica info");
+      }
       DocCollection coll = ref.get();
       if (coll == null) return;
       if (coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION) != null) {
         withCollectionsMap.put(coll.getName(), (String) coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION));
       }
+
       coll.forEachReplica((shard, replica) -> {
         Map<String, Map<String, List<ReplicaInfo>>> nodeData = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(replica.getNodeName(), k -> new HashMap<>());
         Map<String, List<ReplicaInfo>> collData = nodeData.computeIfAbsent(collName, k -> new HashMap<>());
         List<ReplicaInfo> replicas = collData.computeIfAbsent(shard, k -> new ArrayList<>());
         replicas.add(new ReplicaInfo(collName, shard, replica, new HashMap<>(replica.getProperties())));
       });
+
     });
+    log.info("Finished reading replica details");
   }
 
   @Override
