@@ -38,6 +38,8 @@ Bug Fixes
 
 * SOLR-15116: Support a HEAD request for managed resources. (Eric Pugh)
 
+* SOLR-16089: Fix empty columns in Cloud Node UI Screen when replica is in down state. (hossman)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
