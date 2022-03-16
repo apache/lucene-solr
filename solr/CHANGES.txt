@@ -30,6 +30,8 @@ Bug Fixes
 * SOLR-16009: Force Calcite's Rel simplify config flag to false to avoid erasing filters that are meaningful to Solr,
   but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
 
+* SOLR-16095: Upgrade JQuery to 3.5.1 in velocity contrib module (Bence Szabo via Jan Høydahl)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
