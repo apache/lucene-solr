@@ -32,6 +32,8 @@ Bug Fixes
 
 * SOLR-16095: Upgrade JQuery to 3.5.1 in velocity contrib module (Bence Szabo via Jan Høydahl)
 
+* SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

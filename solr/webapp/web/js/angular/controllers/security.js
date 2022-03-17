@@ -411,8 +411,8 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       return false;
     }
 
-    if (!password.match(strongPasswordRegex)) {
-      $scope.validationError = "Password not strong enough! Must contain at least one lowercase letter, one uppercase letter, one digit, and one of these special characters: !@#$%^&*_-[]()";
+    if (password.length < 15 && !password.match(strongPasswordRegex)) {
+      $scope.validationError = "Password not strong enough! Must have length >= 15 or contain at least one lowercase letter, one uppercase letter, one digit, and one of these special characters: !@#$%^&*_-[]()";
       return false;
     }
 
