@@ -55,9 +55,9 @@
   <!-- include version number from property file (includes "version.*" properties) -->
   <loadproperties srcFile="${common.dir}/version.properties"/>
   
-  <fail message="'version.base' property must be 'x.y.z' (major, minor, bugfix) or 'x.y.z.1/2' (+ prerelease) and numeric only: ${version.base}">
+  <fail message="'version.base' property must be 'x.y.z' (major, minor, bugfix) or 'x.y.z.a' (+ prerelease) and numeric only: ${version.base}">
     <condition>
-      <not><matches pattern="^\d+\.\d+\.\d+(|\.1|\.2)$" casesensitive="true" string="${version.base}"/></not>
+      <not><matches pattern="^\d+\.\d+\.\d+(|\.\d+)$" casesensitive="true" string="${version.base}"/></not>
     </condition>
   </fail>
 
