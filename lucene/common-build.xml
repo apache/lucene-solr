@@ -63,7 +63,7 @@
 
   <fail message="If you pass -Dversion=... to set a release version, it must match &quot;${version.base}&quot;, optionally followed by a suffix (e.g., &quot;-SNAPSHOT&quot;).">
     <condition>
-      <not><matches pattern="^\Q${version.base}\E(|.*)$" casesensitive="true" string="${version}"/></not>
+      <not><matches pattern="^\Q${version.base}\E(|\b.*)$" casesensitive="true" string="${version}"/></not>
     </condition>
   </fail>
   
