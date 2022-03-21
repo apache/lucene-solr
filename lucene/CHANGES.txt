@@ -7,7 +7,8 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-10477: SpanBoostQuery.rewrite was no-op for boost==1 factor. (Christine Poerschke)
 
 ======================= Lucene 8.11.1 =======================
 

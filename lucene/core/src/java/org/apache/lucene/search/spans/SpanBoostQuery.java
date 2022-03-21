@@ -78,11 +78,12 @@ public final class SpanBoostQuery extends SpanQuery {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
+    final SpanQuery rewritten = (SpanQuery) query.rewrite(reader);
+
     if (boost == 1f) {
-      return query;
+      return rewritten;
     }
 
-    final SpanQuery rewritten = (SpanQuery) query.rewrite(reader);
     if (query != rewritten) {
       return new SpanBoostQuery(rewritten, boost);
     }
