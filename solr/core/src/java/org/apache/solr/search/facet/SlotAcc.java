@@ -827,7 +827,11 @@ public abstract class SlotAcc implements Closeable {
    * This CountSlotAcc exists as a /dev/null sink for callers of collect(...) and other "write"-type
    * methods. It should be used in contexts where "read"-type access methods will never be called.
    */
-  static final CountSlotAcc DEV_NULL_SLOT_ACC = new CountSlotAcc(null) {
+  static class DevNullCountSlotAcc extends CountSlotAcc {
+
+    DevNullCountSlotAcc() {
+      super(null);
+    }
 
     @Override
     public void resize(Resizer resizer) {

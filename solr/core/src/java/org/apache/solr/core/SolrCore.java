@@ -1902,7 +1902,7 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
    * Registers the default facet parsers
    */
   private void loadFacetParserFactories() {
-    Map<String, FacetParserFactory> instances = createInstances(FacetParser.getStandardFactories());
+    Map<String, FacetParserFactory> instances = createInstances(FacetParser.standard_factories);
     facetParserFactories.init(instances, this);
   }
 

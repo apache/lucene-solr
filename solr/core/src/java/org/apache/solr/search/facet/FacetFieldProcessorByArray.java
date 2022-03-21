@@ -120,7 +120,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
         // count is irrelevant, but hardcoded in collect(...), so intercept/mask normal counts.
         // Set here to prevent createAccs(...) from creating a 1-slot countAcc that will fail with AIOOBE
         // NOTE: because collectAcc will be null, it is fine/irrelevant to set a countAcc that doesn't support sweeping
-        countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
+        countAcc = SlotAccConstants.DEV_NULL_SLOT_ACC;
         createAccs(nDocs, 1);
         assert collectAcc == null;
         otherAccs = accs; // accs is created above and set on allBucketsAcc; but during collection, setNextReader is called on otherAccs.

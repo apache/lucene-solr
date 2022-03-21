@@ -655,19 +655,15 @@ public abstract class FacetParser<FacetRequestT extends FacetRequest> {
     }
   }
 
-  private static volatile Map<String, Class<? extends FacetParserFactory>> standard_factories;
-  public static Map<String, Class<? extends FacetParserFactory>> getStandardFactories() {
-    if(standard_factories == null) {
-          // it's ok if we create multiple instances of this because of multiple calls
-          HashMap<String, Class<? extends FacetParserFactory>> map = new HashMap<>();
-          map.put("field", FacetParser.FacetFieldParser.Factory.class);
-          map.put("terms", FacetParser.FacetFieldParser.Factory.class);
-          map.put("query", FacetParser.FacetQueryParser.Factory.class);
-          map.put("range", FacetRangeParser.Factory.class);
-          map.put("heatmap", FacetHeatmap.Parser.Factory.class);
-          standard_factories = Collections.unmodifiableMap(map);
-    }
-    return standard_factories;
-  }
+  public static final Map<String, Class<? extends FacetParserFactory>> standard_factories;
 
+  static {
+    HashMap<String, Class<? extends FacetParserFactory>> map = new HashMap<>();
+    map.put("field", FacetParser.FacetFieldParser.Factory.class);
+    map.put("terms", FacetParser.FacetFieldParser.Factory.class);
+    map.put("query", FacetParser.FacetQueryParser.Factory.class);
+    map.put("range", FacetRangeParser.Factory.class);
+    map.put("heatmap", FacetHeatmap.Parser.Factory.class);
+    standard_factories = Collections.unmodifiableMap(map);
+  }
 }
