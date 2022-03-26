@@ -17,7 +17,8 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -49,7 +50,10 @@ public class QuerySenderListener extends AbstractSolrEventListener {
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
     log.debug("QuerySenderListener sending requests to {}", newSearcher);
-    List<NamedList> allLists = (List<NamedList>)getArgs().get("queries");
+
+    Object queries = getArgs().getAll("queries");
+    ArrayList<NamedList> allLists = queries2list(queries);
+
     if (allLists == null) return;
     for (NamedList nlst : allLists) {
       try {
@@ -99,5 +103,137 @@ public class QuerySenderListener extends AbstractSolrEventListener {
     log.info("QuerySenderListener done.");
   }
 
+  private ArrayList<NamedList> queries2list(Object queries) {
+
+    String queries_t = queries.getClass().getSimpleName();
+    // XML: ArrayList
+    // JSON []: ArrayList
+    log.debug("queries: " + queries_t + ": " + queries.toString());
+
+    ArrayList<NamedList> allLists = new ArrayList<NamedList>();
+
+    switch (queries_t) {
+      case "ArrayList":
+        {
+          @SuppressWarnings("unchecked")
+          ArrayList<Object> queriesLists = (ArrayList<Object>) queries;
+
+          // XML: ArrayList
+          // JSON []: ArrayList
+          log.debug(
+              "queriesLists: "
+                  + queriesLists.getClass().getSimpleName()
+                  + ":"
+                  + queriesLists.toString());
+
+          queriesLists.forEach(
+              (o) -> {
+                String o_t = o.getClass().getSimpleName();
+
+                // XML: ArrayList
+                // JSON []: NamedList
+                log.debug("o: " + o_t + ": " + o.toString());
+
+                switch (o_t) {
+                  case "NamedList":
+                    {
+
+                      // JSON []
+                      @SuppressWarnings("unchecked")
+                      NamedList<Object> warmingQuery = (NamedList<Object>) o;
+
+                      allLists.add(warmingQuery);
+
+                      break;
+                    }
+
+                  case "ArrayList":
+                    {
+                      for (Object wqList : (ArrayList) o) {
+
+                        String wqList_t = wqList.getClass().getSimpleName();
+
+                        // XML: NamedList
+                        log.debug(
+                            "wqList: "
+                                + wqList_t
+                                + ": "
+                                + wqList.toString());
+
+                        if (wqList instanceof NamedList) {
+                          @SuppressWarnings("unchecked")
+                          NamedList<Object> query = (NamedList<Object>) wqList;
+                          log.debug("query: " + query.toString());
+                
+                          allLists.add(query);
+                        } else {
+                          log.warn("unexpected wqList: " + wqList_t + ": " + wqList.toString());
+                        }
+
+                      //   if (wqList instanceof LinkedHashMap) {
+
+                      //     @SuppressWarnings("unchecked")
+                      //     LinkedHashMap<String, Object> warmingQueries =
+                      //         (LinkedHashMap<String, Object>) wqList;
+
+                      //     log.debug(
+                      //         "warmingQueries: "
+                      //             + warmingQueries.getClass().getSimpleName()
+                      //             + ": "
+                      //             + warmingQueries.toString());
+
+                      //     NamedList<Object> warmingQuery = new NamedList<Object>();
+                      //     warmingQueries.forEach((key, value) -> warmingQuery.add(key, value));
+
+                          
+                      //     log.debug(
+                      //         "warmingQuery: "
+                      //             + warmingQuery.getClass().getSimpleName()
+                      //             + ": "
+                      //             + warmingQuery.toString());
+
+                      //     allLists.add(warmingQuery);
+                      //   }
+                      }
+
+                      break;
+                    }
+
+                  default:
+                    {
+                      log.warn("unexpected o: " + o_t + ": " + o.toString());
+                    }
+                }
+              });
+
+          break;
+        }
+
+      // case "NamedList":
+      //   {
+
+      //     // this is used if JSON doesn't have nested array - but it only receives first entry in
+      //     // JSON list so not useful
+      //     log.warn(
+      //         "Please send a nested array of queries - otherwise only the first will be used.");
+      //     log.debug("queries: " + queries.toString());
+
+      //     @SuppressWarnings("unchecked")
+      //     NamedList<Object> query = (NamedList<Object>) queries;
+      //     log.debug("query: " + query.toString());
+
+      //     allLists.add(query);
+
+      //     break;
+      //   }
+
+      default:
+        {
+          log.warn("Unsupported queries object - " + queries_t + ": " + queries.toString());
+        }
+    }
+
+    return allLists;
+  }
 
 }
