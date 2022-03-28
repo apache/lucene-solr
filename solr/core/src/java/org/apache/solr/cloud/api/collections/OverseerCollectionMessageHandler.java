@@ -255,7 +255,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
-    log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
+    log.info("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
 
     @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();

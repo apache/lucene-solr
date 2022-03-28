@@ -230,6 +230,8 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       // create the request node
       createRequestNode(data, watchID);
 
+      log.info("Created request/response node in OverseerTaskQueue with watchID {}", watchID);
+
       if (stat != null) {
         pendingResponses.incrementAndGet();
         watcher.await(timeout);

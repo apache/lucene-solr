@@ -383,7 +383,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
-            + " the collection time out:" + timeout / 1000 + "s");
+            + " the collection time out:" + timeout / 1000 + "s with watchID " + event.getId());
       } else if (event.getWatchedEvent() != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
             + " the collection error [Watcher fired on path: "
