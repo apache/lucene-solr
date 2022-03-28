@@ -106,8 +106,6 @@ public class QuerySenderListener extends AbstractSolrEventListener {
   private ArrayList<NamedList> queries2list(Object queries) {
 
     String queries_t = queries.getClass().getSimpleName();
-    // XML: ArrayList
-    // JSON []: ArrayList
     log.debug("queries: " + queries_t + ": " + queries.toString());
 
     ArrayList<NamedList> allLists = new ArrayList<NamedList>();
@@ -118,8 +116,6 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           @SuppressWarnings("unchecked")
           ArrayList<Object> queriesLists = (ArrayList<Object>) queries;
 
-          // XML: ArrayList
-          // JSON []: ArrayList
           log.debug(
               "queriesLists: "
                   + queriesLists.getClass().getSimpleName()
@@ -129,24 +125,9 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           queriesLists.forEach(
               (o) -> {
                 String o_t = o.getClass().getSimpleName();
-
-                // XML: ArrayList
-                // JSON []: NamedList
-                log.debug("o: " + o_t + ": " + o.toString());
-
                 switch (o_t) {
-                  case "NamedList":
-                    {
 
-                      // JSON []
-                      @SuppressWarnings("unchecked")
-                      NamedList<Object> warmingQuery = (NamedList<Object>) o;
-
-                      allLists.add(warmingQuery);
-
-                      break;
-                    }
-
+                  // XML takes this path
                   case "ArrayList":
                     {
                       for (Object wqList : (ArrayList) o) {
@@ -169,32 +150,18 @@ public class QuerySenderListener extends AbstractSolrEventListener {
                         } else {
                           log.warn("unexpected wqList: " + wqList_t + ": " + wqList.toString());
                         }
-
-                      //   if (wqList instanceof LinkedHashMap) {
-
-                      //     @SuppressWarnings("unchecked")
-                      //     LinkedHashMap<String, Object> warmingQueries =
-                      //         (LinkedHashMap<String, Object>) wqList;
-
-                      //     log.debug(
-                      //         "warmingQueries: "
-                      //             + warmingQueries.getClass().getSimpleName()
-                      //             + ": "
-                      //             + warmingQueries.toString());
-
-                      //     NamedList<Object> warmingQuery = new NamedList<Object>();
-                      //     warmingQueries.forEach((key, value) -> warmingQuery.add(key, value));
-
-                          
-                      //     log.debug(
-                      //         "warmingQuery: "
-                      //             + warmingQuery.getClass().getSimpleName()
-                      //             + ": "
-                      //             + warmingQuery.toString());
-
-                      //     allLists.add(warmingQuery);
-                      //   }
                       }
+
+                      break;
+                    }
+
+                  // JSON takes this path
+                  case "NamedList":
+                    {
+                      @SuppressWarnings("unchecked")
+                      NamedList<Object> warmingQuery = (NamedList<Object>) o;
+
+                      allLists.add(warmingQuery);
 
                       break;
                     }
@@ -208,24 +175,6 @@ public class QuerySenderListener extends AbstractSolrEventListener {
 
           break;
         }
-
-      // case "NamedList":
-      //   {
-
-      //     // this is used if JSON doesn't have nested array - but it only receives first entry in
-      //     // JSON list so not useful
-      //     log.warn(
-      //         "Please send a nested array of queries - otherwise only the first will be used.");
-      //     log.debug("queries: " + queries.toString());
-
-      //     @SuppressWarnings("unchecked")
-      //     NamedList<Object> query = (NamedList<Object>) queries;
-      //     log.debug("query: " + query.toString());
-
-      //     allLists.add(query);
-
-      //     break;
-      //   }
 
       default:
         {
