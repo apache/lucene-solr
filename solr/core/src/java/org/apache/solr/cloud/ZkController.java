@@ -2503,7 +2503,8 @@ public class ZkController implements Closeable {
   public static void touchConfDir(ZkSolrResourceLoader zkLoader) {
     SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
     try {
-      zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
+      byte[] currentData = zkClient.getData(zkLoader.getConfigSetZkPath(), null, null, true);
+      zkClient.setData(zkLoader.getConfigSetZkPath(), currentData, true);
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt(); // Restore the interrupted status
