@@ -502,6 +502,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               sreq.actualShards = rb.shards;
             }
             sreq.responses = new ArrayList<>(sreq.actualShards.length); // presume we'll get a response from each shard we send to
+            sreq.requestStartTime = req.getStartTime();
 
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {

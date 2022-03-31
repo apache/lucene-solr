@@ -267,8 +267,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
 
     this.corePoolSize = getParameter(args, INIT_CORE_POOL_SIZE, corePoolSize,sb);
+    this.corePoolSize = Integer.getInteger("remoterequest.threadpool.corepoolsize", this.corePoolSize);
     this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, maximumPoolSize,sb);
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime,sb);
+    this.keepAliveTime = Integer.getInteger("remoterequest.threadpool.keepalivetime", this.keepAliveTime);
     this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize,sb);
     this.permittedLoadBalancerRequestsMinimumAbsolute = getParameter(
         args,

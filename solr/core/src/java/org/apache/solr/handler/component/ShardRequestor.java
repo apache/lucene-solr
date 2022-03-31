@@ -129,7 +129,14 @@ class ShardRequestor implements Callable<ShardResponse> {
         // all of the servers for a shard are down.
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
       }
-
+      // Here requestStartTime is the time request(top-level request) arrived to the solr node.
+      // It captures the time between request-arrival and making-request-to-remote-shard.
+      if (sreq.requestStartTime > 0) {
+        long delayed = System.currentTimeMillis() - sreq.requestStartTime;
+        if (delayed > 2000) {
+          log.info("Remote shard request to {} delayed by {} milliseconds ", urls, delayed);
+        }
+      }
       if (urls.size() <= 1) {
         String url = urls.get(0);
         srsp.setShardAddress(url);
