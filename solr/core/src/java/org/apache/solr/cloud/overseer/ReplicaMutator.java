@@ -69,7 +69,7 @@ public class ReplicaMutator {
     this.zkClient = getZkClient(cloudManager);
   }
 
-  protected Replica setProperty(Replica replica, String key, String value) {
+  static Replica setProperty(Replica replica, String key, String value) {
     assert key != null;
     assert value != null;
 
@@ -81,7 +81,7 @@ public class ReplicaMutator {
     return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
   }
 
-  protected Replica unsetProperty(Replica replica, String key) {
+  static Replica unsetProperty(Replica replica, String key) {
     assert key != null;
 
     if (!replica.containsKey(key)) return replica;
@@ -90,15 +90,15 @@ public class ReplicaMutator {
     return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
   }
 
-  protected Replica setLeader(Replica replica) {
+  static Replica setLeader(Replica replica) {
     return setProperty(replica, ZkStateReader.LEADER_PROP, "true");
   }
 
-  protected Replica unsetLeader(Replica replica) {
+  static Replica unsetLeader(Replica replica) {
     return unsetProperty(replica, ZkStateReader.LEADER_PROP);
   }
 
-  protected Replica setState(Replica replica, String state) {
+  static Replica setState(Replica replica, String state) {
     assert state != null;
 
     return setProperty(replica, ZkStateReader.STATE_PROP, state);

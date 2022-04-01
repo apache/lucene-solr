@@ -34,7 +34,7 @@ public class ZkWriteCommand {
     this.name = name;
     this.collection = collection;
     this.noop = false;
-    this.ops = isPerReplicaState ? replicaOps : null;
+    this.ops = replicaOps;
     this.persistCollState = isPerReplicaState ? persistCollState : true;
   }
   public ZkWriteCommand(String name, DocCollection collection) {

@@ -124,7 +124,9 @@ public class CollectionMutator {
           continue;
         }
         PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, null);
-        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, prs);
+        replicaOps = enable?
+            PerReplicaStatesOps.enable(coll, prs):
+            PerReplicaStatesOps.disable(prs);
         if(!enable) {
           coll = updateReplicas(coll, prs);
         }
@@ -167,28 +169,31 @@ public class CollectionMutator {
 
   }
 
-  private DocCollection updateReplicas(DocCollection coll, PerReplicaStates prs) {
+  public static DocCollection updateReplicas(DocCollection coll, PerReplicaStates prs) {
     //we are disabling PRS. Update the replica states
-    Map<String, Slice> modifiedSlices = new HashMap<>();
+    Map<String, Slice> modifiedSlices = new LinkedHashMap<>();
     coll.forEachReplica((s, replica) -> {
       PerReplicaStates.State prsState = prs.states.get(replica.getName());
       if (prsState != null) {
         if (prsState.state != replica.getState()) {
           Slice slice = modifiedSlices.getOrDefault(replica.slice, coll.getSlice(replica.slice));
-          replica = new ReplicaMutator(cloudManager).setState(replica, prsState.state.toString());
+          replica = ReplicaMutator.setState(replica, prsState.state.toString());
           modifiedSlices.put(replica.slice, slice.copyWith(replica));
         }
         if (prsState.isLeader != replica.isLeader()) {
           Slice slice = modifiedSlices.getOrDefault(replica.slice, coll.getSlice(replica.slice));
           replica = prsState.isLeader ?
-              new ReplicaMutator(cloudManager).setLeader(replica) :
-              new ReplicaMutator(cloudManager).unsetLeader(replica);
+              ReplicaMutator.setLeader(replica) :
+              ReplicaMutator.unsetLeader(replica);
           modifiedSlices.put(replica.slice, slice.copyWith(replica));
         }
       }
     });
+
     if(!modifiedSlices.isEmpty()) {
-      return coll.copyWithSlices(modifiedSlices);
+      Map<String,Slice> slices = new LinkedHashMap<>(coll.getSlicesMap());
+      slices.putAll(modifiedSlices);
+      return coll.copyWithSlices(slices);
     }
     return coll;
   }

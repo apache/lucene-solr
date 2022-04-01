@@ -118,7 +118,7 @@ public class ZkStateWriter {
     if (cmds.size() == 1) {
       //most messages result in only one command. let's deal with it right away
       ZkWriteCommand cmd = cmds.get(0);
-      if (cmd.collection != null && cmd.collection.isPerReplicaState()) {
+      if (cmd.collection != null && (cmd.ops != null || cmd.collection.isPerReplicaState())) {
         //we do not wish to batch any updates for collections with per-replica state because
         // these changes go to individual ZK nodes and there is zero advantage to batching
         //now check if there are any updates for the same collection already present
@@ -262,6 +262,7 @@ public class ZkStateWriter {
             isClusterStateModified = true;
           }
           if (cmd.ops != null && !cmd.ops.isPreOp()) {
+            log.info("persisting PRS states {}", Utils.toJSONString(cmd.ops.get()));
             cmd.ops.persist(path, reader.getZkClient());
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if ( currentCollState != null) {

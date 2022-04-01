@@ -19,10 +19,8 @@ package org.apache.solr.core;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -31,7 +29,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
@@ -39,8 +36,9 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.junit.Ignore;
+import org.apache.solr.util.LogLevel;
 
+@LogLevel("org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG")
 public class FSPRSTest extends SolrCloudTestCase {
 
   public void testShardSplit() throws Exception {
@@ -108,6 +106,29 @@ public class FSPRSTest extends SolrCloudTestCase {
         });
       }
 
+      for (int i = 0; i < COLL_COUNT; i++) {
+        String C = COLL + i;
+        PerReplicaStates prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(C), cluster.getZkClient(), null);
+        assertEquals(0,prs.states.size());
+      }
+      for (int i = 0; i < COLL_COUNT; i++) {
+        String C = COLL + i;
+        CollectionAdminRequest.modifyCollection(C,
+            Collections.singletonMap("perReplicaState", "true"))
+            .process(cluster.getSolrClient());
+      }
+
+
+      for (int i = 0; i < COLL_COUNT; i++) {
+        String C = COLL + i;
+        cluster.getSolrClient().getZkStateReader().waitForState(C, 10, TimeUnit.SECONDS, (liveNodes, c) -> {
+          boolean[] result = new boolean[]{true};
+          c.forEachReplica((s, replica) -> {
+            if (!replica.isActive(liveNodes)) result[0] = false;
+          });
+          return result[0];
+        });
+      }
 
     } finally {
       cluster.shutdown();
