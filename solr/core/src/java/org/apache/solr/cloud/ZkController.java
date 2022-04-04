@@ -67,33 +67,8 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.BeforeReconnect;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ConnectionManager;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollectionWatcher;
-import org.apache.solr.common.cloud.LiveNodesListener;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
-import org.apache.solr.common.cloud.OnReconnect;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.UrlScheme;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -222,7 +197,7 @@ public class ZkController implements Closeable {
   private String baseURL;            // example: http://127.0.0.1:54065/solr
 
   private final CloudConfig cloudConfig;
-  private final NodesSysPropsCacher sysPropsCacher;
+  private final NodePropsProvider nodePropsProvider;
 
   private LeaderElector overseerElector;
 
@@ -364,8 +339,7 @@ public class ZkController implements Closeable {
     this.overseerConfigSetQueue = initOverseerConfigSetQueue();
 
     log.info("initializing NodesSysPropsCacher");
-    this.sysPropsCacher = new NodesSysPropsCacher( getNodeStateProvider(),
-        getNodeName(), zkStateReader);
+    this.nodePropsProvider = new LazyNodePropsProvider(getNodeName(), cloudSolrClient, zkStateReader);
     log.info("initialized NodesSysPropsCacher");
 
     assert ObjectReleaseTracker.track(this);
@@ -596,8 +570,8 @@ public class ZkController implements Closeable {
     }
   }
 
-  public NodesSysPropsCacher getSysPropsCacher() {
-    return sysPropsCacher;
+  public NodePropsProvider getSysPropsCacher() {
+    return nodePropsProvider;
   }
 
   private void closeOutstandingElections(final CurrentCoreDescriptorProvider registerOnReconnect) {
@@ -698,7 +672,7 @@ public class ZkController implements Closeable {
 
     } finally {
 
-      sysPropsCacher.close();
+      customThreadPool.submit(() -> IOUtils.closeQuietly(nodePropsProvider));
       customThreadPool.submit(() -> IOUtils.closeQuietly(cloudSolrClient));
       customThreadPool.submit(() -> IOUtils.closeQuietly(cloudManager));
 

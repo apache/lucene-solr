@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
+import org.apache.solr.common.cloud.NodePropsProvider;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -40,7 +40,7 @@ import org.apache.solr.common.params.SolrParams;
    */
 public class NodePreferenceRulesComparator implements Comparator<Object> {
 
-  private final NodesSysPropsCacher sysPropsCache;
+  private final NodePropsProvider sysPropsCache;
   private final String nodeName;
   private final List<PreferenceRule> sortRules;
   private final List<PreferenceRule> preferenceRules;
@@ -53,7 +53,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
   }
 
   public NodePreferenceRulesComparator(final List<PreferenceRule> preferenceRules, final SolrParams requestParams,
-      final String nodeName, final String localHostAddress, final NodesSysPropsCacher sysPropsCache,
+      final String nodeName, final String localHostAddress, final NodePropsProvider sysPropsCache,
       final ReplicaListTransformerFactory defaultRltFactory, final ReplicaListTransformerFactory stableRltFactory) {
     this.sysPropsCache = sysPropsCache;
     this.preferenceRules = preferenceRules;

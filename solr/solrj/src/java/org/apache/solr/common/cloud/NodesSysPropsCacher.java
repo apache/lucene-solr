@@ -47,7 +47,7 @@ import static org.apache.solr.common.cloud.rule.ImplicitSnitch.SYSPROP;
  *
  * The cache will be refresh whenever /live_nodes get changed.
  */
-public class NodesSysPropsCacher implements SolrCloseable {
+public class NodesSysPropsCacher implements NodePropsProvider, SolrCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int NUM_RETRY = 5;
 
