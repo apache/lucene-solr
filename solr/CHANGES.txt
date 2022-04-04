@@ -48,6 +48,9 @@ Optimizations
 
 * SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
 
+* SOLR-14765: Optimize DocList creation for sort-irrelevant cases. This issue also reworks the building and caching of liveDocs
+  in SolrIndexSearcher, and refines/clarifies the effect of `useFilterForSortedQuery` (Michael Gibney, Mike Drob, David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)

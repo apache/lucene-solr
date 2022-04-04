@@ -38,6 +38,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
 
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Supplier;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -52,6 +54,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -126,6 +129,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
+  private final LongAdder fullSortCount = new LongAdder();
+  private final LongAdder skipSortCount = new LongAdder();
+  private final LongAdder liveDocsNaiveCacheHitCount = new LongAdder();
+  private final LongAdder liveDocsInsertsCount = new LongAdder();
+  private final LongAdder liveDocsHitCount = new LongAdder();
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   @SuppressWarnings({"rawtypes"})
@@ -860,6 +868,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     assert !(query instanceof WrappedQuery) : "should have unwrapped";
     assert filterCache != null : "must check for caching before calling this method";
 
+    if (query instanceof MatchAllDocsQuery) {
+      // bypass the filterCache for MatchAllDocsQuery
+      return getLiveDocSet();
+    }
+
     DocSet answer;
     if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
@@ -882,8 +895,63 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return answer;
   }
 
-  private static Query matchAllDocsQuery = new MatchAllDocsQuery();
-  private volatile BitDocSet liveDocs;
+  private static final MatchAllDocsQuery MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
+
+  /** Used as a synchronization point to handle the lazy-init of {@link #liveDocs}. */
+  private final Object liveDocsCacheLock = new Object();
+
+  private BitDocSet liveDocs;
+
+  private static final BitDocSet EMPTY = new BitDocSet(new FixedBitSet(0), 0);
+
+  private BitDocSet computeLiveDocs() {
+    switch (leafContexts.size()) {
+      case 0:
+        assert numDocs() == 0;
+        return EMPTY;
+      case 1:
+        final Bits onlySegLiveDocs = leafContexts.get(0).reader().getLiveDocs();
+        final FixedBitSet fbs;
+        if (onlySegLiveDocs == null) {
+          // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits
+          final int onlySegMaxDoc = maxDoc();
+          fbs = new FixedBitSet(onlySegMaxDoc);
+          fbs.set(0, onlySegMaxDoc);
+        } else {
+          fbs = FixedBitSet.copyOf(onlySegLiveDocs);
+        }
+        assert fbs.cardinality() == numDocs();
+        return new BitDocSet(fbs, numDocs());
+      default:
+        final FixedBitSet bs = new FixedBitSet(maxDoc());
+        for (LeafReaderContext ctx : leafContexts) {
+          final LeafReader r = ctx.reader();
+          final Bits segLiveDocs = r.getLiveDocs();
+          final int segDocBase = ctx.docBase;
+          if (segLiveDocs == null) {
+            // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all
+            // bits in seg range
+            bs.set(segDocBase, segDocBase + r.maxDoc());
+          } else {
+            DocSetUtil.copyTo(segLiveDocs, 0, r.maxDoc(), bs, segDocBase);
+          }
+        }
+        assert bs.cardinality() == numDocs();
+        return new BitDocSet(bs, numDocs());
+    }
+  }
+
+  private BitDocSet populateLiveDocs(Supplier<BitDocSet> liveDocsSupplier) {
+    synchronized (liveDocsCacheLock) {
+      if (liveDocs != null) {
+        liveDocsHitCount.increment();
+      } else {
+        liveDocs = liveDocsSupplier.get();
+        liveDocsInsertsCount.increment();
+      }
+    }
+    return liveDocs;
+  }
 
   @Deprecated // TODO remove for 8.0
   public BitDocSet getLiveDocs() throws IOException {
@@ -895,12 +963,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @lucene.internal the type of DocSet returned may change in the future
    */
   public BitDocSet getLiveDocSet() throws IOException {
-    // Going through the filter cache will provide thread safety here if we only had getLiveDocs,
-    // but the addition of setLiveDocs means we needed to add volatile to "liveDocs".
     BitDocSet docs = liveDocs;
-    if (docs == null) {
-      //note: maybe should instead calc manually by segment, using FixedBitSet.copyOf(segLiveDocs); avoid filter cache?
-      liveDocs = docs = getDocSetBits(matchAllDocsQuery);
+    if (docs != null) {
+      liveDocsNaiveCacheHitCount.increment();
+    } else {
+      docs = populateLiveDocs(this::computeLiveDocs);
+      // assert DocSetUtil.equals(docs, DocSetUtil.createDocSetGeneric(this, MATCH_ALL_DOCS_QUERY));
     }
     assert docs.size() == numDocs();
     return docs;
@@ -916,16 +984,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return getIndexReader().hasDeletions() ? getLiveDocSet().getBits() : null;
   }
 
-  /** @lucene.internal */
-  public boolean isLiveDocsInstantiated() {
-    return liveDocs != null;
-  }
-
-  /** @lucene.internal */
-  public void setLiveDocs(DocSet docs) {
+  /**
+   * If some process external to {@link SolrIndexSearcher} has produced a DocSet whose cardinality
+   * matches that of `liveDocs`, this method provides such caller the ability to offer its own
+   * DocSet to be cached in the searcher. The caller should then use the returned value (which may
+   * or may not be derived from the DocSet instance supplied), allowing more efficient memory use.
+   *
+   * @lucene.internal
+   */
+  public BitDocSet offerLiveDocs(Supplier<DocSet> docSetSupplier, int suppliedSize) {
+    assert suppliedSize == numDocs();
+    final BitDocSet ret = liveDocs;
+    if (ret != null) {
+      liveDocsNaiveCacheHitCount.increment();
+      return ret;
+    }
     // a few places currently expect BitDocSet
-    assert docs.size() == numDocs();
-    this.liveDocs = makeBitDocSet(docs);
+    return populateLiveDocs(() -> makeBitDocSet(docSetSupplier.get()));
   }
 
   private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
@@ -957,7 +1032,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = pf.postFilter;
     }
 
-    Query query = pf.filter != null ? pf.filter : matchAllDocsQuery;
+    Query query = pf.filter != null ? pf.filter : MATCH_ALL_DOCS_QUERY;
 
     search(query, collector);
 
@@ -1331,6 +1406,34 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final int GET_DOCLIST = 0x02; // get the documents actually returned in a response
   public static final int GET_SCORES = 0x01;
 
+  private static boolean sortIncludesOtherThanScore(final Sort sort) {
+    if (sort == null) {
+      return false;
+    }
+    final SortField[] sortFields = sort.getSort();
+    return sortFields.length > 1 || sortFields[0].getType() != Type.SCORE;
+  }
+
+  private boolean useFilterCacheForDynamicScoreQuery(boolean needSort, QueryCommand cmd) {
+    if (!useFilterForSortedQuery) {
+      // under no circumstance use filterCache
+      return false;
+    } else if (!needSort) {
+      // if don't need to sort at all, doesn't matter whether score would be needed
+      return true;
+    } else {
+      // we _do_ need to sort; only use filterCache if `score` is not a factor for sort
+      final Sort sort = cmd.getSort();
+      if (sort == null) {
+        // defaults to sort-by-score, so can't use filterCache
+        return false;
+      } else {
+        return Arrays.stream(sort.getSort())
+            .noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
+      }
+    }
+  }
+
   /**
    * getDocList version that uses+populates query and filter caches. In the event of a timeout, the cache is not
    * populated.
@@ -1416,17 +1519,38 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // - we don't want score returned.
 
     // check if we should try and use the filter cache
-    boolean useFilterCache = false;
-    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) == 0 && useFilterForSortedQuery && cmd.getSort() != null
-        && filterCache != null) {
-      useFilterCache = true;
-      SortField[] sfields = cmd.getSort().getSort();
-      for (SortField sf : sfields) {
-        if (sf.getType() == SortField.Type.SCORE) {
-          useFilterCache = false;
-          break;
-        }
+    final boolean needSort;
+    final boolean useFilterCache;
+    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
+      needSort = true; // this value should be irrelevant when `useFilterCache=false`
+      useFilterCache = false;
+    } else if (q instanceof MatchAllDocsQuery
+        || (useFilterForSortedQuery && QueryUtils.isConstantScoreQuery(q))) {
+      // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true;
+      // otherwise, default behavior should not risk filterCache thrashing, so require
+      // `useFilterForSortedQuery==true`
+
+      // We only need to sort if we're returning results AND sorting by something other than SCORE
+      // (sort by "score" alone is pointless for these constant score queries)
+      final Sort sort = cmd.getSort();
+      needSort = cmd.getLen() > 0 && sortIncludesOtherThanScore(sort);
+      if (!needSort) {
+        useFilterCache = true;
+      } else {
+        /*
+        NOTE: if `sort:score` is specified, it will have no effect, so we really _could_ in
+        principle always use filterCache; but this would be a user request misconfiguration,
+        and supporting it would require us to mess with user sort, or ignore the fact that sort
+        expects `score` to be present ... so just make the optimization contingent on the absence
+        of `score` in the requested sort.
+         */
+        useFilterCache =
+            Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
       }
+    } else {
+      // for non-constant-score queries, must sort unless no docs requested
+      needSort = cmd.getLen() > 0;
+      useFilterCache = useFilterCacheForDynamicScoreQuery(needSort, cmd);
     }
 
     if (useFilterCache) {
@@ -1437,14 +1561,32 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         out.docSet = getDocSet(cmd.getQuery(), cmd.getFilter());
         List<Query> filterList = cmd.getFilterList();
         if (filterList != null && !filterList.isEmpty()) {
-          out.docSet = out.docSet.intersection(getDocSet(cmd.getFilterList()));
+          out.docSet = DocSetUtil.getDocSet(out.docSet.intersection(getDocSet(filterList)), this);
         }
       }
       // todo: there could be a sortDocSet that could take a list of
       // the filters instead of anding them first...
       // perhaps there should be a multi-docset-iterator
-      sortDocSet(qr, cmd);
+      if (needSort) {
+        fullSortCount.increment();
+        sortDocSet(qr, cmd);
+      } else {
+        skipSortCount.increment();
+        // put unsorted list in place
+        out.docList = constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet);
+        if (0 == cmd.getSupersetMaxDoc()) {
+          // this is the only case where `cursorMark && !needSort`
+          qr.setNextCursorMark(cmd.getCursorMark());
+        } else {
+          // cursorMark should always add a `uniqueKey` sort field tie-breaker, which
+          // should prevent `needSort` from ever being false in conjunction with
+          // cursorMark, _except_ in the event of `rows=0` (accounted for in the clause
+          // above)
+          assert cmd.getCursorMark() == null;
+        }
+      }
     } else {
+      fullSortCount.increment();
       // do it the normal way...
       if ((flags & GET_DOCSET) != 0) {
         // this currently conflates returning the docset for the base query vs
@@ -2041,6 +2183,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return qr.getDocListAndSet();
   }
 
+  private DocList constantScoreDocList(int offset, int length, DocSet docs) {
+    final int size = docs.size();
+    if (length == 0 || size <= offset) {
+      return new DocSlice(0, 0, new int[0], null, size, 0f, TotalHits.Relation.EQUAL_TO);
+    }
+    final DocIterator iter = docs.iterator();
+    for (int i = offset; i > 0; i--) {
+      iter.nextDoc(); // discard
+    }
+    final int returnSize = Math.min(length, size - offset);
+    final int[] docIds = new int[returnSize];
+    for (int i = 0; i < returnSize; i++) {
+      docIds[i] = iter.nextDoc();
+    }
+    return new DocSlice(0, returnSize, docIds, null, size, 0f, TotalHits.Relation.EQUAL_TO);
+  }
+
   protected void sortDocSet(QueryResult qr, QueryCommand cmd) throws IOException {
     DocSet set = qr.getDocListAndSet().docSet;
     int nDocs = cmd.getSupersetMaxDoc();
@@ -2321,6 +2480,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(this, () -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
     parentContext.gauge(this, () -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(this, () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this,
+        () -> fullSortCount.sum(), true, "fullSortCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this,
+        () -> skipSortCount.sum(), true, "skipSortCount", Category.SEARCHER.toString(), scope);
+    final MetricsMap liveDocsCacheMetrics =
+        new MetricsMap(
+            (map) -> {
+              map.put("inserts", liveDocsInsertsCount.sum());
+              map.put("hits", liveDocsHitCount.sum());
+              map.put("naiveHits", liveDocsNaiveCacheHitCount.sum());
+            });
+    parentContext.gauge(this, () -> liveDocsCacheMetrics, true, "liveDocsCache", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(this, rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
     parentContext.gauge(this, rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
