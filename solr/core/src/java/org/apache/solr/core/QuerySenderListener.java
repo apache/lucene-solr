@@ -51,8 +51,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
     final SolrIndexSearcher searcher = newSearcher;
     log.debug("QuerySenderListener sending requests to {}", newSearcher);
 
-    Object queries = getArgs().getAll("queries");
-    ArrayList<NamedList> allLists = queries2list(queries);
+    ArrayList<NamedList> allLists = queries2list((ArrayList<Object>)getArgs().getAll("queries"));
 
     if (allLists == null) return;
     for (NamedList nlst : allLists) {
@@ -103,83 +102,41 @@ public class QuerySenderListener extends AbstractSolrEventListener {
     log.info("QuerySenderListener done.");
   }
 
-  private ArrayList<NamedList> queries2list(Object queries) {
-
-    String queries_t = queries.getClass().getSimpleName();
-    log.debug("queries: " + queries_t + ": " + queries.toString());
+  private ArrayList<NamedList> queries2list(ArrayList<Object> queries) {
 
     ArrayList<NamedList> allLists = new ArrayList<NamedList>();
 
-    switch (queries_t) {
-      case "ArrayList":
-        {
-          @SuppressWarnings("unchecked")
-          ArrayList<Object> queriesLists = (ArrayList<Object>) queries;
+    for (Object o : queries) {
+      switch (o.getClass().getSimpleName()) {
 
-          log.debug(
-              "queriesLists: "
-                  + queriesLists.getClass().getSimpleName()
-                  + ":"
-                  + queriesLists.toString());
+        // XML takes this path
+        case "ArrayList":
+          {
+            for (Object o2 : (ArrayList) o) {
+              if (o2 instanceof NamedList) {
+                allLists.add((NamedList<Object>) o2);
+              } else {
+                // TODO is this reachable?
+                log.warn("unexpected o2: " + o2.getClass().getSimpleName() + ": " + o2.toString());
+              }
+            }
 
-          queriesLists.forEach(
-              (o) -> {
-                String o_t = o.getClass().getSimpleName();
-                switch (o_t) {
+            break;
+          }
 
-                  // XML takes this path
-                  case "ArrayList":
-                    {
-                      for (Object wqList : (ArrayList) o) {
+        // JSON takes this path
+        case "NamedList":
+          {
+            allLists.add((NamedList<Object>) o);
+            break;
+          }
 
-                        String wqList_t = wqList.getClass().getSimpleName();
-
-                        // XML: NamedList
-                        log.debug(
-                            "wqList: "
-                                + wqList_t
-                                + ": "
-                                + wqList.toString());
-
-                        if (wqList instanceof NamedList) {
-                          @SuppressWarnings("unchecked")
-                          NamedList<Object> query = (NamedList<Object>) wqList;
-                          log.debug("query: " + query.toString());
-                
-                          allLists.add(query);
-                        } else {
-                          log.warn("unexpected wqList: " + wqList_t + ": " + wqList.toString());
-                        }
-                      }
-
-                      break;
-                    }
-
-                  // JSON takes this path
-                  case "NamedList":
-                    {
-                      @SuppressWarnings("unchecked")
-                      NamedList<Object> warmingQuery = (NamedList<Object>) o;
-
-                      allLists.add(warmingQuery);
-
-                      break;
-                    }
-
-                  default:
-                    {
-                      log.warn("unexpected o: " + o_t + ": " + o.toString());
-                    }
-                }
-              });
-
-          break;
-        }
-
-      default:
-        {
-          log.warn("Unsupported queries object - " + queries_t + ": " + queries.toString());
-        }
+        default:
+          {
+            // TODO is this reachable?
+            log.warn("unexpected o: " + o.getClass().getSimpleName() + ": " + o.toString());
+          }
+      }
     }
 
     return allLists;
