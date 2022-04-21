@@ -110,6 +110,117 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testZkStateWriterPendingAndNonBatchedTimeExceeded() throws Exception {
+    Path zkDir = createTempDir("testZkStateWriterBatching");
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    SolrZkClient zkClient = null;
+
+    try {
+      server.run();
+
+      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      ZkController.createClusterZkNodes(zkClient);
+
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
+
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/prs1", true);
+
+        ZkWriteCommand c1 = new ZkWriteCommand("c1",
+            new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1"));
+        ZkWriteCommand c2 = new ZkWriteCommand("c2",
+            new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c2"));
+        ZkWriteCommand c3 = new ZkWriteCommand("c3",
+            new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c3"));
+        Map<String, Object> prsProps = new HashMap<>();
+        prsProps.put("perReplicaState", Boolean.TRUE);
+        ZkWriteCommand prs1 = new ZkWriteCommand("prs1",
+            new DocCollection("prs1", new HashMap<>(), prsProps, DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/prs1"));
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
+
+        // First write is flushed immediately
+        ClusterState clusterState = writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c1), FAIL_ON_WRITE);
+        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c2), FAIL_ON_WRITE);
+
+        Thread.sleep(Overseer.STATE_UPDATE_DELAY + 100);
+        AtomicBoolean didWrite = new AtomicBoolean(false);
+        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(prs1), () -> didWrite.set(true));
+        assertTrue("Exceed the update delay, should be flushed", didWrite.get());
+        didWrite.set(false);
+        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+        assertTrue("Exceed the update delay, should be flushed", didWrite.get());
+        assertTrue("The updates queue should be empty having been flushed", writer.updates.isEmpty());
+        didWrite.set(false);
+      }
+
+    } finally {
+      IOUtils.close(zkClient);
+      server.shutdown();
+    }
+  }
+
+  public void testZkStateWriterPendingAndNonBatchedBatchSizeExceeded() throws Exception {
+    Path zkDir = createTempDir("testZkStateWriterBatching");
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    SolrZkClient zkClient = null;
+
+    try {
+      server.run();
+
+      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      ZkController.createClusterZkNodes(zkClient);
+
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
+
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/prs1", true);
+
+        ZkWriteCommand c1 = new ZkWriteCommand("c1",
+            new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1"));
+        ZkWriteCommand c2 = new ZkWriteCommand("c2",
+            new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c2"));
+        ZkWriteCommand c3 = new ZkWriteCommand("c3",
+            new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c3"));
+        Map<String, Object> prsProps = new HashMap<>();
+        prsProps.put("perReplicaState", Boolean.TRUE);
+        ZkWriteCommand prs1 = new ZkWriteCommand("prs1",
+            new DocCollection("prs1", new HashMap<>(), prsProps, DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/prs1"));
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
+
+        // First write is flushed immediately
+        ClusterState clusterState = writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
+
+        AtomicBoolean didWrite = new AtomicBoolean(false);
+        AtomicBoolean didWritePrs = new AtomicBoolean(false);
+        for (int i = 0; i <= Overseer.STATE_UPDATE_BATCH_SIZE; i++) {
+          clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
+          //Write a PRS update in the middle and make sure we still get the right results
+          if (i == (Overseer.STATE_UPDATE_BATCH_SIZE/2)) {
+            clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(prs1), () -> didWritePrs.set(true));
+          }
+        }
+        assertTrue("Exceed the update batch size, should be flushed", didWrite.get());
+        assertTrue("PRS update should always be written", didWritePrs.get());
+        assertTrue("The updates queue should be empty having been flushed", writer.updates.isEmpty());
+      }
+
+    } finally {
+      IOUtils.close(zkClient);
+      server.shutdown();
+    }
+  }
+
   public void testSingleLegacyCollection() throws Exception {
     Path zkDir = createTempDir("testSingleLegacyCollection");
 

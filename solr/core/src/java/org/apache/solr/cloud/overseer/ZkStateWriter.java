@@ -201,10 +201,10 @@ public class ZkStateWriter {
   public ClusterState writeUpdate(ZkWriteCommand command) throws IllegalStateException, KeeperException, InterruptedException {
     Map<String, ZkWriteCommand> commands = new HashMap<>();
     commands.put(command.name, command);
-    return writePendingUpdates(commands);
+    return writePendingUpdates(commands, false);
   }
   public ClusterState writePendingUpdates() throws KeeperException, InterruptedException {
-    return writePendingUpdates(updates);
+    return writePendingUpdates(updates, true);
 
   }
   /**
@@ -215,12 +215,21 @@ public class ZkStateWriter {
    * @throws KeeperException       if any ZooKeeper operation results in an error
    * @throws InterruptedException  if the current thread is interrupted
    */
-  public ClusterState writePendingUpdates(Map<String, ZkWriteCommand> updates) throws IllegalStateException, KeeperException, InterruptedException {
+  public ClusterState writePendingUpdates(Map<String, ZkWriteCommand> updates, boolean resetPendingUpdateCounters) throws IllegalStateException, KeeperException, InterruptedException {
     if (invalidState) {
       throw new IllegalStateException("ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
+
+    if (log.isDebugEnabled()) {
+      log.debug(String.format("Request to write pending updates with updates of length: %d, " +
+          "pending updates of length: %d, writing all pending updates: %b", updates.size(), this.updates.size(), updates == this.updates));
+    }
+
     if ((updates == this.updates)
         && !hasPendingUpdates()) {
+      if (log.isDebugEnabled()) {
+        log.debug("Attempted to flush all pending updates, but there are no pending updates");
+      }
       return clusterState;
     }
     Timer.Context timerContext = stats.time("update_state");
@@ -273,7 +282,6 @@ public class ZkStateWriter {
         }
 
         updates.clear();
-        numUpdates = 0;
       }
 
       if (isClusterStateModified) {
@@ -285,7 +293,9 @@ public class ZkStateWriter {
         clusterState = new ClusterState(stat.getVersion(), reader.getClusterState().getLiveNodes(), collections);
         isClusterStateModified = false;
       }
-      lastUpdatedTime = System.nanoTime();
+      if (resetPendingUpdateCounters) {
+        resetPendingUpdateCounters();
+      }
       success = true;
     } catch (KeeperException.BadVersionException bve) {
       // this is a tragic error, we must disallow usage of this instance
@@ -302,6 +312,11 @@ public class ZkStateWriter {
 
     log.trace("New Cluster State is: {}", clusterState);
     return clusterState;
+  }
+
+  public void resetPendingUpdateCounters() {
+    lastUpdatedTime = System.nanoTime();
+    numUpdates = 0;
   }
 
   /**
