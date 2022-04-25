@@ -42,6 +42,8 @@ Bug Fixes
 
 * SOLR-16145: Fix very rare NPE in SolrCloud rejoinOverseerElection. (David Smiley)
 
+* SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

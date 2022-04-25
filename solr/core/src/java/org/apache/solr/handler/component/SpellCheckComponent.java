@@ -140,22 +140,22 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       return;
     }
     boolean shardRequest = "true".equals(params.get(ShardParams.IS_SHARD));
-    String q = params.get(SPELLCHECK_Q);
-    SolrSpellChecker spellChecker = getSpellChecker(params);
-    Collection<Token> tokens = null;
 
-    if (q != null) {
+    SolrSpellChecker spellChecker = getSpellChecker(params);
+    if (spellChecker != null) {
+      Collection<Token> tokens;
+      String q = params.get(SPELLCHECK_Q);
+      if (q != null) {
       //we have a spell check param, tokenize it with the query analyzer applicable for this spellchecker
-      tokens = getTokens(q, spellChecker.getQueryAnalyzer());
-    } else {
-      q = rb.getQueryString();
-      if (q == null) {
-        q = params.get(CommonParams.Q);
+        tokens = getTokens(q, spellChecker.getQueryAnalyzer());
+      } else {
+        q = rb.getQueryString();
+        if (q == null) {
+          q = params.get(CommonParams.Q);
+        }
+        tokens = queryConverter.convert(q);
       }
-      tokens = queryConverter.convert(q);
-    }
-    if (tokens != null && tokens.isEmpty() == false) {
-      if (spellChecker != null) {
+      if (tokens != null && tokens.isEmpty() == false) {
         int count = params.getInt(SPELLCHECK_COUNT, 1);
         boolean onlyMorePopular = params.getBool(SPELLCHECK_ONLY_MORE_POPULAR, DEFAULT_ONLY_MORE_POPULAR);
         boolean extendedResults = params.getBool(SPELLCHECK_EXTENDED_RESULTS, false);
@@ -164,7 +164,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         int alternativeTermCount = params.getInt(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT, 0);
         //If specified, this can be a discrete # of results, or a percentage of fq results.
         Integer maxResultsForSuggest = maxResultsForSuggest(rb);
-        
+
         ModifiableSolrParams customParams = new ModifiableSolrParams();
         for (String checkerName : getDictionaryNames(params)) {
           customParams.add(getCustomParams(checkerName, params));
@@ -177,7 +177,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         } else {
           hits = hitsLong.longValue();
         }
-        
+
         SpellingResult spellingResult = null;
         if (maxResultsForSuggest == null || hits <= maxResultsForSuggest) {
           SuggestMode suggestMode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
@@ -214,19 +214,18 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
 
         rb.rsp.add("spellcheck", response);
-
-      } else {
+      }
+    } else {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
             "Specified dictionaries do not exist: " + getDictionaryNameAsSingleString(getDictionaryNames(params)));
-      }
     }
   }
-  
+
   private Integer maxResultsForSuggest(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     float maxResultsForSuggestParamValue = params.getFloat(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, 0.0f);
     Integer maxResultsForSuggest = null;
-    
+
     if (maxResultsForSuggestParamValue > 0.0f) {
       if (maxResultsForSuggestParamValue == (int) maxResultsForSuggestParamValue) {
         // If a whole number was passed in, this is a discrete number of documents
@@ -235,10 +234,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         // If a fractional value was passed in, this is the % of documents returned by the specified filter
         // If no specified filter, we use the most restrictive filter of the fq parameters
         String maxResultsFilterQueryString = params.get(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ);
-        
+
         int maxResultsByFilters = Integer.MAX_VALUE;
         SolrIndexSearcher searcher = rb.req.getSearcher();
-        
+
         try {
           if (maxResultsFilterQueryString != null) {
             // Get the default Lucene query parser
@@ -248,7 +247,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           } else {
             List<Query> filters = rb.getFilters();
 
-            // Get the maximum possible hits within these filters (size of most restrictive filter). 
+            // Get the maximum possible hits within these filters (size of most restrictive filter).
             if (filters != null) {
               for (Query query : filters) {
                 DocSet s = searcher.getDocSet(query);
@@ -265,7 +264,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           log.error("Error", e);
           return null;
         }
-        
+
         // Recalculate maxResultsForSuggest if filters were specified
         if (maxResultsByFilters != Integer.MAX_VALUE) {
           maxResultsForSuggest = Math.round(maxResultsByFilters * maxResultsForSuggestParamValue);
@@ -274,7 +273,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     return maxResultsForSuggest;
   }
-  
+
   @SuppressWarnings("unchecked")
   protected void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
       @SuppressWarnings({"rawtypes"})NamedList response, boolean suggestionsMayOverlap) {
@@ -296,7 +295,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         .setDocCollectionLimit(maxCollationCollectDocs)
     ;
     List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb);
-    //by sorting here we guarantee a non-distributed request returns all 
+    //by sorting here we guarantee a non-distributed request returns all
     //results in the same order as a distributed request would,
     //even in cases when the internal rank is the same.
     Collections.sort(collations);
@@ -393,7 +392,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         origQuery = params.get(CommonParams.Q);
       }
     }
-    
+
     long hits = rb.grouping() ? rb.totalHitCount : rb.getNumberDocumentsFound();
     boolean isCorrectlySpelled = hits > (maxResultsForSuggest==null ? 0 : maxResultsForSuggest);
 
@@ -488,7 +487,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         mergeData.origVsSuggested.put(suggestion.getToken(), suggested);
       }
 
-      // sum up original frequency          
+      // sum up original frequency
       int origFreq = 0;
       Integer o = mergeData.origVsFreq.get(suggestion.getToken());
       if (o != null)  origFreq += o;
