@@ -89,11 +89,7 @@ public class NodeMutator {
       }
 
       if (needToUpdateCollection) {
-        if (docCollection.isPerReplicaState()) {
-          PerReplicaStates fetch = PerReplicaStates.fetch(docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates());
-          zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy),
-              PerReplicaStatesOps.downReplicas(downedReplicas, fetch), false));
-        } else {
+        if (!docCollection.isPerReplicaState()) {
           zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
         }
       }
