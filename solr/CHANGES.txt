@@ -40,6 +40,8 @@ Bug Fixes
 
 * SOLR-16089: Fix empty columns in Cloud Node UI Screen when replica is in down state. (hossman)
 
+* SOLR-16145: Fix very rare NPE in SolrCloud rejoinOverseerElection. (David Smiley)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
