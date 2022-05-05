@@ -102,22 +102,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   protected void readReplicaDetails() throws IOException {
     log.info("Started reading replica details");
     ClusterStateProvider clusterStateProvider = getClusterStateProvider();
-    log.info("Got clusterStateProvider " + (clusterStateProvider != null ? clusterStateProvider.getClass().getName() : "null"));
     ClusterState clusterState = clusterStateProvider.getClusterState();
-    log.info("Got clusterState " + clusterState);
     if (clusterState == null) { // zkStateReader still initializing
       return;
     }
     Map<String, ClusterState.CollectionRef> all = clusterStateProvider.getClusterState().getCollectionStates();
-    log.info("Started processing collection states");
-    AtomicInteger atomicCount = new AtomicInteger(0);
-    int collectionCount = all.size();
-    int chunkSize = Math.max(1, collectionCount / 10);
     all.forEach((collName, ref) -> {
-      int currentCount = atomicCount.incrementAndGet();
-      if (currentCount % chunkSize == 0) {
-        log.info("Processing " + currentCount + " of " + collectionCount + " collection(s) for replica info");
-      }
       DocCollection coll = ref.get();
       if (coll == null) return;
       if (coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION) != null) {
