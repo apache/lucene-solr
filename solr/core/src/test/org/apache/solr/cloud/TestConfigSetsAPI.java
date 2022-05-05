@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -71,8 +72,10 @@ import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Upload;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -121,6 +124,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
+    System.setProperty("managed.schema.mutable", "true");
     configureCluster(1)
             .withSecurityJson(getSecurityJson())
             .configure();
@@ -130,6 +134,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   @AfterClass
   public static void tearDownClass() throws Exception {
     zkConfigManager = null;
+    System.clearProperty("managed.schema.mutable");
   }
 
   @Override
@@ -611,6 +616,59 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertEquals("Expecting first version of new file", 0, getConfigZNodeVersion(zkClient, configsetName, configsetSuffix, "test/upload/path/solrconfig.xml"));
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
     }
+  }
+
+  @Test
+  public void testNewSingleFileAfterSchemaAPIV1() throws Exception {
+    testNewSingleFileAfterSchemaAPI(false);
+  }
+
+  @Test
+  public void testNewSingleFileAfterSchemaAPIV2() throws Exception {
+    testNewSingleFileAfterSchemaAPI(true);
+  }
+
+  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient)
+      throws IOException, SolrServerException {
+    Map<String, Object> fieldAttributes = new LinkedHashMap<>();
+    fieldAttributes.put("name", fieldName);
+    fieldAttributes.put("type", "string");
+    SchemaRequest.AddField addFieldUpdateSchemaRequest =
+        new SchemaRequest.AddField(fieldAttributes);
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(cloudClient, collection);
+    assertEquals(0, addFieldResponse.getStatus());
+    assertNull(addFieldResponse.getResponse().get("errors"));
+
+    log.info("added new field={}", fieldName);
+  }
+
+  private void testNewSingleFileAfterSchemaAPI(boolean v2) throws Exception {
+    String collectionName = "newcollection";
+    String configsetName = "regular";
+    String configsetSuffix = "testSinglePathNew-1-" + v2;
+    createConfigSet(null, configsetName + configsetSuffix, null, cluster.getSolrClient(), "solr");
+    createCollection(
+        collectionName, configsetName + configsetSuffix, 1, 1, cluster.getSolrClient());
+    addStringField("newField", collectionName, cluster.getSolrClient());
+
+    assertEquals(
+        0,
+        uploadSingleConfigSetFile(
+            configsetName,
+            configsetSuffix,
+            "solr",
+            "solr/configsets/upload/regular/solrconfig.xml",
+            "/test/upload/path/solrconfig.xml",
+            false,
+            false,
+            v2));
+    SolrZkClient zkClient = cluster.getZkServer().getZkClient();
+    assertEquals(
+        "Expecting first version of new file",
+        0,
+        getConfigZNodeVersion(
+            zkClient, configsetName, configsetSuffix, "test/upload/path/solrconfig.xml"));
   }
 
   @Test

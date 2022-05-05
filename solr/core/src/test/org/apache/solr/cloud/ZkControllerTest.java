@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -345,6 +347,69 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       if (cc != null) {
         cc.shutdown();
       }
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testTouchConfDir() throws Exception {
+    Path zkDir = createTempDir("zkData");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+        CoreContainer cc = getCoreContainer();
+        try {
+          CloudConfig cloudConfig =
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+          try (ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, new CurrentCoreDescriptorProvider() {
+
+            @Override
+            public List<CoreDescriptor> getCurrentDescriptors() {
+              // do nothing
+              return null;
+            }
+          })) {
+            final Path dir = createTempDir();
+            final String configsetName = "testconfigset";
+            try (ZkSolrResourceLoader loader =
+                new ZkSolrResourceLoader(dir, configsetName, null, new Properties(), zkController)) {
+              String zkpath = "/configs/" + configsetName;
+
+              // touchConfDir doesn't make the znode
+              Stat s = new Stat();
+              assertFalse(zkClient.exists(zkpath, true));
+              zkClient.makePath(zkpath, true);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertNull(zkClient.getData(zkpath, null, s, true));
+              assertEquals(0, s.getVersion());
+
+              // touchConfDir should only set the data to new byte[] {0}
+              ZkController.touchConfDir(loader);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertArrayEquals(
+                  ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s, true));
+              assertEquals(1, s.getVersion());
+
+              // set new data to check if touchConfDir overwrites later
+              byte[] data = "{\"key\", \"new data\"".getBytes(StandardCharsets.UTF_8);
+              s = zkClient.setData(zkpath, data, true);
+              assertEquals(2, s.getVersion());
+
+              // make sure touchConfDir doesn't overwrite existing data.
+              // touchConfDir should update version.
+              assertTrue(zkClient.exists(zkpath, true));
+              ZkController.touchConfDir(loader);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertArrayEquals(data, zkClient.getData(zkpath, null, s, true));
+              assertEquals(3, s.getVersion());
+            }
+          }
+        } finally {
+          cc.shutdown();
+        }
+      }
+    } finally {
       server.shutdown();
     }
   }

@@ -165,6 +165,8 @@ public class ZkController implements Closeable {
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
 
+  public static final byte[] TOUCHED_ZNODE_DATA = "{}".getBytes(StandardCharsets.UTF_8);
+
   static class ContextKey {
 
     private String collection;
@@ -2503,13 +2505,17 @@ public class ZkController implements Closeable {
 
   public static void touchConfDir(ZkSolrResourceLoader zkLoader) {
     SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+    String configSetZkPath = zkLoader.getConfigSetZkPath();
     try {
-      zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
+      // Ensure that version gets updated by replacing data with itself.
+      // If there is no existing data then set it to byte[] {0}.
+      // This should trigger any watchers if necessary as well.
+      zkClient.atomicUpdate(configSetZkPath, bytes -> bytes == null ? TOUCHED_ZNODE_DATA : bytes);
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt(); // Restore the interrupted status
       }
-      final String msg = "Error 'touching' conf location " + zkLoader.getConfigSetZkPath();
+      final String msg = "Error 'touching' conf location " + configSetZkPath;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
 

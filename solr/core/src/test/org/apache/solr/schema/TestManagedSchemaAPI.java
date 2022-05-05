@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -45,6 +46,11 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
+  }
+
+  @AfterClass
+  public static void tearDownClass() {
+    System.clearProperty("managed.schema.mutable");
   }
 
   @Test
