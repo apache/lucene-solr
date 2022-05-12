@@ -46,6 +46,8 @@ Bug Fixes
 
 * SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
 
+* SOLR-16075: ShowFileHandler path parameter is now validated to be relative to instance conf dir in standalone mode (janhoy)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -164,7 +166,7 @@ Other Changes
   - errorprone: 2.9.0
   - gcp-client: 1.32.1
   (Houston Putman)
-
+  
 * SOLR-15269: Upgrade httpclient and httpmime to 4.5.13.  (ventry)
 
 ==================  8.10.0 ==================

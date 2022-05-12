@@ -190,7 +190,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       req.setParams(params);
       ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
       content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
-      
+
       rsp.add(RawResponseWriter.CONTENT, content);
     }
     rsp.setHttpCaching(false);
@@ -208,18 +208,18 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     if( !adminFile.exists() ) {
       log.error("Can not find: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName() 
+                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName()
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
     if( !adminFile.canRead() || adminFile.isHidden() ) {
       log.error("Can not show: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName() 
+                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName()
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
-    
+
     // Show a directory listing
     if( adminFile.isDirectory() ) {
       // it's really a directory, just go for it.
@@ -236,7 +236,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
         SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
         files.add( path, fileInfo );
         if( f.isDirectory() ) {
-          fileInfo.add( "directory", true ); 
+          fileInfo.add( "directory", true );
         }
         else {
           // TODO? content type
@@ -369,15 +369,21 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     if( fname == null ) {
       adminFile = configdir;
     } else {
-      fname = fname.replace( '\\', '/' ); // normalize slashes
-      if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
+      fname = fname.replace('\\', '/'); // normalize slashes
+      if (hiddenFiles.contains(fname.toUpperCase(Locale.ROOT))) {
         log.error("Can not access: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
+        rsp.setException(new SolrException(SolrException.ErrorCode.FORBIDDEN, "Can not access: " + fname));
         return null;
       }
       // A leading slash is unnecessary but supported and interpreted as start of config dir
       Path filePath = configdir.toPath().resolve(fname.startsWith("/") ? fname.substring(1) : fname);
       req.getCore().getCoreContainer().assertPathAllowed(filePath);
+      if (!filePath.normalize().startsWith(configdir.toPath().normalize())) {
+        log.error("Path must be inside core config directory");
+        rsp.setException(
+            new SolrException(ErrorCode.BAD_REQUEST, "Path must be inside core config directory"));
+        return null;
+      }
       adminFile = filePath.toFile();
     }
     return adminFile;
