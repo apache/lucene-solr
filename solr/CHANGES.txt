@@ -48,7 +48,7 @@ Bug Fixes
 
 * SOLR-16075: ShowFileHandler path parameter is now validated to be relative to instance conf dir in standalone mode (janhoy)
 
-* SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
+* SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
 
 ==================  8.11.1 ==================
 
