@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
 
     String name = "COLL1";
-    String zkPath = ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + name;
+    String zkPath = ZkStateReader.CONFIGS_ZKNODE + "/" + name;
 
     ZkMaintenanceUtils.uploadToZK(cluster.getZkClient(), configset("_default"), zkPath, null);
     // Passing null for the second argument makes this test succeed
