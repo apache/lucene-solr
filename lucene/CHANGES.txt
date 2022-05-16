@@ -7,7 +7,7 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 ---------------------
-(No changes)
+* LUCENE-10564: Make sure SparseFixedBitSet#or updates ramBytesUsed. (Julie Tibshirani)
 
 Optimizations
 ---------------------
