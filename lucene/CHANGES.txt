@@ -9,6 +9,11 @@ Bug Fixes
 ---------------------
 (No changes)
 
+Optimizations
+---------------------
+
+* LUCENE-10481: FacetsCollector will not request scores if it does not use them. (Mike Drob)
+
 ======================= Lucene 8.11.1 =======================
 
 Bug Fixes
