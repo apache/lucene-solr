@@ -348,18 +348,50 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected String translateLike(RexNode like) {
-      Pair<String, RexLiteral> pair = getFieldValuePair(like);
-      String terms = pair.getValue().toString().trim();
-      terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
-      boolean wrappedQuotes = false;
-      if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        // restore the * and ? after escaping
-        terms = "\"" + ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?") + "\"";
-        wrappedQuotes = true;
-      }
+      Pair<Pair<String, RexLiteral>, Character> pairWithEscapeCharacter = getFieldValuePairWithEscapeCharacter(like);
+      Pair<String, RexLiteral> pair = pairWithEscapeCharacter.getKey();
+      Character escapeChar = pairWithEscapeCharacter.getValue();
 
-      String query = pair.getKey() + ":" + terms;
-      return wrappedQuotes ? "{!complexphrase}" + query : query;
+      String terms = pair.getValue().toString().trim();
+      terms = translateLikeTermToSolrSyntax(terms, escapeChar);
+
+      if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
+        terms = escapeWithWildcard(terms);
+
+        // if terms contains multiple words and one or more wildcard chars, then we need to employ the complexphrase parser
+        // but that expects the terms wrapped in double-quotes, not parens
+        boolean hasMultipleTerms = terms.split("\\s+").length > 1;
+        if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
+          String quotedTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
+          return "{!complexphrase}" + pair.getKey() + ":" + quotedTerms;
+        }
+      } // else treat as an embedded Solr query and pass-through
+
+      return pair.getKey() + ":" + terms;
+    }
+
+    private String translateLikeTermToSolrSyntax(String term, Character escapeChar) {
+      boolean isEscaped = false;
+      StringBuilder sb = new StringBuilder();
+      for (int i=0; i<term.length()-1; i++) {
+        char c = term.charAt(i);
+        // Only replace special characters if they are not escaped
+        if (escapeChar != null && c == escapeChar) {
+          isEscaped = true;
+        }
+        if (c == '%' && !isEscaped) {
+          sb.append('*');
+        } else if (c == '_' && !isEscaped) {
+          sb.append('?');
+        } else if (c == '\'' && isEscaped) {
+          sb.append('\'');
+          isEscaped = false;
+        } else if ((escapeChar ==null || escapeChar != c) && c != '\'') {
+          sb.append(c);
+          isEscaped = false;
+        }
+      }
+      return sb.toString();
     }
 
     protected String translateComparison(RexNode node) {
@@ -413,18 +445,30 @@ class SolrFilter extends Filter implements SolrRel {
 
       String terms = toSolrLiteral(key, value).trim();
 
-      boolean wrappedQuotes = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
-        wrappedQuotes = true;
+        if (terms.contains("*") || terms.contains("?")) {
+          terms = escapeWithWildcard(terms);
+        } else {
+          terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
+        }
       }
 
-      String clause = key + ":" + terms;
-      if (terms.contains("*") && wrappedQuotes) {
-        clause = "{!complexphrase}" + clause;
-      }
+      return key + ":" + terms;
+    }
 
-      return clause;
+    // Wrap filter criteria containing wildcard with parens and unescape the wildcards after
+    // escaping protected query chars
+    private String escapeWithWildcard(String terms) {
+      String escaped =
+              ClientUtils.escapeQueryChars(terms)
+                      .replace("\\*", "*")
+                      .replace("\\?", "?")
+                      .replace("\\ ", " ");
+      // if multiple terms, then wrap with parens
+      if (escaped.split("\\s+").length > 1) {
+        escaped = "(" + escaped + ")";
+      }
+      return escaped;
     }
 
     // translate to a literal string value for Solr queries, such as translating a
@@ -477,6 +521,26 @@ class SolrFilter extends Filter implements SolrRel {
         timestamp += "Z";
       }
       return timestamp;
+    }
+
+    protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(RexNode node) {
+      if (!(node instanceof RexCall)) {
+        throw new AssertionError("expected RexCall for predicate but found: " + node);
+      }
+      RexCall call = (RexCall) node;
+      if (call.getOperands().size() == 2) {
+        return Pair.of(getFieldValuePair(node), null);
+      } else {
+        RexNode escapeNode = call.getOperands().get(2);
+        Character escapeChar = null;
+        if (escapeNode.getKind() == SqlKind.LITERAL) {
+          RexLiteral literal = (RexLiteral) escapeNode;
+          if (literal.getTypeName() == SqlTypeName.CHAR) {
+            escapeChar = literal.getValueAs(Character.class);
+          }
+        }
+        return Pair.of(translateBinary2(call.getOperands().get(0), call.getOperands().get(1)), escapeChar);
+      }
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {
