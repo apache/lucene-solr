@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -327,6 +328,10 @@ public class RestManager {
       final String method = req.getHttpMethod();
       try {
         switch (method) {
+          case "HEAD":
+            managedResource.doGet(this, childId);
+            doHead(this);
+            break;
           case "GET":
             managedResource.doGet(this, childId);
             break;
@@ -344,6 +349,16 @@ public class RestManager {
         getSolrResponse().setException(e);
       }
       handlePostExecution(log);
+    }
+
+    private void doHead(ManagedEndpoint managedEndpoint) {
+      // Setting the response to blank clears the content out,
+      // however it also means the Content-Length HTTP Header is set to 0
+      // which isn't compliant with the specification of how HEAD should work,
+      // it should instead return the length of the content if you did a GET.
+      NamedList<Object> blank = new SimpleOrderedMap<>();
+      managedEndpoint.getSolrResponse().setAllValues(blank);
+
     }
 
     protected void doDelete() {

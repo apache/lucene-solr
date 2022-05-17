@@ -289,4 +289,32 @@ public class TestSolrQueryResponse extends SolrTestCase {
     assertEquals("httpCaching new value", newValue, response.isHttpCaching());
   }
 
+  @Test
+  public void testConvertToHEADStyleResponse() throws Exception {
+    final SolrQueryResponse response = new SolrQueryResponse();
+    final NamedList<Object> newValue = new SimpleOrderedMap<>();
+    newValue.add("responseHeaderKey1", "value1");
+    response.add("responseHeaderKey2", "value2");
+    response.addResponseHeader(newValue);
+
+    response.addResponse("foo");
+    response.add("bob", "dole");
+
+    response.addHttpHeader("key1", "value1");
+
+    NamedList<Object> blank = new SimpleOrderedMap<>();
+    response.setAllValues(blank);
+
+    Iterator<Entry<String, String>> it = response.httpHeaders();
+    assertTrue(it.hasNext());
+    Entry<String, String> entry = it.next();
+    assertEquals("key1", entry.getKey());
+    assertEquals("value1", entry.getValue());
+    assertFalse(it.hasNext());
+
+
+
+
+  }
+
 }
