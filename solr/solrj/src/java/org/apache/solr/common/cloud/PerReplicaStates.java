@@ -132,7 +132,7 @@ public class PerReplicaStates implements ReflectMapWriter {
     try {
       if (current != null) {
         Stat stat = zkClient.exists(current.path, null, true);
-        if (stat == null) return new PerReplicaStates(path, -1, Collections.emptyList());
+        if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
         if (current.cversion == stat.getCversion()) return current;// not modifiedZkStateReaderTest
       }
       Stat stat = new Stat();
