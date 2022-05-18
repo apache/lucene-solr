@@ -93,26 +93,35 @@ prohibited. If routing parameters are present this parameter is prohibited.
 
 ==== Routed Alias Parameters
 
-Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
+Most routed alias parameters become _alias properties_ that can subsequently be inspected and modified either by issuing a new CREATEALIAS for the same name or via <<aliasprop,ALIASPROP>>.
+CREATEALIAS will validate against many (but not all) bad values, whereas ALIASPROP blindly accepts any key or value you give it.
+Some "valid" modifications allowed by CREATEALIAS may still be unwise, see notes below. "Expert only" modifications are technically possible, but require good understanding of how the code works and may require several precursor operations.
 
 `router.name`::
 The type of routing to use. Presently only `time` and `category` and `Dimensional[]` are valid.
 In the case of a multi dimensional routed alias (A. K. A. "DRA", see <<aliases.adoc#dimensional-routed-aliases,Aliases>>
 documentation), it is required to express all the dimensions in the same order that they will appear in the dimension
 array. The format for a DRA router.name is Dimensional[dim1,dim2] where dim1 and dim2 are valid router.name
-values for each sub-dimension. Note that DRA's are very new, and only 2D DRA's are presently supported. Higher
-numbers of dimensions will be supported soon. See examples below for further clarification on how to configure
-individual dimensions. This parameter is required.
+values for each sub-dimension.
+Note that DRA's are experimental, and only 2D DRA's are presently supported.
+Higher numbers of dimensions may be supported in the future.
+Careful design of dimensional routing is required to avoid an explosion in the number of collections in the cluster.
+Solr Cloud may have difficulty managing more than a thousand collections.
+See examples below for further clarification on how to configure
+individual dimensions.
++
+This parameter is required. Modification: Do not change after creation
 
 `router.field`::
 The field to inspect to determine which underlying collection an incoming document should be routed to.
-This field is required on all incoming documents.
++
+This field is required on all incoming documents. Modification: Do not change after creation
 
 `create-collection.*`::
 The `*` wildcard can be replaced with any parameter from the <<collection-management.adoc#create,CREATE>> command except `name`. All other fields
 are identical in requirements and naming except that we insist that the configset be explicitly specified.
 The configset must be created beforehand, either uploaded or copied and modified.
-It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
+It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors. Modification: Yes, only new collections affected, use with care
 
 ==== Time Routed Alias Parameters
 
@@ -124,7 +133,9 @@ The first collection created for the alias will be internally named after this v
 If a document is submitted with an earlier value for router.field then the earliest collection the alias points to then
 it will yield an error since it can't be routed. This date/time MUST NOT have a milliseconds component other than 0.
 Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc. will work
-just fine. This parameter is required.
+just fine.
++
+This parameter is required.  Modification: Expert only
 
 `TZ`::
 The timezone to be used when evaluating any date math in router.start or router.interval. This is equivalent to the
@@ -134,20 +145,20 @@ as an alias property.
 If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the
 myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
 +
-The default timezone is UTC.
+The default timezone is UTC.  Modification: Expert only
 
 `router.interval`::
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
 Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will
 work here.
 +
-This parameter is required.
+This parameter is required. Modification : Ok
 
 `router.maxFutureMs`::
 The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted
 without error.  If there was no limit, than an erroneous value could trigger many collections to be created.
 +
-The default is 10 minutes.
+The default is 10 minutes. Modification : Ok
 
 `router.preemptiveCreateMath`::
 A date math expression that results in early creation of new collections.
@@ -168,7 +179,7 @@ but will not trigger additional async preemptive creation. Only one type of coll
 per document.
 Example: `90MINUTES`.
 +
-This property is blank by default indicating just-in-time, synchronous creation of new collections.
+This property is blank by default indicating just-in-time, synchronous creation of new collections. Modification : Ok
 
 `router.autoDeleteAge`::
 A date math expression that results in the oldest collections getting deleted automatically.
@@ -179,27 +190,27 @@ Collections to be deleted must have a time range that is entirely before the com
 Collections are considered for deletion immediately prior to new collections getting created.
 Example: `/DAY-90DAYS`.
 +
-The default is not to delete.
+The default is not to delete. Modification : Ok, Possible data loss, use with care!
 
 ==== Category Routed Alias Parameters
 
 `router.maxCardinality`::
 The maximum number of categories allowed for this alias.
-This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data.
+This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data. Modification : Ok
 
 `router.mustMatch`::
 A regular expression that the value of the field specified by `router.field` must match before a corresponding
 collection will be created. Note that changing this setting after data has been added will not alter the data already
 indexed. Any valid Java regular expression pattern may be specified. This expression is pre-compiled at the start of
 each request so batching of updates is strongly recommended. Overly complex patterns will produce cpu
-or garbage collecting overhead during indexing as determined by the JVM's implementation of regular expressions.
+or garbage collecting overhead during indexing as determined by the JVM's implementation of regular expressions. Modification : Ok
 
 ==== Dimensional Routed Alias Parameters
 
 
 `router.#.`::
 This prefix denotes which position in the dimension array is being referred to for purposes of dimension configuration.
-For example in a Dimensional[time,category] router.0.start would be used to set the start time for the time dimension.
+For example in a Dimensional[time,category] router.0.start would be used to set the start time for the time dimension. Modification: As per above
 
 
 === CREATEALIAS Response
