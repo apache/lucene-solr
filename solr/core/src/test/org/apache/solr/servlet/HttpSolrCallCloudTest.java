@@ -22,9 +22,12 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
@@ -35,7 +38,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
+@SolrTestCaseJ4.SuppressSSL
+public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARD = 3;
   private static final int REPLICA_FACTOR = 2;
@@ -56,10 +60,19 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testCoreChosen() throws Exception {
     assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update"));
     assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update/json"));
     assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, new TestRequest("/collection1/select"));
+  }
+
+  // https://issues.apache.org/jira/browse/SOLR-16019
+  @Test
+  public void testWrongUtf8InQ() throws Exception {
+    URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
+    URL request = new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
+    HttpURLConnection connection = (HttpURLConnection) request.openConnection();
+    assertEquals(400, connection.getResponseCode());
   }
 
   private void assertCoreChosen(int numCores, TestRequest testRequest) {

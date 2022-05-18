@@ -18,9 +18,11 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -37,6 +39,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -175,20 +178,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   @Test
   public void testV1() throws Exception {
     final String aliasName = getSaferTestName();
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
-    HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
-        "&wt=xml" +
-        "&name=" + aliasName +
-        "&router.field=evt_dt" +
-        "&router.name=time" +
-        "&router.start=" + start +
-        "&router.interval=%2B30MINUTE" +
-        "&create-collection.collection.configName=_default" +
-        "&create-collection.router.field=foo_s" +
-        "&create-collection.numShards=1" +
-        "&create-collection.replicationFactor=2");
-    assertSuccess(get);
+    createTRAv1(aliasName, start);
 
     String initialCollectionName = TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, start);
     assertCollectionExists(initialCollectionName);
@@ -212,6 +203,102 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertEquals("evt_dt",meta.get("router.field"));
     assertEquals("_default",meta.get("create-collection.collection.configName"));
     assertEquals(null,meta.get("start"));
+  }
+  @Test
+  public void testUpdateRoudetedAliasDoesNotChangeCollectionList() throws Exception {
+
+    final String aliasName = getSaferTestName();
+    Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
+    createTRAv1(aliasName, start);
+
+    String initialCollectionName =
+        TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, start);
+    assertCollectionExists(initialCollectionName);
+
+    // Note that this is convenient for the test because it imples a different collection name, but
+    // doing this is an advanced operation, typically preceded by manual collection creations and
+    // manual tweaking of the collection list. This is here merely to test that we don't blow away the
+    // existing (possibly tweaked) list. DO NOT use this as an example of normal operations.
+    Instant earlierStart = start.minus(Duration.ofMinutes(3));
+    createTRAv1(aliasName, earlierStart);
+    assertCollectionExists(initialCollectionName);
+
+    // Test Alias metadata
+    Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();
+    Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
+    String alias = collectionAliasMap.get(aliasName);
+    assertNotNull(alias);
+    Map<String, String> meta = aliases.getCollectionAliasProperties(aliasName);
+    assertNotNull(meta);
+    assertEquals("evt_dt", meta.get("router.field"));
+    assertEquals("_default", meta.get("create-collection.collection.configName"));
+
+    // This should be equal to the new start value
+    assertEquals(earlierStart.toString(), meta.get("router.start"));
+    List<String> collectionList = aliases.resolveAliases(aliasName);
+    assertEquals(1, collectionList.size());
+    assertTrue(collectionList.contains(initialCollectionName));
+  }
+
+  public void testCantAddRoutingToNonRouted() throws Exception {
+    String aliasName = getSaferTestName() + "Alias";
+    createCollection();
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    HttpGet get =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=CREATEALIAS"
+                + "&wt=xml"
+                + "&name="
+                + aliasName
+                + "&collections="
+                + getSaferTestName());
+    assertSuccess(get);
+
+    HttpGet get2 =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=CREATEALIAS"
+                + "&wt=json"
+                + "&name="
+                + aliasName
+                + "&router.field=evt_dt"
+                + "&router.name=time"
+                + "&router.start=2018-01-15T00:00:00Z"
+                + "&router.interval=%2B30MINUTE"
+                + "&create-collection.collection.configName=_default"
+                + "&create-collection.numShards=1");
+    assertFailure(get2, "Cannot add routing parameters to existing non-routed Alias");
+  }
+
+  private void createCollection() throws SolrServerException, IOException {
+    final CollectionAdminResponse response =
+        CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)
+            .process(solrClient);
+    if (response.getStatus() != 0) {
+      fail("failed to create collection " + getSaferTestName());
+    }
+  }
+
+  private void createTRAv1(String aliasName, Instant start) throws IOException {
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    HttpGet get =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=CREATEALIAS"
+                + "&wt=xml"
+                + "&name="
+                + aliasName
+                + "&router.field=evt_dt"
+                + "&router.name=time"
+                + "&router.start="
+                + start
+                + "&router.interval=%2B30MINUTE"
+                + "&create-collection.collection.configName=_default"
+                + "&create-collection.router.field=foo_s"
+                + "&create-collection.numShards=1"
+                + "&create-collection.replicationFactor=2");
+    assertSuccess(get);
   }
 
   // TZ should not affect the first collection name if absolute date given for start
