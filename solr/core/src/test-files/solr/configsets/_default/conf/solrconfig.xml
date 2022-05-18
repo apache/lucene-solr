@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<config>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <directoryFactory name="DirectoryFactory"
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+
+  <codecFactory class="solr.SchemaCodecFactory"/>
+
+  <!-- The default high-performance update handler -->
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <updateLog>
+      <str name="dir">${solr.ulog.dir:}</str>
+      <int name="numVersionBuckets">${solr.ulog.numVersionBuckets:65536}</int>
+    </updateLog>
+  </updateHandler>
+
+  <!-- Primary search handler, expected by most clients, examples and UI frameworks -->
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <int name="rows">10</int>
+    </lst>
+  </requestHandler>
+
+  <!-- Add unknown fields to the schema
+
+       Field type guessing update request processors that will
+       attempt to parse string-typed field values as Booleans, Longs,
+       Doubles, or Dates, and then add schema fields with the guessed
+       field types Text content will be indexed as "text_general" as
+       well as a copy to a plain string version in *_str.
+       See the updateRequestProcessorChain defined later for the order they are executed in.
+
+       These require that the schema is both managed and mutable, by
+       declaring schemaFactory as ManagedIndexSchemaFactory, with
+       mutable specified as true.
+
+       See https://solr.apache.org/guide/schemaless-mode.html for further explanation.
+
+    -->
+  <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>
+  <updateProcessor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields">
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.String</str>
+      <str name="fieldType">text_general</str>
+      <lst name="copyField">
+        <str name="dest">*_str</str>
+        <int name="maxChars">256</int>
+      </lst>
+      <!-- Use as default mapping instead of defaultFieldType -->
+      <bool name="default">true</bool>
+    </lst>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.Boolean</str>
+      <str name="fieldType">booleans</str>
+    </lst>
+  </updateProcessor>
+
+  <!-- The update.autoCreateFields property can be turned to false to disable schemaless mode -->
+  <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="${update.autoCreateFields:true}"
+           processor="uuid,add-schema-fields">
+    <processor class="solr.LogUpdateProcessorFactory"/>
+    <processor class="solr.DistributedUpdateProcessorFactory"/>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
+</config>
