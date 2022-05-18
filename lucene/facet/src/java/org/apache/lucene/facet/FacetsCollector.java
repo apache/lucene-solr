@@ -133,7 +133,7 @@ public class FacetsCollector extends SimpleCollector implements Collector {
 
   @Override
   public ScoreMode scoreMode() {
-    return ScoreMode.COMPLETE;
+    return keepScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
   }
 
   @Override

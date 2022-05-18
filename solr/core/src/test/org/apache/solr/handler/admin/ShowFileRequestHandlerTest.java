@@ -20,6 +20,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -148,15 +149,33 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   public void testAbsoluteFilename() {
     SolrClient client = getSolrClient();
-    final QueryRequest request = new QueryRequest(params("file", "/etc/passwd"));
+    final QueryRequest request =
+        new QueryRequest(params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
     request.setPath("/admin/file"); // absolute path not allowed
     request.setResponseParser(new NoOpResponseParser());
     expectThrows(SolrException.class, () -> client.request(request));
   }
 
+  public void testEscapeConfDir() {
+    SolrClient client = getSolrClient();
+    final QueryRequest request =
+        new QueryRequest(
+            params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
+    request.setPath("/admin/file");
+    request.setResponseParser(new NoOpResponseParser());
+    SolrException ex = expectThrows(SolrException.class, () -> client.request(request));
+    assertTrue(ex instanceof BaseHttpSolrClient.RemoteSolrException);
+  }
+
   public void testPathTraversalFilename() {
     SolrClient client = getSolrClient();
-    final QueryRequest request = new QueryRequest(params("file", "../../../../../../etc/passwd"));
+    final QueryRequest request =
+        new QueryRequest(
+            params(
+                "file",
+                "../../../../../../etc/passwd",
+                "contentType",
+                "text/plain; charset=utf-8"));
     request.setPath("/admin/file");
     request.setResponseParser(new NoOpResponseParser());
     expectThrows(SolrException.class, () -> client.request(request));

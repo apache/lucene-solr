@@ -2270,11 +2270,12 @@ public class ZkController implements Closeable {
 
   public void rejoinOverseerElection(String electionNode, boolean joinAtHead) {
     try {
+      final ElectionContext context = overseerElector.getContext();
       if (electionNode != null) {
         // Check whether we came to this node by mistake
-        if ( overseerElector.getContext() != null && overseerElector.getContext().leaderSeqPath == null
-            && !overseerElector.getContext().leaderSeqPath.endsWith(electionNode)) {
-          log.warn("Asked to rejoin with wrong election node : {}, current node is {}", electionNode, overseerElector.getContext().leaderSeqPath);
+        if ( context != null && context.leaderSeqPath != null
+            && !context.leaderSeqPath.endsWith(electionNode)) {
+          log.warn("Asked to rejoin with wrong election node : {}, current node is {}", electionNode, context.leaderSeqPath);
           //however delete it . This is possible when the last attempt at deleting the election node failed.
           if (electionNode.startsWith(getNodeName())) {
             try {
@@ -2293,7 +2294,7 @@ public class ZkController implements Closeable {
           return;
         }
       } else {
-        overseerElector.retryElection(overseerElector.getContext(), joinAtHead);
+        overseerElector.retryElection(context, joinAtHead);
       }
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
