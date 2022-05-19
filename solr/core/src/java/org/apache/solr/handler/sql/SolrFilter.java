@@ -373,28 +373,30 @@ class SolrFilter extends Filter implements SolrRel {
     private String translateLikeTermToSolrSyntax(String term, Character escapeChar) {
       boolean isEscaped = false;
       StringBuilder sb = new StringBuilder();
-      for (int i=0; i<term.length()-1; i++) {
+      // Special character % and _ are escaped with escape character and single quote is escaped
+      // with another single quote
+      // If single quote is escaped with escape character, calcite parser fails
+      for (int i = 0; i < term.length(); i++) {
         char c = term.charAt(i);
-        // Only replace special characters if they are not escaped
-        if (escapeChar != null && c == escapeChar) {
+        if (!isEscaped && escapeChar != null && escapeChar == c) {
           isEscaped = true;
-        }
-        if (c == '%' && !isEscaped) {
+        } else if (c == '%' && !isEscaped) {
           sb.append('*');
         } else if (c == '_' && !isEscaped) {
-          sb.append('?');
-        } else if (c == '\'' && isEscaped) {
-          sb.append('\'');
-          isEscaped = false;
-        } else if ((escapeChar ==null || escapeChar != c) && c != '\'') {
+          sb.append("?");
+        } else if (c == '\'') {
+          if (i > 0 && term.charAt(i - 1) == '\'') {
+            sb.append(c);
+          }
+        } else {
           sb.append(c);
-          isEscaped = false;
+          if (isEscaped) isEscaped = false;
         }
       }
       return sb.toString();
     }
 
-    protected String translateComparison(RexNode node) {
+      protected String translateComparison(RexNode node) {
       final SqlKind kind = node.getKind();
       if (kind == SqlKind.NOT) {
         RexNode negated = ((RexCall) node).getOperands().get(0);
@@ -528,9 +530,7 @@ class SolrFilter extends Filter implements SolrRel {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
       RexCall call = (RexCall) node;
-      if (call.getOperands().size() == 2) {
-        return Pair.of(getFieldValuePair(node), null);
-      } else {
+      if (call.getOperands().size() == 3) {
         RexNode escapeNode = call.getOperands().get(2);
         Character escapeChar = null;
         if (escapeNode.getKind() == SqlKind.LITERAL) {
@@ -540,6 +540,8 @@ class SolrFilter extends Filter implements SolrRel {
           }
         }
         return Pair.of(translateBinary2(call.getOperands().get(0), call.getOperands().get(1)), escapeChar);
+      } else {
+        return Pair.of(getFieldValuePair(node), null);
       }
     }
 
