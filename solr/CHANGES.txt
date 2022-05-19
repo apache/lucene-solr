@@ -48,6 +48,8 @@ Bug Fixes
 
 * SOLR-16075: ShowFileHandler path parameter is now validated to be relative to instance conf dir in standalone mode (janhoy)
 
+* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
