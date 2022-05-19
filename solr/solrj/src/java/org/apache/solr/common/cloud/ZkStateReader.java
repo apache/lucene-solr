@@ -1908,9 +1908,10 @@ public class ZkStateReader implements SolrCloseable {
 
       return matches;
     };
-    registerCollectionStateWatcher(collection, watcher);
 
     try {
+      registerCollectionStateWatcher(collection, watcher);
+
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
         throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + docCollection.get());
@@ -1954,9 +1955,10 @@ public class ZkStateReader implements SolrCloseable {
 
       return matches;
     };
-    registerDocCollectionWatcher(collection, watcher);
 
     try {
+      registerDocCollectionWatcher(collection, watcher);
+
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
         throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + docCollection.get());
