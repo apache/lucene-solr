@@ -52,6 +52,8 @@ Bug Fixes
 
 * SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
 
+* SOLR-16199: Improve query syntax construction for SQL LIKE clause with phrases and wildcards (Kiran Chitturi, Aroop Ganguly, Amrit Sarkar via Timothy Potter)
+
 * SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
 
 ==================  8.11.1 ==================
