@@ -165,7 +165,7 @@ public class HttpSolrCall {
   protected SolrQueryRequest solrReq = null;
   private boolean mustClearSolrRequestInfo = false;
   protected SolrRequestHandler handler = null;
-  protected final SolrParams queryParams;
+  protected SolrParams queryParams;
   protected String path;
   protected Action action;
   protected String coreUrl;
@@ -191,7 +191,6 @@ public class HttpSolrCall {
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
     req.setAttribute(HttpSolrCall.class.getName(), this);
-    queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     // set a request timer which can be reused by requests if needed
     req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
     // put the core container in request attribute
@@ -215,10 +214,6 @@ public class HttpSolrCall {
     return queryParams;
   }
 
-  protected Aliases getAliases() {
-    return cores.isZooKeeperAware() ? cores.getZkController().getZkStateReader().getAliases() : Aliases.EMPTY;
-  }
-
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
   public List<String> getCollectionsList() {
     return collectionsList != null ? collectionsList : Collections.emptyList();
@@ -230,6 +225,8 @@ public class HttpSolrCall {
     if (alternate != null && path.startsWith(alternate)) {
       path = path.substring(0, alternate.length());
     }
+
+    queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
 
     // unused feature ?
     int idx = path.indexOf(':');
@@ -381,7 +378,7 @@ public class HttpSolrCall {
     }
     List<String> result = null;
     LinkedHashSet<String> uniqueList = null;
-    Aliases aliases = getAliases();
+    Aliases aliases = cores.getZkController().getZkStateReader().getAliases();
     List<String> inputCollections = StrUtils.splitSmart(collectionStr, ",", true);
     if (inputCollections.size() > 1) {
       uniqueList = new LinkedHashSet<>();

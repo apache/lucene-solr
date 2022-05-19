@@ -17,6 +17,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -35,11 +37,14 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class CreateAliasCmd extends AliasCmd {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   private static boolean anyRoutingParams(ZkNodeProps message) {
@@ -132,11 +137,21 @@ public class CreateAliasCmd extends AliasCmd {
     }
 
     // Create the first collection.
-    String initialColl = routedAlias.computeInitialCollectionName();
-      ensureAliasCollection(aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialColl);
+    Aliases aliases = zkStateReader.aliasesManager.getAliases();
+
+    List<String> collectionList = aliases.resolveAliases(aliasName);
+    String collectionListStr = String.join(",", collectionList);
+    if (!aliases.isRoutedAlias(aliasName)) {
+      // Create the first collection.
+      collectionListStr = routedAlias.computeInitialCollectionName();
+      ensureAliasCollection(
+          aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), collectionListStr);
+    }
+    // Create/update the alias
+    String finalCollectionListStr = collectionListStr;
       // Create/update the alias
-      zkStateReader.aliasesManager.applyModificationAndExportToZk(aliases -> aliases
-          .cloneWithCollectionAlias(aliasName, initialColl)
+      zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a
+          .cloneWithCollectionAlias(aliasName, finalCollectionListStr)
           .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
   }
 
