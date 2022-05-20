@@ -183,7 +183,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
         byte[] payload = s.getBytes(UTF_8);
         byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
         String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-        PKIAuthenticationPlugin.PKIHeaderData header = PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey());
+        PKIAuthenticationPlugin.PKIHeaderData header = PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey(), false);
         assertNotNull("Expecting valid header for user " + validUser + " and timestamp " + validTimestamp, header);
         assertEquals(validUser, header.userName);
         assertEquals(validTimestamp, header.timestamp);
@@ -198,7 +198,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey(), false));
   }
 
   public void testParseCipherInvalidTimestampTooBig() {
@@ -208,7 +208,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey(), false));
   }
 
   public void testParseCipherInvalidKey() {
@@ -216,7 +216,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, new CryptoKeys.RSAKeyPair().getPublicKey()));
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, new CryptoKeys.RSAKeyPair().getPublicKey(), false));
   }
 
   public void testParseCipherNoSpace() {
@@ -225,7 +225,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey(), false));
   }
 
   public void testParseCipherNoTimestamp() {
@@ -234,7 +234,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
-    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey(), false));
   }
 
   public void testParseCipherInvalidKeyExample() {
@@ -243,7 +243,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
      */
     String base64Cipher = "A8tEkMfmA5m5+wVG9xSI46Lhg8MqDFkjPVqXc6Tf6LT/EVIpW3DUrkIygIjk9tSCCAxhHwSvKfVJeujaBtxr19ajmpWjtZKgZOXkynF5aPbDuI+mnvCiTmhLuZYExvnmeYxag6A4Fu2TpA/Wo97S4cIkRgfyag/ZOYM0pZwVAtNoJgTpmODDGrH4W16BXSZ6xm+EV4vrfUqpuuO7U7YiU5fd1tv22Au0ZaY6lPbxAHjeFyD8WrkPPIkEoM14K0G5vAg4wUxpRF/eVlnzhULoPgKFErz7cKVxuvxSsYpVw5oko+ldzyfsnMrC1brqUKA7NxhpdpJzp7bmd8W8/mvZEw==";
     String publicKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsJu1O+A/gGikFSeLGYdgNPrz3ef/tqJP1sRqzkVjnBcdyI2oXMmAWF+yDe0Zmya+HevyOI8YN2Yaq6aCLjbHnT364Rno/urhKvR5PmaH/PqXrh3Dl+vn08B74iLVZxZro/v34FGjX8fkiasZggC4AnyLjFkU7POsHhJKSXGslsWe0dq7yaaA2AES/bFwJ3r3FNxUsE+kWEtZG1RKMq8P8wlx/HLDzjYKaGnyApAltBHVx60XHiOC9Oatu5HZb/eKU3jf7sKibrzrRsqwb+iE4ZxxtXkgATuLOl/2ks5Mnkk4u7bPEAgEpEuzQBB4AahMC7r+R5AzRnB4+xx69FP1IwIDAQAB";
-    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, CryptoKeys.deserializeX509PublicKey(publicKey)));
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, CryptoKeys.deserializeX509PublicKey(publicKey), false));
   }
 
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {

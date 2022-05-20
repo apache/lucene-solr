@@ -29,6 +29,8 @@ Bug Fixes
 
 * SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
 
+* SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
