@@ -22,6 +22,7 @@ import java.util.*;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -158,6 +159,43 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
        ,"/spellcheck/suggestions/bar=={'numFound':1, 'startOffset':0, 'endOffset':1, 'suggestion':['foo']}"
        ,"/spellcheck/suggestions/foo=={'numFound':1, 'startOffset':2, 'endOffset':3, 'suggestion':['bar']}"        
     );
+  }
+
+  @Test
+  public void testInvalidDictionary() throws Exception {
+    assertQEx(
+        "Invalid specified dictionary should throw exception",
+        "Specified dictionaries do not exist: INVALID",
+        req(
+            "json.nl",
+            "map",
+            "qt",
+            rh,
+            SpellCheckComponent.COMPONENT_NAME,
+            "true",
+            "q",
+            "documemt",
+            SpellingParams.SPELLCHECK_DICT,
+            "INVALID"),
+        SolrException.ErrorCode.NOT_FOUND);
+
+    assertQEx(
+        "Invalid specified dictionary should throw exception",
+        "Specified dictionaries do not exist: INVALID2",
+        req(
+            "json.nl",
+            "map",
+            "qt",
+            rh,
+            SpellCheckComponent.COMPONENT_NAME,
+            "true",
+            "q",
+            "test",
+            SpellingParams.SPELLCHECK_Q,
+            "documemt",
+            SpellingParams.SPELLCHECK_DICT,
+            "INVALID2"),
+        SolrException.ErrorCode.NOT_FOUND);
   }
 
   @Test

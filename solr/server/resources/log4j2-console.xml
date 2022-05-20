@@ -31,7 +31,7 @@
   </Appenders>
   <Loggers>
     <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
-    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.zookeeper" level="ERROR"/>
     <AsyncLogger name="org.apache.hadoop" level="WARN"/>
 
     <AsyncRoot level="INFO">

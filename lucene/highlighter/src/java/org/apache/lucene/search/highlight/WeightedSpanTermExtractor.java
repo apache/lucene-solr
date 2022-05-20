@@ -306,11 +306,11 @@ public class WeightedSpanTermExtractor {
     final IndexSearcher searcher = new IndexSearcher(getLeafContext());
     searcher.setQueryCache(null);
     if (mustRewriteQuery) {
+      final SpanQuery rewrittenQuery = (SpanQuery) searcher.rewrite(spanQuery);
       for (final String field : fieldNames) {
-        final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
-        rewrittenQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
       }
+      rewrittenQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
     } else {
       spanQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
     }

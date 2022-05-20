@@ -177,7 +177,7 @@ public class SolrConfig implements MapSerializable {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         ZkSolrResourceLoader.ZkByteArrayInputStream zkin = (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
         zkVersion = zkin.getStat().getVersion();
-        hash = Objects.hash(zkVersion, overlay.getZnodeVersion());
+        hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getZnodeVersion());
         this.fileName = zkin.fileName;
       }
     }
