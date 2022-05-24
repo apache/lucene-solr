@@ -670,6 +670,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           //////////////////////////////////////
           return copy(finalParams.required(), null, NAME, "collections");
         }
+      } else {
+        if (routedAlias != null) {
+          CoreContainer coreContainer1 = h.getCoreContainer();
+          Aliases aliases = coreContainer1.getZkController().getZkStateReader().getAliases();
+          String aliasName = routedAlias.getAliasName();
+          if (aliases.hasAlias(aliasName) && !aliases.isRoutedAlias(aliasName)) {
+            throw new SolrException(
+                BAD_REQUEST,
+                "Cannot add routing parameters to existing non-routed Alias: " + aliasName);
+          }
+        }
       }
 
       /////////////////////////////////////////////////
@@ -824,8 +835,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       final String newShardName = SolrIdentifierValidator.validateShardName(req.getParams().get(SHARD_ID_PROP));
       boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
       String extCollectionName = req.getParams().get(COLLECTION_PROP);
-      String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
-          .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
+      String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader().getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
       if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
         throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
       copy(req.getParams(), map,

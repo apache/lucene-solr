@@ -60,6 +60,11 @@ if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
   echo -e "This script does not support cygwin due to severe limitations and lack of adherence\nto BASH standards, such as lack of lsof, curl, and ps options.\n\nPlease use the native solr.cmd script on Windows!"
   exit 1
 fi
+# Alpine Linux BusyBox comes with a stripped down ps, make sure we have a fully featured one
+if [ $$ -ne $(ps -o pid='' -p $$ || echo 0) ] ; then
+  echo -e "This script relies on a version of ps that supports the -p flag.\n\nPlease install a POSIX compliant version and try again."
+  exit 1
+fi
 
 # Resolve symlinks to this script
 while [ -h "$SOLR_SCRIPT" ] ; do
@@ -689,7 +694,7 @@ function spinner() {
   local pid=$1
   local delay=0.5
   local spinstr='|/-\'
-  while [ "$(ps aux | awk '{print $2}' | grep -w $pid)" ]; do
+  while ps -o pid='' -p $pid &> /dev/null ; do
       local temp=${spinstr#?}
       printf " [%c]  " "$spinstr"
       local spinstr=$temp${spinstr%"$temp"}
@@ -704,7 +709,7 @@ function solr_pid_by_port() {
   THE_PORT="$1"
   if [ -e "$SOLR_PID_DIR/solr-$THE_PORT.pid" ]; then
     PID=`cat "$SOLR_PID_DIR/solr-$THE_PORT.pid"`
-    CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
+    CHECK_PID=`ps -o pid='' -p $PID | tr -d ' '`
     if [ "$CHECK_PID" != "" ]; then
       local solrPID=$PID
     fi
@@ -857,7 +862,7 @@ function stop_solr() {
         # Check if a process is running with the specified PID.
         # -o stat will output the STAT, where Z indicates a zombie
         # stat='' removes the header (--no-headers isn't supported on all platforms)
-        STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
+        STAT=`ps -o stat='' -p $SOLR_PID | tr -d ' '`
         if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then
@@ -877,7 +882,7 @@ function stop_solr() {
     exit 0
   fi
 
-  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
+  STAT=`ps -o stat='' -p $SOLR_PID | tr -d ' '`
   if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
     if [ "$JSTACK" != "" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
@@ -893,7 +898,7 @@ function stop_solr() {
     sleep 10
   fi
 
-  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
+  STAT=`ps -o stat='' -p $SOLR_PID | tr -d ' '`
   if [ "$STAT" == "Z" ]; then
     # This can happen if, for example, you are running Solr inside a docker container with multiple processes
     # rather than running it is as the only service. The --init flag on docker avoids that particular problem.
@@ -1885,7 +1890,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
     if [ $numSolrs -eq 1 ]; then
       # only do this if there is only 1 node running, otherwise they must provide the -p or -all
       PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
-      CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
+      CHECK_PID=`ps -o pid='' -p $PID | tr -d ' '`
       if [ "$CHECK_PID" != "" ]; then
         port=`jetty_port "$CHECK_PID"`
         if [ "$port" != "" ]; then
@@ -1933,7 +1938,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
 
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PROC=`ps -o command='' -p "$SOLR_PID" | grep start\.jar | grep jetty\.port`
   fi
 
   if [ "$SOLR_PID" != "" ]; then
