@@ -58,6 +58,8 @@ Bug Fixes
 
 * SOLR-16213: Upgrade Jackson to version 2.13.3 (janhoy)
 
+* SOLR-16215: Escape query characters in Solr SQL Array UDF functions (Kiran Chitturi via Timothy Potter)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
