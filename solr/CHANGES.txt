@@ -60,6 +60,8 @@ Bug Fixes
 
 * SOLR-16215: Escape query characters in Solr SQL Array UDF functions (Kiran Chitturi via Timothy Potter)
 
+* SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
