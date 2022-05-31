@@ -56,6 +56,10 @@ Bug Fixes
 
 * SOLR-16191: Validate that installed ps utility supports -p flag, so that we do not inadvertantly stop the wrong process. (Mike Drob, Michael Gibney)
 
+* SOLR-16213: Upgrade Jackson to version 2.13.3 (janhoy)
+
+* SOLR-16215: Escape query characters in Solr SQL Array UDF functions (Kiran Chitturi via Timothy Potter)
+
 * SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
 
 ==================  8.11.1 ==================
