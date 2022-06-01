@@ -64,6 +64,9 @@ Bug Fixes
 
 * SOLR-16209: Rolling restart will no longer trigger as much PKI Plugin error logging. (Mike Drob, Tomás Fernández Löbbe)
 
+* SOLR-16227: Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
+  (Kiran Chitturi via David Smiley)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -182,7 +185,7 @@ Other Changes
   - errorprone: 2.9.0
   - gcp-client: 1.32.1
   (Houston Putman)
-  
+
 * SOLR-15269: Upgrade httpclient and httpmime to 4.5.13.  (ventry)
 
 ==================  8.10.0 ==================
