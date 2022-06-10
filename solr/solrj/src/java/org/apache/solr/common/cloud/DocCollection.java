@@ -453,12 +453,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     if (that instanceof DocCollection == false)
       return false;
     DocCollection other = (DocCollection) that;
-    return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion;
+    return super.equals(that) && Objects.equals(this.znode, other.znode) && this.znodeVersion == other.znodeVersion && getChildNodesVersion() == other.getChildNodesVersion();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, znodeVersion);
+    return Objects.hash(name, znodeVersion, getChildNodesVersion());
   }
 
   /**
