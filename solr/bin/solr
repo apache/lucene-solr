@@ -720,7 +720,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
+  SOLR_PROC=`ps -o command='' -p "$SOLR_PID" | grep start\.jar | grep jetty\.port`
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -1938,7 +1938,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
 
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PROC=`ps -o command='' -p "$SOLR_PID" | grep start\.jar | grep jetty\.port`
+    SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
   fi
 
   if [ "$SOLR_PID" != "" ]; then
