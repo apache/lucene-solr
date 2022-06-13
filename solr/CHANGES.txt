@@ -67,6 +67,8 @@ Bug Fixes
 * SOLR-16227: Solr SQL query parsing fails on multiple LIKE clauses and multiple terms
   (Kiran Chitturi via David Smiley)
 
+* SOLR-16218: failOnVersionConflicts option not working for in-place updates (Lamine Idjeraoui, Houston Putman, Anshum Gupta)
+
 ==================  8.11.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

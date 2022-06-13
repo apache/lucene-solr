@@ -715,6 +715,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (oldRootDocWithChildren == null) {
       if (versionOnUpdate > 0
           || !rootDocIdString.equals(cmd.getChildDocIdStr())) {
+        if (cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true)
+            == false) {
+          return false;
+        }
         // could just let the optimistic locking throw the error
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + rootDocIdString);
       }

@@ -1372,6 +1372,28 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertQ(req("q", "title_s:second"), "//*[@numFound='1']");
     assertQ(req("q", "title_s:first1"), "//*[@numFound='1']");// but the old value exists
     assertQ(req("q", "title_s:first2"), "//*[@numFound='0']");// and the new value does not reflect
+
+    // tests inplace updates when doc does not exist
+    assertFailedU(add(doc("id", "3", "title_s", "third", "_version_", "1")));
+    params.set(CommonParams.FAIL_ON_VERSION_CONFLICTS, "true");
+    params.set("_version_", "1");
+    SolrInputDocument doc1_v3 = sdoc("id", "1", "title_s", map("set", "first3"));
+    SolrInputDocument doc3 = sdoc("id", "3", "title_s", map("set", "third"));
+    ex =
+        expectThrows(
+            SolrException.class,
+            "This should have failed",
+            () -> updateJ(jsonAdd(doc1_v3, doc3), params));
+    assertTrue(ex.getMessage().contains("Document not found for update"));
+
+    params.set(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    SolrInputDocument doc1_v4 = sdoc("id", "1", "title_s", map("set", "first4"));
+    updateJ(jsonAdd(doc1_v4, doc3), params); // this should not throw any error
+
+    assertU(commit());
+    assertQ(req("q", "title_s:first4"), "//*[@numFound='1']"); // the new value does reflect
+    assertQ(req("q", "title_s:first1"), "//*[@numFound='0']"); // but the old value does not exist
+    assertQ(req("q", "title_s:third"), "//*[@numFound='0']"); // doc3 does not exist
   }
   /** 
    * Helper method that sets up a req/cmd to run {@link AtomicUpdateDocumentMerger#computeInPlaceUpdatableFields} 
