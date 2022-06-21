@@ -64,6 +64,7 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.cloud.BeforeReconnect;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ConnectionManager;
@@ -1846,8 +1847,9 @@ public class ZkController implements Closeable {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
+      Timer.TLInst.start("checkStateInZk()");
       checkStateInZk(cd);
-
+      Timer.TLInst.end("checkStateInZk()");
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
       // make sure the node name is set on the descriptor
@@ -1855,10 +1857,12 @@ public class ZkController implements Closeable {
         cloudDesc.setCoreNodeName(coreNodeName);
       }
 
+      Timer.TLInst.start("publish(cd, Replica.State.DOWN)");
       // publishState == false on startup
       if (publishState || isPublishAsDownOnStartup(cloudDesc)) {
         publish(cd, Replica.State.DOWN, false, true);
       }
+      Timer.TLInst.end("publish(cd, Replica.State.DOWN)");
       String collectionName = cd.getCloudDescriptor().getCollectionName();
       DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
       if (log.isDebugEnabled()) {
@@ -1882,7 +1886,9 @@ public class ZkController implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
 
+    Timer.TLInst.start("doGetShardIdAndNodeNameProcess(cd)");
     doGetShardIdAndNodeNameProcess(cd);
+    Timer.TLInst.end("doGetShardIdAndNodeNameProcess(cd)");
 
   }
 
