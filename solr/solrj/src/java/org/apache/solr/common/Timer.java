@@ -44,22 +44,31 @@ public class Timer implements ReflectMapWriter {
   @JsonProperty
   public AtomicInteger times = new AtomicInteger();
 
-  final TimerBag inst ;
-  Timer(TimerBag inst){
+  @JsonProperty
+  public AtomicLong max;
+  @JsonProperty
+  public AtomicLong min;
+
+  final TimerBag inst;
+
+  Timer(TimerBag inst) {
     this.inst = inst;
+    if (inst != null && inst.isCumulative) {
+      max = new AtomicLong(0);
+      min = new AtomicLong(0);
+    }
   }
 
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ReflectMapWriter.super.writeMap(ew);
-    if(inst!= null && inst.isCumulative) {
-      if(times.get() >0) {
+    if (inst != null && inst.isCumulative) {
+      if (times.get() > 0) {
         long avg = totalTimeTaken.get() / times.get();
         ew.put("avg", avg);
       }
     }
-
   }
 
   void end() {
@@ -68,7 +77,6 @@ public class Timer implements ReflectMapWriter {
     startL = 0;
     this.currentStart = null;
   }
-
 
 
   public static class TimerBag implements MapWriter {
@@ -90,7 +98,7 @@ public class Timer implements ReflectMapWriter {
 
     public TimerBag init() {
       if (timers == null) {
-       timers = new ConcurrentHashMap<>();
+        timers = new ConcurrentHashMap<>();
       }
       return this;
     }
@@ -103,12 +111,14 @@ public class Timer implements ReflectMapWriter {
 
     public void add(TimerBag bag) {
       Map<String, Timer> t = bag.timers;
-      if(t !=null ) {
-        if(timers == null) timers = new ConcurrentHashMap<>();
+      if (t != null) {
+        if (timers == null) timers = new ConcurrentHashMap<>();
         t.forEach((name, timer) -> {
           Timer old = timers.computeIfAbsent(name, s -> new Timer(this));
           old.times.incrementAndGet();
           old.totalTimeTaken.addAndGet(timer.lastTimeTaken);
+          old.max.set(Math.max(old.max.get(), timer.lastTimeTaken));
+          old.min.set(Math.min(old.min.get(), timer.lastTimeTaken));
         });
       }
     }
@@ -118,9 +128,10 @@ public class Timer implements ReflectMapWriter {
       ew.put("timers", timers);
     }
   }
+
   public static ThreadLocal<TimerBag> INST = new ThreadLocal<>();
 
-  public static class TLInst implements MapWriter{
+  public static class TLInst implements MapWriter {
     private final List<TimerBag> inflight = new CopyOnWriteArrayList<>();
     private final TimerBag cumulative = new TimerBag().init();
 
@@ -130,20 +141,20 @@ public class Timer implements ReflectMapWriter {
 
     public static void start(String name) {
       TimerBag inst = INST.get();
-      if(inst == null) return;
+      if (inst == null) return;
       inst.start(name);
     }
 
     public static void end(String name) {
       TimerBag inst = INST.get();
-      if(inst == null) return;
+      if (inst == null) return;
       inst.end(name);
     }
 
     public TimerBag init() {
       TimerBag bag = INST.get();
-      if(bag == null) {
-        bag =  new TimerBag().init();
+      if (bag == null) {
+        bag = new TimerBag().init();
         INST.set(bag);
       }
       inflight.add(INST.get());
@@ -152,7 +163,7 @@ public class Timer implements ReflectMapWriter {
 
     public void destroy() {
       TimerBag inst = INST.get();
-      if(inst == null) return;
+      if (inst == null) return;
       cumulative.add(inst);
       inflight.remove(inst);
     }
