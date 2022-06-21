@@ -758,12 +758,6 @@ public class ZkStateReader implements SolrCloseable {
     cloudCollectionsListeners.remove(cloudCollectionsListener);
   }
 
-  public boolean hasCollection(String collection) {
-    if (lazyCollectionStates.containsKey(collection))
-      return true;
-    throw new SolrException(ErrorCode.NOT_FOUND, "Could not find collection : " + collection);
-  }
-
   private void notifyNewCloudCollectionsListener(CloudCollectionsListener listener) {
     listener.onChange(Collections.emptySet(), lastFetchedCollectionSet.get());
   }

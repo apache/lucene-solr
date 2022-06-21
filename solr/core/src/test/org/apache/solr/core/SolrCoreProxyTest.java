@@ -157,6 +157,62 @@ public class SolrCoreProxyTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+   @Test
+  @ShardsFixed(num = 1)
+  public void testQACollectionNotFoundIssue() throws Exception {
+      String collectionName = "collection1";
+
+      CoreContainer queryNodeContainer = getQueryNodeContainer();
+
+      ClusterState clusterState = queryNodeContainer.getZkController().getClusterState();
+      Set<String> queryNodes = clusterState.getLiveQueryNodes();
+      Set<String> liveNodes = clusterState.getLiveNodes();
+
+      assertTrue("Expected one but found." + queryNodes.size(), queryNodes.size() == 1);
+      assertTrue("Query nodes should contain query node.", queryNodes.contains(queryNodeContainer.getZkController().getNodeName()));
+      assertTrue("There must be some live nodes.", liveNodes.size() > 0);
+      assertTrue("Collection should have one slice.", clusterState.getCollection(collectionName).getSlices().size() == 1);
+
+      String queryNodeUrl = null;
+      String ingestNodeUrl = null;
+      for (JettySolrRunner jetty : jettys) {
+        if (jetty.getCoreContainer().isQueryAggregator()) {
+          queryNodeUrl = jetty.getBaseUrl().toString();
+        } else {
+          ingestNodeUrl = jetty.getBaseUrl().toString();
+        }
+      }
+      assertNotNull(queryNodeUrl);
+      assertNotNull(ingestNodeUrl);
+
+      addDocs(ingestNodeUrl, collectionName, 10);
+      //query through query node
+      queryDocs(queryNodeUrl, collectionName, 10);
+
+      try {
+        System.setProperty("solr.test.sys.prop1", "propone");
+        System.setProperty("solr.test.sys.prop2", "proptwo");
+
+        //deleting the collection
+        verifyDeleteCollection(collectionName);
+        //create collection again with same name
+        verifyCreateCollection(collectionName, 0);
+        addDocs(ingestNodeUrl, collectionName, 10);
+        //query through query node
+        queryDocs(queryNodeUrl, collectionName, 10);
+
+        //create new collection and verify
+        String anotherCollection = "anothercollection";
+        verifyCreateCollection(anotherCollection, 1);
+        addDocs(ingestNodeUrl, anotherCollection, 10);
+        //query through query node
+        queryDocs(queryNodeUrl, anotherCollection, 10);
+      } finally {
+        System.clearProperty("solr.test.sys.prop1");
+        System.clearProperty("solr.test.sys.prop2");
+      }
+    }
+
   private void verifyMetrics(String collectionName) {
     CoreContainer queryAggregatorContainer = getQueryNodeContainer();
     SolrMetricManager smm = queryAggregatorContainer.getMetricManager();
@@ -304,6 +360,16 @@ public class SolrCoreProxyTest extends AbstractFullDistribZkTestBase {
     }
     assertTrue("There should not be any core. " + corenames, queryAggregatorContainer.getCores().isEmpty());
   }
+
+    private void verifyCreateCollection(final String collection, int numCores) throws Exception {
+      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collection, 1, 1);
+      NamedList<Object> response = create.process(cloudClient).getResponse();
+      assertNotNull(response.get("success"));
+      Thread.sleep(10000);
+      CoreContainer queryAggregatorContainer = getQueryNodeContainer();
+
+      assertTrue("There should not be any core. " , queryAggregatorContainer.getCores().size() == numCores);
+    }
 
   private CoreContainer getQueryNodeContainer() {
     CoreContainer queryAggregatorContainer = null;

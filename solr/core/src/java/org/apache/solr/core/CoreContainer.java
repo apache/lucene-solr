@@ -2300,7 +2300,7 @@ public class CoreContainer {
   }
 
   private boolean hasCollection(String collectionName) {
-    return getZkController().getZkStateReader().hasCollection(collectionName);
+    return getZkController().getZkStateReader().getClusterState().hasCollection(collectionName);
   }
 
   /**
