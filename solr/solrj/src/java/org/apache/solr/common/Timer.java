@@ -25,8 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -46,6 +44,24 @@ public class Timer implements ReflectMapWriter {
   @JsonProperty
   public AtomicInteger times = new AtomicInteger();
 
+  final TimerBag inst ;
+  Timer(TimerBag inst){
+    this.inst = inst;
+  }
+
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ReflectMapWriter.super.writeMap(ew);
+    if(inst!= null && inst.isCumulative) {
+      if(times.get() >0) {
+        long avg = totalTimeTaken.get() / times.get();
+        ew.put("avg", avg);
+      }
+    }
+
+  }
+
   void end() {
     lastTimeTaken = System.currentTimeMillis() - startL;
     totalTimeTaken.addAndGet(lastTimeTaken);
@@ -55,14 +71,15 @@ public class Timer implements ReflectMapWriter {
 
 
 
-  public static class Inst implements MapWriter{
+  public static class TimerBag implements MapWriter {
     public Map<String, Timer> timers;
+    public boolean isCumulative;
 
     public void start(String name) {
       init();
       Timer t = timers.get(name);
       if (t == null) {
-        t = new Timer();
+        t = new Timer(this);
         t.name = name;
         timers.put(t.name, t);
       }
@@ -71,7 +88,7 @@ public class Timer implements ReflectMapWriter {
       t.currentStart = new Date(t.startL).toString();
     }
 
-    public Inst init() {
+    public TimerBag init() {
       if (timers == null) {
        timers = new ConcurrentHashMap<>();
       }
@@ -84,12 +101,12 @@ public class Timer implements ReflectMapWriter {
       if (c != null) c.end();
     }
 
-    public void add(Inst inst) {
-      Map<String, Timer> t = inst.timers;
+    public void add(TimerBag bag) {
+      Map<String, Timer> t = bag.timers;
       if(t !=null ) {
         if(timers == null) timers = new ConcurrentHashMap<>();
         t.forEach((name, timer) -> {
-          Timer old = timers.computeIfAbsent(name, s -> new Timer());
+          Timer old = timers.computeIfAbsent(name, s -> new Timer(this));
           old.times.incrementAndGet();
           old.totalTimeTaken.addAndGet(timer.lastTimeTaken);
         });
@@ -101,35 +118,40 @@ public class Timer implements ReflectMapWriter {
       ew.put("timers", timers);
     }
   }
-  public static ThreadLocal<Inst> INST = new ThreadLocal<>();
+  public static ThreadLocal<TimerBag> INST = new ThreadLocal<>();
 
   public static class TLInst implements MapWriter{
-    private final List<Inst> inflight = new CopyOnWriteArrayList<>();
-    private final Inst cumulative = new Inst().init();
+    private final List<TimerBag> inflight = new CopyOnWriteArrayList<>();
+    private final TimerBag cumulative = new TimerBag().init();
+
+    public TLInst() {
+      cumulative.isCumulative = true;
+    }
+
     public static void start(String name) {
-      Inst inst = INST.get();
+      TimerBag inst = INST.get();
       if(inst == null) return;
       inst.start(name);
     }
 
     public static void end(String name) {
-      Inst inst = INST.get();
+      TimerBag inst = INST.get();
       if(inst == null) return;
       inst.end(name);
     }
 
-    public Inst init() {
-      Inst inst = INST.get();
-      if(inst == null) {
-        inst =  new Inst().init();
-        INST.set(inst);
+    public TimerBag init() {
+      TimerBag bag = INST.get();
+      if(bag == null) {
+        bag =  new TimerBag().init();
+        INST.set(bag);
       }
       inflight.add(INST.get());
-      return inst;
+      return bag;
     }
 
     public void destroy() {
-      Inst inst = INST.get();
+      TimerBag inst = INST.get();
       if(inst == null) return;
       cumulative.add(inst);
       inflight.remove(inst);

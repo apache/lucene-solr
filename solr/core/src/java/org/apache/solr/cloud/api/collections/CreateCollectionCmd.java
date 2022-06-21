@@ -103,7 +103,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   private final TimeSource timeSource;
   private final DistribStateManager stateManager;
 
-  public static final Timer.Inst T  = new Timer.Inst();
+  public static final Timer.TimerBag T  = new Timer.TimerBag();
 
   public CreateCollectionCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
