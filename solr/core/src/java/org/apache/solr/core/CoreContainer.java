@@ -1343,14 +1343,19 @@ public class CoreContainer {
         Timer.TLInst.end("coresLocator.create()");
 
         SolrCore core;
-        Timer.TLInst.start("coresLocator.persist()");
+
         try {
+          Timer.TLInst.start("waitAddPendingCoreOps()");
           solrCores.waitAddPendingCoreOps(cd.getName());
+          Timer.TLInst.end("waitAddPendingCoreOps()");
+          Timer.TLInst.start("createFromDescriptor()");
           core = createFromDescriptor(cd, true, newCollection);
+          Timer.TLInst.end("createFromDescriptor()");
+          Timer.TLInst.start("coresLocator.persist()");
           coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
+          Timer.TLInst.end("coresLocator.persist()");
         } finally {
           solrCores.removeFromPendingOps(cd.getName());
-          Timer.TLInst.end("coresLocator.persist()");
         }
 
         return core;
