@@ -1458,7 +1458,9 @@ public class CoreContainer {
       MDCLoggingContext.setCoreDescriptor(this, dcore);
       SolrIdentifierValidator.validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
+        Timer.TLInst.start("preRegister()");
         zkSys.getZkController().preRegister(dcore, publishState);
+        Timer.TLInst.end("preRegister()");
       }
 
       Timer.TLInst.start("coreConfigService.loadConfigSet()");
@@ -1469,7 +1471,7 @@ public class CoreContainer {
         log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       }
       try {
-        Timer.TLInst.end("new SolrCore()");
+        Timer.TLInst.start("new SolrCore()");
         core = new SolrCore(this, dcore, coreConfig);
         Timer.TLInst.end("new SolrCore()");
       } catch (SolrException e) {
