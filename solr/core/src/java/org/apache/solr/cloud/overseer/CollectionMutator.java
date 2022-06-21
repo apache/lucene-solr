@@ -123,7 +123,7 @@ public class CollectionMutator {
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
-        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+//        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
       }
 
 

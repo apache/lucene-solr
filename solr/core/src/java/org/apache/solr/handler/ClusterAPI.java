@@ -26,6 +26,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
 import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
 import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
+import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -75,6 +76,19 @@ public class ClusterAPI {
       permission = COLL_READ_PERM)
   public void aliases(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     CollectionsHandler.CollectionOperation.LISTALIASES_OP.execute(req, rsp, getCoreContainer().getCollectionsHandler());
+  }
+
+  @EndPoint(method = GET,
+      path = "/node/create_times",
+      permission = COLL_READ_PERM)
+  public void createTime(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    rsp.add("create_times",CreateCollectionCmd.T);
+  }
+  @EndPoint(method = GET,
+      path = "/node/core_create_times",
+      permission = COLL_READ_PERM)
+  public void coreCreateTime(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    rsp.add("core_create_times",collectionsHandler.getCoreContainer().timers);
   }
 
   @EndPoint(method = GET,

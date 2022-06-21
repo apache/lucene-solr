@@ -50,6 +50,7 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -102,6 +103,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   private final TimeSource timeSource;
   private final DistribStateManager stateManager;
 
+  public static final Timer.Inst T  = new Timer.Inst();
+
   public CreateCollectionCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
     this.stateManager = ocmh.cloudManager.getDistribStateManager();
@@ -111,6 +114,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   @Override
   @SuppressWarnings({"unchecked"})
   public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+    T.timers = null;
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update();
     }
@@ -177,7 +181,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
 
+      T.start("createCollectionZkNode");
       createCollectionZkNode(stateManager, collectionName, collectionParams);
+      T.end("createCollectionZkNode");
 
       if (isPRS) {
         // In case of a PRS collection, create the collection structure directly instead of resubmitting
@@ -185,7 +191,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command = new ClusterStateMutator(ocmh.cloudManager).createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+        T.start("create(collectionPath)");
         ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
+        T.end("create(collectionPath)");
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
@@ -213,7 +221,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       List<ReplicaPosition> replicaPositions = null;
       try {
+        T.start("buildReplicaPositions");
         replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, newColl, message, shardNames, sessionWrapper);
+        T.end("buildReplicaPositions");
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
@@ -280,7 +290,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             // TODO: Consider doing this for all collections, not just the PRS collections.
             ZkWriteCommand command = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, props);
             byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+            T.start("setData(collectionPath)");
             ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
+            T.end("setData(collectionPath)");
             clusterState = clusterState.copyWith(collectionName, command.collection);
             newColl = command.collection;
           } else {
@@ -322,7 +334,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if(isPRS) {
+        T.start("RefreshCollectionMessage.1");
         ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
+        T.end("RefreshCollectionMessage.1");
       }
 
       if(!isLegacyCloud) {
@@ -340,20 +354,29 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
           ShardRequest sreq = e.getValue();
           sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+          T.start("create.core");
           shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+          T.end("create.core");
         }
       }
 
+      T.start("shardRequestTracker.processResponses");
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+      T.end("shardRequestTracker.processResponses");
       @SuppressWarnings({"rawtypes"})
       boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
       if (isPRS) {
         TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
         PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
         while (!timeout.hasTimedOut()) {
-          if(prs.allActive()) break;
-          Thread.sleep(100);
-          prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
+          T.start("prs.allActive()");
+          try {
+            if (prs.allActive()) break;
+            Thread.sleep(100);
+            prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
+          } finally {
+            T.end("prs.allActive()");
+          }
         }
         if (!prs.allActive()) {
           failure = true;

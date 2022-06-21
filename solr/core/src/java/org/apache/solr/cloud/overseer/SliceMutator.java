@@ -99,15 +99,7 @@ public class SliceMutator {
             ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.BASE_URL_PROP, baseUrl,
             ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, slice);
-
-    if (collection.isPerReplicaState()) {
-      PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica),
-          PerReplicaStatesOps.addReplica(replica.getName(), replica.getState(), replica.isLeader(), prs), true);
-    } else {
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
-    }
-
+    return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
@@ -134,12 +126,12 @@ public class SliceMutator {
     }
 
 
-    if (coll.isPerReplicaState()) {
+   /* if (coll.isPerReplicaState()) {
       PerReplicaStatesOps replicaOps = PerReplicaStatesOps.deleteReplica(cnn, PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates()) );
       return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), replicaOps, true);
-    } else {
+    } else {*/
       return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
-    }
+//    }
   }
 
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {

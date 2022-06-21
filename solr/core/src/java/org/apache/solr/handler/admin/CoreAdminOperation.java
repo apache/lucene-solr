@@ -28,6 +28,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -91,9 +92,12 @@ enum CoreAdminOperation implements CoreAdminOp {
     }
 
     boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
-
-    coreContainer.create(coreName, instancePath, coreParams, newCollection);
-
+    coreContainer.timers.init();
+    try {
+      coreContainer.create(coreName, instancePath, coreParams, newCollection);
+    } finally {
+      coreContainer.timers.destroy();
+    }
     it.rsp.add("core", coreName);
   }),
   UNLOAD_OP(UNLOAD, it -> {

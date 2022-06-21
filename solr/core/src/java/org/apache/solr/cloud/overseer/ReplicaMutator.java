@@ -366,12 +366,12 @@ public class ReplicaMutator {
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
-    if (collection != null && collection.isPerReplicaState()) {
+   /* if (collection != null && collection.isPerReplicaState()) {
       PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
       return new ZkWriteCommand(collectionName, newCollection, PerReplicaStatesOps.flipState(replica.getName(), replica.getState(), prs), persistCollectionState);
-    } else{
+    } else{*/
       return new ZkWriteCommand(collectionName, newCollection);
-    }
+//    }
   }
 
   /**

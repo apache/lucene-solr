@@ -37,6 +37,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -74,6 +75,7 @@ import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -161,6 +163,8 @@ public class CoreContainer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrCores solrCores = new SolrCores(this);
+
+  public Timer.TLInst timers = new Timer.TLInst();
 
   public static class CoreLoadFailure {
 
@@ -1334,15 +1338,19 @@ public class CoreContainer {
 
         // Much of the logic in core handling pre-supposes that the core.properties file already exists, so create it
         // first and clean it up if there's an error.
+        Timer.TLInst.start("coresLocator.create()");
         coresLocator.create(this, cd);
+        Timer.TLInst.end("coresLocator.create()");
 
         SolrCore core;
+        Timer.TLInst.start("coresLocator.persist()");
         try {
           solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
           coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
         } finally {
           solrCores.removeFromPendingOps(cd.getName());
+          Timer.TLInst.end("coresLocator.persist()");
         }
 
         return core;
@@ -1452,8 +1460,10 @@ public class CoreContainer {
         zkSys.getZkController().preRegister(dcore, publishState);
       }
 
+      Timer.TLInst.start("coreConfigService.loadConfigSet()");
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
+      Timer.TLInst.end("coreConfigService.loadConfigSet()");
       if (log.isInfoEnabled()) {
         log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       }
@@ -1463,12 +1473,16 @@ public class CoreContainer {
         core = processCoreCreateException(e, dcore, coreConfig);
       }
 
+      Timer.TLInst.start("getUpdateLog().recoverFromLog()");
       // always kick off recovery if we are in non-Cloud mode
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
         core.getUpdateHandler().getUpdateLog().recoverFromLog();
       }
+      Timer.TLInst.end("getUpdateLog().recoverFromLog()");
 
+      Timer.TLInst.start("registerCore()");
       registerCore(dcore, core, publishState, newCollection);
+      Timer.TLInst.end("registerCore()");
 
       return core;
     } catch (Exception e) {
