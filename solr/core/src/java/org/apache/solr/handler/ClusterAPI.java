@@ -88,7 +88,8 @@ public class ClusterAPI {
       path = "/node/core_create_times",
       permission = COLL_READ_PERM)
   public void coreCreateTime(SolrQueryRequest req, SolrQueryResponse rsp) {
-    rsp.add("core_create_times",collectionsHandler.getCoreContainer().timers);
+    rsp.add("core_create_times",collectionsHandler.getCoreContainer().timers.getCumulativeTree(
+        req.getParams().getBool("reset",false)));
   }
 
   @EndPoint(method = GET,

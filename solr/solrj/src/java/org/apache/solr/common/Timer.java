@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -192,13 +191,25 @@ public class Timer implements ReflectMapWriter {
       inflight.remove(inst);
     }
 
+
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-
-      Timer root = cumulative.timers.get("ROOT");
-      ew.putIfNotNull("cumulative", root==null? null: new Tree(root, "ROOT", cumulative.timers));
+      ew.putIfNotNull("cumulative", getCumulativeTree(false));
       ew.put("inflight", inflight);
     }
+
+    public MapWriter getCumulativeTree(boolean resetCumulative ) {
+      Timer root = cumulative.timers.get("ROOT");
+      MapWriter result = root == null ?
+          null :
+          new Tree(root, "ROOT", cumulative.timers);
+      if(resetCumulative) cumulative.timers.clear();
+      return ew -> {
+        ew.putIfNotNull("cumulative", result);
+        ew.put("inflight", inflight);
+      };
+    }
+
     static class Tree implements MapWriter {
       Timer root;
       Map<String,Tree> kids;
