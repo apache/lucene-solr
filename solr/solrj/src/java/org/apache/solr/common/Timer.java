@@ -194,8 +194,7 @@ public class Timer implements ReflectMapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.putIfNotNull("cumulative", getCumulativeTree(false));
-      ew.put("inflight", inflight);
+     getCumulativeTree(false).writeMap(ew);
     }
 
     public MapWriter getCumulativeTree(boolean resetCumulative ) {
