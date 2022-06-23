@@ -1883,6 +1883,25 @@ public class ZkStateReader implements SolrCloseable {
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    DocCollection currentColl = clusterState.getCollection(collection);
+    if (currentColl != null) {
+      //we really wish to avoid the watches
+      if (predicate.test(currentColl)) {
+        return;
+      }
+      Stat stat = null;
+      try {
+        stat = zkClient.exists(getCollectionPath(collection), null, true);
+        if (stat != null && currentColl.isModified(stat.getVersion(), stat.getCversion())) {
+          //this is already modified and we should fetch a fresh copy
+          DocCollection c = getCollectionLive(this, collection);
+          if (c != null && predicate.test(c)) return;
+        }
+      } catch (KeeperException e) {
+        //go ahead with a collection watch
+      }
+    }
+
     DocCollectionWatcher watcher = (c) -> {
       docCollection.set(c);
       boolean matches = predicate.test(c);

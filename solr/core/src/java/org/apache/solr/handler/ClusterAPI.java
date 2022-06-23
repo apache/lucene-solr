@@ -81,13 +81,13 @@ public class ClusterAPI {
   @EndPoint(method = GET,
       path = "/node/create_times",
       permission = COLL_READ_PERM)
-  public void createTime(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void createTime(SolrQueryRequest req, SolrQueryResponse rsp) {
     rsp.add("create_times",CreateCollectionCmd.T);
   }
   @EndPoint(method = GET,
       path = "/node/core_create_times",
       permission = COLL_READ_PERM)
-  public void coreCreateTime(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void coreCreateTime(SolrQueryRequest req, SolrQueryResponse rsp) {
     rsp.add("core_create_times",collectionsHandler.getCoreContainer().timers);
   }
 

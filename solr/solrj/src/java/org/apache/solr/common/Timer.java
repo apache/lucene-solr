@@ -19,12 +19,15 @@ package org.apache.solr.common;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -49,10 +52,18 @@ public class Timer implements ReflectMapWriter {
   @JsonProperty
   public AtomicLong min;
 
-  final TimerBag inst;
+  final TimerBag timerBag;
+
+  String parent;
+
 
   Timer(TimerBag inst) {
-    this.inst = inst;
+    this.timerBag = inst;
+    if(inst != null) {
+      if(!inst.callStack.isEmpty()) {
+        parent = inst.callStack.peek();
+      }
+    }
     if (inst != null && inst.isCumulative) {
       max = new AtomicLong(0);
       min = new AtomicLong(0);
@@ -63,7 +74,10 @@ public class Timer implements ReflectMapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ReflectMapWriter.super.writeMap(ew);
-    if (inst != null && inst.isCumulative) {
+    if (startL > 0) {
+      ew.put("elapsed", "" + (System.currentTimeMillis() - startL) + "ms");
+    }
+    if (timerBag != null && timerBag.isCumulative) {
       if (times.get() > 0) {
         long avg = totalTimeTaken.get() / times.get();
         ew.put("avg", avg);
@@ -83,6 +97,9 @@ public class Timer implements ReflectMapWriter {
     public Map<String, Timer> timers;
     public boolean isCumulative;
 
+    Stack<String> callStack = new Stack<>();
+
+
     public void start(String name) {
       init();
       Timer t = timers.get(name);
@@ -94,6 +111,7 @@ public class Timer implements ReflectMapWriter {
       t.times.incrementAndGet();
       t.startL = System.currentTimeMillis();
       t.currentStart = new Date(t.startL).toString();
+      callStack.push(name);
     }
 
     public TimerBag init() {
@@ -106,6 +124,9 @@ public class Timer implements ReflectMapWriter {
     public void end(String name) {
       init();
       Timer c = timers.get(name);
+      while (!callStack.isEmpty()) {
+        if(name.equals(callStack.pop())) break;
+      }
       if (c != null) c.end();
     }
 
@@ -114,11 +135,12 @@ public class Timer implements ReflectMapWriter {
       if (t != null) {
         if (timers == null) timers = new ConcurrentHashMap<>();
         t.forEach((name, timer) -> {
-          Timer old = timers.computeIfAbsent(name, s -> new Timer(this));
-          old.times.incrementAndGet();
-          old.totalTimeTaken.addAndGet(timer.lastTimeTaken);
-          old.max.set(Math.max(old.max.get(), timer.lastTimeTaken));
-          old.min.set(Math.min(old.min.get(), timer.lastTimeTaken));
+          Timer cumulative = timers.computeIfAbsent(name, s -> new Timer(this));
+          cumulative.times.incrementAndGet();
+          cumulative.totalTimeTaken.addAndGet(timer.lastTimeTaken);
+          cumulative.max.set(Math.max(cumulative.max.get(), timer.lastTimeTaken));
+          cumulative.min.set(Math.min(cumulative.min.get(), timer.lastTimeTaken));
+          cumulative.parent = timer.parent;
         });
       }
     }
@@ -158,10 +180,12 @@ public class Timer implements ReflectMapWriter {
         INST.set(bag);
       }
       inflight.add(INST.get());
+      start("ROOT");
       return bag;
     }
 
     public void destroy() {
+      end("ROOT");
       TimerBag inst = INST.get();
       if (inst == null) return;
       cumulative.add(inst);
@@ -170,8 +194,32 @@ public class Timer implements ReflectMapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("cumulative", cumulative);
+
+      Timer root = cumulative.timers.get("ROOT");
+      ew.putIfNotNull("cumulative", root==null? null: new Tree(root, "ROOT", cumulative.timers));
       ew.put("inflight", inflight);
     }
+    static class Tree implements MapWriter {
+      Timer root;
+      Map<String,Tree> kids;
+
+      Tree(Timer root, String name, Map<String, Timer> timers) {
+        this.root = root;
+        timers.forEach((s, t) -> {
+          if(name.equals(t.parent)) {
+            if(kids == null) kids = new HashMap<>();
+            kids.put(s, new Tree(t, s,timers));
+          }
+        });
+
+      }
+
+      @Override
+      public void writeMap(EntryWriter ew) throws IOException {
+        root.writeMap(ew);
+        ew.putIfNotNull("_", kids);
+      }
+    }
+
   }
 }
