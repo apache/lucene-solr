@@ -142,6 +142,12 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     assertEquals("missing", map.get("value"));
   }
 
+  @Test
+  public void testCoreLevelMetricsDisabledConfig() throws Exception {
+    NodeConfig cfg = loadNodeConfig("solr-metricsconfig-noncoremetrics.xml");
+    assertFalse("Core level metrics should be false", cfg.getMetricsConfig().isCoreLevelMetricsEnabled());
+  }
+
   private NodeConfig loadNodeConfig(String config) throws Exception {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/" + config);
     return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); //TODO pass in props

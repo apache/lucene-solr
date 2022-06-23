@@ -548,6 +548,10 @@ public class SolrXmlConfig {
       log.info("Metrics collection is disabled.");
       return builder.build();
     }
+    node = config.getNode("solr/metrics/coreLevelMetricsEnabled", false);
+    if (node != null) {
+      builder = builder.setCoreLevelMetricsEnabled(Boolean.parseBoolean(node.getNodeValue()));
+    }
     node = config.getNode("solr/metrics/suppliers/counter", false);
     if (node != null) {
       builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));

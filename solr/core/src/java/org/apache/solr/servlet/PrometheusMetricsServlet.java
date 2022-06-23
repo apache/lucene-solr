@@ -69,7 +69,8 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       new OsMetricsApiCaller(),
       new ThreadMetricsApiCaller(),
       new StatusCodeMetricsApiCaller(),
-      new CoresMetricsApiCaller()
+      new CoresMetricsApiCaller(),
+      new NodeMetricsApiCaller()
   ));
 
   private final Map<String, PrometheusMetricType> cacheMetricTypes = ImmutableMap.of(
@@ -324,8 +325,14 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
   // Report only local requests, excluding forwarded requests to other nodes.
   static class CoresMetricsApiCaller extends MetricsApiCaller {
 
+    protected static final String METRICS_PREFIXES = "INDEX.merge.,QUERY./get.distrib.requestTimes,QUERY./get.local.requestTimes,QUERY./select.distrib.requestTimes,QUERY./select.local.requestTimes,UPDATE./update.distrib.requestTimes,UPDATE./update.local.requestTimes,UPDATE.updateHandler.autoCommits,UPDATE.updateHandler.commits,UPDATE.updateHandler.cumulativeDeletesBy,UPDATE.updateHandler.softAutoCommits";
+
     CoresMetricsApiCaller() {
-      super("core", "INDEX.merge.,QUERY./get.distrib.requestTimes,QUERY./get.local.requestTimes,QUERY./select.distrib.requestTimes,QUERY./select.local.requestTimes,UPDATE./update.distrib.requestTimes,UPDATE./update.local.requestTimes,UPDATE.updateHandler.autoCommits,UPDATE.updateHandler.commits,UPDATE.updateHandler.cumulativeDeletesBy,UPDATE.updateHandler.softAutoCommits", "count");
+      super("core", METRICS_PREFIXES, "count");
+    }
+
+    CoresMetricsApiCaller(String group) {
+      super(group, METRICS_PREFIXES, "count");
     }
 
     /*
@@ -402,6 +409,15 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       results.add(new PrometheusMetric("commits", PrometheusMetricType.COUNTER, "cumulative number of commits across cores", commit));
       results.add(new PrometheusMetric("deletes_by_id", PrometheusMetricType.COUNTER, "cumulative number of deletes by id across cores", deleteById));
       results.add(new PrometheusMetric("deletes_by_query", PrometheusMetricType.COUNTER, "cumulative number of deletes by query across cores", deleteByQuery));
+    }
+  }
+
+  // This will pull metrics from solr.node group which are pre-aggregated metrics across cores on the node
+  // This is used in place of CoresMetricsApiCaller when coreLevelMetricsEnabled is true in solr.xml
+  static class NodeMetricsApiCaller extends CoresMetricsApiCaller {
+
+    NodeMetricsApiCaller() {
+      super("node");
     }
   }
 

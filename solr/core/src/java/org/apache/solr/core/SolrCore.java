@@ -1199,7 +1199,8 @@ public class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
    * @return an instance of {@link SolrCoreMetricManager}
    */
   private SolrCoreMetricManager initCoreMetricManager(SolrConfig config) {
-    SolrCoreMetricManager coreMetricManager = new SolrCoreMetricManager(this);
+    boolean coreLevelMetricsEnabled = this.getCoreContainer().getConfig().getMetricsConfig().isCoreLevelMetricsEnabled();
+    SolrCoreMetricManager coreMetricManager = new SolrCoreMetricManager(this, coreLevelMetricsEnabled);
     return coreMetricManager;
   }
 

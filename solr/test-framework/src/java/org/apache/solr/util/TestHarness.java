@@ -206,6 +206,7 @@ public class TestHarness extends BaseTestHarness {
     attributes.put("class", SolrJmxReporter.class.getName());
     PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
     MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
+        .setCoreLevelMetricsEnabled(Boolean.parseBoolean(System.getProperty("coreLevelMetricsEnabled", "true")))
         .setMetricReporterPlugins(new PluginInfo[]{defaultPlugin})
         .setHistoryHandler(
             Boolean.getBoolean("metricsHistory")
