@@ -50,6 +50,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Strings;
+import com.google.common.base.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -1657,14 +1658,18 @@ public class ZkController implements Closeable {
       }
       DocCollection coll = zkStateReader.getCollection(collection);
       if (forcePublish || sendToOverseer(coll, coreNodeName)) {
+
+
         overseerJobQueue.offer(Utils.toJSON(m));
       } else {
         if (log.isDebugEnabled()) {
           log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
         }
+        Timer.TLInst.start("prs flipState()");
         PerReplicaStates perReplicaStates = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
             .persist(coll.getZNode(), zkClient);
+        Timer.TLInst.end("prs flipState()");
       }
     } finally {
       MDCLoggingContext.clear();
