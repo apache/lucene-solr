@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
@@ -122,6 +123,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
+    Timer.TLInst.start("superRunLeader#0");
 
     String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
     try {
@@ -162,6 +164,10 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", t);
     }
 
+    Timer.TLInst.end("superRunLeader#0");
+
+    Timer.TLInst.start("superRunLeader#1");
+    // TODOFORNOBLE, don't need for PRS
     assert shardId != null;
     boolean isAlreadyLeader = false;
     if (zkStateReader.getClusterState() != null &&
@@ -173,6 +179,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         isAlreadyLeader = true;
       }
     }
+    
+    Timer.TLInst.end("superRunLeader#1");
+
     if (!isAlreadyLeader) {
       String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
@@ -186,11 +195,19 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       assert zkController.getOverseer() != null;
       DocCollection coll = zkStateReader.getCollection(this.collection);
       if (coll == null || coll.getStateFormat() < 2 || ZkController.sendToOverseer(coll, id)) {
+        Timer.TLInst.start("superRunLeader#1");
+
         zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+        Timer.TLInst.end("superRunLeader#1");
+
       } else {
+        Timer.TLInst.start("superRunLeader#2");
+
         PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs)
             .persist(coll.getZNode(), zkStateReader.getZkClient());
+        Timer.TLInst.end("superRunLeader#2");
+
       }
     }
   }

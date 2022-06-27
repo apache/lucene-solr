@@ -1258,7 +1258,9 @@ public class CoreContainer {
 
     assert core.getName().equals(cd.getName()) : "core name " + core.getName() + " != cd " + cd.getName();
 
+    Timer.TLInst.start("solrCores.putCore()");
     SolrCore old = solrCores.putCore(cd, core);
+    Timer.TLInst.end("solrCores.putCore()");
 
     coreInitFailures.remove(cd.getName());
 
@@ -1267,7 +1269,9 @@ public class CoreContainer {
         log.debug("registering core: {}", cd.getName());
       }
       if (registerInZk) {
+        Timer.TLInst.start("zkSys.registerInZk()");
         zkSys.registerInZk(core, false, skipRecovery);
+        Timer.TLInst.end("zkSys.registerInZk()");
       }
       return null;
     } else {
@@ -1276,7 +1280,9 @@ public class CoreContainer {
       }
       old.close();
       if (registerInZk) {
+        Timer.TLInst.start("zkSys.registerInZk2()");
         zkSys.registerInZk(core, false, skipRecovery);
+        Timer.TLInst.end("zkSys.registerInZk2()");
       }
       return old;
     }

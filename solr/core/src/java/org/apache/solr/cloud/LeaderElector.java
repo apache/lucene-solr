@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkController.ContextKey;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -228,6 +229,8 @@ public  class LeaderElector {
      * @return sequential node number
      */
   public int joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
+    Timer.TLInst.start("LeaderElector#joinElection()_0");
+
     context.joinedElectionFired();
     
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
@@ -237,9 +240,14 @@ public  class LeaderElector {
     String leaderSeqPath = null;
     boolean cont = true;
     int tries = 0;
+    
+    Timer.TLInst.end("LeaderElector#joinElection()_0");
+
     while (cont) {
       try {
         if(joinAtHead){
+          Timer.TLInst.start("LeaderElector#joinElection()_0.5");
+
           log.debug("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
           if(nodes.size() <2){
@@ -256,15 +264,24 @@ public  class LeaderElector {
             leaderSeqPath = shardsElectZkPath + "/" + id + "-n_"+ m.group(1);
             zkClient.create(leaderSeqPath, null, CreateMode.EPHEMERAL, false);
           }
+          Timer.TLInst.end("LeaderElector#joinElection()_0.5");
+
         } else {
+          Timer.TLInst.start("LeaderElector#joinElection()_1");
+
           leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
               CreateMode.EPHEMERAL_SEQUENTIAL, false);
+          
+          Timer.TLInst.end("LeaderElector#joinElection()_1");
+
         }
 
         log.debug("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
+        Timer.TLInst.start("LeaderElector#joinElection()_CONNLOSS");
+
         // we don't know if we made our node or not...
         List<String> entries = zkClient.getChildren(shardsElectZkPath, null, true);
         
@@ -289,8 +306,13 @@ public  class LeaderElector {
             Thread.currentThread().interrupt();
           }
         }
+        
+        Timer.TLInst.end("LeaderElector#joinElection()_CONNLOSS");
+
 
       } catch (KeeperException.NoNodeException e) {
+        Timer.TLInst.start("LeaderElector#joinElection()_NONODE");
+
         // we must have failed in creating the election node - someone else must
         // be working on it, lets try again
         if (tries++ > 20) {
@@ -304,11 +326,22 @@ public  class LeaderElector {
         } catch (InterruptedException e2) {
           Thread.currentThread().interrupt();
         }
+        
+        Timer.TLInst.end("LeaderElector#joinElection()_NONODE");
+
       }
     }
-    checkIfIamLeader(context, replacement);
+    Timer.TLInst.start("LeaderElector#joinElection()_2");
 
-    return getSeq(context.leaderSeqPath);
+    checkIfIamLeader(context, replacement);
+    Timer.TLInst.end("LeaderElector#joinElection()_2");
+
+    Timer.TLInst.start("LeaderElector#joinElection()_3");
+    int abc =  getSeq(context.leaderSeqPath);
+    Timer.TLInst.end("LeaderElector#joinElection()_3");
+
+    
+    return abc;
   }
 
   private class ElectionWatcher implements Watcher {

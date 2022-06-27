@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -94,23 +95,30 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
       InterruptedException, IOException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
-    ActionThrottle lt;
+    //ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         // shutdown or removed
         return;
       }
       MDCLoggingContext.setCore(core);
-      lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
+     // lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
     }
 
     try {
-      lt.minimumWaitBetweenActions();
-      lt.markAttemptingAction();
+      //lt.minimumWaitBetweenActions();
+      //lt.markAttemptingAction();
 
+      Timer.TLInst.start("runLeader#leaderVote");
 
       int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
 
+      Timer.TLInst.end("runLeader#leaderVote");
+
+      Timer.TLInst.start("runLeader#2");
+
+      // TODOFORNOBLE: we don't need this leader message for PRS
+      
       log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
       if (zkController.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() > 1) {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
@@ -122,8 +130,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       if (!weAreReplacement) {
         waitForReplicasToComeUp(leaderVoteWait);
       } else {
+        // SUSPICIOUS, this takes time 6s max, 2.7s avg, and does nothing
         areAllReplicasParticipating();
       }
+
+      Timer.TLInst.end("runLeader#2");
 
       if (isClosed) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the later,
@@ -136,6 +147,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       String coreNodeName;
       boolean setTermToMax = false;
       try (SolrCore core = cc.getCore(coreName)) {
+
+        Timer.TLInst.start("runLeader#3");
 
         if (core == null) {
           return;
@@ -159,6 +172,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           return;
         }
 
+        Timer.TLInst.end("runLeader#3");
+
+        Timer.TLInst.start("runLeader#4");
+
         log.info("I may be the new leader - try and sync");
 
         // we are going to attempt to be the leader
@@ -175,6 +192,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
 
+        // TODOFORNOBLE: Remove this entire peersync block if (a) numTLOGReplicas+numNRTreplicas=1 && (b) weAreReplacement==false
+        // If we are not replacement and there's just one replica in the shard, why do we need peer sync?
+        // this is costing 5sec max, 2.2sec avg
         PeerSync.PeerSyncResult result = null;
         boolean success = false;
         try {
@@ -185,7 +205,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           result = PeerSync.PeerSyncResult.failure();
         }
 
+        Timer.TLInst.end("runLeader#4");
+
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+
+        Timer.TLInst.start("runLeader#5");
 
         if (!success) {
           boolean hasRecentUpdates = false;
@@ -210,6 +234,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             }
           }
         }
+        Timer.TLInst.end("runLeader#5");
+
 
         // solrcloud_debug
         if (log.isDebugEnabled()) {
@@ -235,6 +261,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       }
 
+
       if (!isClosed) {
         try {
           if (replicaType == Replica.Type.TLOG) {
@@ -258,11 +285,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 , "without being up-to-date with the previous leader", coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
+          Timer.TLInst.start("runLeader#6");
           super.runLeaderProcess(weAreReplacement, 0);
+          Timer.TLInst.end("runLeader#6");
+
           try (SolrCore core = cc.getCore(coreName)) {
             if (core != null) {
+              Timer.TLInst.start("runLeader#7");
               core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
               publishActiveIfRegisteredAndNotActive(core);
+              Timer.TLInst.end("runLeader#7");
             } else {
               return;
             }
@@ -272,7 +304,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
 
           // we made it as leader - send any recovery requests we need to
+          Timer.TLInst.start("runLeader#8");
           syncStrategy.requestRecoveries();
+          Timer.TLInst.end("runLeader#8");
 
         } catch (SessionExpiredException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -303,6 +337,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       } else {
         cancelElection();
       }
+      
+
     } finally {
       MDCLoggingContext.clear();
     }

@@ -1224,6 +1224,8 @@ public class ZkController implements Closeable {
                          boolean afterExpiration, boolean skipRecovery) throws Exception {
     MDCLoggingContext.setCoreDescriptor(cc, desc);
     try {
+      Timer.TLInst.start("register()_1");
+
       // pre register has published our down state
       final String baseUrl = getBaseUrl();
       final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
@@ -1244,6 +1246,8 @@ public class ZkController implements Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate");
       }
 
+      Timer.TLInst.end("register()_1");
+      Timer.TLInst.start("register()_2");
 
       if (replica.getType() != Type.PULL) {
         getCollectionTerms(collection).register(cloudDesc.getShardId(), coreZkNodeName);
@@ -1253,6 +1257,9 @@ public class ZkController implements Closeable {
 
       log.debug("Register replica - core:{} address:{} collection:{} shard:{}",
           coreName, baseUrl, collection, shardId);
+
+      Timer.TLInst.end("register()_2");
+      Timer.TLInst.start("register()_3");
 
       try {
         // If we're a preferred leader, insert ourselves at the head of the queue
@@ -1264,7 +1271,7 @@ public class ZkController implements Closeable {
             log.warn("Replica {} was designated as preferred leader but it's type is {}, It won't join election", coreZkNodeName, Type.PULL);
           }
           log.debug("Replica {} skipping election because it's type is {}", coreZkNodeName, Type.PULL);
-          startReplicationFromLeader(coreName, false);
+          //startReplicationFromLeader(coreName, false);
         }
       } catch (InterruptedException e) {
         // Restore the interrupted status
@@ -1273,6 +1280,10 @@ public class ZkController implements Closeable {
       } catch (KeeperException | IOException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
+      
+      Timer.TLInst.end("register()_3");
+      Timer.TLInst.start("register()_4");
+
 
       // in this case, we want to wait for the leader as long as the leader might
       // wait for a vote, at least - but also long enough that a large cluster has
@@ -1283,6 +1294,9 @@ public class ZkController implements Closeable {
       log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
       assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
+
+      Timer.TLInst.end("register()_4");
+      Timer.TLInst.start("register()_5");
 
       try (SolrCore core = cc.getCore(desc.getName())) {
 
@@ -1347,6 +1361,9 @@ public class ZkController implements Closeable {
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
           new UnloadCoreOnDeletedWatcher(coreZkNodeName, shardId, desc.getName()));
+      
+      Timer.TLInst.end("register()_5");
+
       return shardId;
     } finally {
       MDCLoggingContext.clear();
@@ -1490,6 +1507,9 @@ public class ZkController implements Closeable {
   private void joinElection(CoreDescriptor cd, boolean afterExpiration, boolean joinAtHead)
       throws InterruptedException, KeeperException, IOException {
     // look for old context - if we find it, cancel it
+    
+    Timer.TLInst.start("joinElection()_1");
+
     String collection = cd.getCloudDescriptor().getCollectionName();
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
 
@@ -1500,6 +1520,9 @@ public class ZkController implements Closeable {
     if (prevContext != null) {
       prevContext.cancelElection();
     }
+
+    Timer.TLInst.end("joinElection()_1");
+    Timer.TLInst.start("joinElection()_2");
 
     String shardId = cd.getCloudDescriptor().getShardId();
 
@@ -1517,9 +1540,22 @@ public class ZkController implements Closeable {
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
         collection, coreNodeName, ourProps, this, cc);
 
+    Timer.TLInst.end("joinElection()_2");
+    Timer.TLInst.start("joinElection()_3");
+
     leaderElector.setup(context);
+    
+    Timer.TLInst.end("joinElection()_3");
+    Timer.TLInst.start("joinElection()_4");
+
     electionContexts.put(contextKey, context);
+    Timer.TLInst.end("joinElection()_4");
+    Timer.TLInst.start("joinElection()_5");
+
     leaderElector.joinElection(context, false, joinAtHead);
+    
+    Timer.TLInst.end("joinElection()_5");
+
   }
 
 
