@@ -362,6 +362,10 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
    */
     @Override
     protected void handle(List<PrometheusMetric> results, JsonNode metrics) throws IOException {
+      if (metrics.size() == 0) {
+        return;
+      }
+
       long mergeMajor = 0;
       long mergeMajorDocs = 0;
       long mergeMinor = 0;
