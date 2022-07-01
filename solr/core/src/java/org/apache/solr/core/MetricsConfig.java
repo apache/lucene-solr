@@ -37,14 +37,13 @@ public class MetricsConfig {
   private final Object nullString;
   private final Object nullObject;
   private final boolean enabled;
-  private final boolean coreLevelMetricsEnabled;
 
   private MetricsConfig(boolean enabled,
                         PluginInfo[] metricReporters, Set<String> hiddenSysProps,
                         PluginInfo counterSupplier, PluginInfo meterSupplier,
                         PluginInfo timerSupplier, PluginInfo histogramSupplier,
                         PluginInfo historyHandler,
-                        Object nullNumber, Object notANumber, Object nullString, Object nullObject, boolean coreLevelMetricsEnabled) {
+                        Object nullNumber, Object notANumber, Object nullString, Object nullObject) {
     this.enabled = enabled;
     this.metricReporters = metricReporters;
     this.hiddenSysProps = hiddenSysProps;
@@ -57,7 +56,6 @@ public class MetricsConfig {
     this.notANumber = notANumber;
     this.nullString = nullString;
     this.nullObject = nullObject;
-    this.coreLevelMetricsEnabled = coreLevelMetricsEnabled;
   }
 
   public boolean isEnabled() {
@@ -146,10 +144,6 @@ public class MetricsConfig {
     }
   }
 
-  public boolean isCoreLevelMetricsEnabled() {
-    return coreLevelMetricsEnabled;
-  }
-
   public static class MetricsConfigBuilder {
     private PluginInfo[] metricReporterPlugins = new PluginInfo[0];
     private Set<String> hiddenSysProps = new HashSet<>();
@@ -164,8 +158,6 @@ public class MetricsConfig {
     private Object nullObject = null;
     // default to metrics enabled
     private boolean enabled = true;
-    // default to core level metrics for request handlers, setting this to false will aggregate metrics at the node level instead
-    private boolean coreLevelMetricsEnabled = true;
 
     public MetricsConfigBuilder() {
 
@@ -173,11 +165,6 @@ public class MetricsConfig {
 
     public MetricsConfigBuilder setEnabled(boolean enabled) {
       this.enabled = enabled;
-      return this;
-    }
-
-    public MetricsConfigBuilder setCoreLevelMetricsEnabled(boolean coreLevelMetricsEnabled) {
-      this.coreLevelMetricsEnabled = coreLevelMetricsEnabled;
       return this;
     }
 
@@ -242,7 +229,7 @@ public class MetricsConfig {
     public MetricsConfig build() {
       return new MetricsConfig(enabled, metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
           timerSupplier, histogramSupplier, historyHandler,
-          nullNumber, notANumber, nullString, nullObject, coreLevelMetricsEnabled);
+          nullNumber, notANumber, nullString, nullObject);
     }
 
   }

@@ -47,8 +47,6 @@ public class SolrCoreMetricManager implements Closeable {
   private String replicaName;
   private String leaderRegistryName;
   private boolean cloudMode;
-  // This flag determines whether metrics are aggregated at the core or node level, if false metrics will be per node instead of per core
-  private boolean coreLevelMetricsEnabled;
 
   /**
    * Constructs a metric manager.
@@ -59,25 +57,9 @@ public class SolrCoreMetricManager implements Closeable {
     this.core = core;
     initCloudMode();
     metricManager = core.getCoreContainer().getMetricManager();
-    initMetricsContext(true);
-    leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
-  }
-
-  /**
-   * Constructs a metric manager.
-   *
-   * @param core the metric manager's core
-   */
-  public SolrCoreMetricManager(SolrCore core, boolean coreLevelMetricsEnabled) {
-    this(core);
-    this.coreLevelMetricsEnabled = coreLevelMetricsEnabled;
-    initMetricsContext(coreLevelMetricsEnabled);
-  }
-
-  private void initMetricsContext(boolean coreLevelMetrics) {
-    String registryName = coreLevelMetrics ? createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName()) :
-        SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
+    String registryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
     solrMetricsContext = new SolrMetricsContext(metricManager, registryName, core.getMetricTag());
+    leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
   }
 
   private void initCloudMode() {
@@ -119,8 +101,7 @@ public class SolrCoreMetricManager implements Closeable {
     assert core.getCoreDescriptor().getCloudDescriptor() == null;
     String oldRegistryName = solrMetricsContext.registry;
     String oldLeaderRegistryName = leaderRegistryName;
-    String newRegistryName = coreLevelMetricsEnabled ? createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName()) :
-        SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
+    String newRegistryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
     leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
     if (oldRegistryName.equals(newRegistryName)) {
       return;
