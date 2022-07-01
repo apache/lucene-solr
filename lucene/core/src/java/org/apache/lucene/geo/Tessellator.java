@@ -757,6 +757,8 @@ final public class Tessellator {
     return a.next.idx != b.idx && a.previous.idx != b.idx
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b) && isLocallyInside(b, a)
+        && isLocallyInside(a.previous, b)
+        && isLocallyInside(b.next, a)
         && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY())
         // make sure we don't introduce collinear lines
         && area(a.previous.getX(), a.previous.getY(), a.getX(), a.getY(), b.getX(), b.getY()) != 0

@@ -13,6 +13,8 @@ Bug Fixes
 * LUCENE-10470: Check if polygon has been successfully tessellated before we fail (we are failing some valid
   tessellations) and allow filtering edges that fold on top of the previous one. (Ignacio Vera)    
 
+* LUCENE-10563: Fix failure to tessellate complex polygon (Craig Taverner)
+
 ======================= Lucene 8.11.2 =======================
 
 Bug Fixes
