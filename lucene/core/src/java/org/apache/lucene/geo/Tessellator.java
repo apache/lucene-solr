@@ -387,7 +387,7 @@ final public class Tessellator {
       if (isVertexEquals(next, vertex)) {
         // make sure we are not crossing the polygon. This might happen when several holes share the same polygon vertex.
         boolean crosses = GeoUtils.lineCrossesLine(next.previous.getX(), next.previous.getY(), vertex.next.getX(), vertex.next.getY(),
-                                                   next.next.getX(), next.next.getY(), vertex.previous.getX(), vertex.previous.getY());
+            next.next.getX(), next.next.getY(), vertex.previous.getX(), vertex.previous.getY());
         if (crosses == false) {
           return next;
         }
@@ -531,20 +531,20 @@ final public class Tessellator {
     // first look for points inside the triangle in decreasing z-order
     while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0) {
       if (p.idx != ear.previous.idx && p.idx != ear.next.idx
-            && pointInEar(p.getX(), p.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY())
-            && area(p.previous.getX(), p.previous.getY(), p.getX(), p.getY(), p.next.getX(), p.next.getY()) >= 0) {
-          return false;
-        }
+          && pointInEar(p.getX(), p.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY())
+          && area(p.previous.getX(), p.previous.getY(), p.getX(), p.getY(), p.next.getX(), p.next.getY()) >= 0) {
+        return false;
+      }
       p = p.previousZ;
     }
     // then look for points in increasing z-order
     while (n != null &&
         Long.compareUnsigned(n.morton, maxZ) <= 0) {
-        if (n.idx != ear.previous.idx && n.idx != ear.next.idx
-            && pointInEar(n.getX(), n.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY())
-            && area(n.previous.getX(), n.previous.getY(), n.getX(), n.getY(), n.next.getX(), n.next.getY()) >= 0) {
-          return false;
-        }
+      if (n.idx != ear.previous.idx && n.idx != ear.next.idx
+          && pointInEar(n.getX(), n.getY(), ear.previous.getX(), ear.previous.getY(), ear.getX(), ear.getY(), ear.next.getX(), ear.next.getY())
+          && area(n.previous.getX(), n.previous.getY(), n.getX(), n.getY(), n.next.getX(), n.next.getY()) >= 0) {
+        return false;
+      }
       n = n.nextZ;
     }
     return true;
@@ -612,7 +612,8 @@ final public class Tessellator {
       }
       searchNode = searchNode.next;
     } while (searchNode != start);
-    return false;
+    // if there is some area left, we failed
+    return signedArea(start, start) == 0;
   }
 
   /** Computes if edge defined by a and b overlaps with a polygon edge **/
@@ -766,6 +767,12 @@ final public class Tessellator {
 
   /** Determine whether the polygon defined between node start and node end is CW */
   private static boolean isCWPolygon(final Node start, final Node end) {
+    // The polygon must be CW
+    return (signedArea(start, end) < 0) ? true : false;
+  }
+
+  /** Determine the signed area between node start and node end */
+  private static double signedArea(final Node start, final Node end) {
     Node next = start;
     double windingSum = 0;
     do {
@@ -773,8 +780,7 @@ final public class Tessellator {
       windingSum += area(next.getX(), next.getY(), next.next.getX(), next.next.getY(), end.getX(), end.getY());
       next = next.next;
     } while (next.next != end);
-    //The polygon must be CW
-    return (windingSum < 0) ? true : false;
+    return windingSum;
   }
 
   private static final boolean isLocallyInside(final Node a, final Node b) {
@@ -934,10 +940,22 @@ final public class Tessellator {
       nextNode = node.next;
       prevNode = node.previous;
       // we can filter points when:
-      if (isVertexEquals(node, nextNode)  ||   // 1. they are the same,
-          isVertexEquals(prevNode, nextNode) || // 2.- each one starts and ends in each other
-          (prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon && // 3.- they are co-linear and both edges have the same value in .isNextEdgeFromPolygon
-              area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
+      // 1. they are the same
+      // 2.- each one starts and ends in each other
+      // 3.- they are collinear and both edges have the same value in .isNextEdgeFromPolygon
+      // 4.-  they are collinear and second edge returns over the first edge
+      if (isVertexEquals(node, nextNode)
+          || isVertexEquals(prevNode, nextNode)
+          || ((prevNode.isNextEdgeFromPolygon == node.isNextEdgeFromPolygon
+          || isPointInLine(prevNode, node, nextNode.getX(), nextNode.getY()))
+          && area(
+          prevNode.getX(),
+          prevNode.getY(),
+          node.getX(),
+          node.getY(),
+          nextNode.getX(),
+          nextNode.getY())
+          == 0)) {
         // Remove the node
         removeNode(node, prevNode.isNextEdgeFromPolygon);
         node = end = prevNode;
@@ -1008,8 +1026,8 @@ final public class Tessellator {
   private static boolean pointInEar(final double x, final double y, final double ax, final double ay,
                                     final double bx, final double by, final double cx, final double cy) {
     return (cx - x) * (ay - y) - (ax - x) * (cy - y) >= 0 &&
-           (ax - x) * (by - y) - (bx - x) * (ay - y) >= 0 &&
-           (bx - x) * (cy - y) - (cx - x) * (by - y) >= 0;
+        (ax - x) * (by - y) - (bx - x) * (ay - y) >= 0 &&
+        (bx - x) * (cy - y) - (cx - x) * (by - y) >= 0;
   }
 
   /** compute whether the given x, y point is in a triangle; uses the winding order method */
@@ -1177,8 +1195,8 @@ final public class Tessellator {
     /** pretty print the triangle vertices */
     public String toString() {
       String result = vertex[0].x + ", " + vertex[0].y + " [" + edgeFromPolygon[0] + "] " +
-                      vertex[1].x + ", " + vertex[1].y + " [" + edgeFromPolygon[1] + "] " +
-                      vertex[2].x + ", " + vertex[2].y + " [" + edgeFromPolygon[2] + "]";
+          vertex[1].x + ", " + vertex[1].y + " [" + edgeFromPolygon[1] + "] " +
+          vertex[2].x + ", " + vertex[2].y + " [" + edgeFromPolygon[2] + "]";
       return result;
     }
   }

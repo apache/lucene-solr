@@ -7,8 +7,11 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 ---------------------
-* LUCENE-9580: (Backport from 9.0.0) Fix bug in the polygon tessellator when introducing collinear edges during polygon 
+* LUCENE-9580: Fix bug in the polygon tessellator when introducing collinear edges during polygon 
   splitting. (Ignacio Vera)  
+  
+* LUCENE-10470: Check if polygon has been successfully tessellated before we fail (we are failing some valid
+  tessellations) and allow filtering edges that fold on top of the previous one. (Ignacio Vera)    
 
 ======================= Lucene 8.11.2 =======================
 
