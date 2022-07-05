@@ -50,7 +50,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Strings;
-import com.google.common.base.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -1223,31 +1222,34 @@ public class ZkController implements Closeable {
   public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores,
                          boolean afterExpiration, boolean skipRecovery) throws Exception {
     MDCLoggingContext.setCoreDescriptor(cc, desc);
+    final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
+    final String collection = cloudDesc.getCollectionName();
+    ZkStateReader.setCurrent(zkStateReader, collection);
+
     try {
-      Timer.TLInst.start("register()_1");
 
       // pre register has published our down state
       final String baseUrl = getBaseUrl();
-      final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
-      final String collection = cloudDesc.getCollectionName();
       final String shardId = cloudDesc.getShardId();
       final String coreZkNodeName = cloudDesc.getCoreNodeName();
       assert coreZkNodeName != null : "we should have a coreNodeName by now";
 
       // check replica's existence in clusterstate first
       try {
+        Timer.TLInst.start("ZKC.register().ZK.waitForState()");
         zkStateReader.waitForState(collection, Overseer.isLegacy(zkStateReader) ? 60000 : 100,
             TimeUnit.MILLISECONDS, (collectionState) -> getReplicaOrNull(collectionState, shardId, coreZkNodeName) != null);
+        Timer.TLInst.end("ZKC.register().ZK.waitForState()");
       } catch (TimeoutException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, timeout waiting for replica present in clusterstate");
       }
-      Replica replica = getReplicaOrNull(zkStateReader.getClusterState().getCollectionOrNull(collection), shardId, coreZkNodeName);
+      Replica replica = getReplicaOrNull(ZkStateReader.getCurrent(zkStateReader, collection).getColl(), shardId, coreZkNodeName);
       if (replica == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate");
       }
 
-      Timer.TLInst.end("register()_1");
-      Timer.TLInst.start("register()_2");
+
+      Timer.TLInst.start("ZKC.register()_2");
 
       if (replica.getType() != Type.PULL) {
         getCollectionTerms(collection).register(cloudDesc.getShardId(), coreZkNodeName);
@@ -1258,8 +1260,8 @@ public class ZkController implements Closeable {
       log.debug("Register replica - core:{} address:{} collection:{} shard:{}",
           coreName, baseUrl, collection, shardId);
 
-      Timer.TLInst.end("register()_2");
-      Timer.TLInst.start("register()_3");
+      Timer.TLInst.end("ZKC.register()_2");
+      Timer.TLInst.start("ZKC.register()_3");
 
       try {
         // If we're a preferred leader, insert ourselves at the head of the queue
@@ -1281,8 +1283,8 @@ public class ZkController implements Closeable {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
       
-      Timer.TLInst.end("register()_3");
-      Timer.TLInst.start("register()_4");
+      Timer.TLInst.end("ZKC.register()_3");
+      Timer.TLInst.start("ZKC.register()_4");
 
 
       // in this case, we want to wait for the leader as long as the leader might
@@ -1295,8 +1297,8 @@ public class ZkController implements Closeable {
       boolean isLeader = leaderUrl.equals(ourUrl);
       assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
 
-      Timer.TLInst.end("register()_4");
-      Timer.TLInst.start("register()_5");
+      Timer.TLInst.end("ZKC.register()_4");
+      Timer.TLInst.start("ZKC.register()_5");
 
       try (SolrCore core = cc.getCore(desc.getName())) {
 
@@ -1355,17 +1357,19 @@ public class ZkController implements Closeable {
         unregister(coreName, desc, false);
         throw e;
       }
-
+      Timer.TLInst.end("ZKC.register()_5");
+      Timer.TLInst.start("forceUpdateCollection()");
       // make sure we have an update cluster state right away
       zkStateReader.forceUpdateCollection(collection);
+      Timer.TLInst.end("forceUpdateCollection()");
+      Timer.TLInst.start("registerDocCollectionWatcher()");
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
           new UnloadCoreOnDeletedWatcher(coreZkNodeName, shardId, desc.getName()));
-      
-      Timer.TLInst.end("register()_5");
-
+      Timer.TLInst.end("registerDocCollectionWatcher()");
       return shardId;
     } finally {
+      ZkStateReader.removeCurrentColl();
       MDCLoggingContext.clear();
     }
   }
@@ -1508,8 +1512,6 @@ public class ZkController implements Closeable {
       throws InterruptedException, KeeperException, IOException {
     // look for old context - if we find it, cancel it
     
-    Timer.TLInst.start("joinElection()_1");
-
     String collection = cd.getCloudDescriptor().getCollectionName();
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
 
@@ -1521,7 +1523,6 @@ public class ZkController implements Closeable {
       prevContext.cancelElection();
     }
 
-    Timer.TLInst.end("joinElection()_1");
     Timer.TLInst.start("joinElection()_2");
 
     String shardId = cd.getCloudDescriptor().getShardId();

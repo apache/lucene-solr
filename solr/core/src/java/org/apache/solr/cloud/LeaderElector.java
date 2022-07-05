@@ -229,8 +229,6 @@ public  class LeaderElector {
      * @return sequential node number
      */
   public int joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
-    Timer.TLInst.start("LeaderElector#joinElection()_0");
-
     context.joinedElectionFired();
     
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
@@ -241,12 +239,10 @@ public  class LeaderElector {
     boolean cont = true;
     int tries = 0;
     
-    Timer.TLInst.end("LeaderElector#joinElection()_0");
-
     while (cont) {
       try {
         if(joinAtHead){
-          Timer.TLInst.start("LeaderElector#joinElection()_0.5");
+          Timer.TLInst.start("LeaderElector#joinAtHead");
 
           log.debug("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
@@ -264,16 +260,11 @@ public  class LeaderElector {
             leaderSeqPath = shardsElectZkPath + "/" + id + "-n_"+ m.group(1);
             zkClient.create(leaderSeqPath, null, CreateMode.EPHEMERAL, false);
           }
-          Timer.TLInst.end("LeaderElector#joinElection()_0.5");
+          Timer.TLInst.end("LeaderElector#joinAtHead");
 
         } else {
-          Timer.TLInst.start("LeaderElector#joinElection()_1");
-
           leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
               CreateMode.EPHEMERAL_SEQUENTIAL, false);
-          
-          Timer.TLInst.end("LeaderElector#joinElection()_1");
-
         }
 
         log.debug("Joined leadership election with path: {}", leaderSeqPath);
@@ -336,9 +327,7 @@ public  class LeaderElector {
     checkIfIamLeader(context, replacement);
     Timer.TLInst.end("LeaderElector#joinElection()_2");
 
-    Timer.TLInst.start("LeaderElector#joinElection()_3");
     int abc =  getSeq(context.leaderSeqPath);
-    Timer.TLInst.end("LeaderElector#joinElection()_3");
 
     
     return abc;

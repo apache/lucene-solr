@@ -170,9 +170,10 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     // TODOFORNOBLE, don't need for PRS
     assert shardId != null;
     boolean isAlreadyLeader = false;
-    if (zkStateReader.getClusterState() != null &&
-        zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() < 2) {
-      Replica leader = zkStateReader.getLeader(collection, shardId);
+    ZkStateReader.CurrentShardData current = ZkStateReader.getCurrent(zkStateReader, collection);
+    if (current.getColl() != null &&
+        current.getNrtPlusTLOG(shardId) < 2) {
+      Replica leader =  current.getColl().getLeader(shardId);
       if (leader != null
           && leader.getNodeName().equals(leaderProps.get(ZkStateReader.NODE_NAME_PROP))
           && leader.getCoreName().equals(leaderProps.get(ZkStateReader.CORE_NAME_PROP))) {
@@ -193,21 +194,19 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;
       assert zkController.getOverseer() != null;
-      DocCollection coll = zkStateReader.getCollection(this.collection);
+      DocCollection coll = current.getColl();
       if (coll == null || coll.getStateFormat() < 2 || ZkController.sendToOverseer(coll, id)) {
-        Timer.TLInst.start("superRunLeader#1");
-
+        Timer.TLInst.start("SLECB.offerStateUpdate(Utils.toJSON(m))");
         zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
-        Timer.TLInst.end("superRunLeader#1");
+        Timer.TLInst.end("SLECB.offerStateUpdate(Utils.toJSON(m))");
 
       } else {
-        Timer.TLInst.start("superRunLeader#2");
+        Timer.TLInst.start("SLECB.PRS.flipLeader()");
 
         PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-        PerReplicaStatesOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs)
+        PerReplicaStatesOps.flipLeader(current.getColl().getSlice(shardId).getReplicaNames(), id, prs)
             .persist(coll.getZNode(), zkStateReader.getZkClient());
-        Timer.TLInst.end("superRunLeader#2");
-
+        Timer.TLInst.start("SLECB.PRS.flipLeader()");
       }
     }
   }

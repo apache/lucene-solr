@@ -109,32 +109,38 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       //lt.minimumWaitBetweenActions();
       //lt.markAttemptingAction();
 
-      Timer.TLInst.start("runLeader#leaderVote");
 
       int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
 
-      Timer.TLInst.end("runLeader#leaderVote");
-
-      Timer.TLInst.start("runLeader#2");
+      Timer.TLInst.start("SLEC.runLeader#2");
 
       // TODOFORNOBLE: we don't need this leader message for PRS
       
       log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
-      if (zkController.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() > 1) {
+      ZkStateReader.CurrentShardData current = ZkStateReader.getCurrent(zkStateReader, collection);
+      DocCollection coll = current.getColl();
+      int replicas = coll.getSlice(shardId).getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG)).size();
+      if (!coll.isPerReplicaState() && current.getNrtPlusTLOG(shardId)>1) {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
             ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
         zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
       }
+      Timer.TLInst.end("SLEC.runLeader#2");
 
       if (!weAreReplacement) {
-        waitForReplicasToComeUp(leaderVoteWait);
+        if(replicas > 1) {
+          Timer.TLInst.start("waitForReplicasToComeUp(leaderVoteWait)");
+          waitForReplicasToComeUp(leaderVoteWait);
+          Timer.TLInst.end("waitForReplicasToComeUp(leaderVoteWait)");
+        }
       } else {
         // SUSPICIOUS, this takes time 6s max, 2.7s avg, and does nothing
+        Timer.TLInst.start("areAllReplicasParticipating()");
         areAllReplicasParticipating();
+        Timer.TLInst.end("areAllReplicasParticipating()");
       }
 
-      Timer.TLInst.end("runLeader#2");
 
       if (isClosed) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the later,
@@ -209,7 +215,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
-        Timer.TLInst.start("runLeader#5");
 
         if (!success) {
           boolean hasRecentUpdates = false;
@@ -234,7 +239,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             }
           }
         }
-        Timer.TLInst.end("runLeader#5");
 
 
         // solrcloud_debug
@@ -285,16 +289,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 , "without being up-to-date with the previous leader", coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
-          Timer.TLInst.start("runLeader#6");
+          Timer.TLInst.start("SLEC.runLeader#6");
           super.runLeaderProcess(weAreReplacement, 0);
-          Timer.TLInst.end("runLeader#6");
+          Timer.TLInst.end("SLEC.runLeader#6");
 
           try (SolrCore core = cc.getCore(coreName)) {
             if (core != null) {
-              Timer.TLInst.start("runLeader#7");
               core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
               publishActiveIfRegisteredAndNotActive(core);
-              Timer.TLInst.end("runLeader#7");
             } else {
               return;
             }
@@ -304,9 +306,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
 
           // we made it as leader - send any recovery requests we need to
-          Timer.TLInst.start("runLeader#8");
           syncStrategy.requestRecoveries();
-          Timer.TLInst.end("runLeader#8");
 
         } catch (SessionExpiredException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -351,18 +351,24 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * false if otherwise
    */
   private boolean waitForEligibleBecomeLeaderAfterTimeout(ZkShardTerms zkShardTerms, String coreNodeName, int timeout) throws InterruptedException {
-    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-    while (!isClosed && !cc.isShutDown()) {
-      if (System.nanoTime() > timeoutAt) {
-        log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
-            timeout, coreNodeName, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
-        return true;
+    Timer.TLInst.start("waitForEligibleBecomeLeaderAfterTimeout");
+    try {
+      long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
+      while (!isClosed && !cc.isShutDown()) {
+        if (System.nanoTime() > timeoutAt) {
+          log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
+              timeout, coreNodeName, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
+          return true;
+        }
+        if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
+          log.info("Can't become leader, other replicas with higher term participated in leader election");
+          return false;
+        }
+        Thread.sleep(500L);
       }
-      if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
-        log.info("Can't become leader, other replicas with higher term participated in leader election");
-        return false;
-      }
-      Thread.sleep(500L);
+    } finally {
+      Timer.TLInst.end("waitForEligibleBecomeLeaderAfterTimeout");
+
     }
     return false;
   }

@@ -31,6 +31,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -204,10 +205,12 @@ public abstract class ConfigSetService {
 
   }
   public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name) throws IOException, SAXException, ParserConfigurationException {
+    Timer.TLInst.start("getParsedSchema()");
     XmlConfigFile schemaConf = null;
     InputSource inputSource = new InputSource(is);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, SLASH + SCHEMA + SLASH, null);
+    Timer.TLInst.end("getParsedSchema()");
     return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
 
   }

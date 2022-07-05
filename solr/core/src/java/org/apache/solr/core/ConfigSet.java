@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.common.Timer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 
@@ -45,7 +46,9 @@ public class ConfigSet {
     this.name = name;
     this.solrconfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
+    Timer.TLInst.start("schemaSupplier.get()");
     schema = schemaSupplier.get(true);
+    Timer.TLInst.end("schemaSupplier.get()");
     this.properties = properties;
     this.trusted = trusted;
   }

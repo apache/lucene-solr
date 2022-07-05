@@ -1257,11 +1257,7 @@ public class CoreContainer {
     }
 
     assert core.getName().equals(cd.getName()) : "core name " + core.getName() + " != cd " + cd.getName();
-
-    Timer.TLInst.start("solrCores.putCore()");
     SolrCore old = solrCores.putCore(cd, core);
-    Timer.TLInst.end("solrCores.putCore()");
-
     coreInitFailures.remove(cd.getName());
 
     if (old == null || old == core) {
@@ -1344,9 +1340,7 @@ public class CoreContainer {
 
         // Much of the logic in core handling pre-supposes that the core.properties file already exists, so create it
         // first and clean it up if there's an error.
-        Timer.TLInst.start("coresLocator.create()");
         coresLocator.create(this, cd);
-        Timer.TLInst.end("coresLocator.create()");
 
         SolrCore core;
 

@@ -445,6 +445,28 @@ public class ZkStateReader implements SolrCloseable {
         refreshLegacyClusterState(null);
       } else if (watchedCollectionStates.containsKey(collection)) {
         // Exists as a watched collection, force a refresh.
+        DocCollection current = watchedCollectionStates.get(collection);
+        if(current != null) {
+          String collectionPath = getCollectionPath(collection);
+          Stat stat = zkClient.exists(collectionPath, null, true);
+          if (stat.getVersion() <= current.getZNodeVersion()) {
+            //we already have the latest version
+            if (current.isPerReplicaState()) {
+              PerReplicaStates prs = current.getPerReplicaStates();
+              if (prs != null && prs.cversion <= stat.getCversion()) {
+                DocCollection newState = current.copyWith(PerReplicaStates.fetch(collectionPath, zkClient, null));
+                if (updateWatchedCollection(collection, newState)) {
+                  constructState(Collections.singleton(collection));
+                }
+                return;
+              } else {
+                return;
+              }
+            } else {
+              return;
+            }
+          }
+        }
         log.debug("Forcing refresh of watched collection state for {}", collection);
         DocCollection newState = fetchCollectionState(collection, null, null);
         if (updateWatchedCollection(collection, newState)) {
@@ -1856,6 +1878,48 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  static ThreadLocal<CurrentShardData> CCD = new ThreadLocal<>();
+  public static class CurrentShardData {
+
+    DocCollection coll;
+    int nrtPlusTLOG;
+
+    CurrentShardData(ZkStateReader zkStateReader, String coll) {
+      this.coll = zkStateReader.getClusterState().getCollectionOrNull(coll);
+    }
+
+    public DocCollection getColl() {
+      return coll;
+    }
+
+    public int getNrtPlusTLOG(String shard) {
+      if (nrtPlusTLOG > -1) return nrtPlusTLOG;
+      Slice sl = coll.getSlice(shard);
+      nrtPlusTLOG = sl.getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG)).size();
+      return nrtPlusTLOG;
+    }
+  }
+
+
+
+  public static CurrentShardData getCurrent(ZkStateReader zksr, String coll) {
+    CurrentShardData ccd = CCD.get();
+    if(ccd == null){
+      ccd = new CurrentShardData(zksr,coll);
+    }
+    return ccd;
+  }
+  public static CurrentShardData setCurrent(ZkStateReader zksr, String coll) {
+    CurrentShardData ccd = CCD.get();
+    if(ccd == null) {
+      CCD.set(ccd = new CurrentShardData(zksr,coll));
+    }
+    return ccd;
+  }
+
+  public static void removeCurrentColl(){
+    CCD.remove();
+  }
   /**
    * Block until a Predicate returns true, or the wait times out
    *
