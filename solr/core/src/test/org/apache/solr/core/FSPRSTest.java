@@ -17,8 +17,10 @@
 
 package org.apache.solr.core;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +42,62 @@ import org.apache.solr.util.LogLevel;
 
 @LogLevel("org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG")
 public class FSPRSTest extends SolrCloudTestCase {
+
+  public void testShardSplitWithNodeset() throws Exception {
+    String COLL = "prs_shard_split_nodeset";
+    MiniSolrCloudCluster cluster =
+        configureCluster(2)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", configset("conf2"))
+            .configure();
+
+    try {
+      CollectionAdminRequest.createCollection(COLL, "conf", 2, 2)
+          .setMaxShardsPerNode(4)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLL, 2, 4);
+
+      JettySolrRunner jetty = cluster.startJettySolrRunner();
+
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest
+          .splitShard(COLL)
+          .setCreateNodeSet(jetty.getNodeName())
+          .setShardName("shard1");
+      NamedList<Object> response = splitShard.process(cluster.getSolrClient()).getResponse();
+      assertNotNull(response.get("success"));
+
+      cluster.getSolrClient().getZkStateReader().waitForState(COLL, 10, TimeUnit.SECONDS,
+          (liveNodes, collectionState) -> testColl(jetty, collectionState,  Arrays.asList("shard1_0", "shard1_1")));
+
+      JettySolrRunner randomJetty = cluster.getRandomJetty(random());
+      splitShard = CollectionAdminRequest
+          .splitShard(COLL)
+          .setCreateNodeSet(randomJetty.getNodeName())
+          .setShardName("shard2");
+      response = splitShard.process(cluster.getSolrClient()).getResponse();
+      assertNotNull(response.get("success"));
+
+      cluster.getSolrClient().getZkStateReader().waitForState(COLL, 10, TimeUnit.SECONDS,
+          (liveNodes, collectionState) -> testColl(randomJetty, collectionState,  Arrays.asList("shard2_0", "shard2_1")));
+
+    } finally {
+      cluster.shutdown();
+    }
+
+
+  }
+
+  private boolean testColl(JettySolrRunner jetty, DocCollection collectionState, Collection<String> sh) {
+    Collection<String> set = new HashSet<>(sh);
+    collectionState.forEachReplica((s, replica) -> {
+      if (replica.getNodeName().equals(jetty.getNodeName()) &&
+          !replica.isLeader() && set.contains(replica.slice)) {
+        set.remove(replica.slice);
+      }
+    });
+
+    return set.isEmpty();
+  }
 
   public void testShardSplit() throws Exception {
     String COLL = "prs_shard_split";

@@ -1385,6 +1385,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String splitMethod;
     protected Boolean splitByPrefix;
     protected Integer numSubShards;
+    protected String createNodeSet;
     protected Float splitFuzz;
 
     private Properties properties;
@@ -1397,6 +1398,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SplitShard setRanges(String ranges) { this.ranges = ranges; return this; }
     public String getRanges() { return ranges; }
 
+    public SplitShard setCreateNodeSet(String nodeset) { this.createNodeSet = nodeset; return this; }
     public Integer getNumSubShards() {
       return numSubShards;
     }
@@ -1480,7 +1482,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (splitByPrefix != null) {
         params.set(CommonAdminParams.SPLIT_BY_PREFIX, splitByPrefix);
       }
-
+      if(createNodeSet != null ) {
+        params.set(CREATE_NODE_SET_PARAM, createNodeSet);
+      }
       if(properties != null) {
         addProperties(params, properties);
       }

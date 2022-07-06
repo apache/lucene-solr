@@ -46,7 +46,7 @@
   </requestHandler>
   <query>
     <filterCache
-            class = "mypkg:org.apache.solr.search.CaffeineCache"
+            class = "org.apache.solr.search.CaffeineCache"
             size="512"
             initialSize="512"
             autowarmCount="0" />

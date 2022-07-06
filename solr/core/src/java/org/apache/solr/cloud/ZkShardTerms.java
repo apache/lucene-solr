@@ -103,7 +103,7 @@ public class ZkShardTerms implements AutoCloseable{
     ensureTermNodeExist();
     refreshTerms();
     retryRegisterWatcher();
-    ObjectReleaseTracker.track(this);
+//    ObjectReleaseTracker.track(this);
   }
 
   /**
