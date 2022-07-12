@@ -99,7 +99,7 @@ public class MetricSuppliers {
 
   }
 
-  private static Clock getClock(PluginInfo info, String param) {
+  public static Clock getClock(PluginInfo info, String param) {
     if (info == null) {
       return Clock.defaultClock();
     }

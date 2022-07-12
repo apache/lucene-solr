@@ -39,6 +39,8 @@ import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -63,6 +65,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected SolrParams appends;
   protected SolrParams invariants;
   protected boolean httpCaching = true;
+  protected boolean aggregateNodeLevelMetricsEnabled = false;
 
   // Statistics
   private Meter numErrors = new Meter();
@@ -145,6 +148,13 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
     }
 
+    if (initArgs != null) {
+      Boolean aggregateNodeLevelMetricsEnabled = initArgs.getBooleanArg("aggregateNodeLevelMetricsEnabled");
+      if (aggregateNodeLevelMetricsEnabled != null) {
+        this.aggregateNodeLevelMetricsEnabled = aggregateNodeLevelMetricsEnabled;
+      }
+    }
+
   }
 
   @Override
@@ -154,7 +164,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+    if (aggregateNodeLevelMetricsEnabled) {
+      this.solrMetricsContext = new SolrDelegateRegistryMetricsContext(parentContext.metricManager, parentContext.registry,
+          SolrMetricProducer.getUniqueMetricTag(this, parentContext.tag), SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+    } else {
+      this.solrMetricsContext = parentContext.getChildContext(this);
+    }
     numErrors = solrMetricsContext.meter(this, "errors", getCategory().toString(), scope);
     numServerErrors = solrMetricsContext.meter(this, "serverErrors", getCategory().toString(), scope);
     numClientErrors = solrMetricsContext.meter(this, "clientErrors", getCategory().toString(), scope);
