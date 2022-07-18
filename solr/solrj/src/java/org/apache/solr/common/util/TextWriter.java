@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
@@ -144,6 +146,10 @@ public interface TextWriter extends PushWriter {
       writeInt(name, ((AtomicInteger) val).get());
     } else if (val instanceof AtomicLong) {
       writeLong(name, ((AtomicLong) val).get());
+    } else if (val instanceof LongAdder) {
+      writeLong(name, val.toString());
+    } else if (val instanceof LongAccumulator) {
+      writeLong(name, val.toString());
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
