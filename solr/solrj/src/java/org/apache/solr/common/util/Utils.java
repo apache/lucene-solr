@@ -299,7 +299,7 @@ public class Utils {
 //        o = ((IteratorWriter) o).toList(new ArrayList<>());
 //      }
 //    }
-    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
+    new MapWriterJSONWriter(out, 0).write(o); // indentation by default
     return toUTF8(out);
   }
 
