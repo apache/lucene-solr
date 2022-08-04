@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,9 +40,13 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG")
 public class FSPRSTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testShardSplitWithNodeset() throws Exception {
     String COLL = "prs_shard_split_nodeset";
@@ -322,6 +327,53 @@ public class FSPRSTest extends SolrCloudTestCase {
     } finally {
       cluster.shutdown();
     }
+  }
+
+  public void testZkNodeVersions() throws Exception {
+    String NONPRS_COLL = "non_prs_test_coll1";
+    String PRS_COLL = "prs_test_coll2";
+    MiniSolrCloudCluster cluster =
+        configureCluster(3)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", configset("conf2"))
+            .configure();
+    try {
+      Stat stat = null;
+      CollectionAdminRequest.createCollection(NONPRS_COLL, "conf", 10, 1)
+          .setMaxShardsPerNode(10)
+          .process(cluster.getSolrClient());
+      stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(NONPRS_COLL), null, true);
+      log.info("");
+      //the actual number can vary depending on batching
+      assertTrue(stat.getVersion() >= 2);
+      assertEquals(0, stat.getCversion());
+
+      CollectionAdminRequest.createCollection(PRS_COLL, "conf", 10, 1)
+          .setMaxShardsPerNode(10)
+          .setPerReplicaState(Boolean.TRUE)
+          .process(cluster.getSolrClient());
+      stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
+      //10 times from CreateCollectionCmd for each replicaPosition, 10 times from DOWN state for each replica
+      assertEquals(20, stat.getVersion());
+      //For each replica:
+      // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
+      // +2 for Overseer handling on "operation=state", ZkWriteCommand calls PerReplicaStatesOps#touchChildren
+      // +2 for runLeaderProcess, flip the replica to leader
+      // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
+      // Hence 7 * 10 = 70. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS and add new PRS entry)
+      assertEquals(70, stat.getCversion());
+      for (JettySolrRunner j : cluster.getJettySolrRunners()) {
+        j.stop();
+        j.start(true);
+        stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
+        //ensure restart does not update the state.json
+        assertEquals(20, stat.getVersion());
+      }
+
+    } finally {
+      cluster.shutdown();
+    }
+
   }
 
 }

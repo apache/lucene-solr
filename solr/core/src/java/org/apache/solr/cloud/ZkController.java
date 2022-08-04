@@ -1647,7 +1647,7 @@ public class ZkController implements Closeable {
       String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
 
       Map<String,Object> props = new HashMap<>();
-      props.put(Overseer.QUEUE_OPERATION, "state");
+      props.put(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower());
       props.put(ZkStateReader.STATE_PROP, state.toString());
       props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
@@ -1702,8 +1702,13 @@ public class ZkController implements Closeable {
       }
       DocCollection coll = zkStateReader.getCollection(collection);
       if (forcePublish || sendToOverseer(coll, coreNodeName)) {
+        //for PRS, this only updates state.json but not the actual PRS entries
         overseerJobQueue.offer(Utils.toJSON(m));
-      } else {
+      }
+
+      //extra handling for PRS, we need to write the PRS entries from this node directly,
+      //as overseer does not and should not handle those entries
+      if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
         if (log.isDebugEnabled()) {
           log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
         }
