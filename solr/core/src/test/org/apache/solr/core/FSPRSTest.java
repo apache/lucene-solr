@@ -353,8 +353,8 @@ public class FSPRSTest extends SolrCloudTestCase {
           .setPerReplicaState(Boolean.TRUE)
           .process(cluster.getSolrClient());
       stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
-      //10 times from CreateCollectionCmd for each replicaPosition, 10 times from DOWN state for each replica
-      assertEquals(20, stat.getVersion());
+      //1 time from CreateCollectionCmd after all replicaPositions are processed, 10 times from DOWN state for each replica
+      assertEquals(11, stat.getVersion());
       //For each replica:
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
       // +2 for Overseer handling on "operation=state", ZkWriteCommand calls PerReplicaStatesOps#touchChildren
@@ -367,7 +367,7 @@ public class FSPRSTest extends SolrCloudTestCase {
         j.start(true);
         stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
         //ensure restart does not update the state.json
-        assertEquals(20, stat.getVersion());
+        assertEquals(11, stat.getVersion());
       }
 
     } finally {

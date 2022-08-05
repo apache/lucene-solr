@@ -278,8 +278,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             // to the overseer queue.
             // TODO: Consider doing this for all collections, not just the PRS collections.
             ZkWriteCommand command = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, props);
-            byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-            ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
             clusterState = clusterState.copyWith(collectionName, command.collection);
             newColl = command.collection;
           } else {
@@ -321,6 +319,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if(isPRS) {
+        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, clusterState.getCollection(collectionName)));
+        ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
         ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
       }
 
