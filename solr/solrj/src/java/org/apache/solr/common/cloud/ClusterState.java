@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,6 +237,7 @@ public class ClusterState implements JSONWriter.Writable {
   public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes) {
     return load(version, bytes, liveNodes, ZkStateReader.CLUSTER_STATE);
   }
+
   /**
    * Create ClusterState from json string that is typically stored in zookeeper.
    * 
@@ -249,7 +252,22 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
-    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, parser -> {
+      try {
+        return new ObjectBuilder(parser) {
+          @Override
+          public void addKeyVal(Object map, Object key, Object val) throws IOException {
+            key = key.toString().intern();
+            if (val instanceof String) {
+              val = ((String) val).intern();
+            }
+            super.addKeyVal(map, key, val);
+          }
+        };
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
     return load(version, stateMap, liveNodes, znode);
   }
 

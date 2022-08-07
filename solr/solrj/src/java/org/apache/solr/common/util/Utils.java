@@ -316,8 +316,11 @@ public class Utils {
   public static Object fromJSON(byte[] utf8) {
     return fromJSON(utf8, 0, utf8.length);
   }
-  
+
   public static Object fromJSON(byte[] utf8, int offset, int length) {
+    return fromJSON(utf8, offset, length, STANDARDOBJBUILDER);
+  }
+  public static Object fromJSON(byte[] utf8, int offset, int length,  Function<JSONParser, ObjectBuilder> fun) {
     // convert directly from bytes to chars
     // and parse directly from that instead of going through
     // intermediate strings or readers
@@ -328,7 +331,7 @@ public class Utils {
         JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
         JSONParser.OPTIONAL_OUTER_BRACES);
     try {
-      return STANDARDOBJBUILDER.apply(parser).getValStrict();
+      return fun.apply(parser).getValStrict();
     } catch (IOException e) {
       throw new RuntimeException(e); // should never happen w/o using real IO
     }
