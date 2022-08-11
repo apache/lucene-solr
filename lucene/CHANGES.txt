@@ -15,6 +15,9 @@ Bug Fixes
 
 * LUCENE-10563: Fix failure to tessellate complex polygon (Craig Taverner)
 
+* LUCENE-10678: Fix potential overflow when building a BKD tree with more than 4 billion points. The overflow
+  occurs when computing the partition point. (Ignacio Vera)
+
 ======================= Lucene 8.11.2 =======================
 
 Bug Fixes

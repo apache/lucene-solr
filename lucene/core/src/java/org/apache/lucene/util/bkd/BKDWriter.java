@@ -1591,7 +1591,7 @@ public class BKDWriter implements Closeable {
       // How many leaves will be in the left tree:
       final int numLeftLeafNodes = getNumLeftLeafNodes(numLeaves);
       // How many points will be in the left tree:
-      final long leftCount = numLeftLeafNodes * config.maxPointsInLeafNode;
+      final long leftCount = numLeftLeafNodes * (long) config.maxPointsInLeafNode;
 
       BKDRadixSelector.PathSlice[] slices = new BKDRadixSelector.PathSlice[2];
 
