@@ -425,6 +425,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return new ExecutorCompletionService<>(commExecutor);
   }
 
+  public Http2SolrClient getClient() {
+    return defaultClient;
+  }
+
   /**
    * Rebuilds the URL replacing the URL scheme of the passed URL with the
    * configured scheme replacement.If no scheme was configured, the passed URL's

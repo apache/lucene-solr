@@ -113,6 +113,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -364,8 +365,11 @@ public class ZkController implements Closeable {
     this.overseerConfigSetQueue = initOverseerConfigSetQueue();
 
     log.info("initializing NodesSysPropsCacher");
-    this.sysPropsCacher = new NodesSysPropsCacher( getNodeStateProvider(),
-        getNodeName(), zkStateReader);
+    if (cc.getShardHandlerFactory() instanceof HttpShardHandlerFactory) {
+      this.sysPropsCacher = new NodesSysPropsCacher(((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getClient(), zkStateReader);
+    } else {
+      throw new IllegalArgumentException("Only support HttpShardHandlerFactory from CoreContainer#getShardHandlerFactory but found " + (cc.getShardHandlerFactory() != null ? cc.getShardHandlerFactory().getClass().getName() : "null"));
+    }
     log.info("initialized NodesSysPropsCacher");
 
     assert ObjectReleaseTracker.track(this);
