@@ -38,12 +38,14 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.zip.DataFormatException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
+import org.apache.solr.common.util.CompressionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -347,11 +349,21 @@ public class SolrZkClient implements Closeable {
    */
   public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    byte[] data;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
+      data = zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
     } else {
-      return keeper.getData(path, wrapWatcher(watcher), stat);
+      data = keeper.getData(path, wrapWatcher(watcher), stat);
     }
+    if (CompressionUtil.isCompressedBytes(data)) {
+      log.debug("Zookeeper data at path {} is compressed", path);
+      try {
+        data = CompressionUtil.decompressBytes(data);
+      } catch (DataFormatException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return data;
   }
 
   /**

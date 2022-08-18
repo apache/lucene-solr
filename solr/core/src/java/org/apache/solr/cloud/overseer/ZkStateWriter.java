@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CompressionUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -55,6 +56,7 @@ import static java.util.Collections.singletonMap;
  */
 public class ZkStateWriter {
   private static final long MAX_FLUSH_INTERVAL = TimeUnit.NANOSECONDS.convert(Overseer.STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
+  // If the state.json is greater than this many bytes and compression is enabled in solr.xml, then the data will be compressed
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -77,12 +79,15 @@ public class ZkStateWriter {
    */
   protected boolean invalidState = false;
 
-  public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
+  protected int minimumStateSizeForCompression;
+
+  public ZkStateWriter(ZkStateReader zkStateReader, Stats stats, int minimumStateSizeForCompression) {
     assert zkStateReader != null;
 
     this.reader = zkStateReader;
     this.stats = stats;
     this.clusterState = zkStateReader.getClusterState();
+    this.minimumStateSizeForCompression = minimumStateSizeForCompression;
   }
 
   /**
@@ -254,6 +259,9 @@ public class ZkStateWriter {
             reader.getZkClient().clean(path);
           } else if (c.getStateFormat() > 1) {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+            if (minimumStateSizeForCompression > -1 && data.length > minimumStateSizeForCompression) {
+              data = CompressionUtil.compressBytes(data);
+            }
             if (reader.getZkClient().exists(path, true)) {
               if (log.isDebugEnabled()) {
                 log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());

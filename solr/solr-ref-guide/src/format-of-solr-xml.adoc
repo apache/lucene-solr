@@ -42,6 +42,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <int name="minimumStateSizeForCompression">${minimumStateSizeForCompression:-1}</int>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
@@ -161,6 +162,9 @@ If `TRUE`, node names are not based on the address of the node, but on a generic
 
 `zkCredentialsProvider` & `zkACLProvider`::
 Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+
+`minimumStateSizeForCompression`::
+Optional parameter to enable compression of the state.json over the wire and stored in Zookeeper. The value provided is the minimum size in bytes to compress state.json, i.e. any state.json above that size in bytes will be compressed. The default is -1, meaning state.json is always uncompressed.
 
 
 === The <logging> Element

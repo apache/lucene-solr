@@ -43,25 +43,30 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
   /** Uses explicit refresh to ensure latest changes are visible. */
   public void testStateFormatUpdateWithExplicitRefresh() throws Exception {
-    testStateFormatUpdate(true, true);
+    testStateFormatUpdate(true, true, false);
   }
 
   /** Uses explicit refresh to ensure latest changes are visible. */
   public void testStateFormatUpdateWithExplicitRefreshLazy() throws Exception {
-    testStateFormatUpdate(true, false);
+    testStateFormatUpdate(true, false, false);
   }
 
   /** ZkStateReader should automatically pick up changes based on ZK watches. */
   public void testStateFormatUpdateWithTimeDelay() throws Exception {
-    testStateFormatUpdate(false, true);
+    testStateFormatUpdate(false, true, false);
   }
 
   /** ZkStateReader should automatically pick up changes based on ZK watches. */
   public void testStateFormatUpdateWithTimeDelayLazy() throws Exception {
-    testStateFormatUpdate(false, false);
+    testStateFormatUpdate(false, false, false);
   }
 
-  public void testStateFormatUpdate(boolean explicitRefresh, boolean isInteresting) throws Exception {
+  /** Uses explicit refresh to ensure latest changes are visible. */
+  public void testStateFormatUpdateWithExplicitRefreshCompressed() throws Exception {
+    testStateFormatUpdate(true, true, true);
+  }
+
+  public void testStateFormatUpdate(boolean explicitRefresh, boolean isInteresting, boolean compressedState) throws Exception {
     Path zkDir = createTempDir("testStateFormatUpdate");
 
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -81,7 +86,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         reader.registerCore("c1");
       }
 
-      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), compressedState ? 0 : -1);
 
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
@@ -152,7 +157,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), -1);
 
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
@@ -194,7 +199,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
-      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), -1);
       DocCollection state = new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE + "/c1/state.json");
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
@@ -250,7 +255,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       // Still no c1 collection, despite a collection path.
       assertNull(reader.getClusterState().getCollectionRef("c1"));
 
-      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), -1);
 
 
       // create new collection with stateFormat = 2

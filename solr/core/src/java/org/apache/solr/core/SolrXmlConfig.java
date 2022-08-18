@@ -474,6 +474,9 @@ public class SolrXmlConfig {
         case "createCollectionCheckLeaderActive":
           builder.setCreateCollectionCheckLeaderActive(Boolean.parseBoolean(value));
           break;
+        case "minimumStateSizeForCompression":
+          builder.setMinimumStateSizeForCompression(parseInt(name, value));
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
       }
