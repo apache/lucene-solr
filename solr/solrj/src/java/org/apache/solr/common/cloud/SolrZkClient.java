@@ -34,6 +34,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -42,12 +44,15 @@ import java.util.zip.DataFormatException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CompressionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -64,6 +69,9 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.zookeeper.Watcher.WatcherType.Children;
+import static org.apache.zookeeper.Watcher.WatcherType.Data;
 
 /**
  *
@@ -84,6 +92,13 @@ public class SolrZkClient implements Closeable {
   private volatile SolrZooKeeper keeper;
 
   private ZkCmdExecutor zkCmdExecutor;
+
+  private final ZkMetrics metrics = new ZkMetrics();
+
+
+  public MapWriter getMetrics() {
+    return metrics::writeMap;
+  }
 
   private final ExecutorService zkCallbackExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
@@ -269,6 +284,7 @@ public class SolrZkClient implements Closeable {
     } else {
       keeper.delete(path, version);
     }
+    metrics.deletes.increment();
   }
 
   /**
@@ -277,9 +293,14 @@ public class SolrZkClient implements Closeable {
    * calling {@link #exists(String, org.apache.zookeeper.Watcher, boolean)} or
    * {@link #getData(String, org.apache.zookeeper.Watcher, org.apache.zookeeper.data.Stat, boolean)}.
    */
+  public Watcher wrapWatcher(final Watcher watcher, Watcher.WatcherType type) {
+    if (watcher == null || watcher instanceof ProcessWatchWithExecutor) return watcher;
+    return new ProcessWatchWithExecutor(watcher, type);
+  }
+
   public Watcher wrapWatcher(final Watcher watcher) {
     if (watcher == null || watcher instanceof ProcessWatchWithExecutor) return watcher;
-    return new ProcessWatchWithExecutor(watcher);
+    return new ProcessWatchWithExecutor(watcher, Watcher.WatcherType.Data);
   }
 
   /**
@@ -301,11 +322,14 @@ public class SolrZkClient implements Closeable {
    */
   public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    Stat result = null;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.exists(path, wrapWatcher(watcher)));
+      result = zkCmdExecutor.retryOperation(() -> keeper.exists(path, wrapWatcher(watcher)));
     } else {
-      return keeper.exists(path, wrapWatcher(watcher));
+      result = keeper.exists(path, wrapWatcher(watcher));
     }
+    metrics.existsChecks.increment();
+    return result;
   }
 
   /**
@@ -313,11 +337,15 @@ public class SolrZkClient implements Closeable {
    */
   public Boolean exists(final String path, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    metrics.existsChecks.increment();
+    Boolean result = null;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.exists(path, null) != null);
+      result = zkCmdExecutor.retryOperation(() -> keeper.exists(path, null) != null);
     } else {
-      return keeper.exists(path, null) != null;
+      result = keeper.exists(path, null) != null;
     }
+    metrics.existsChecks.increment();
+    return result;
   }
 
   /**
@@ -325,11 +353,18 @@ public class SolrZkClient implements Closeable {
    */
   public List<String> getChildren(final String path, final Watcher watcher, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    List<String> result = null;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher)));
+      result = zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher, Children)));
     } else {
-      return keeper.getChildren(path, wrapWatcher(watcher));
+      result = keeper.getChildren(path, wrapWatcher(watcher, Children));
     }
+
+    metrics.childFetches.increment();
+    if (result != null) {
+      metrics.cumulativeChildrenFetched.add(result.size());
+    }
+    return result;
   }
 
   /**
@@ -337,11 +372,17 @@ public class SolrZkClient implements Closeable {
    */
   public List<String> getChildren(final String path, final Watcher watcher,Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    List<String> result = null;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher) , stat));
+      result = zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher, Children), stat));
     } else {
-      return keeper.getChildren(path, wrapWatcher(watcher), stat);
+      result = keeper.getChildren(path, wrapWatcher(watcher), stat);
     }
+    metrics.childFetches.increment();
+    if (result != null) {
+      metrics.cumulativeChildrenFetched.add(result.size());
+    }
+    return result;
   }
 
   /**
@@ -349,21 +390,26 @@ public class SolrZkClient implements Closeable {
    */
   public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-    byte[] data;
+    byte[] result = null;
     if (retryOnConnLoss) {
-      data = zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
+      result = zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
     } else {
-      data = keeper.getData(path, wrapWatcher(watcher), stat);
+      result = keeper.getData(path, wrapWatcher(watcher), stat);
     }
-    if (CompressionUtil.isCompressedBytes(data)) {
+    metrics.reads.increment();
+    if (result != null) {
+      metrics.bytesRead.add(result.length);
+    }
+
+    if (CompressionUtil.isCompressedBytes(result)) {
       log.debug("Zookeeper data at path {} is compressed", path);
       try {
-        data = CompressionUtil.decompressBytes(data);
+        result = CompressionUtil.decompressBytes(result);
       } catch (DataFormatException e) {
         throw new RuntimeException(e);
       }
     }
-    return data;
+    return result;
   }
 
   /**
@@ -371,11 +417,17 @@ public class SolrZkClient implements Closeable {
    */
   public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    Stat result = null;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
+      result = zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
     } else {
-      return keeper.setData(path, data, version);
+      result = keeper.setData(path, data, version);
     }
+    metrics.writes.increment();
+    if (data != null) {
+      metrics.bytesWritten.add(data.length);
+    }
+    return result;
   }
 
   public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
@@ -420,13 +472,20 @@ public class SolrZkClient implements Closeable {
   public String create(final String path, final byte[] data,
       final CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
       InterruptedException {
+    String result = null;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path),
+      result = zkCmdExecutor.retryOperation(() -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path),
           createMode));
     } else {
       List<ACL> acls = zkACLProvider.getACLsToAdd(path);
-      return keeper.create(path, data, acls, createMode);
+      result = keeper.create(path, data, acls, createMode);
     }
+    metrics.writes.increment();
+    if (data != null) {
+      metrics.bytesWritten.increment();
+    }
+    return result;
+
   }
 
   /**
@@ -524,6 +583,10 @@ public class SolrZkClient implements Closeable {
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists, boolean retryOnConnLoss, int skipPathParts) throws KeeperException, InterruptedException {
     log.debug("makePath: {}", path);
+    metrics.writes.increment();
+    if (data != null) {
+      metrics.bytesWritten.add(data.length);
+    }
     boolean retry = true;
 
     if (path.startsWith("/")) {
@@ -611,11 +674,17 @@ public class SolrZkClient implements Closeable {
   }
 
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
+    List<OpResult> result = null;
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.multi(ops));
+      result = zkCmdExecutor.retryOperation(() -> keeper.multi(ops));
     } else {
-      return keeper.multi(ops);
+      result = keeper.multi(ops);
     }
+    metrics.multiOps.increment();
+    if (result != null) {
+      metrics.cumulativeMultiOps.add(result.size());
+    }
+    return result;
   }
 
   /**
@@ -886,22 +955,40 @@ public class SolrZkClient implements Closeable {
    */
   private final class ProcessWatchWithExecutor implements Watcher { // see below for why final.
     private final Watcher watcher;
+    private final Watcher.WatcherType type;
 
-    ProcessWatchWithExecutor(Watcher watcher) {
+    ProcessWatchWithExecutor(Watcher watcher, WatcherType type) {
       if (watcher == null) {
         throw new IllegalArgumentException("Watcher must not be null");
       }
       this.watcher = watcher;
+      this.type = type;
+      if (type == Data) {
+        metrics.dataWatches.incrementAndGet();
+      } else if (type == Children) {
+        metrics.childrenWatches.incrementAndGet();
+      }
     }
 
     @Override
     public void process(final WatchedEvent event) {
+      if (type == Data) {
+        metrics.dataWatches.decrementAndGet();
+      } else if (type == Children) {
+        metrics.childrenWatches.decrementAndGet();
+      }
       log.debug("Submitting job to respond to event {}", event);
       try {
         if (watcher instanceof ConnectionManager) {
-          zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
+          zkConnManagerCallbackExecutor.submit(() -> {
+            metrics.watchesFired.increment();
+            watcher.process(event);
+          });
         } else {
-          zkCallbackExecutor.submit(() -> watcher.process(event));
+          zkCallbackExecutor.submit(() -> {
+            metrics.watchesFired.increment();
+            watcher.process(event);
+          });
         }
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
@@ -928,6 +1015,62 @@ public class SolrZkClient implements Closeable {
         return this.watcher.equals(((ProcessWatchWithExecutor) obj).watcher);
       }
       return false;
+    }
+  }
+
+  // all fields of this class are public because ReflectMapWriter requires them to be.
+  //however the object itself is private and only this class can modify it
+  public static class ZkMetrics implements ReflectMapWriter {
+    @JsonProperty
+    public final LongAdder watchesFired = new LongAdder();
+    @JsonProperty
+    public final LongAdder reads = new LongAdder();
+    @JsonProperty
+    public final LongAdder writes = new LongAdder();
+    @JsonProperty
+
+    public final LongAdder bytesRead = new LongAdder();
+    @JsonProperty
+
+    public final LongAdder bytesWritten = new LongAdder();
+
+    @JsonProperty
+    public final LongAdder multiOps = new LongAdder();
+
+    @JsonProperty
+    public final LongAdder cumulativeMultiOps = new LongAdder();
+
+    @JsonProperty
+    public final LongAdder childFetches = new LongAdder();
+
+    @JsonProperty
+    public final LongAdder cumulativeChildrenFetched = new LongAdder();
+
+    @JsonProperty
+    public final LongAdder existsChecks = new LongAdder();
+
+    @JsonProperty
+    public final LongAdder deletes = new LongAdder();
+
+    @JsonProperty
+    public final AtomicLong dataWatches = new AtomicLong();
+
+    @JsonProperty
+    public final AtomicLong childrenWatches = new AtomicLong();
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ReflectMapWriter.super.writeMap(new EntryWriter() {
+        @Override
+        public EntryWriter put(CharSequence k, Object v) throws IOException {
+          if (v instanceof LongAdder) {
+            ew.put(k, ((LongAdder) v).longValue());
+          } else {
+            ew.put(k, v);
+          }
+          return this;
+        }
+      });
     }
   }
 }
