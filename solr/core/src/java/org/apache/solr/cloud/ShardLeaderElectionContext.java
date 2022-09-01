@@ -28,6 +28,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -112,11 +114,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
 
       log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
-      if (zkController.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() > 1) {
-        // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
-        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
-            ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-        zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+      DocCollection coll = zkController.getClusterState().getCollection(collection);
+      // If there is more than one possible leader, then for non-PRS, we should unset this replica as leader
+      if (coll.getSlice(shardId).getNumLeaderReplicas() > 1) {
+        if (ZkController.sendToOverseer(coll, id) && !coll.isPerReplicaState()) {
+          // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
+          ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
+              ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
+          zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+        }
       }
 
       if (!weAreReplacement) {

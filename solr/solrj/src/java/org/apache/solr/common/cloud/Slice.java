@@ -138,6 +138,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private final State state;
   private final String parent;
   private final Map<String, RoutingRule> routingRules;
+  private final int numLeaderReplicas;
 
   /**
    * @param name  The name of the slice
@@ -182,6 +183,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
     this.replicas = replicas != null ? replicas : makeReplicas(collection,name, (Map<String,Object>)propMap.get(REPLICAS));
     propMap.put(REPLICAS, this.replicas);
+
+    this.numLeaderReplicas = (int)this.replicas.values().stream().filter(r -> Replica.Type.isLeaderType(r.getType())).count();
 
     Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
     if (rules != null) {
@@ -280,6 +283,10 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public Replica getLeader() {
     return leader;
+  }
+
+  public int getNumLeaderReplicas() {
+    return numLeaderReplicas;
   }
 
   public Replica getReplica(String replicaName) {
