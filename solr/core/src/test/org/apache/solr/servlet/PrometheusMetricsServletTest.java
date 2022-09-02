@@ -459,4 +459,73 @@ public class PrometheusMetricsServletTest {
         "deletes_by_query 66\n";
     assertMetricsApiCaller(new PrometheusMetricsServlet.CoresMetricsApiCaller(), json, 25, output);
   }
+
+  @Test
+  public void testNodeMetricsApiCaller() throws Exception {
+    String json = "{\n" +
+        "  \"responseHeader\": {\n" +
+        "    \"status\": 0,\n" +
+        "    \"QTime\": 2\n" +
+        "  },\n" +
+        "  \"metrics\": {\n" +
+        "    \"solr.node\": {\n" +
+        "      \"CONTAINER.zkClient\": {\n" +
+        "        \"watchesFired\": 93814,\n" +
+        "        \"reads\": 48722,\n" +
+        "        \"writes\": 9315,\n" +
+        "        \"bytesRead\": 2465678796,\n" +
+        "        \"bytesWritten\": 9331,\n" +
+        "        \"multiOps\": 8927,\n" +
+        "        \"cumulativeMultiOps\": 22392,\n" +
+        "        \"childFetches\": 109212,\n" +
+        "        \"cumulativeChildrenFetched\": 159345342,\n" +
+        "        \"existsChecks\": 162575,\n" +
+        "        \"deletes\": 0,\n" +
+        "        \"dataWatches\": 5572,\n" +
+        "        \"childrenWatches\": 196\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "}";
+    String output = "# HELP zk_client_watches_fired number of zk-watches fired on the solr node\n" +
+        "# TYPE zk_client_watches_fired counter\n" +
+        "zk_client_watches_fired 93814\n" +
+        "# HELP zk_client_reads number of docs zk-reads from the solr node\n" +
+        "# TYPE zk_client_reads counter\n" +
+        "zk_client_reads 48722\n" +
+        "# HELP zk_client_writes number of zk-writes from the solr node\n" +
+        "# TYPE zk_client_writes counter\n" +
+        "zk_client_writes 9315\n" +
+        "# HELP zk_client_bytes_read zk-client reads total bytes from the solr node\n" +
+        "# TYPE zk_client_bytes_read counter\n" +
+        "zk_client_bytes_read 2465678796\n" +
+        "# HELP zk_client_bytes_written zk-client writes total bytes from the solr node\n" +
+        "# TYPE zk_client_bytes_written counter\n" +
+        "zk_client_bytes_written 9331\n" +
+        "# HELP zk_client_multi_ops zk-client multi ops from the solr node\n" +
+        "# TYPE zk_client_multi_ops counter\n" +
+        "zk_client_multi_ops 8927\n" +
+        "# HELP zk_client_cumulative_multi_ops total multi zk-ops succeed from the solr node\n" +
+        "# TYPE zk_client_cumulative_multi_ops counter\n" +
+        "zk_client_cumulative_multi_ops 22392\n" +
+        "# HELP zk_client_child_fetches zk-clients fetches children from the solr node\n" +
+        "# TYPE zk_client_child_fetches counter\n" +
+        "zk_client_child_fetches 109212\n" +
+        "# HELP zk_client_cumulative_children_fetched cumulative number of children fetches from the solr node\n" +
+        "# TYPE zk_client_cumulative_children_fetched counter\n" +
+        "zk_client_cumulative_children_fetched 159345342\n" +
+        "# HELP zk_client_exists_checks number of zk-exists checks from the solr node\n" +
+        "# TYPE zk_client_exists_checks counter\n" +
+        "zk_client_exists_checks 162575\n" +
+        "# HELP zk_client_deletes number of zk-deletes operations from the solr node\n" +
+        "# TYPE zk_client_deletes counter\n" +
+        "zk_client_deletes 0\n" +
+        "# HELP zk_client_data_watches number of data zk-watches from the solr node\n" +
+        "# TYPE zk_client_data_watches gauge\n" +
+        "zk_client_data_watches 5572\n" +
+        "# HELP zk_client_children_watches number of child zk-watches from the solr node\n" +
+        "# TYPE zk_client_children_watches gauge\n" +
+        "zk_client_children_watches 196\n";
+    assertMetricsApiCaller(new PrometheusMetricsServlet.NodeMetricsApiCaller(), json, 2, output);
+  }
 }

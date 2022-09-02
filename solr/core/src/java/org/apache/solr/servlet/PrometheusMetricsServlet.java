@@ -69,7 +69,8 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       new OsMetricsApiCaller(),
       new ThreadMetricsApiCaller(),
       new StatusCodeMetricsApiCaller(),
-      new CoresMetricsApiCaller()
+      new CoresMetricsApiCaller(),
+      new NodeMetricsApiCaller()
   ));
 
   private final Map<String, PrometheusMetricType> cacheMetricTypes = ImmutableMap.of(
@@ -317,6 +318,80 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       results.add(new PrometheusMetric("status_codes_5xx", PrometheusMetricType.COUNTER,
           "cumulative number of responses with 5xx status codes",
           getNumber(parent, "org.eclipse.jetty.server.handler.DefaultHandler.5xx-responses", property)));
+    }
+  }
+
+  // Reports zkClient metrics, which are at the solr node level
+  static class NodeMetricsApiCaller extends MetricsApiCaller {
+
+    NodeMetricsApiCaller() {
+      super("node", "CONTAINER.zkClient", "");
+    }
+
+    /*
+  "metrics": {
+    "solr.node": {
+      "CONTAINER.zkClient": {
+        "watchesFired": 93814,
+        "reads": 48722,
+        "writes": 9315,
+        "bytesRead": 2465678796,
+        "bytesWritten": 9331,
+        "multiOps": 8927,
+        "cumulativeMultiOps": 22392,
+        "childFetches": 109212,
+        "cumulativeChildrenFetched": 159345342,
+        "existsChecks": 162569,
+        "deletes": 0,
+        "dataWatches": 5560,
+        "childrenWatches": 196
+      }
+    }
+  }
+   */
+    @Override
+    protected void handle(List<PrometheusMetric> results, JsonNode metrics) throws IOException {
+      long watchesFired = 0;
+      long reads = 0;
+      long writes = 0;
+      long bytesRead = 0;
+      long bytesWritten = 0;
+      long multiOps = 0;
+      long cumulativeMultiOps = 0;
+      long childFetches = 0;
+      long cumulativeChildrenFetched = 0;
+      long existsChecks = 0;
+      long deletes = 0;
+      long dataWatches = 0;
+      long childrenWatches = 0;
+      JsonNode zkClientNode  = metrics.path("solr.node").path("CONTAINER.zkClient");
+      watchesFired += getNumber(zkClientNode, "watchesFired").longValue();
+      reads += getNumber(zkClientNode, "reads").longValue();
+      writes += getNumber(zkClientNode, "writes").longValue();
+      bytesRead += getNumber(zkClientNode, "bytesRead").longValue();
+      bytesWritten += getNumber(zkClientNode, "bytesWritten").longValue();
+      multiOps += getNumber(zkClientNode, "multiOps").longValue();
+      cumulativeMultiOps += getNumber(zkClientNode, "cumulativeMultiOps").longValue();
+      childFetches += getNumber(zkClientNode, "childFetches").longValue();
+      cumulativeChildrenFetched += getNumber(zkClientNode, "cumulativeChildrenFetched").longValue();
+      existsChecks += getNumber(zkClientNode, "existsChecks").longValue();
+      deletes += getNumber(zkClientNode, "deletes").longValue();
+      dataWatches += getNumber(zkClientNode, "dataWatches").longValue();
+      childrenWatches += getNumber(zkClientNode, "childrenWatches").longValue();
+
+      results.add(new PrometheusMetric("zkClient_watchesFired", PrometheusMetricType.COUNTER, "number of zk-watches fired on the solr node", watchesFired));
+      results.add(new PrometheusMetric("zkClient_reads", PrometheusMetricType.COUNTER, "number of docs zk-reads from the solr node", reads));
+      results.add(new PrometheusMetric("zkClient_writes", PrometheusMetricType.COUNTER, "number of zk-writes from the solr node", writes));
+      results.add(new PrometheusMetric("zkClient_bytesRead", PrometheusMetricType.COUNTER, "zk-client reads total bytes from the solr node", bytesRead));
+      results.add(new PrometheusMetric("zkClient_bytesWritten", PrometheusMetricType.COUNTER, "zk-client writes total bytes from the solr node", bytesWritten));
+      results.add(new PrometheusMetric("zkClient_multiOps", PrometheusMetricType.COUNTER, "zk-client multi ops from the solr node", multiOps));
+      results.add(new PrometheusMetric("zkClient_cumulativeMultiOps", PrometheusMetricType.COUNTER, "total multi zk-ops succeed from the solr node", cumulativeMultiOps));
+      results.add(new PrometheusMetric("zkClient_childFetches", PrometheusMetricType.COUNTER, "zk-clients fetches children from the solr node", childFetches));
+      results.add(new PrometheusMetric("zkClient_cumulativeChildrenFetched", PrometheusMetricType.COUNTER, "cumulative number of children fetches from the solr node", cumulativeChildrenFetched));
+      results.add(new PrometheusMetric("zkClient_existsChecks", PrometheusMetricType.COUNTER, "number of zk-exists checks from the solr node", existsChecks));
+      results.add(new PrometheusMetric("zkClient_deletes", PrometheusMetricType.COUNTER, "number of zk-deletes operations from the solr node", deletes));
+      results.add(new PrometheusMetric("zkClient_dataWatches", PrometheusMetricType.GAUGE, "number of data zk-watches from the solr node", dataWatches));
+      results.add(new PrometheusMetric("zkClient_childrenWatches", PrometheusMetricType.GAUGE, "number of child zk-watches from the solr node", childrenWatches));
     }
   }
 
