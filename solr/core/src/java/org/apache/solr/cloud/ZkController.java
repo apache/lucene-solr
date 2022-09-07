@@ -1735,7 +1735,6 @@ public class ZkController implements Closeable {
     if (r == null) return true;
     Slice shard = coll.getSlice(r.slice);
     if (shard == null) return true;//very unlikely
-    if (shard.getState() == Slice.State.RECOVERY) return true;
     if (shard.getParent() != null) return true;
     for (Slice slice : coll.getSlices()) {
       if (Objects.equals(shard.getName(), slice.getParent())) return true;
@@ -1788,6 +1787,16 @@ public class ZkController implements Closeable {
     }
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
     if (removeCoreFromZk) {
+      //extra handling for PRS, we need to write the PRS entries from this node directly,
+      //as overseer does not and should not handle those entries
+      if (docCollection != null && docCollection.isPerReplicaState() && coreNodeName != null) {
+        if (log.isDebugEnabled()) {
+          log.debug("bypassed overseer for unregistring removed replica");
+        }
+        PerReplicaStates perReplicaStates = PerReplicaStates.fetch(docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates());
+        PerReplicaStatesOps.deleteReplica(coreNodeName, perReplicaStates)
+            .persist(docCollection.getZNode(), zkClient);
+      }
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
           OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
           ZkStateReader.NODE_NAME_PROP, getNodeName(),
@@ -2832,9 +2841,28 @@ public class ZkController implements Closeable {
    */
   public void publishNodeAsDown(String nodeName) {
     log.info("Publish node={} as DOWN", nodeName);
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
-        ZkStateReader.NODE_NAME_PROP, nodeName);
     try {
+      Set<String> processedCollections = new HashSet<>();
+      cc.getCoreDescriptors().parallelStream().forEach(cd -> {
+        DocCollection coll = zkStateReader.getCollection(cd.getCollectionName());
+        if (processedCollections.add(coll.getName()) && coll.isPerReplicaState()) {
+          final List<String> replicasToDown = new ArrayList<>();
+          coll.forEachReplica((s, replica) -> {
+            if (replica.getNodeName().equals(nodeName)) {
+              replicasToDown.add(replica.getName());
+            }
+          });
+          try {
+            PerReplicaStatesOps.downReplicas(replicasToDown,
+                PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates())).persist(coll.getZNode(), zkClient);
+          } catch (KeeperException | InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      });
+      // We always send a down node event to overseer to be safe, but overseer will not need to do anything for PRS collections
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
+          ZkStateReader.NODE_NAME_PROP, nodeName);
       overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
     } catch (AlreadyClosedException e) {
       log.info("Not publishing node as DOWN because a resource required to do so is already closed.");

@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -72,6 +73,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.response.JSONWriter;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -3247,6 +3249,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
           @Override
           public AutoScalingConfig getAutoScalingConfig() {
             return new AutoScalingConfig(new HashMap<>());
+          }
+
+          @Override
+          public VersionedData getData(String path) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+            return null;
           }
         };
       }

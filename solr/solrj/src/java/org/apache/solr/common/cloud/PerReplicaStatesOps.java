@@ -237,7 +237,7 @@ public class PerReplicaStatesOps {
         PerReplicaStates.State r = prs.get(replica);
         if (r != null) {
           if (r.state == Replica.State.DOWN && !r.isLeader) continue;
-          operations.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(replica, Replica.State.DOWN, Boolean.FALSE, r.version + 1)));
+          operations.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(replica, Replica.State.DOWN, r.isLeader, r.version + 1)));
           addDeleteStaleNodes(operations, r);
         } else {
           operations.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(replica, Replica.State.DOWN, Boolean.FALSE, 0)));

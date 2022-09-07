@@ -27,8 +27,6 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -59,6 +57,8 @@ public class NodeMutator {
 
       String collection = entry.getKey();
       DocCollection docCollection = entry.getValue();
+      // PRS down state is already handled in ZkController.publishNodeAsDown(), so overseer can skip PRS collections
+      if (docCollection.isPerReplicaState()) continue;
 
       Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 

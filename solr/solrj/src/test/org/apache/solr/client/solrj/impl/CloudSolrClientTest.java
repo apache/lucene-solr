@@ -1125,61 +1125,52 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   public void testPRSRestart() throws Exception {
     String testCollection = "prs_restart_test";
-    MiniSolrCloudCluster cluster1 =
-        configureCluster(1)
-            .addConfig("conf1", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
-            .withJettyConfig(jetty -> jetty.enableV2(true))
-            .configure();
-    try {
-      CollectionAdminRequest.createCollection(testCollection, "conf1", 1, 1)
+      CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1)
           .setPerReplicaState(Boolean.TRUE)
           .process(cluster.getSolrClient());
-      cluster1.waitForActiveCollection(testCollection, 1, 1);
+      cluster.waitForActiveCollection(testCollection, 1, 1);
 
-      DocCollection c = cluster1.getSolrClient().getZkStateReader().getCollection(testCollection);
+      DocCollection c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
       String collectionPath = ZkStateReader.getCollectionPath(testCollection);
       PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(1, prs.states.size());
 
-      JettySolrRunner jsr = cluster1.startJettySolrRunner();
-      assertEquals(2,cluster1.getJettySolrRunners().size());
-
       // Now let's do an add replica
       CollectionAdminRequest
           .addReplicaToShard(testCollection, "shard1")
-          .process(cluster1.getSolrClient());
-      cluster1.waitForActiveCollection(testCollection, 1, 2);
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(testCollection, 1, 2);
       prs = PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(2, prs.states.size());
-      c = cluster1.getSolrClient().getZkStateReader().getCollection(testCollection);
+      c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
       prs.states.forEachEntry((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
 
       String replicaName = null;
-      for (Replica r : c.getSlice("shard1").getReplicas()) {
-        if(r.getNodeName() .equals(jsr.getNodeName())) {
-          replicaName = r.getName();
+      JettySolrRunner jsr = null;
+      List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
+      for (JettySolrRunner r : jettySolrRunners) {
+        //Ensure that replicas are on different jetty runners (different nodes)
+        assertTrue(r.getCoreContainer().getCoreDescriptors().size() < 2);
+        if ((jsr == null || replicaName == null) && r.getCoreContainer().getCoreDescriptors().size() > 0) {
+          // Grab one JettyServerRunner and replica to test with restart
+          jsr = r;
+          replicaName = r.getCoreContainer().getCores().get(0).getCoreDescriptor().getCoreProperty("coreNodeName", "");
         }
       }
 
       if(replicaName != null) {
         log.info("restarting the node : {}, state.json v: {} downreplica :{}", jsr.getNodeName(), c.getZNodeVersion(), replicaName);
         jsr.stop();
-        c = cluster1.getSolrClient().getZkStateReader().getCollection(testCollection);
+        c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
         log.info("after down node, state.json v: {}", c.getZNodeVersion());
         prs =  PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
         PerReplicaStates.State st = prs.get(replicaName);
         assertNotEquals(Replica.State.ACTIVE, st.state);
         jsr.start();
-        cluster1.waitForActiveCollection(testCollection, 1, 2);
+        cluster.waitForActiveCollection(testCollection, 1, 2);
         prs =  PerReplicaStates.fetch(collectionPath, cluster.getZkClient(), null);
         prs.states.forEachEntry((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
       }
-
-    } finally {
-      cluster1.shutdown();
-    log.info("SHUTDOWN CLUSTER");
-    }
-
   }
 }

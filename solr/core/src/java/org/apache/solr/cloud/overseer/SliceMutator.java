@@ -31,9 +31,7 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -96,14 +94,7 @@ public class SliceMutator {
             ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP), 
             ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, slice);
 
-    if (collection.isPerReplicaState()) {
-      PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica),
-          PerReplicaStatesOps.addReplica(replica.getName(), replica.getState(), replica.isLeader(), prs), true);
-    } else {
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
-    }
-
+    return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
@@ -129,13 +120,7 @@ public class SliceMutator {
       newSlices.put(slice.getName(), slice);
     }
 
-
-    if (coll.isPerReplicaState()) {
-      PerReplicaStatesOps replicaOps = PerReplicaStatesOps.deleteReplica(cnn, PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates()) );
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), replicaOps, true);
-    } else {
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
-    }
+    return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
   }
 
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
@@ -153,16 +138,15 @@ public class SliceMutator {
     Slice slice = slices.get(sliceName);
 
     Replica oldLeader = slice.getLeader();
-    Replica newLeader = null;
     final Map<String, Replica> newReplicas = new LinkedHashMap<>();
     for (Replica replica : slice.getReplicas()) {
       // TODO: this should only be calculated once and cached somewhere?
       String coreURL = ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
       if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
-        replica = new ReplicaMutator(cloudManager).unsetLeader(replica);
+        replica = ReplicaMutator.unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
-        newLeader = replica = new ReplicaMutator(cloudManager).setLeader(replica);
+        replica = ReplicaMutator.setLeader(replica);
       }
 
       newReplicas.put(replica.getName(), replica);
@@ -171,16 +155,7 @@ public class SliceMutator {
     Map<String, Object> newSliceProps = slice.shallowCopy();
     newSliceProps.put(Slice.REPLICAS, newReplicas);
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
-    if (coll.isPerReplicaState()) {
-      PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice),
-          PerReplicaStatesOps.flipLeader(
-              slice.getReplicaNames(),
-              newLeader == null ? null : newLeader.getName(),
-              prs), false);
-    } else {
-      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
-    }
+    return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
   }    
 
   public ZkWriteCommand updateShardState(ClusterState clusterState, ZkNodeProps message) {
