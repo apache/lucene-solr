@@ -2842,7 +2842,8 @@ public class ZkController implements Closeable {
   public void publishNodeAsDown(String nodeName) {
     log.info("Publish node={} as DOWN", nodeName);
     try {
-      Set<String> processedCollections = new HashSet<>();
+      // Create a concurrently accessible set to avoid repeating collections
+      Set<String> processedCollections = ConcurrentHashMap.newKeySet();
       cc.getCoreDescriptors().parallelStream().forEach(cd -> {
         DocCollection coll = zkStateReader.getCollection(cd.getCollectionName());
         if (processedCollections.add(coll.getName()) && coll.isPerReplicaState()) {
