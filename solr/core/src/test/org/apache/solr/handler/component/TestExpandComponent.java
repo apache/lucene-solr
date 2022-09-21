@@ -89,8 +89,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     String[][] docs = {
         {"id","1", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "5", "test_l", "10", "test_f", "2000", "type_s", "parent"},
         {"id","2", "term_s","YYYY", group, "1"+floatAppend, "test_i", "50", "test_l", "100", "test_f", "200", "type_s", "child"},
-        {"id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"},
-        {"id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"},
+        {"id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200", "type_s", "other"},
+        {"id","4", "term_s", "YYYY", "test_i", "40", "test_l", "1000", "test_f", "2000", "type_s", "other"},
         {"id","5", "term_s", "YYYY", group, "0"+floatAppend, "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"},
         {"id","6", "term_s","YYYY", group, "0"+floatAppend, "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"},
         {"id","7", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"},
@@ -117,7 +117,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Basic test case page 2
-
     assertQ(req(params, "rows", "1", "start", "1"), "*[count(/response/result/doc)=1]",
         "*[count(/response/lst[@name='expanded']/result)=1]",
         "/response/result/doc[1]/str[@name='id'][.='6']",
@@ -138,78 +137,163 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
     );
 
-    //Test with nullPolicy, ExpandComponent should ignore docs with null values in the collapse fields.
-    //Main result set should include the doc(s) with null value in the collapse field.
+    //Test with nullPolicy...
+    // Main result set should include the doc(s) with null value in the collapse field.
+    // By default ExpandComponent should ignore docs with null values in the collapse fields....
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
-    params.add("fq", "{!collapse field="+group+hint+" nullPolicy=collapse}");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
     params.add("expand.sort", "test_l desc");
-    assertQ(req(params), "*[count(/response/result/doc)=3]",
-        "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/str[@name='id'][.='3']",
-        "/response/result/doc[2]/str[@name='id'][.='2']",
-        "/response/result/doc[3]/str[@name='id'][.='6']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
-    );
-    params.set("fq", "{!collapse field="+group+hint+" nullPolicy=expand}");
-    assertQ(req(params), "*[count(/response/result/doc)=4]",
-        "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/str[@name='id'][.='3']",
-        "/response/result/doc[2]/str[@name='id'][.='4']",
-        "/response/result/doc[3]/str[@name='id'][.='2']",
-        "/response/result/doc[4]/str[@name='id'][.='6']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
-    );
+    assertQ(req(params,
+                "fq", "{!collapse field="+group+hint+" nullPolicy=collapse}")
+            ,"*[count(/response/result/doc)=3]"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='3']"
+            ,"/response/result/doc[2]/str[@name='id'][.='2']"
+            ,"/response/result/doc[3]/str[@name='id'][.='6']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
+            );
+    assertQ(req(params,
+                "fq", "{!collapse field="+group+hint+" nullPolicy=expand}")
+            ,"*[count(/response/result/doc)=4]"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='3']"
+            ,"/response/result/doc[2]/str[@name='id'][.='2']"
+            ,"/response/result/doc[3]/str[@name='id'][.='4']"
+            ,"/response/result/doc[4]/str[@name='id'][.='6']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
+            );
+    // Adding expand.nullGroup should cause a 'null' group in our expanded results...
+    params.add("expand.nullGroup", "true");
+    assertQ(req(params,
+                "fq", "{!collapse field="+group+hint+" nullPolicy=collapse}")
+            ,"*[count(/response/result/doc)=3]"
+            ,"*[count(/response/lst[@name='expanded']/result)=3]"
+            ,"/response/result/doc[1]/str[@name='id'][.='3']"
+            ,"/response/result/doc[2]/str[@name='id'][.='2']"
+            ,"/response/result/doc[3]/str[@name='id'][.='6']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
+            ,"/response/lst[@name='expanded']/result[not(@name)]/doc[1]/str[@name='id'][.='4']"
+            );
+    assertQ(req(params,
+                // no null group here because all null docs already in current page
+                "fq", "{!collapse field="+group+hint+" nullPolicy=expand}")
+            ,"*[count(/response/result/doc)=4]"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='3']"
+            ,"/response/result/doc[2]/str[@name='id'][.='2']"
+            ,"/response/result/doc[3]/str[@name='id'][.='4']"
+            ,"/response/result/doc[4]/str[@name='id'][.='6']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
+            );
+    assertQ(req(params,
+                // limiting rows should cause null group to pop up since we now have a null doc not on page...
+                "rows", "2",
+                "fq", "{!collapse field="+group+hint+" nullPolicy=expand}")
+            ,"*[count(/response/result/doc)=2]"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='3']"
+            ,"/response/result/doc[2]/str[@name='id'][.='2']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']"
+            ,"/response/lst[@name='expanded']/result[not(@name)]/doc[1]/str[@name='id'][.='4']"
+            );
+    assertQ(req(params,
+                // with only 1 rows, the only expanded group we should see is the nullGroup...
+                "rows", "1",
+                "fq", "{!collapse field="+group+hint+" nullPolicy=expand}")
+            ,"*[count(/response/result/doc)=1]"
+            ,"*[count(/response/lst[@name='expanded']/result)=1]"
+            ,"/response/result/doc[1]/str[@name='id'][.='3']"
+            ,"/response/lst[@name='expanded']/result[not(@name)]/doc[1]/str[@name='id'][.='4']"
+            );
 
-
-    //Test override expand.q
+    // Test override expand.q
+    // the fact that expand.q matches docs in null group shouldn't matter w/o expand.nullGroup=true
     params = new ModifiableSolrParams();
     params.add("q", "type_s:parent");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
-    params.add("expand.q", "type_s:child");
+    params.add("expand.q", "type_s:(child OR other)");
     params.add("expand.field", group);
     params.add("expand.sort", "test_l desc");
-    assertQ(req(params), "*[count(/response/result/doc)=2]",
-        "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/str[@name='id'][.='1']",
-        "/response/result/doc[2]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
-    );
+    assertQ(req(params)
+            ,"*[count(/response/result/doc)=2]"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='1']"
+            ,"/response/result/doc[2]/str[@name='id'][.='5']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
+            );
+    assertQ(req(params,
+                // now the 'other' docs should show up in an expanded null group
+                "expand.nullGroup", "true")
+            ,"*[count(/response/result/doc)=2]"
+            ,"*[count(/response/lst[@name='expanded']/result)=3]"
+            ,"/response/result/doc[1]/str[@name='id'][.='1']"
+            ,"/response/result/doc[2]/str[@name='id'][.='5']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
+            ,"/response/lst[@name='expanded']/result[not(@name)]/doc[1]/str[@name='id'][.='4']"
+            ,"/response/lst[@name='expanded']/result[not(@name)]/doc[2]/str[@name='id'][.='3']"
+            );
 
 
-    //Test override expand.fq
+    // Test override expand.fq
+    // the fact that expand.fq matches docs in null group shouldn't matter w/o expand.nullGroup=true
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "type_s:parent");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
-    params.add("expand.fq", "type_s:child");
+    params.add("expand.fq", "type_s:(child OR other)");
     params.add("expand.field", group);
     params.add("expand.sort", "test_l desc");
-    assertQ(req(params), "*[count(/response/result/doc)=2]",
-        "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/str[@name='id'][.='1']",
-        "/response/result/doc[2]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
-    );
+    assertQ(req(params)
+            ,"*[count(/response/result/doc)=2]"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='1']"
+            ,"/response/result/doc[2]/str[@name='id'][.='5']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
+            );
+    assertQ(req(params,
+                // now the 'other' docs should show up in an expanded null group
+                "expand.nullGroup", "true")
+            ,"*[count(/response/result/doc)=2]"
+            ,"*[count(/response/lst[@name='expanded']/result)=3]"
+            ,"/response/result/doc[1]/str[@name='id'][.='1']"
+            ,"/response/result/doc[2]/str[@name='id'][.='5']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
+            ,"/response/lst[@name='expanded']/result[not(@name)]/doc[1]/str[@name='id'][.='4']"
+            ,"/response/lst[@name='expanded']/result[not(@name)]/doc[2]/str[@name='id'][.='3']"
+            );
+
 
     //Test override expand.fq and expand.q
     params = new ModifiableSolrParams();
@@ -251,39 +335,79 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
     );
 
-    //Test expand.rows = 0 - no docs only expand count
+    // Test expand.rows=0 - no docs only expand count
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
-    params.add("fq", "{!collapse field="+group+hint+"}");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
     params.add("expand.rows", "0");
-    assertQ(req(params), "*[count(/response/result/doc)=2]",
-            "*[count(/response/lst[@name='expanded']/result)=2]",
-            "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
-            "*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]",
-            "/response/result/doc[1]/str[@name='id'][.='2']",
-            "/response/result/doc[2]/str[@name='id'][.='6']"
-    );
+    assertQ(req(params,
+                "fq", "{!collapse field="+group+hint+"}")
+            ,"*[count(/response/result/doc)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='2']"
+            ,"/response/result/doc[2]/str[@name='id'][.='6']"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"' and @numFound=2]"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"' and @numFound=2]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]"
+            );
+    assertQ(req(params,
+                // same, but with collapsed nulls and a nullGroup, we should have our expanded null group count
+                "fq", "{!collapse field="+group+hint+" nullPolicy=collapse}",
+                "expand.nullGroup", "true")
+            ,"*[count(/response/result/doc)=3]"
+            ,"/response/result/doc[1]/str[@name='id'][.='3']"
+            ,"/response/result/doc[2]/str[@name='id'][.='2']"
+            ,"/response/result/doc[3]/str[@name='id'][.='6']"
+            ,"*[count(/response/lst[@name='expanded']/result)=3]"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"' and @numFound=2]"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"' and @numFound=2]"
+            ,"/response/lst[@name='expanded']/result[not(@name) and @numFound=1]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result[not(@name)]/doc)=0]"
+            );
 
-    //Test expand.rows = 0 with expand.field
+    // Test expand.rows = 0 with expand.field
+    // the fact that expand.q matches docs in null group shouldn't matter w/o expand.nullGroup=true
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "type_s:parent");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
-    params.add("expand.fq", "type_s:child");
+    params.add("expand.fq", "type_s:(child OR other)");
     params.add("expand.field", group);
     params.add("expand.rows", "0");
-    assertQ(req(params, "fl", "id"), "*[count(/response/result/doc)=2]",
-            "*[count(/response/lst[@name='expanded']/result)=2]",
-            "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
-            "*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]",
-            "/response/result/doc[1]/str[@name='id'][.='1']",
-            "/response/result/doc[2]/str[@name='id'][.='5']"
-    );
+    params.add("fl", "id");
+    assertQ(req(params)
+            ,"*[count(/response/result/doc)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='1']"
+            ,"/response/result/doc[2]/str[@name='id'][.='5']"
+            ,"*[count(/response/lst[@name='expanded']/result)=2]"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"' and @numFound=2]"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"' and @numFound=2]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]"
+            );
+    assertQ(req(params,
+                // now the 'other' docs should show up in an expanded null group
+                "expand.nullGroup", "true")
+            ,"*[count(/response/result/doc)=2]"
+            ,"/response/result/doc[1]/str[@name='id'][.='1']"
+            ,"/response/result/doc[2]/str[@name='id'][.='5']"
+            ,"*[count(/response/lst[@name='expanded']/result)=3]"
+            ,"/response/lst[@name='expanded']/result[@name='1"+floatAppend+"' and @numFound=2]"
+            ,"/response/lst[@name='expanded']/result[@name='0"+floatAppend+"' and @numFound=2]"
+            ,"/response/lst[@name='expanded']/result[not(@name) and @numFound=2]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result[not(@name)]/doc)=0]"
+
+            );
+
 
     //Test score with expand.rows = 0
     params = new ModifiableSolrParams();
@@ -319,18 +443,42 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "*[count(/response/lst[@name='expanded']/result)=0]"
     );
 
-    //Test zero results
+    // Test zero results
     params = new ModifiableSolrParams();
     params.add("q", "test_i:5532535");
-    params.add("fq", "{!collapse field="+group+hint+"}");
+    params.add("fq", "{!collapse field="+group+hint+" nullPolicy=collapse}");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
     params.add("expand.sort", "test_l desc");
     params.add("expand.rows", "1");
-    assertQ(req(params), "*[count(/response/result/doc)=0]",
-        "*[count(/response/lst[@name='expanded']/result)=0]"
-    );
+    assertQ(req(params)
+            ,"*[count(/response/result/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result)=0]"
+            );
+    assertQ(req(params,
+                "expand.nullGroup", "true")
+            ,"*[count(/response/result/doc)=0]"
+            ,"*[count(/response/lst[@name='expanded']/result)=0]"
+            );
+    // Query has results, but expand.q has none...
+    params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse field="+group+hint+" nullPolicy=collapse}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_i)");
+    params.add("expand", "true");
+    params.add("expand.q", "test_i:5532535");
+    assertQ(req(params)
+            ,"*[count(/response/result/doc)=3]"
+            ,"*[count(/response/lst[@name='expanded']/result)=0]"
+            );
+    assertQ(req(params,
+                "expand.nullGroup", "true")
+            ,"*[count(/response/result/doc)=3]"
+            ,"*[count(/response/lst[@name='expanded']/result)=0]"
+            );
+   
 
     //Test key-only fl
     params = new ModifiableSolrParams();
