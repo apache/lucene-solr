@@ -16,6 +16,8 @@ Other Changes
 ---------------------
 * SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.9 (Kevin Risden)
 
+* SOLR-16424: Upgrade Netty to 4.1.82.Final (Kevin Risden)
+
 ==================  8.11.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
