@@ -67,7 +67,14 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
   public void testIntDv() throws Exception {
     _testExpand("group_ti_dv", "", "");
   }
-  
+
+  public void testLong() throws Exception {
+    _testExpand("group_l", "", "");
+  }
+  public void testLongDv() throws Exception {
+    _testExpand("group_tl_dv", "", "");
+  }
+
   public void testFloat() throws Exception {
     _testExpand("group_f", floatAppend(), "");
     _testExpand("group_f", ".0", ""); // explicit 0 check for 0 vs null group

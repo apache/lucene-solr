@@ -50,6 +50,8 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     _test("group_s_dv", "g1", "g2", "g3", "g4");
     _test("group_i", "1", "0", "3", "-1"); // NOTE: using 0 to explicitly confim we don't assume null
     _test("group_ti_dv", "1", "-2", "0", "4"); // NOTE: using 0 to explicitly confim we don't assume null
+    _test("group_l", "1", "0", "3", "-1"); // NOTE: using 0 to explicitly confim we don't assume null
+    _test("group_tl_dv", "1", "-2", "0", "4"); // NOTE: using 0 to explicitly confim we don't assume null
   }
   
   private void _test(final String group,

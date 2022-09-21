@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelector;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelectorType;
 import org.junit.Before;
@@ -214,18 +215,20 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testStringCollapse() throws Exception {
     for (final String hint : new String[] {"", " hint="+CollapsingQParserPlugin.HINT_TOP_FC}) {
-      testCollapseQueries("group_s", hint, false);
-      testCollapseQueries("group_s_dv", hint, false);
+      testCollapseQueries("group_s", hint, null);
+      testCollapseQueries("group_s_dv", hint, null);
     }
   }
 
   @Test
   public void testNumericCollapse() throws Exception {
     final String hint = "";
-    testCollapseQueries("group_i", hint, true);
-    testCollapseQueries("group_ti_dv", hint, true);
-    testCollapseQueries("group_f", hint, true);
-    testCollapseQueries("group_tf_dv", hint, true);
+    testCollapseQueries("group_l", hint, NumberType.LONG);
+    testCollapseQueries("group_tl_dv", hint, NumberType.LONG);
+    testCollapseQueries("group_i", hint, NumberType.INTEGER);
+    testCollapseQueries("group_ti_dv", hint, NumberType.INTEGER);
+    testCollapseQueries("group_f", hint, NumberType.FLOAT);
+    testCollapseQueries("group_tf_dv", hint, NumberType.FLOAT);
   }
 
   @Test
@@ -351,6 +354,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   public void testDoubleCollapse() {
     testDoubleCollapse("group_s", "");
     testDoubleCollapse("group_i", "");
+    testDoubleCollapse("group_l", "");
   }
 
 
@@ -412,12 +416,27 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
 
 
-  private void testCollapseQueries(String group, String hint, boolean numeric) throws Exception {
+  private void testCollapseQueries(String group, String hint, NumberType numberType) throws Exception {
+    String lowGroup;
+    String highGroup;
+    if (numberType == NumberType.LONG) {
+      // to adequately test `NumberType.LONG` we need a high group that is out of range of 32-bit
+      long low = 1;
+      long high = (1L << 32) | 1L;
+      // some obvious sanity-check assertions
+      assertTrue(low == (int) high);
+      assertTrue(high > Integer.MAX_VALUE);
+      lowGroup = Long.toString(low);
+      highGroup = Long.toString(high);
+    } else {
+      lowGroup = "1";
+      highGroup = "2";
+    }
 
-    String[] doc = {"id","1", "term_s", "YYYY", group, "1", "test_i", "5", "test_l", "10", "test_f", "2000"};
+    String[] doc = {"id","1", "term_s", "YYYY", group, lowGroup, "test_i", "5", "test_l", "10", "test_f", "2000"};
     assertU(adoc(doc));
     assertU(commit());
-    String[] doc1 = {"id","2", "term_s","YYYY", group, "1", "test_i", "50", "test_l", "100", "test_f", "200"};
+    String[] doc1 = {"id","2", "term_s","YYYY", group, lowGroup, "test_i", "50", "test_l", "100", "test_f", "200"};
     assertU(adoc(doc1));
 
 
@@ -429,14 +448,14 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc(doc3));
 
 
-    String[] doc4 = {"id","5", "term_s", "YYYY", group, "2", "test_i", "4", "test_l", "10", "test_f", "2000"};
+    String[] doc4 = {"id","5", "term_s", "YYYY", group, highGroup, "test_i", "4", "test_l", "10", "test_f", "2000"};
     assertU(adoc(doc4));
     assertU(commit());
-    String[] doc5 = {"id","6", "term_s","YYYY", group, "2", "test_i", "10", "test_l", "100", "test_f", "200"};
+    String[] doc5 = {"id","6", "term_s","YYYY", group, highGroup, "test_i", "10", "test_l", "100", "test_f", "200"};
     assertU(adoc(doc5));
     assertU(commit());
 
-    String[] doc6 = {"id","7", "term_s", "YYYY", group, "1", "test_i", "8", "test_l", "50", "test_f", "300"};
+    String[] doc6 = {"id","7", "term_s", "YYYY", group, lowGroup, "test_i", "8", "test_l", "50", "test_f", "300"};
     assertU(adoc(doc6));
     assertU(commit());
 
@@ -696,7 +715,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                            "//result/doc[1]/str[@name='id'][.='2']",
                            "//result/doc[2]/str[@name='id'][.='6']");
     } catch (Exception e) {
-      if(!numeric) {
+      if(numberType == null) {
         throw e;
       }
     }
@@ -754,8 +773,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
               // since selector is bogus, group head is undefined
               // (should be index order, but don't make absolute assumptions: segments may be re-ordered)
               // key assertion is that there is one doc from each group & groups are in order
-              "//result/doc[1]/*[@name='"+group+"'][starts-with(.,'1')]",
-              "//result/doc[2]/*[@name='"+group+"'][starts-with(.,'2')]");
+              "//result/doc[1]/*[@name='"+group+"'][starts-with(.,'" + lowGroup + "')]",
+              "//result/doc[2]/*[@name='"+group+"'][starts-with(.,'" + highGroup + "')]");
     }
     
     // attempting to use cscore() in sort local param should fail
@@ -1034,8 +1053,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void test64BitCollapseFieldException() {
-    assertQEx("Should Fail For collapsing on Long fields", "Collapsing field should be of either String, Int or Float type",
-        req("q", "*:*", "fq", "{!collapse field=group_l}"), SolrException.ErrorCode.BAD_REQUEST);
+//    assertQEx("Should Fail For collapsing on Long fields", "Collapsing field should be of either String, Int or Float type",
+//        req("q", "*:*", "fq", "{!collapse field=group_l}"), SolrException.ErrorCode.BAD_REQUEST);
 
     assertQEx("Should Fail For collapsing on Double fields", "Collapsing field should be of either String, Int or Float type",
         req("q", "*:*", "fq", "{!collapse field=group_d}"), SolrException.ErrorCode.BAD_REQUEST);
@@ -1087,15 +1106,15 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // Stub out our documents.  From now on assume highest "id" of each group should be group head...
     final List<SolrInputDocument> docs = sdocs
       (sdoc("id", "0"),  // null group
-       sdoc("id", "1",   "group_i", A, "group_s", A),
-       sdoc("id", "2",   "group_i", B, "group_s", B),
-       sdoc("id", "3",   "group_i", B, "group_s", B),  // B head
+       sdoc("id", "1",   "group_i", A, "group_l", A, "group_s", A),
+       sdoc("id", "2",   "group_i", B, "group_l", B, "group_s", B),
+       sdoc("id", "3",   "group_i", B, "group_l", B, "group_s", B),  // B head
        sdoc("id", "4"),  // null group
-       sdoc("id", "5",   "group_i", A, "group_s", A),
-       sdoc("id", "6",   "group_i", C, "group_s", C),
+       sdoc("id", "5",   "group_i", A, "group_l", A, "group_s", A),
+       sdoc("id", "6",   "group_i", C, "group_l", C, "group_s", C),
        sdoc("id", "7"),  // null group                 // null head
-       sdoc("id", "8",   "group_i", A, "group_s", A),  // A head
-       sdoc("id", "9",   "group_i", C, "group_s", C)); // C head
+       sdoc("id", "8",   "group_i", A, "group_l", A, "group_s", A),  // A head
+       sdoc("id", "9",   "group_i", C, "group_l", C, "group_s", C)); // C head
 
     final List<String> SELECTOR_FIELD_SUFFIXES = Arrays.asList("_i", "_l", "_f");
     // add all the fields we'll be using as group head selectors...
@@ -1125,7 +1144,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       
     // results should be the same regardless of wether we collapse on a string field or numeric field
     // (docs have identicle group identifiers in both fields)
-    for (String f : Arrays.asList("group_i", 
+    for (String f : Arrays.asList("group_i",
+                                  "group_l",
                                   "group_s")) {
       
       // these group head selectors should all result in identical group heads for our query...
@@ -1140,16 +1160,18 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                                              "min=sum(42,desc" + suffix + ")",
                                              "max=sub(0,desc" + suffix + ")",
                                              "min=sub(0,asc" + suffix + ")")) {
-          
-          if (selector.endsWith("_l") && f.endsWith("_i")) {
-            assertQEx("expected known limitation of using long for min/max selector when doing numeric collapse",
-                      "min/max must be Int or Float",
-                      req("q", q,
-                          "fq", "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}"),
-                      SolrException.ErrorCode.BAD_REQUEST);
-              
-              continue;
-          }
+
+          // NOTE: I don't understand why this limitation existed? I think it may have been obviated by
+          // subsequent changes, since score is now tracked separately (not bit-shifted and melded with docId)
+//          if (selector.endsWith("_l") && f.endsWith("_i")) {
+//            assertQEx("expected known limitation of using long for min/max selector when doing numeric collapse",
+//                      "min/max must be Int or Float",
+//                      req("q", q,
+//                          "fq", "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}"),
+//                      SolrException.ErrorCode.BAD_REQUEST);
+//
+//              continue;
+//          }
         
           
           // ignore nulls

@@ -30,10 +30,14 @@ import java.util.Set;
 import com.carrotsearch.hppc.FloatArrayList;
 import com.carrotsearch.hppc.IntArrayList;
 import com.carrotsearch.hppc.IntIntHashMap;
-import com.carrotsearch.hppc.IntLongHashMap;
+import com.carrotsearch.hppc.LongArrayList;
+import com.carrotsearch.hppc.LongIntHashMap;
+import com.carrotsearch.hppc.LongLongHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
-import com.carrotsearch.hppc.cursors.IntLongCursor;
+import com.carrotsearch.hppc.cursors.LongIntCursor;
+import com.carrotsearch.hppc.cursors.LongLongCursor;
 import com.carrotsearch.hppc.procedures.IntProcedure;
+import com.carrotsearch.hppc.procedures.LongProcedure;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
@@ -685,7 +689,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(collapsedSet,
-                                                          (ord) -> { ords.remove(ord); },
+                                                          (ord) -> { ords.remove((int) ord); },
                                                           () -> { nullDoc = -1; });
 
       //Build the sorted DocSet of group heads.
@@ -768,15 +772,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /**
-   * Collapses on an integer field using the score to select the group head.
+   * Collapses on a long field using the score to select the group head.
    * @lucene.internal
    */
-  static class IntScoreCollector extends DelegatingCollector {
+  static class LongScoreCollector extends DelegatingCollector {
 
     private LeafReaderContext[] contexts;
     private FixedBitSet collapsedSet;
     private NumericDocValues collapseValues;
-    private IntLongHashMap cmap;
+    private LongLongHashMap cmap;
     private int maxDoc;
     private int nullPolicy;
     private float nullScore = -Float.MAX_VALUE;
@@ -786,13 +790,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     private final BoostedDocsCollector boostedDocsCollector;
     
-    public IntScoreCollector(int maxDoc,
-                             int segments,
-                             int nullPolicy,
-                             int size,
-                             String field,
-                             IntIntHashMap boostDocsMap,
-                             IndexSearcher searcher) {
+    public LongScoreCollector(int maxDoc,
+                              int segments,
+                              int nullPolicy,
+                              int size,
+                              String field,
+                              IntIntHashMap boostDocsMap,
+                              IndexSearcher searcher) {
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
       List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
@@ -805,7 +809,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(nullPolicy == NullPolicy.EXPAND.getCode()) {
         nullScores = new FloatArrayList();
       }
-      this.cmap = new IntLongHashMap(size);
+      this.cmap = new LongLongHashMap(size);
       this.field = field;
       
       this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
@@ -824,7 +828,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public void collect(int contextDoc) throws IOException {
       final int globalDoc = docBase+contextDoc;
       if (collapseValues.advanceExact(contextDoc)) {
-        final int collapseValue = (int) collapseValues.longValue();
+        final long collapseValue = collapseValues.longValue();
         // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
         if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
 
@@ -878,9 +882,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
-      Iterator<IntLongCursor> it1 = cmap.iterator();
+      Iterator<LongLongCursor> it1 = cmap.iterator();
       while(it1.hasNext()) {
-        IntLongCursor cursor = it1.next();
+        LongLongCursor cursor = it1.next();
         int doc = (int)cursor.value;
         collapsedSet.set(doc);
       }
@@ -910,7 +914,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         final int contextDoc = globalDoc-currentDocBase;
         if (collapseValues.advanceExact(contextDoc)) {
-          final int collapseValue = (int) collapseValues.longValue();
+          final long collapseValue = collapseValues.longValue();
           final long scoreDoc = cmap.get(collapseValue);
           dummy.score = Float.intBitsToFloat((int)(scoreDoc>>32));
           
@@ -1149,35 +1153,35 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
 
   /**
-   *  Collapses on an integer field.
+   *  Collapses on a long field.
    * @lucene.internal
    */
-  static class IntFieldValueCollector extends DelegatingCollector {
+  static class LongFieldValueCollector extends DelegatingCollector {
     private LeafReaderContext[] contexts;
     private NumericDocValues collapseValues;
     private int maxDoc;
     private int nullPolicy;
 
-    private IntFieldValueStrategy collapseStrategy;
+    private LongFieldValueStrategy collapseStrategy;
     private boolean needsScores4Collapsing;
     private boolean needsScores;
     private String collapseField;
     
     private final BoostedDocsCollector boostedDocsCollector;
 
-    public IntFieldValueCollector(int maxDoc,
-                                  int size,
-                                  int segments,
-                                  int nullPolicy,
-                                  String collapseField,
-                                  GroupHeadSelector groupHeadSelector,
-                                  SortSpec sortSpec,
-                                  boolean needsScores4Collapsing,
-                                  boolean needsScores,
-                                  FieldType fieldType,
-                                  IntIntHashMap boostDocsMap,
-                                  FunctionQuery funcQuery,
-                                  IndexSearcher searcher) throws IOException{
+    public LongFieldValueCollector(int maxDoc,
+                                   int size,
+                                   int segments,
+                                   int nullPolicy,
+                                   String collapseField,
+                                   GroupHeadSelector groupHeadSelector,
+                                   SortSpec sortSpec,
+                                   boolean needsScores4Collapsing,
+                                   boolean needsScores,
+                                   FieldType fieldType,
+                                   IntIntHashMap boostDocsMap,
+                                   FunctionQuery funcQuery,
+                                   IndexSearcher searcher) throws IOException{
 
       assert ! GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type);
 
@@ -1195,15 +1199,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
       
       if (null != sortSpec) {
-        this.collapseStrategy = new IntSortSpecStrategy(maxDoc, size, collapseField, nullPolicy, groupHeadSelector, this.needsScores4Collapsing, this.needsScores, boostedDocsCollector, sortSpec, searcher);
+        this.collapseStrategy = new LongSortSpecStrategy(maxDoc, size, collapseField, nullPolicy, groupHeadSelector, this.needsScores4Collapsing, this.needsScores, boostedDocsCollector, sortSpec, searcher);
       } else if (funcQuery != null) {
-        this.collapseStrategy =  new IntValueSourceStrategy(maxDoc, size, collapseField, nullPolicy, groupHeadSelector, this.needsScores4Collapsing, this.needsScores, boostedDocsCollector, funcQuery, searcher);
+        this.collapseStrategy =  new LongValueSourceStrategy(maxDoc, size, collapseField, nullPolicy, groupHeadSelector, this.needsScores4Collapsing, this.needsScores, boostedDocsCollector, funcQuery, searcher);
       } else {
         NumberType numType = fieldType.getNumberType();
         assert null != numType; // shouldn't make it here for non-numeric types
         switch (numType) {
+          case DATE:
+          case LONG:
           case INTEGER: {
-            this.collapseStrategy = new IntIntStrategy(maxDoc, size, collapseField, nullPolicy, groupHeadSelector, this.needsScores, boostedDocsCollector);
+            this.collapseStrategy = new IntLongStrategy(maxDoc, size, collapseField, nullPolicy, groupHeadSelector, this.needsScores, boostedDocsCollector);
             break;
           }
           case FLOAT: {
@@ -1212,7 +1218,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
           default: {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "min/max must be Int or Float field types when collapsing on numeric fields");
+                "min/max must be Int, Float, Long, or Date field types when collapsing on numeric fields");
           }
         }
       }
@@ -1235,7 +1241,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public void collect(int contextDoc) throws IOException {
       final int globalDoc = contextDoc+this.docBase;
       if (collapseValues.advanceExact(contextDoc)) {
-        final int collapseKey = (int) collapseValues.longValue();
+        final long collapseKey = collapseValues.longValue();
         // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
         if (boostedDocsCollector.collectIfBoosted(collapseKey, globalDoc)) return;
         collapseStrategy.collapse(collapseKey, contextDoc, globalDoc);
@@ -1267,7 +1273,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       DocIdSetIterator it = new BitSetIterator(collapseStrategy.getCollapsedSet(), 0); // cost is not useful here
       int globalDoc = -1;
       int nullScoreIndex = 0;
-      IntIntHashMap cmap = collapseStrategy.getCollapseMap();
+      LongIntHashMap cmap = collapseStrategy.getCollapseMap();
       IntFloatDynamicMap scores = collapseStrategy.getScores();
       FloatArrayList nullScores = collapseStrategy.getNullScores();
       float nullScore = collapseStrategy.getNullScore();
@@ -1288,7 +1294,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         if(this.needsScores){
           if (collapseValues.advanceExact(contextDoc)) {
-            final int collapseValue = (int) collapseValues.longValue();
+            final long collapseValue = collapseValues.longValue();
             
             final int pointer = cmap.get(collapseValue);
             dummy.score = scores.get(pointer);
@@ -1408,12 +1414,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
        * Specific values have no intrinsic meaning, but can <em>only</em> 
        * be considered if the current docID in {@link #docID} is non-negative
        */
-      private int currentGroup = 0;
+      private long currentGroup = 0;
       private boolean groupHasBoostedDocs;
-      public void setCurrentGroup(final int groupId) {
+      public void setCurrentGroup(final long groupId) {
         this.currentGroup = groupId;
       }
-      public int getCurrentGroup() {
+      public long getCurrentGroup() {
         assert -1 < docID();
         return this.currentGroup;
       }
@@ -1466,7 +1472,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * @param docGroup some uique identifier for the group - the base class makes no assumptions about it's meaning
      * @see #collectDocWithNullGroup
      */
-    protected void collectDocWithGroup(int contextDoc, int docGroup) throws IOException {
+    protected void collectDocWithGroup(int contextDoc, long docGroup) throws IOException {
       assert 0 <= contextDoc;
       
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
@@ -1567,10 +1573,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    * A block based score collector that uses a field's numeric value as the group ids 
    * @lucene.internal
    */
-  static class BlockIntScoreCollector extends AbstractBlockScoreCollector {
+  static class BlockLongScoreCollector extends AbstractBlockScoreCollector {
     private NumericDocValues segmentValues;
     
-    public BlockIntScoreCollector(final String collapseField, final int nullPolicy, final IntIntHashMap boostDocsMap) throws IOException {
+    public BlockLongScoreCollector(final String collapseField, final int nullPolicy, final IntIntHashMap boostDocsMap) throws IOException {
       super(collapseField, nullPolicy, boostDocsMap);
     }
 
@@ -1583,7 +1589,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     public void collect(int contextDoc) throws IOException {
       if (segmentValues.advanceExact(contextDoc)) {
-        int group = (int) segmentValues.longValue();
+        long group = segmentValues.longValue();
         collectDocWithGroup(contextDoc, group);
       } else {
         collectDocWithNullGroup(contextDoc);
@@ -1675,7 +1681,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * @param docGroup some uique identifier for the group - the base class makes no assumptions about it's meaning
      * @see #collectDocWithNullGroup
      */
-    protected void collectDocWithGroup(int contextDoc, int docGroup) throws IOException {
+    protected void collectDocWithGroup(int contextDoc, long docGroup) throws IOException {
       assert 0 <= contextDoc;
       
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
@@ -1781,14 +1787,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    * A block based score collector that uses a field's numeric value as the group ids 
    * @lucene.internal
    */
-  static class BlockIntSortSpecCollector extends AbstractBlockSortSpecCollector {
+  static class BlockLongSortSpecCollector extends AbstractBlockSortSpecCollector {
     private NumericDocValues segmentValues;
     
-    public BlockIntSortSpecCollector(final String collapseField,
-                                     final int nullPolicy,
-                                     final IntIntHashMap boostDocsMap,
-                                     final Sort sort,
-                                     final boolean needsScores) throws IOException {
+    public BlockLongSortSpecCollector(final String collapseField,
+                                      final int nullPolicy,
+                                      final IntIntHashMap boostDocsMap,
+                                      final Sort sort,
+                                      final boolean needsScores) throws IOException {
       super(collapseField, nullPolicy, boostDocsMap, sort, needsScores);
     }
 
@@ -1801,7 +1807,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     public void collect(int contextDoc) throws IOException {
       if (segmentValues.advanceExact(contextDoc)) {
-        int group = (int) segmentValues.longValue();
+        long group = segmentValues.longValue();
         collectDocWithGroup(contextDoc, group);
       } else {
         collectDocWithNullGroup(contextDoc);
@@ -1813,8 +1819,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   private static class CollectorFactory {
     /** @see #isNumericCollapsible */
     private final static EnumSet<NumberType> NUMERIC_COLLAPSIBLE_TYPES = EnumSet.of(NumberType.INTEGER,
+                                                                                    NumberType.LONG,
+                                                                                    //NumberType.DATE,
                                                                                     NumberType.FLOAT);
     private boolean isNumericCollapsible(FieldType collapseFieldType) {
+      // TODO: add support for collapsing on `NumberType.DOUBLE`?
+      // TODO: NumberType.DATE should "just work" without too much trouble; but we're not enabling
+      //  it yet because we don't yet need it and want to avoid writing tests for it.
       return NUMERIC_COLLAPSIBLE_TYPES.contains(collapseFieldType.getNumberType());
     }
 
@@ -1902,10 +1913,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         } else if (isNumericCollapsible(collapseFieldType)) {
           if (blockCollapse) {
-            return new BlockIntScoreCollector(collapseField, nullPolicy, boostDocs);
+            return new BlockLongScoreCollector(collapseField, nullPolicy, boostDocs);
           }
 
-          return new IntScoreCollector(maxDoc, leafCount, nullPolicy, size, collapseField, boostDocs, searcher);
+          return new LongScoreCollector(maxDoc, leafCount, nullPolicy, size, collapseField, boostDocs, searcher);
 
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -1942,13 +1953,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           if (blockCollapse) {
             // NOTE: for now we don't worry about wether this is a sortSpec of min/max groupHeadSelector,
             // we use a "sort spec' based block collector unless/until there is some (performance?) reason to specialize
-            return new BlockIntSortSpecCollector(collapseField, nullPolicy, boostDocs,
+            return new BlockLongSortSpecCollector(collapseField, nullPolicy, boostDocs,
                                                  BlockOrdSortSpecCollector.getSort(groupHeadSelector,
                                                                                    sortSpec, funcQuery, searcher),
                                                  needsScores || needsScores4Collapsing);
           }
 
-          return new IntFieldValueCollector(maxDoc,
+          return new LongFieldValueCollector(maxDoc,
                                             size,
                                             leafCount,
                                             nullPolicy,
@@ -2053,7 +2064,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public FixedBitSet getCollapsedSet() {
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(collapsedSet,
-                                                          (ord) -> { ords.remove(ord); },
+                                                          (ord) -> { ords.remove((int) ord); },
                                                           () -> { nullDoc = -1; });
       
       //Build the sorted DocSet of group heads.
@@ -2505,13 +2516,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /*
-  * Base strategy for collapsing on a 32 bit numeric field and selecting a group head
-  * based on min/max value of a 32 bit numeric field.
+  * Base strategy for collapsing on a 64 bit numeric field and selecting a group head
+  * based on min/max value of a 64 bit numeric field.
   */
 
-  private static abstract class IntFieldValueStrategy {
+  private static abstract class LongFieldValueStrategy {
     protected int nullPolicy;
-    protected IntIntHashMap cmap;
+    protected LongIntHashMap cmap;
     protected Scorable scorer;
     protected FloatArrayList nullScores;
     protected float nullScore;
@@ -2525,20 +2536,20 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final BoostedDocsCollector boostedDocsCollector;
 
     public abstract void collapseNullGroup(int contextDoc, int globalDoc) throws IOException;
-    public abstract void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException;
+    public abstract void collapse(long collapseKey, int contextDoc, int globalDoc) throws IOException;
     public abstract void setNextReader(LeafReaderContext context) throws IOException;
 
-    public IntFieldValueStrategy(int maxDoc,
-                                 int size,
-                                 String collapseField,
-                                 int nullPolicy,
-                                 boolean needsScores,
-                                 BoostedDocsCollector boostedDocsCollector) {
+    public LongFieldValueStrategy(int maxDoc,
+                                  int size,
+                                  String collapseField,
+                                  int nullPolicy,
+                                  boolean needsScores,
+                                  BoostedDocsCollector boostedDocsCollector) {
       this.collapseField = collapseField;
       this.nullPolicy = nullPolicy;
       this.needsScores = needsScores;
       this.collapsedSet = new FixedBitSet(maxDoc);
-      this.cmap = new IntIntHashMap(size);
+      this.cmap = new LongIntHashMap(size);
       this.docs = new IntIntDynamicMap(size, 0);
 
       this.boostedDocsCollector = boostedDocsCollector;
@@ -2562,9 +2573,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(nullDoc > -1) {
         this.collapsedSet.set(nullDoc);
       }
-      Iterator<IntIntCursor> it1 = cmap.iterator();
+      Iterator<LongIntCursor> it1 = cmap.iterator();
       while(it1.hasNext()) {
-        IntIntCursor cursor = it1.next();
+        LongIntCursor cursor = it1.next();
         int pointer = cursor.value;
         collapsedSet.set(docs.get(pointer));
       }
@@ -2580,7 +2591,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return nullScores;
     }
 
-    public IntIntHashMap getCollapseMap() {
+    public LongIntHashMap getCollapseMap() {
       return cmap;
     }
 
@@ -2597,53 +2608,53 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /*
-   *  Strategy for collapsing on a 32 bit numeric field and selecting the group head based
-   *  on the min/max value of a 32 bit field numeric field.
+   *  Strategy for collapsing on a 64 bit numeric field and selecting the group head based
+   *  on the min/max value of a 64 bit field numeric field.
    */
-  private static class IntIntStrategy extends IntFieldValueStrategy {
+  private static class IntLongStrategy extends LongFieldValueStrategy {
 
     private final String field;
     private NumericDocValues minMaxVals;
-    private IntIntDynamicMap testValues;
-    private IntCompare comp;
-    private int nullCompVal;
+    private IntLongDynamicMap testValues;
+    private LongCompare comp;
+    private long nullCompVal;
 
     private int index=-1;
 
-    public IntIntStrategy(int maxDoc,
-                          int size,
-                          String collapseField,
-                          int nullPolicy,
-                          GroupHeadSelector groupHeadSelector,
-                          boolean needsScores,
-                          BoostedDocsCollector boostedDocsCollector) throws IOException {
+    public IntLongStrategy(int maxDoc,
+                           int size,
+                           String collapseField,
+                           int nullPolicy,
+                           GroupHeadSelector groupHeadSelector,
+                           boolean needsScores,
+                           BoostedDocsCollector boostedDocsCollector) throws IOException {
 
       super(maxDoc, size, collapseField, nullPolicy, needsScores, boostedDocsCollector);
       this.field = groupHeadSelector.selectorText;
-      this.testValues = new IntIntDynamicMap(size, 0);
+      this.testValues = new IntLongDynamicMap(size, 0);
 
       assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
 
       if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        comp = new MaxIntComp();
-        this.nullCompVal = Integer.MIN_VALUE;
+        comp = new MaxLongComp();
+        this.nullCompVal = Long.MIN_VALUE;
       } else {
-        comp = new MinIntComp();
-        this.nullCompVal = Integer.MAX_VALUE;
+        comp = new MinLongComp();
+        this.nullCompVal = Long.MAX_VALUE;
       }
     }
 
     public void setNextReader(LeafReaderContext context) throws IOException {
       this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
     }
-    private int advanceAndGetCurrentVal(int contextDoc) throws IOException {
+    private long advanceAndGetCurrentVal(int contextDoc) throws IOException {
       if (minMaxVals.advanceExact(contextDoc)) {
-        return (int) minMaxVals.longValue();
+        return minMaxVals.longValue();
       } // else...
       return 0; 
     }
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
-      final int currentVal = advanceAndGetCurrentVal(contextDoc);
+    public void collapse(long collapseKey, int contextDoc, int globalDoc) throws IOException {
+      final long currentVal = advanceAndGetCurrentVal(contextDoc);
 
       final int idx;
       if((idx = cmap.indexOf(collapseKey)) >= 0) {
@@ -2668,7 +2679,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
       assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
       
-      final int currentVal = advanceAndGetCurrentVal(contextDoc);
+      final long currentVal = advanceAndGetCurrentVal(contextDoc);
       if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
         if(comp.test(currentVal, nullCompVal)) {
           nullCompVal = currentVal;
@@ -2686,7 +2697,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  private static class IntFloatStrategy extends IntFieldValueStrategy {
+  private static class IntFloatStrategy extends LongFieldValueStrategy {
 
     private final String field;
     private NumericDocValues minMaxVals;
@@ -2729,7 +2740,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return Float.intBitsToFloat(0);
     }
 
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+    public void collapse(long collapseKey, int contextDoc, int globalDoc) throws IOException {
       final float currentVal = advanceAndGetCurrentVal(contextDoc);
 
       final int idx;
@@ -2773,10 +2784,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
   
   /*
-   *  Strategy for collapsing on a 32 bit numeric field and selecting the group head based
+   *  Strategy for collapsing on a 64 bit numeric field and selecting the group head based
    *  on the min/max value of a Value Source Function.
    */
-  private static class IntValueSourceStrategy extends IntFieldValueStrategy {
+  private static class LongValueSourceStrategy extends LongFieldValueStrategy {
 
     private FloatCompare comp;
     private IntFloatDynamicMap testValues;
@@ -2790,16 +2801,16 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private int index=-1;
     private boolean needsScores4Collapsing;
 
-    public IntValueSourceStrategy(int maxDoc,
-                                  int size,
-                                  String collapseField,
-                                  int nullPolicy,
-                                  GroupHeadSelector groupHeadSelector,
-                                  boolean needsScores4Collapsing,
-                                  boolean needsScores,
-                                  BoostedDocsCollector boostedDocsCollector,
-                                  FunctionQuery funcQuery,
-                                  IndexSearcher searcher) throws IOException {
+    public LongValueSourceStrategy(int maxDoc,
+                                   int size,
+                                   String collapseField,
+                                   int nullPolicy,
+                                   GroupHeadSelector groupHeadSelector,
+                                   boolean needsScores4Collapsing,
+                                   boolean needsScores,
+                                   BoostedDocsCollector boostedDocsCollector,
+                                   FunctionQuery funcQuery,
+                                   IndexSearcher searcher) throws IOException {
 
       super(maxDoc, size, collapseField, nullPolicy, needsScores, boostedDocsCollector);
 
@@ -2833,7 +2844,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } // else...
       return 0F;
     }
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+    public void collapse(long collapseKey, int contextDoc, int globalDoc) throws IOException {
       
       float score = computeScoreIfNeeded4Collapse();
       final float currentVal = functionValues.floatVal(contextDoc);
@@ -2895,10 +2906,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
 
   /*
-   * Strategy for collapsing on a 32 bit numeric field and using the first document according
+   * Strategy for collapsing on a 64 bit numeric field and using the first document according
    * to a complex sort as the group head
    */
-  private static class IntSortSpecStrategy extends IntFieldValueStrategy {
+  private static class LongSortSpecStrategy extends LongFieldValueStrategy {
 
     private final SortFieldsCompare compareState;
     private final SortSpec sortSpec;
@@ -2907,16 +2918,16 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private int index=-1;
     private boolean needsScores4Collapsing;
 
-    public IntSortSpecStrategy(int maxDoc,
-                               int size,
-                               String collapseField,
-                               int nullPolicy,
-                               GroupHeadSelector groupHeadSelector,
-                               boolean needsScores4Collapsing,
-                               boolean needsScores,
-                               BoostedDocsCollector boostedDocsCollector,
-                               SortSpec sortSpec,
-                               IndexSearcher searcher) throws IOException {
+    public LongSortSpecStrategy(int maxDoc,
+                                int size,
+                                String collapseField,
+                                int nullPolicy,
+                                GroupHeadSelector groupHeadSelector,
+                                boolean needsScores4Collapsing,
+                                boolean needsScores,
+                                BoostedDocsCollector boostedDocsCollector,
+                                SortSpec sortSpec,
+                                IndexSearcher searcher) throws IOException {
 
       super(maxDoc, size, collapseField, nullPolicy, needsScores, boostedDocsCollector);
       this.needsScores4Collapsing = needsScores4Collapsing;
@@ -2943,7 +2954,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return needsScores4Collapsing ? scorer.score() : 0F;
     }
 
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+    public void collapse(long collapseKey, int contextDoc, int globalDoc) throws IOException {
       float score = computeScoreIfNeeded4Collapse();
 
       final int idx;
@@ -3027,7 +3038,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final int[] sortedGlobalDocIds;
     private final boolean hasBoosts;
     
-    private final IntArrayList boostedKeys = new IntArrayList();
+    private final LongArrayList boostedKeys = new LongArrayList();
     private final IntArrayList boostedDocs = new IntArrayList();;
     private boolean boostedNullGroup = false;
     private final MergeBoost boostedDocsIdsIter;
@@ -3040,7 +3051,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       // else: No-Op impl (short circut default impl)....
       return new BoostedDocsCollector(new IntIntHashMap()) {
         @Override
-        public boolean collectIfBoosted(int groupKey, int globalDoc) {
+        public boolean collectIfBoosted(long groupKey, int globalDoc) {
           return false;
         }
         @Override
@@ -3049,7 +3060,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
         @Override
         public void purgeGroupsThatHaveBoostedDocs(final FixedBitSet collapsedSet,
-                                                   final IntProcedure removeGroupKey,
+                                                   final LongProcedure removeGroupKey,
                                                    final Runnable resetNullGroupHead) {
           return;
         }
@@ -3086,7 +3097,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     /** 
      * @return true if doc is boosted and has (now) been collected
      */
-    public boolean collectIfBoosted(int groupKey, int globalDoc) {
+    public boolean collectIfBoosted(long groupKey, int globalDoc) {
       if (boostedDocsIdsIter.boost(globalDoc)) {
         this.boostedDocs.add(globalDoc);
         this.boostedKeys.add(groupKey);
@@ -3112,7 +3123,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * data structs for tracking collapse keys...
      */
     public void purgeGroupsThatHaveBoostedDocs(final FixedBitSet collapsedSet,
-                                               final IntProcedure removeGroupKey,
+                                               final LongProcedure removeGroupKey,
                                                final Runnable resetNullGroupHead) {
       // Add the (collected) boosted docs to the collapsedSet
       boostedDocs.forEach(new IntProcedure() {
