@@ -1,0 +1,5 @@
+Apache JBig2 ImageIO Plugin
+Copyright 2017 The Apache Software Foundation
+
+Based on source code originally developed in the JBig2 project.
+Copyright (C) 1995-2017 levigo holding GmbH

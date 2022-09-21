@@ -14,6 +14,8 @@ Bug Fixes
 
 Other Changes
 ---------------------
+* SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)
+
 * SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.9 (Kevin Risden)
 
 * SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Kevin Risden)
