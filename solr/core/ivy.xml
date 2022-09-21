@@ -127,18 +127,25 @@
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
 
     <!-- SQL Parser -->
-    <dependency org="com.esri.geometry" name="esri-geometry-api" rev="${/com.esri.geometry/esri-geometry-api}" conf="compile"/>
     <dependency org="org.apiguardian" name="apiguardian-api" rev="${/org.apiguardian/apiguardian-api}" conf="compile"/>
     <dependency org="org.checkerframework" name="checker-qual" rev="${/org.checkerframework/checker-qual}" conf="compile"/>
     <dependency org="org.apache.calcite" name="calcite-core" rev="${/org.apache.calcite/calcite-core}" conf="compile"/>
     <dependency org="org.apache.calcite" name="calcite-linq4j" rev="${/org.apache.calcite/calcite-linq4j}" conf="compile"/>
     <dependency org="org.apache.calcite.avatica" name="avatica-core" rev="${/org.apache.calcite.avatica/avatica-core}" conf="compile"/>
+    <dependency org="org.apache.calcite.avatica" name="avatica-metrics" rev="${/org.apache.calcite.avatica/avatica-metrics}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-lang3" rev="${/org.apache.commons/commons-lang3}" conf="compile"/>
+    <dependency org="org.apache.httpcomponents.client5" name="httpclient5" rev="${/org.apache.httpcomponents.client5/httpclient5}" conf="compile"/>
+    <dependency org="org.apache.httpcomponents.core5" name="httpcore5" rev="${/org.apache.httpcomponents.core5/httpcore5}" conf="compile"/>
+    <dependency org="org.apache.httpcomponents.core5" name="httpcore5-h2" rev="${/org.apache.httpcomponents.core5/httpcore5-h2}" conf="compile"/>
     <dependency org="net.hydromatic" name="eigenbase-properties" rev="${/net.hydromatic/eigenbase-properties}" conf="compile"/>
     <dependency org="org.codehaus.janino" name="janino" rev="${/org.codehaus.janino/janino}" conf="compile"/>
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
     <dependency org="com.jayway.jsonpath" name="json-path" rev="${/com.jayway.jsonpath/json-path}" conf="compile"/>
+    <dependency org="org.immutables" name="value-annotations" rev="${/org.immutables/value-annotations}" conf="compile"/>
+    <dependency org="org.locationtech.jts" name="jts-core" rev="${/org.locationtech.jts/jts-core}" conf="compile"/>
+    <dependency org="org.locationtech.jts.io" name="jts-io-common" rev="${/org.locationtech.jts.io/jts-io-common}" conf="compile"/>
+    <dependency org="org.locationtech.proj4j" name="proj4j" rev="${/org.locationtech.proj4j/proj4j}" conf="compile"/>
 
     <!-- Package manager -->
     <dependency org="com.github.zafarkhaja" name="java-semver" rev="${/com.github.zafarkhaja/java-semver}" conf="compile"/>

@@ -18,6 +18,8 @@ Other Changes
 
 * SOLR-16424: Upgrade Netty to 4.1.82.Final (Kevin Risden)
 
+* SOLR-16421: Upgrade Apache Calcite to 1.32.0 and Avatica to 1.22.0 (Kevin Risden)
+
 ==================  8.11.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -24,7 +24,6 @@ import org.apache.calcite.sql.type.SqlOperandCountRanges;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 
-import java.util.Arrays;
 import java.util.List;
 
 public abstract class ArrayContains extends SqlFunction {
@@ -50,7 +49,7 @@ public abstract class ArrayContains extends SqlFunction {
                 return true;
             } else if (operand2.getKind() == SqlKind.ROW) {
                 SqlBasicCall valuesCall = (SqlBasicCall) operand2;
-                boolean literalMatch =Arrays.stream(valuesCall.getOperands()).allMatch(op -> op.getKind() == SqlKind.LITERAL);
+                boolean literalMatch = valuesCall.getOperandList().stream().allMatch(op -> op.getKind() == SqlKind.LITERAL);
                 if (literalMatch) {
                     return true;
                 }
