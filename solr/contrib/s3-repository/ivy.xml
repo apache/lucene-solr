@@ -42,6 +42,7 @@
     <dependency org="software.amazon.awssdk" name="regions" rev="${/software.amazon.awssdk/regions}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="s3" rev="${/software.amazon.awssdk/s3}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="sdk-core" rev="${/software.amazon.awssdk/sdk-core}" conf="compile"/>
+    <dependency org="software.amazon.awssdk" name="sts" rev="${/software.amazon.awssdk/sts}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="third-party-jackson-core" rev="${/software.amazon.awssdk/third-party-jackson-core}" conf="compile"/>
     <dependency org="software.amazon.awssdk" name="utils" rev="${/software.amazon.awssdk/utils}" conf="compile"/>
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
