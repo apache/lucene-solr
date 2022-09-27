@@ -1940,7 +1940,7 @@ today = datetime.utcnow().date()
 sundays = {(today + timedelta(days=x)): 'Sunday' for x in range(10) if (today + timedelta(days=x)).weekday() == 6}
 y = datetime.utcnow().year
 years = [y, y+1]
-non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.England(years=years) \
+non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.UK(years=years) \
               + holidays.DE(years=years) + holidays.NO(years=years) + holidays.IND(years=years) + holidays.RU(years=years)
 
 
