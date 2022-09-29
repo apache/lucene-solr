@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -40,6 +43,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
@@ -64,7 +68,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.solr.common.params.CommonParams.*;
@@ -93,6 +107,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   private ShardHandlerFactory shardHandlerFactory;
   private PluginInfo shfInfo;
   private SolrCore core;
+  private Histogram distributedShardResponseSize;
+  private Timer distributedShardResponseProcessingTime;
+  private Timer distributedShardAggregationTime;
 
   protected List<String> getDefaultComponents() {
     ArrayList<String> names = new ArrayList<>(8);
@@ -118,6 +135,14 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         break;
       }
     }
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    distributedShardResponseSize = getSolrMetricsContext().histogram(this, "shardResponseSizes", getCategory().toString(), scope);
+    distributedShardResponseProcessingTime = getSolrMetricsContext().timer(this, "shardResponseProcessingTimes", getCategory().toString(), scope);
+    distributedShardAggregationTime = getSolrMetricsContext().timer(this, "shardResponseAggregationTimes", getCategory().toString(), scope);
   }
 
   @Override
@@ -561,18 +586,27 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               }
             }
 
+            long start = System.nanoTime();
+            int responseLength = srsp.getSolrResponse().jsonStr().getBytes().length;
+            log.info("Got shard response size in: " + (System.nanoTime() - start) + " nanos");
+            distributedShardResponseSize.update(responseLength);
+
             rb.finished.add(srsp.getShardRequest());
 
             // let the components see the responses to the request
+            Timer.Context responseProcessingTime = distributedShardResponseProcessingTime.time();
             for(SearchComponent c : components) {
               c.handleResponses(rb, srsp.getShardRequest());
             }
+            responseProcessingTime.stop();
           }
         }
 
+        Timer.Context aggregationTime = distributedShardAggregationTime.time();
         for(SearchComponent c : components) {
           c.finishStage(rb);
         }
+        aggregationTime.stop();
 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
