@@ -10,7 +10,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-16429: Add AWS STS support in s3-repository (Josh Souza via Houston Putman and Kevin Risden)
 
 Other Changes
 ---------------------
