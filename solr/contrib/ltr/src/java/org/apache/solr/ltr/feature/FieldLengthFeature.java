@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -124,18 +123,9 @@ public class FieldLengthFeature extends Feature {
 
       NumericDocValues norms = null;
 
-      public FieldLengthFeatureScorer(FeatureWeight weight,
-          NumericDocValues norms) throws IOException {
+      public FieldLengthFeatureScorer(FeatureWeight weight, NumericDocValues norms) {
         super(weight, norms);
         this.norms = norms;
-
-        // In the constructor, docId is -1, so using 0 as default lookup
-        final IndexableField idxF = searcher.doc(0).getField(field);
-        if (idxF.fieldType().omitNorms()) {
-          throw new IOException(
-              "FieldLengthFeatures can't be used if omitNorms is enabled (field="
-                  + field + ")");
-        }
       }
 
       @Override

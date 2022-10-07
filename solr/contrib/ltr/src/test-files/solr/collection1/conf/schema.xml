@@ -22,8 +22,8 @@
     <field name="finalScore" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="finalScoreFloat" type="float" indexed="true" stored="true" multiValued="false"/>
     <field name="field" type="text_general" indexed="true" stored="false" multiValued="false"/>
-    <field name="title" type="text_general" indexed="true" stored="true"/>
-    <field name="description" type="text_general" indexed="true" stored="true"/>
+    <field name="title" type="text_general" indexed="true" stored="false"/>
+    <field name="description" type="text_general" indexed="true" stored="false"/>
     <field name="keywords" type="text_general" indexed="true" stored="true" multiValued="true"/>
     <field name="popularity" type="int" indexed="true" stored="true" />
     <field name="dvIntPopularity" type="int" indexed="false" docValues="true" stored="false" multiValued="false"/>
