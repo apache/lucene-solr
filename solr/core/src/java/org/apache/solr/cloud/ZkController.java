@@ -2006,9 +2006,9 @@ public class ZkController implements Closeable {
             errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
                 ", ignore the exception if the replica was deleted");
             return false;
-          } else if (replica.getNodeName().equals(getNodeName())) {
-            errorMessage.set("coreNodeName " + coreNodeName + " exist in shard " + cloudDesc.getShardId() +
-                ", but the node name in cluster collection state [" + replica.getNodeName() + "] is different from current node [" + getNodeName() + "]");
+          } else if (!replica.getNodeName().equals(getNodeName())) {
+            errorMessage.set("collection [" + replica.getCollection() + "] with coreNodeName [" + coreNodeName + "] exist in shard [" + cloudDesc.getShardId() +
+                "], but the node name in cluster collection state [" + replica.getNodeName() + "] is different from current node [" + getNodeName() + "]");
             return false;
           }
           return true;
