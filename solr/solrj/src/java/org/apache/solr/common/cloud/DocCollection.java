@@ -152,7 +152,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     log.debug("collection :{} going to be updated :  per-replica state :{} -> {}",
         name,
         getChildNodesVersion(), newPerReplicaStates.cversion);
-    if (getChildNodesVersion() == newPerReplicaStates.cversion) return this;
+    if (getChildNodesVersion() >= newPerReplicaStates.cversion) return this;
     Set<String> modifiedReplicas = PerReplicaStates.findModifiedReplicas(newPerReplicaStates, this.perReplicaStates);
     if (modifiedReplicas.isEmpty()) return this; //nothing is modified
     Map<String, Slice> modifiedShards = new HashMap<>(getSlicesMap());

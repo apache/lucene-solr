@@ -30,6 +30,8 @@ Bug Fixes
 
 * SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
 
+* SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
+
 Optimizations
 ---------------------
 * SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
