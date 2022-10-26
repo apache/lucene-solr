@@ -12,6 +12,8 @@ Bug Fixes
 ---------------------
 * SOLR-16429: Add AWS STS support in s3-repository (Josh Souza via Houston Putman and Kevin Risden)
 
+* SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
+
 Other Changes
 ---------------------
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)
