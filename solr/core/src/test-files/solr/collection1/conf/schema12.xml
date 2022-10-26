@@ -101,6 +101,8 @@
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
+  <fieldType name="binary" class="solr.BinaryField"/>
+
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
@@ -696,6 +698,7 @@
   <dynamicField name="t_as_same_term_boosted_*" type="text_as_same_term_boosted" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
 
+  <dynamicField name="*_bin" type="binary"/>
 
   <dynamicField name="t_*" type="text" indexed="true" stored="true"/>
   <dynamicField name="tv_*" type="text" indexed="true" stored="true"

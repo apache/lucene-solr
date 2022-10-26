@@ -121,7 +121,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if("all".equalsIgnoreCase(v))    return ALL;
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown Show Style: "+v);
     }
-  };
+  }
 
 
   @Override
@@ -300,10 +300,15 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (bytes != null) {
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
-      if (!ftype.isPointField()) {
-        Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
-        f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
-      }// TODO: Calculate docFreq for point fields
+
+      if (ftype != null && !ftype.isPointField()) {
+        String s = ftype.storedToIndexed(field);
+        if (s == null) s = "";
+        Term t = new Term(field.name(), s);
+        f.add(
+            "docFreq",
+            t.text() == null ? 0 : reader.docFreq(t)); // this can be 0 for non-indexed fields
+      } // TODO: Calculate docFreq for point fields
 
       // If we have a term vector, return that
       if( field.fieldType().storeTermVectors() ) {

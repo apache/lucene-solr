@@ -14,6 +14,8 @@ Bug Fixes
 
 * SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
 
+* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)
