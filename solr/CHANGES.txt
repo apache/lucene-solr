@@ -16,6 +16,8 @@ Bug Fixes
 
 * SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
 
+* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)

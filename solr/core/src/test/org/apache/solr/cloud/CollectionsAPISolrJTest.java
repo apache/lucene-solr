@@ -931,11 +931,21 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     aliases = zkStateReader.getAliases();
     if (followAliases) {
-      assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias("foo"));
+      assertEquals(
+          aliases.getCollectionAliasListMap().toString(),
+          collectionName1,
+          aliases.resolveSimpleAlias("foo"));
     }
-    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias("simpleAlias"));
-    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias(collectionName1));
-    // we renamed col1 -> col2 so the compound alias contains only "col2,col2" which is reduced to col2
+    assertEquals(
+        aliases.getCollectionAliasListMap().toString(),
+        collectionName2,
+        aliases.resolveSimpleAlias("simpleAlias"));
+    assertEquals(
+        aliases.getCollectionAliasListMap().toString(),
+        collectionName1,
+        aliases.resolveSimpleAlias(collectionName1));
+    // we renamed col1 -> col2 so the compound alias contains only "col2,col2" which is reduced to
+    // col2
     List<String> compoundAliases = aliases.resolveAliases("compoundAlias");
     assertEquals(compoundAliases.toString(), 1, compoundAliases.size());
     assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));

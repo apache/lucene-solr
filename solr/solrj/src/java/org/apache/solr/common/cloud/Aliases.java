@@ -63,11 +63,14 @@ public class Aliases {
 
   private final int zNodeVersion;
 
-  /** Construct aliases directly with this information -- caller should not retain.
-   * Any deeply nested collections are assumed to already be unmodifiable. */
-  private Aliases(Map<String, List<String>> collectionAliases,
-                 Map<String, Map<String, String>> collectionAliasProperties,
-                 int zNodeVersion) {
+  /**
+   * Construct aliases directly with this information -- caller should not retain. Any deeply nested
+   * collections are assumed to already be unmodifiable.
+   */
+  Aliases(
+      Map<String, List<String>> collectionAliases,
+      Map<String, Map<String, String>> collectionAliasProperties,
+      int zNodeVersion) {
     this.collectionAliases = Objects.requireNonNull(collectionAliases);
     this.collectionAliasProperties = Objects.requireNonNull(collectionAliasProperties);
     this.zNodeVersion = zNodeVersion;
@@ -292,7 +295,7 @@ public class Aliases {
    */
   public Aliases cloneWithCollectionAlias(String alias, String collections) {
     if (alias == null) {
-      throw new NullPointerException("Alias name cannot be null");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Alias name cannot be null");
     }
     Map<String, Map<String, String>> newColProperties;
     Map<String, List<String>> newColAliases = new LinkedHashMap<>(this.collectionAliases);//clone to modify
@@ -334,7 +337,7 @@ public class Aliases {
    */
   public Aliases cloneWithRename(String before, String after) throws SolrException {
     if (before == null) {
-      throw new NullPointerException("'before' and 'after' cannot be null");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'before' cannot be null");
     }
     if (after == null) {
       return cloneWithCollectionAlias(before, after);
@@ -376,7 +379,7 @@ public class Aliases {
       }
     }
     if (level1 == null) { // create an alias that points to the collection
-      newColAliases.put(before, Collections.singletonList(after));
+      newColAliases.put(after, Collections.singletonList(before));
     }
     return new Aliases(newColAliases, newColProperties, zNodeVersion);
   }
