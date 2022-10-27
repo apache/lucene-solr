@@ -41,8 +41,9 @@ public class TestRestManager extends SolrRestletTestBase {
   @Test
   public void testRestManagerEndpoints() throws Exception {
     // relies on these ManagedResources being activated in the schema-rest.xml used by this test
-    assertJQ("/schema/managed",
-             "/responseHeader/status==0");
+    assertJQ("/schema/managed", "/responseHeader/status==0");
+    assertHead("/schema/managed", 200);
+
     /*
      * TODO: can't assume these will be here unless schema-rest.xml includes these declarations
      * 
@@ -57,42 +58,55 @@ public class TestRestManager extends SolrRestletTestBase {
         
     // add a ManagedWordSetResource for managing protected words (for stemming)
     String newEndpoint = "/schema/analysis/protwords/english";
-    
-    assertJPut(newEndpoint, json("{ 'class':'solr.ManagedWordSetResource' }"), "/responseHeader/status==0");
-        
-    assertJQ("/schema/managed"
-        ,"/managedResources/[0]/class=='org.apache.solr.rest.schema.analysis.ManagedWordSetResource'"
-        ,"/managedResources/[0]/resourceId=='/schema/analysis/protwords/english'");
-    
+
+    assertJPut(
+        newEndpoint,
+        json("{ 'class':'solr.ManagedWordSetResource' }"),
+        "/responseHeader/status==0");
+
+    assertJQ(
+        "/schema/managed",
+        "/managedResources/[0]/class=='org.apache.solr.rest.schema.analysis.ManagedWordSetResource'",
+        "/managedResources/[0]/resourceId=='/schema/analysis/protwords/english'");
+    assertHead("/schema/managed", 200);
+
     // query the resource we just created
     assertJQ(newEndpoint, "/wordSet/managedList==[]");
-    
+    assertHead(newEndpoint, 200);
+
     // add some words to this new word list manager
     assertJPut(newEndpoint, Utils.toJSONString(Arrays.asList("this", "is", "a", "test")), "/responseHeader/status==0");
 
-    assertJQ(newEndpoint
-        ,"/wordSet/managedList==['a','is','test','this']"
-        ,"/wordSet/initArgs=={'ignoreCase':false}"); // make sure the default is serialized even if not specified
+    // make sure the default is serialized even if not specified
+    assertJQ(
+        newEndpoint,
+        "/wordSet/managedList==['a','is','test','this']",
+        "/wordSet/initArgs=={'ignoreCase':false}");
+    assertHead(newEndpoint, 200);
 
     // Test for case-sensitivity - "Test" lookup should fail
     assertJQ(newEndpoint + "/Test", "/responseHeader/status==404");
+    assertHead(newEndpoint + "/Test", 404);
 
     // Switch to case-insensitive
     assertJPut(newEndpoint, json("{ 'initArgs':{ 'ignoreCase':'true' } }"), "/responseHeader/status==0");
 
     // Test for case-insensitivity - "Test" lookup should succeed
     assertJQ(newEndpoint + "/Test", "/responseHeader/status==0");
+    assertHead(newEndpoint + "/Test", 200);
 
     // Switch to case-sensitive - this request should fail: changing ignoreCase from true to false is not permitted
     assertJPut(newEndpoint, json("{ 'initArgs':{ 'ignoreCase':false } }"), "/responseHeader/status==400");
 
     // Test XML response format
-    assertQ(newEndpoint + "?wt=xml"
-        ,"/response/lst[@name='responseHeader']/int[@name='status']=0"
-        ,"/response/lst[@name='wordSet']/arr[@name='managedList']/str[1]='a'"
-        ,"/response/lst[@name='wordSet']/arr[@name='managedList']/str[2]='is'"
-        ,"/response/lst[@name='wordSet']/arr[@name='managedList']/str[3]='test'"
-        ,"/response/lst[@name='wordSet']/arr[@name='managedList']/str[4]='this'");
+    assertQ(
+        newEndpoint + "?wt=xml",
+        "/response/lst[@name='responseHeader']/int[@name='status']=0",
+        "/response/lst[@name='wordSet']/arr[@name='managedList']/str[1]='a'",
+        "/response/lst[@name='wordSet']/arr[@name='managedList']/str[2]='is'",
+        "/response/lst[@name='wordSet']/arr[@name='managedList']/str[3]='test'",
+        "/response/lst[@name='wordSet']/arr[@name='managedList']/str[4]='this'");
+    assertHead(newEndpoint + "?wt=xml", 200);
 
     // delete the one we created above
     assertJDelete(newEndpoint, "/responseHeader/status==0");

@@ -2703,6 +2703,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   (SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
+    if (responseHeader == null) return;
     final int qtime = (int) (req.getRequestTimer().getTime());
     int status = 0;
     Exception exception = rsp.getException();

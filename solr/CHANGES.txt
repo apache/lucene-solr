@@ -18,6 +18,8 @@ Bug Fixes
 
 * SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
 
+* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)

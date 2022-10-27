@@ -150,6 +150,12 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     }
   }
 
+  public static void assertHead(String request, int expectedStatusCode) throws IOException {
+    String response = restTestHarness.head(request);
+    assertTrue(response.contains("HTTP/1.1 " + expectedStatusCode));
+    assertTrue(response.contains("Content-Length: 0"));
+  }
+
   /**
    *  Makes a query request and returns the JSON string response 
    *

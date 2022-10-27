@@ -352,10 +352,7 @@ public class RestManager {
     }
 
     private void doHead(ManagedEndpoint managedEndpoint) {
-      // Setting the response to blank clears the content out,
-      // however it also means the Content-Length HTTP Header is set to 0
-      // which isn't compliant with the specification of how HEAD should work,
-      // it should instead return the length of the content if you did a GET.
+      // Setting the response to blank clears the content out.
       NamedList<Object> blank = new SimpleOrderedMap<>();
       managedEndpoint.getSolrResponse().setAllValues(blank);
 
