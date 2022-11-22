@@ -20,6 +20,10 @@ Bug Fixes
 
 * SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
 
+Optimizations
+---------------------
+* SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)

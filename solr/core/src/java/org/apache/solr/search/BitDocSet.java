@@ -228,18 +228,30 @@ public class BitDocSet extends DocSetBase {
   @Override
   public DocSet andNot(DocSet other) {
     FixedBitSet newbits = bits.clone();
+    andNot(newbits, other);
+    return new BitDocSet(newbits);
+  }
+
+  /**
+   * Helper method for andNot that takes FixedBitSet and DocSet. This modifies the provided
+   * FixedBitSet to remove all bits contained in the DocSet argument -- equivalent to calling
+   * a.andNot(b), but modifies the state of the FixedBitSet instead of returning a new FixedBitSet.
+   *
+   * @param bits FixedBitSet to operate on
+   * @param other The DocSet to compare to
+   */
+  protected static void andNot(FixedBitSet bits, DocSet other) {
     if (other instanceof BitDocSet) {
-      newbits.andNot(((BitDocSet) other).bits);
+      bits.andNot(((BitDocSet) other).bits);
     } else {
       DocIterator iter = other.iterator();
       while (iter.hasNext()) {
         int doc = iter.nextDoc();
-        if (doc < newbits.length()) {
-          newbits.clear(doc);
+        if (doc < bits.length()) {
+          bits.clear(doc);
         }
       }
     }
-    return new BitDocSet(newbits);
   }
   
   @Override
