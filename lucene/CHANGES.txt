@@ -18,6 +18,9 @@ Bug Fixes
 * LUCENE-10678: Fix potential overflow when building a BKD tree with more than 4 billion points. The overflow
   occurs when computing the partition point. (Ignacio Vera)
 
+* GITHUB#11986: Fix algorithm that chooses the bridge between a polygon and a hole when there is
+  common vertex. (Ignacio Vera)
+
 ======================= Lucene 8.11.2 =======================
 
 Bug Fixes

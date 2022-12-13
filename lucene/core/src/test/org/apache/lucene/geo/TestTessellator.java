@@ -665,7 +665,7 @@ public class TestTessellator extends LuceneTestCase {
       }
     }
   }
-  
+
   public void testComplexPolygon49() throws Exception {
     String wkt =
         "POLYGON((77.500 13.500, 77.550 13.500, 77.530 13.470, 77.570 13.470,"
@@ -689,6 +689,30 @@ public class TestTessellator extends LuceneTestCase {
     assertEquals(area(polygon), area(tessellation), 1e-11);
     for (Tessellator.Triangle t : tessellation) {
       checkTriangleEdgesFromPolygon(polygon, t);
+    }
+  }
+
+  public void testComplexPolygon53() throws Exception {
+    String geoJson = GeoTestUtil.readShape("github-11986-1.geojson.gz");
+    Polygon[] polygons = Polygon.fromGeoJSON(geoJson);
+    for (Polygon polygon : polygons) {
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+      assertEquals(area(polygon), area(tessellation), 0.0);
+      for (Tessellator.Triangle t : tessellation) {
+        checkTriangleEdgesFromPolygon(polygon, t);
+      }
+    }
+  }
+
+  public void testComplexPolygon54() throws Exception {
+    String geoJson = GeoTestUtil.readShape("github-11986-2.geojson.gz");
+    Polygon[] polygons = Polygon.fromGeoJSON(geoJson);
+    for (Polygon polygon : polygons) {
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+      assertEquals(area(polygon), area(tessellation), 0.0);
+      for (Tessellator.Triangle t : tessellation) {
+        checkTriangleEdgesFromPolygon(polygon, t);
+      }
     }
   }
 
