@@ -332,6 +332,8 @@ public final class ShapeField {
       if (triangle.aX == triangle.cX && triangle.aY == triangle.cY) {
         triangle.type = DecodedTriangle.TYPE.POINT;
       } else {
+        // a and b are identical, remove ab, and merge bc and ca
+        triangle.ab = triangle.bc | triangle.ca;
         triangle.bX = triangle.cX;
         triangle.bY = triangle.cY;
         triangle.cX = triangle.aX;
@@ -339,8 +341,12 @@ public final class ShapeField {
         triangle.type = DecodedTriangle.TYPE.LINE;
       }
     } else if (triangle.aX == triangle.cX && triangle.aY == triangle.cY) {
+      // a and c are identical, remove ac, and merge ab and bc
+      triangle.ab = triangle.ab | triangle.bc;
       triangle.type = DecodedTriangle.TYPE.LINE;
     } else if (triangle.bX == triangle.cX && triangle.bY == triangle.cY) {
+      // b and c are identical, remove bc, and merge ab and ca
+      triangle.ab = triangle.ab | triangle.ca;
       triangle.cX = triangle.aX;
       triangle.cY = triangle.aY;
       triangle.type = DecodedTriangle.TYPE.LINE;

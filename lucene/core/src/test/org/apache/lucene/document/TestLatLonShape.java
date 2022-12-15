@@ -887,8 +887,8 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     IndexSearcher searcher = newSearcher(reader);
-    // Contains is only true if the query geometry is inside a geometry and does not intersect with any other geometry 
-    // belonging to the same document. In this case the query geometry contains the indexed polygon but the point is 
+    // Contains is only true if the query geometry is inside a geometry and does not intersect with any other geometry
+    // belonging to the same document. In this case the query geometry contains the indexed polygon but the point is
     // inside the query as well, hence the result is 0.
     Polygon polygonQuery = new Polygon(new double[] {4, 4, 6, 6, 4}, new double[] {4, 6, 6, 4, 4});
     Query query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, polygonQuery);
@@ -897,11 +897,39 @@ public class TestLatLonShape extends LuceneTestCase {
     Rectangle rectangle = new Rectangle(4.0, 6.0, 4.0, 6.0);
     query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, rectangle);
     assertEquals(0, searcher.count(query));
-    
+
     Circle circle = new Circle(5, 5, 10000);
     query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, circle);
     assertEquals(0, searcher.count(query));
-    
+
     IOUtils.close(w, reader, dir);
+  }
+
+  public void testFlatPolygonDoesNotContainIntersectingLine() throws Exception {
+    // Create line intersecting very flat polygon (but not contained)
+    double[] lons = new double[] {-0.001, -0.001, 0.001, 0.001, -0.001};
+    double[] lats = new double[] {1e-10, 0, -1e-10, 0, 1e-10};
+    Polygon polygon = new Polygon(lats, lons);
+    Line line = new Line(new double[] {0.0, 0.001}, new double[] {0.0, 0.0});
+
+    // Index the polygon
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, polygon);
+    writer.addDocument(document);
+
+    // search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    // search for line within the polygon
+    Query q = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, line);
+    TopDocs topDocs = s.search(q, 1);
+    assertEquals("Polygon should not contain the line,", 0, topDocs.scoreDocs.length);
+
+    // cleanup
+    IOUtils.close(r, dir);
   }
 }
