@@ -2185,15 +2185,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private DocList constantScoreDocList(int offset, int length, DocSet docs) {
     final int size = docs.size();
-    if (length == 0 || size <= offset) {
-      return new DocSlice(0, 0, new int[0], null, size, 0f, TotalHits.Relation.EQUAL_TO);
-    }
-    final DocIterator iter = docs.iterator();
-    for (int i = offset; i > 0; i--) {
-      iter.nextDoc(); // discard
-    }
-    final int returnSize = Math.min(length, size - offset);
+
+    // NOTE: it would be possible to special-case `length == 0 || size <= offset` here
+    // (returning a DocList backed by an empty array) -- but the cases that would practically
+    // benefit from doing so would be extremely unusual, and likely pathological:
+    //   1. length==0 in conjunction with offset>0 (why?)
+    //   2. specifying offset>size (paging beyond end of results)
+    // This would require special consideration in dealing with cache handling (and generation
+    // of the final DocList via `DocSlice.subset(int, int)`), and it's just not worth it.
+
+    final int returnSize = Math.min(offset + length, size);
     final int[] docIds = new int[returnSize];
+
+    final DocIterator iter = docs.iterator();
     for (int i = 0; i < returnSize; i++) {
       docIds[i] = iter.nextDoc();
     }

@@ -50,7 +50,7 @@
     <!-- no autowarming, it screws up our ability to sanity check cache stats in tests -->
     <filterCache size="50" initialSize="50" autowarmCount="0"/>
     <queryResultCache size="50" initialSize="50" autowarmCount="0"/>
-    <queryResultWindowSize>50</queryResultWindowSize>
+    <queryResultWindowSize>${solr.test.queryResultWindowSize:50}</queryResultWindowSize>
     <queryResultMaxDocsCached>500</queryResultMaxDocsCached>
     <!-- randomized so we exercise cursors using various paths in SolrIndexSearcher -->
     <useFilterForSortedQuery>${solr.test.useFilterForSortedQuery}</useFilterForSortedQuery>
