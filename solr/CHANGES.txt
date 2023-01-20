@@ -34,7 +34,7 @@ Other Changes
 
 * SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Kevin Risden)
 
-* SOLR-16424: Upgrade Netty to 4.1.82.Final (Kevin Risden)
+* SOLR-16626, SOLR-16424: Upgrade to Netty 4.1.87.Final (Kevin Risden, janhoy)
 
 * SOLR-16421: Upgrade Apache Calcite to 1.32.0 and Avatica to 1.22.0 (Kevin Risden)
 
