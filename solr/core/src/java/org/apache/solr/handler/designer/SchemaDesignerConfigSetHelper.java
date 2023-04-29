@@ -613,7 +613,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     SolrResourceLoader resourceLoader = cc.getResourceLoader();
     ZkSolrResourceLoader zkLoader =
         new ZkSolrResourceLoader(resourceLoader.getInstancePath(), configSet, resourceLoader.getClassLoader(), new Properties(), cc.getZkController());
-    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, true, null);
+    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, false, null);
   }
 
   ManagedIndexSchema loadLatestSchema(String configSet) {
