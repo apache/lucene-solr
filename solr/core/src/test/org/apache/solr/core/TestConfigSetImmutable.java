@@ -50,6 +50,8 @@ public class TestConfigSetImmutable extends RestTestBase {
     FileUtils.write(new File(tmpConfDir, "configsetprops.json"), new StringBuilder("{\"immutable\":\"true\"}"), StandardCharsets.UTF_8);
 
     System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("solr.enableRemoteStreaming", "true");
+    System.setProperty("solr.enableStreamBody", "true");
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-schemaless.xml", "schema-rest.xml",
         "/solr", true, null);

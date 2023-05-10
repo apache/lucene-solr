@@ -58,7 +58,7 @@
   </requestHandler>
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1"/>
+    <requestParsers multipartUploadLimitInKB="-1"/>
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>

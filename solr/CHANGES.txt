@@ -50,6 +50,9 @@ Other Changes
 
 * SOLR-17025: Upgrade Jetty to 9.4.53.v20231009 (Kevin Risden)
 
+* SOLR-14853: Security: Converted enableRemoteStreaming and enableStreamBody solrconfig options into system properties and env vars.
+  Attempts to set them the old way are no-op and log a warning. (David Smiley, janhoy, Ishan Chattopadhyaya)
+
 ==================  8.11.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

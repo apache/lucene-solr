@@ -35,7 +35,7 @@
   <requestHandler name="/select" class="solr.SearchHandler" />
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
     <httpCaching never304="true" />
   </requestDispatcher>
 

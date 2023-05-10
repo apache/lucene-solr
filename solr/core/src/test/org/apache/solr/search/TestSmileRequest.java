@@ -43,6 +43,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
+    System.setProperty("solr.enableStreamBody", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }

@@ -116,10 +116,11 @@ public class SolrRequestParsers {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
       
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
-      
-      enableRemoteStreams = globalConfig.isEnableRemoteStreams();
-      enableStreamBody = globalConfig.isEnableStreamBody();
-  
+
+      // security risks; disabled by default
+      enableRemoteStreams = Boolean.getBoolean("solr.enableRemoteStreaming");
+      enableStreamBody = Boolean.getBoolean("solr.enableStreamBody");
+
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
       
@@ -482,8 +483,12 @@ public class SolrRequestParsers {
     this.addHttpRequestToContext = addRequestHeadersToContext;
   }
 
-  //-----------------------------------------------------------------
-  //-----------------------------------------------------------------
+  public boolean isEnableRemoteStreams() {
+    return enableRemoteStreams;
+  }
+
+  // -----------------------------------------------------------------
+  // -----------------------------------------------------------------
 
   // I guess we don't really even need the interface, but i'll keep it here just for kicks
   interface SolrRequestParser 

@@ -30,8 +30,7 @@
   <codecFactory class="solr.SchemaCodecFactory"/>
 
   <requestDispatcher>
-    <!-- Tests rely on stream.body -->
-    <requestParsers enableStreamBody="true" />
+    <requestParsers />
   </requestDispatcher>
   
   <query>

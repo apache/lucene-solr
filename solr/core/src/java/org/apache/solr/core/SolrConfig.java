@@ -134,9 +134,6 @@ public class SolrConfig implements MapSerializable {
 
   private int formUploadLimitKB;
 
-  private boolean enableRemoteStreams;
-  private boolean enableStreamBody;
-
   private boolean handleSelect;
 
   private boolean addHttpRequestToContext;
@@ -340,9 +337,13 @@ public class SolrConfig implements MapSerializable {
       formUploadLimitKB = get("requestDispatcher").get("requestParsers").intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
       if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
-      enableRemoteStreams = get("requestDispatcher").get("requestParsers").boolAttr("enableRemoteStreaming", false);
+      if (get("requestDispatcher").get("requestParsers").attr("enableRemoteStreaming") != null) {
+        log.warn("Ignored deprecated enableRemoteStreaming in config; use sys-prop");
+      }
 
-      enableStreamBody = get("requestDispatcher").get("requestParsers").boolAttr("enableStreamBody", false);
+      if (get("requestDispatcher").get("requestParsers").attr("enableStreamBody") != null) {
+        log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
+      }
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
       addHttpRequestToContext = get("requestDispatcher").get("requestParsers").boolAttr("addHttpRequestToContext", false);
@@ -901,15 +902,6 @@ public class SolrConfig implements MapSerializable {
   public boolean isAddHttpRequestToContext() {
     return addHttpRequestToContext;
   }
-
-  public boolean isEnableRemoteStreams() {
-    return enableRemoteStreams;
-  }
-
-  public boolean isEnableStreamBody() {
-    return enableStreamBody;
-  }
-
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})

@@ -40,6 +40,8 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.enableRemoteStreaming", "true");
+    System.setProperty("solr.enableStreamBody", "true");
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, null);

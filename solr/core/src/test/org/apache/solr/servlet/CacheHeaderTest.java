@@ -33,7 +33,6 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,12 +46,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   public static void beforeTest() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
+    System.setProperty("solr.enableRemoteStreaming", "true"); // needed for testCacheVetoHandler
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
-  }
-
-  @AfterClass
-  public static void afterTest() throws Exception {
-
   }
 
   protected static final String CONTENTS = "id\n100\n101\n102";

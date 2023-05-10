@@ -58,8 +58,7 @@
   </query>
 
   <requestDispatcher>
-    <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime"
                  etagSeed="Solr">
     </httpCaching>

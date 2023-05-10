@@ -32,7 +32,7 @@
   </directoryFactory>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestDispatcher>
-    <requestParsers enableStreamBody="true" />
+    <requestParsers />
   </requestDispatcher>
   
   <dataDir>${solr.data.dir:}</dataDir>

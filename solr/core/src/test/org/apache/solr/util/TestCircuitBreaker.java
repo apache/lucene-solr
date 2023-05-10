@@ -57,6 +57,8 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     System.setProperty("filterCache.enabled", "false");
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
+    System.setProperty("solr.enableRemoteStreaming", "true");
+    System.setProperty("solr.enableStreamBody", "true");
 
     initCore("solrconfig-memory-circuitbreaker.xml", "schema.xml");
     for (int i = 0 ; i < NUM_DOCS ; i ++) {

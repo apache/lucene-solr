@@ -36,7 +36,7 @@
   </updateHandler>
 
   <requestDispatcher>
-    <requestParsers enableStreamBody="true" />
+    <requestParsers />
   </requestDispatcher>
   
   <requestHandler name="/select" class="solr.SearchHandler">
