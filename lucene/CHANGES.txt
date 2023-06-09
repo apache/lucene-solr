@@ -23,6 +23,9 @@ Bug Fixes
 
 * GITHUB#12020: Fixes bug whereby very flat polygons can incorrectly contain intersecting geometries. (Craig Taverner)
 
+* GITHUB#12352: [Tessellator] Improve the checks that validate the diagonal between two polygon nodes so
+  the resulting polygons are valid counter clockwise polygons. (Ignacio Vera)
+
 ======================= Lucene 8.11.2 =======================
 
 Bug Fixes
