@@ -41,7 +41,10 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRedaction() throws Exception {
     RedactionUtils.setRedactSystemProperty(true);
-    for(String propName: new String[]{"some.password", "javax.net.ssl.trustStorePassword"}){
+    for (String propName :
+        new String[] {
+          "some.password", "javax.net.ssl.trustStorePassword", "basicauth", "some.Secret"
+        }) {
       System.setProperty(propName, PASSWORD);
       NamedList<NamedList<NamedList<Object>>> properties = readProperties();
 

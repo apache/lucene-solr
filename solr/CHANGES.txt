@@ -22,6 +22,8 @@ Bug Fixes
 
 * SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
 
+* SOLR-16984: Add missing sysProps to redaction logic (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)

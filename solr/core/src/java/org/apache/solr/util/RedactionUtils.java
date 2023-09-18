@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 
 public class RedactionUtils {
   public static final String SOLR_REDACTION_SYSTEM_PATTERN_PROP = "solr.redaction.system.pattern";
-  private static Pattern pattern = Pattern.compile(System.getProperty(SOLR_REDACTION_SYSTEM_PATTERN_PROP, ".*password.*"), Pattern.CASE_INSENSITIVE);
+  private static Pattern pattern = Pattern.compile(System.getProperty(SOLR_REDACTION_SYSTEM_PATTERN_PROP, ".*(password|secret|basicauth).*"), Pattern.CASE_INSENSITIVE);
   private static final String REDACT_STRING = "--REDACTED--";
   public static final String NODE_REDACTION_PREFIX = "N_";
   public static final String COLL_REDACTION_PREFIX = "COLL_";
