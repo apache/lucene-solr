@@ -192,7 +192,7 @@ public class ScheduledTrigger extends TriggerBase {
       }
       // Even though we are skipping the event, we need to notify any listeners of the IGNORED stage
       // so we create a dummy event with the ignored=true flag and ScheduledTriggers will do the rest
-      if (processor != null && processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTimeNs(),
+      if (processor != null && processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getEpochTimeNs(),
           preferredOp, now.toEpochMilli(), true))) {
         lastRunAt = nextRunTime;
         return;
@@ -204,7 +204,7 @@ public class ScheduledTrigger extends TriggerBase {
         log.debug("ScheduledTrigger {} firing registered processor for scheduled time {}, now={}", name,
             nextRunTime, now);
       }
-      if (processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getTimeNs(),
+      if (processor.process(new ScheduledEvent(getEventType(), getName(), timeSource.getEpochTimeNs(),
           preferredOp, now.toEpochMilli()))) {
         lastRunAt = nextRunTime; // set to nextRunTime instead of now to avoid drift
       }

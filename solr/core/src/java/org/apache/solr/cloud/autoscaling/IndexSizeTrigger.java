@@ -353,7 +353,7 @@ public class IndexSizeTrigger extends TriggerBase {
       return;
     }
 
-    long now = cloudManager.getTimeSource().getTimeNs();
+    long now = cloudManager.getTimeSource().getEpochTimeNs();
 
     // now check thresholds
 

@@ -413,7 +413,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (timeout != null) {
       try {
         int timeoutSeconds = parseHumanTime(timeout);
-        resumeTime = new Date(TimeUnit.MILLISECONDS.convert(timeSource.getTimeNs(), TimeUnit.NANOSECONDS)
+        resumeTime = new Date(TimeUnit.MILLISECONDS.convert(timeSource.getEpochTimeNs(), TimeUnit.NANOSECONDS)
             + TimeUnit.MILLISECONDS.convert(timeoutSeconds, TimeUnit.SECONDS));
       } catch (IllegalArgumentException e) {
         op.addError("Invalid 'timeout' value for suspend trigger: " + triggerName);

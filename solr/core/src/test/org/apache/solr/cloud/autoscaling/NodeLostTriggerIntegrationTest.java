@@ -180,7 +180,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
     // since we know the nodeLost event has been detected, we can recored the current timestamp
     // (relative to the cluster's time source) and later assert that (restored state) correctly
     // tracked that the event happened prior to "now"
-    final long maxEventTimeNs = cloudManager.getTimeSource().getTimeNs();
+    final long maxEventTimeNs = cloudManager.getTimeSource().getEpochTimeNs();
     
     // even though our trigger has detected a lost node, the *action* we registered should not have
     // been run yet, due to the large waitFor configuration...
@@ -317,7 +317,7 @@ public class NodeLostTriggerIntegrationTest extends SolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true)) {
           events.add(event);
-          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getTimeNs();
+          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {

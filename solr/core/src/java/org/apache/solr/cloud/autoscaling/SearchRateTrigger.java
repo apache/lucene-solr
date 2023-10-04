@@ -405,7 +405,7 @@ public class SearchRateTrigger extends TriggerBase {
         });
       });
     }
-    long now = cloudManager.getTimeSource().getTimeNs();
+    long now = cloudManager.getTimeSource().getEpochTimeNs();
     Map<String, Double> hotNodes = new HashMap<>();
     Map<String, Double> coldNodes = new HashMap<>();
 
