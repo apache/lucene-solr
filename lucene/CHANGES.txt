@@ -26,6 +26,11 @@ Bug Fixes
 * GITHUB#12352: [Tessellator] Improve the checks that validate the diagonal between two polygon nodes so
   the resulting polygons are valid counter clockwise polygons. (Ignacio Vera)
 
+Optimizations
+---------------------
+* GITHUB#12604: Estimate the block size of FST BytesStore in BlockTreeTermsWriter
+  to reduce GC load during indexing. (Guo Feng)
+
 ======================= Lucene 8.11.2 =======================
 
 Bug Fixes
