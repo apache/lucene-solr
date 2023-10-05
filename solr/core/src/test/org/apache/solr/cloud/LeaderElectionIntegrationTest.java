@@ -72,45 +72,32 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
       String leader = getLeader(collection);
       JettySolrRunner jetty = getRunner(leader);
       assertNotNull(jetty);
-      assertTrue("shard1".equals(jetty.getCoreContainer().getCores().iterator().next()
-          .getCoreDescriptor().getCloudDescriptor().getShardId()));
+      assertEquals(
+          "shard1",
+          jetty
+              .getCoreContainer()
+              .getCores()
+              .iterator()
+              .next()
+              .getCoreDescriptor()
+              .getCloudDescriptor()
+              .getShardId());
+      String jettyNodeName = jetty.getNodeName(); // must get before shutdown
       jetty.stop();
       stoppedRunners.add(jetty);
-
-      // poll until leader change is visible
-      for (int j = 0; j < 90; j++) {
-        String currentLeader = getLeader(collection);
-        if(!leader.equals(currentLeader)) {
-          break;
-        }
-        Thread.sleep(500);
-      }
-
-      leader = getLeader(collection);
-      int retry = 0;
-      while (jetty == getRunner(leader)) {
-        if (retry++ == 60) {
-          break;
-        }
-        Thread.sleep(1000);
-      }
-
-      if (jetty == getRunner(leader)) {
-        cluster.getZkClient().printLayoutToStdOut();
-        fail("We didn't find a new leader! " + jetty + " was close, but it's still showing as the leader");
-      }
-
-      assertTrue("shard1".equals(getRunner(leader).getCoreContainer().getCores().iterator().next()
-          .getCoreDescriptor().getCloudDescriptor().getShardId()));
+      waitForState(
+          "Leader should not be " + jettyNodeName,
+          collection,
+          (n, c) ->
+              c.getLeader("shard1") != null
+                  && !jettyNodeName.equals(c.getLeader("shard1").getNodeName()));
     }
 
     for (JettySolrRunner runner : stoppedRunners) {
       runner.start();
     }
-    waitForState("Expected to see nodes come back " + collection, collection,
-        (n, c) -> {
-          return n.size() == 6;
-        });
+    waitForState(
+        "Expected to see nodes come back for " + collection, collection, (n, c) -> n.size() == 6);
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
 
     // testLeaderElectionAfterClientTimeout
@@ -122,10 +109,8 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     // timeout the leader
     String leader = getLeader(collection);
     JettySolrRunner jetty = getRunner(leader);
-    ZkController zkController = jetty.getCoreContainer().getZkController();
-
-    zkController.getZkClient().getSolrZooKeeper().closeCnxn();
-    cluster.getZkServer().expire(zkController.getZkClient().getSolrZooKeeper().getSessionId());
+    assertNotNull(jetty);
+    cluster.expireZkSession(jetty);
 
     for (int i = 0; i < 60; i++) { // wait till leader is changed
       if (jetty != getRunner(getLeader(collection))) {

@@ -970,25 +970,25 @@ public class ZkStateReader implements SolrCloseable {
     return getLeaderRetry(collection, shard, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
   }
 
-  /**
-   * Get shard leader properties, with retry if none exist.
-   */
-  public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
-    AtomicReference<DocCollection> coll = new AtomicReference<>();
+  /** Get shard leader properties, with retry if none exist. */
+  public Replica getLeaderRetry(String collection, String shard, int timeout)
+      throws InterruptedException {
     AtomicReference<Replica> leader = new AtomicReference<>();
     try {
-      waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c) -> {
-        if (c == null)
-          return false;
-        coll.set(c);
-        Replica l = getLeader(n, c, shard);
-        if (l != null) {
-          log.debug("leader found for {}/{} to be {}", collection, shard, l);
-          leader.set(l);
-          return true;
-        }
-        return false;
-      });
+      waitForState(
+          collection,
+          timeout,
+          TimeUnit.MILLISECONDS,
+          (n, c) -> {
+            if (c == null) return false;
+            Replica l = getLeader(n, c, shard);
+            if (l != null) {
+              log.debug("leader found for {}/{} to be {}", collection, shard, l);
+              leader.set(l);
+              return true;
+            }
+            return false;
+          });
     } catch (TimeoutException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
@@ -1826,6 +1826,18 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
+    if (clusterState != null) {
+      Set<String> liveNodes = clusterState.getLiveNodes();
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (liveNodes != null && docCollection != null) {
+        if (predicate.matches(liveNodes, docCollection)) {
+          log.debug("Found {} directly in clusterState", predicate);
+          return;
+        }
+      }
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1880,14 +1892,25 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
+    if (clusterState != null) {
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (docCollection != null) {
+        if (predicate.test(docCollection)) {
+          log.debug("Found {} directly in clusterState", predicate);
+          return;
+        }
+      }
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
-    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
-    DocCollectionWatcher watcher = (c) -> {
-      docCollection.set(c);
-      boolean matches = predicate.test(c);
-      if (matches)
-        latch.countDown();
+    AtomicReference<DocCollection> docCollectionReference = new AtomicReference<>();
+    DocCollectionWatcher watcher =
+        (c) -> {
+          docCollectionReference.set(c);
+          boolean matches = predicate.test(c);
+          if (matches) latch.countDown();
 
       return matches;
     };
@@ -1896,8 +1919,11 @@ public class ZkStateReader implements SolrCloseable {
     try {
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
-        throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + docCollection.get());
-
+        throw new TimeoutException(
+            "Timeout waiting to see state for collection="
+                + collection
+                + " :"
+                + docCollectionReference.get());
     } finally {
       removeDocCollectionWatcher(collection, watcher);
       waitLatches.remove(latch);
