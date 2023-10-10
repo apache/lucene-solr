@@ -44,6 +44,8 @@ Other Changes
 
 * SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
 
+* SOLR-17025: Upgrade Jetty to 9.4.53.v20231009 (Kevin Risden)
+
 ==================  8.11.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
