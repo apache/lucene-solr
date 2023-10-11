@@ -823,63 +823,6 @@ public abstract class SlotAcc implements Closeable {
   public abstract int getCount(int slot);
   }
 
-  /**
-   * This CountSlotAcc exists as a /dev/null sink for callers of collect(...) and other "write"-type
-   * methods. It should be used in contexts where "read"-type access methods will never be called.
-   */
-  static final CountSlotAcc DEV_NULL_SLOT_ACC = new CountSlotAcc(null) {
-
-    @Override
-    public void resize(Resizer resizer) {
-      // No-op
-    }
-
-    @Override
-    public void reset() throws IOException {
-      // No-op
-    }
-
-    @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      // No-op
-    }
-
-    @Override
-    public void incrementCount(int slot, int count) {
-      // No-op
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      // No-op
-    }
-
-    @Override
-    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      return docs.size(); // dressed up no-op
-    }
-
-    @Override
-    public Object getValue(int slotNum) throws IOException {
-      throw new UnsupportedOperationException("not supported");
-    }
-
-    @Override
-    public int compare(int slotA, int slotB) {
-      throw new UnsupportedOperationException("not supported");
-    }
-
-    @Override
-    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      throw new UnsupportedOperationException("not supported");
-    }
-
-    @Override
-    public int getCount(int slot) {
-      throw new UnsupportedOperationException("not supported");
-    }
-  };
-
   static class CountSlotArrAcc extends CountSlotAcc {
     int[] result;
 

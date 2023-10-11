@@ -24,6 +24,8 @@ Bug Fixes
 
 * SOLR-16984: Add missing sysProps to redaction logic (Houston Putman)
 
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
 Optimizations
 ---------------------
 * SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
