@@ -21,6 +21,7 @@ package org.apache.hadoop.fs;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -29,17 +30,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,7 +58,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
-import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -596,11 +602,10 @@ public class FileUtil {
       return dir.length();
     } else {
       File[] allFiles = dir.listFiles();
-      if(allFiles != null) {
-        for (int i = 0; i < allFiles.length; i++) {
-          boolean isSymLink = org.apache.commons.io.FileUtils.isSymlink(allFiles[i]);
-          if(!isSymLink) {
-            size += getDU(allFiles[i]);
+      if (allFiles != null) {
+        for (File f : allFiles) {
+          if (!org.apache.commons.io.FileUtils.isSymlink(f)) {
+            size += getDU(f);
           }
         }
       }
@@ -889,10 +894,13 @@ public class FileUtil {
   private static void unTarUsingTar(File inFile, File untarDir,
                                     boolean gzipped) throws IOException {
     StringBuffer untarCommand = new StringBuffer();
+    // not using canonical path here; this postpones relative path
+    // resolution until bash is executed.
+    final String source = "'" + FileUtil.makeSecureShellPath(inFile) + "'";
     if (gzipped) {
-      untarCommand.append(" gzip -dc '");
-      untarCommand.append(FileUtil.makeSecureShellPath(inFile));
-      untarCommand.append("' | (");
+      untarCommand.append(" gzip -dc ")
+          .append(source)
+          .append(" | (");
     }
     untarCommand.append("cd '");
     untarCommand.append(FileUtil.makeSecureShellPath(untarDir));
@@ -902,15 +910,17 @@ public class FileUtil {
     if (gzipped) {
       untarCommand.append(" -)");
     } else {
-      untarCommand.append(FileUtil.makeSecureShellPath(inFile));
+      untarCommand.append(source);
     }
+    LOG.debug("executing [{}]", untarCommand);
     String[] shellCmd = { "bash", "-c", untarCommand.toString() };
     ShellCommandExecutor shexec = new ShellCommandExecutor(shellCmd);
     shexec.execute();
     int exitcode = shexec.getExitCode();
     if (exitcode != 0) {
       throw new IOException("Error untarring file " + inFile +
-          ". Tar process exited with exit code " + exitcode);
+          ". Tar process exited with exit code " + exitcode
+          + " from command " + untarCommand);
     }
   }
 
@@ -969,6 +979,14 @@ public class FileUtil {
           + " would create entry outside of " + outputDir);
     }
 
+    if (entry.isSymbolicLink() || entry.isLink()) {
+      String canonicalTargetPath = getCanonicalPath(entry.getLinkName(), outputDir);
+      if (!canonicalTargetPath.startsWith(targetDirPath)) {
+        throw new IOException(
+            "expanding " + entry.getName() + " would create entry outside of " + outputDir);
+      }
+    }
+
     if (entry.isDirectory()) {
       File subDir = new File(outputDir, entry.getName());
       if (!subDir.mkdirs() && !subDir.isDirectory()) {
@@ -984,10 +1002,12 @@ public class FileUtil {
     }
 
     if (entry.isSymbolicLink()) {
-      // Create symbolic link relative to tar parent dir
-      Files.createSymbolicLink(FileSystems.getDefault()
-              .getPath(outputDir.getPath(), entry.getName()),
-          FileSystems.getDefault().getPath(entry.getLinkName()));
+      // Create symlink with canonical target path to ensure that we don't extract
+      // outside targetDirPath
+      String canonicalTargetPath = getCanonicalPath(entry.getLinkName(), outputDir);
+      Files.createSymbolicLink(
+          FileSystems.getDefault().getPath(outputDir.getPath(), entry.getName()),
+          FileSystems.getDefault().getPath(canonicalTargetPath));
       return;
     }
 
@@ -999,7 +1019,8 @@ public class FileUtil {
     }
 
     if (entry.isLink()) {
-      File src = new File(outputDir, entry.getLinkName());
+      String canonicalTargetPath = getCanonicalPath(entry.getLinkName(), outputDir);
+      File src = new File(canonicalTargetPath);
       HardLink.createHardLink(src, outputFile);
       return;
     }
@@ -1015,6 +1036,20 @@ public class FileUtil {
 
       outputStream.flush();
     }
+  }
+
+  /**
+   * Gets the canonical path for the given path.
+   *
+   * @param path      The path for which the canonical path needs to be computed.
+   * @param parentDir The parent directory to use if the path is a relative path.
+   * @return The canonical path of the given path.
+   */
+  private static String getCanonicalPath(String path, File parentDir) throws IOException {
+    java.nio.file.Path targetPath = Paths.get(path);
+    return (targetPath.isAbsolute() ?
+        new File(path) :
+        new File(parentDir, path)).getCanonicalPath();
   }
 
   /**
@@ -1349,7 +1384,8 @@ public class FileUtil {
     String[] args = new String[cmd.length + 1];
     System.arraycopy(cmd, 0, args, 0, cmd.length);
     args[cmd.length] = f.getCanonicalPath();
-    return Shell.execCommand(args);
+    String output = Shell.execCommand(args);
+    return output;
   }
 
   /**
@@ -1362,9 +1398,9 @@ public class FileUtil {
    * @see java.io.File#createTempFile(String, String, File)
    * @see java.io.File#deleteOnExit()
    */
-  public static File createLocalTempFile(final File basefile,
-                                         final String prefix,
-                                         final boolean isDeleteOnExit)
+  public static final File createLocalTempFile(final File basefile,
+                                               final String prefix,
+                                               final boolean isDeleteOnExit)
       throws IOException {
     File tmp = File.createTempFile(prefix + basefile.getName(),
         "", basefile.getParentFile());
@@ -1485,7 +1521,8 @@ public class FileUtil {
                                                 Path targetDir,
                                                 Map<String, String> callerEnv) throws IOException {
     // Replace environment variables, case-insensitive on Windows
-    Map<String, String> env = Shell.WINDOWS ? new CaseInsensitiveMap<>(callerEnv) :
+    @SuppressWarnings("unchecked")
+    Map<String, String> env = Shell.WINDOWS ? new CaseInsensitiveMap(callerEnv) :
         callerEnv;
     String[] classPathEntries = inputClassPath.split(File.pathSeparator);
     for (int i = 0; i < classPathEntries.length; ++i) {
@@ -1646,5 +1683,236 @@ public class FileUtil {
     }
     // check for ports
     return srcUri.getPort()==dstUri.getPort();
+  }
+
+  /**
+   * Writes bytes to a file. This utility method opens the file for writing,
+   * creating the file if it does not exist, or overwrites an existing file. All
+   * bytes in the byte array are written to the file.
+   *
+   * @param fs the file system with which to create the file
+   * @param path the path to the file
+   * @param bytes the byte array with the bytes to write
+   *
+   * @return the file system
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileSystem write(final FileSystem fs, final Path path,
+                                 final byte[] bytes) throws IOException {
+
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(bytes);
+
+    try (FSDataOutputStream out = fs.createFile(path).overwrite(true).build()) {
+      out.write(bytes);
+    }
+
+    return fs;
+  }
+
+  /**
+   * Writes bytes to a file. This utility method opens the file for writing,
+   * creating the file if it does not exist, or overwrites an existing file. All
+   * bytes in the byte array are written to the file.
+   *
+   * @param fileContext the file context with which to create the file
+   * @param path the path to the file
+   * @param bytes the byte array with the bytes to write
+   *
+   * @return the file context
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileContext write(final FileContext fileContext,
+                                  final Path path, final byte[] bytes) throws IOException {
+
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(bytes);
+
+    try (FSDataOutputStream out =
+             fileContext.create(path).overwrite(true).build()) {
+      out.write(bytes);
+    }
+
+    return fileContext;
+  }
+
+  /**
+   * Write lines of text to a file. Each line is a char sequence and is written
+   * to the file in sequence with each line terminated by the platform's line
+   * separator, as defined by the system property {@code
+   * line.separator}. Characters are encoded into bytes using the specified
+   * charset. This utility method opens the file for writing, creating the file
+   * if it does not exist, or overwrites an existing file.
+   *
+   * @param fs the file system with which to create the file
+   * @param path the path to the file
+   * @param lines a Collection to iterate over the char sequences
+   * @param cs the charset to use for encoding
+   *
+   * @return the file system
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileSystem write(final FileSystem fs, final Path path,
+                                 final Iterable<? extends CharSequence> lines, final Charset cs)
+      throws IOException {
+
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(lines);
+    Objects.requireNonNull(cs);
+
+    CharsetEncoder encoder = cs.newEncoder();
+    try (FSDataOutputStream out = fs.createFile(path).overwrite(true).build();
+         BufferedWriter writer =
+             new BufferedWriter(new OutputStreamWriter(out, encoder))) {
+      for (CharSequence line : lines) {
+        writer.append(line);
+        writer.newLine();
+      }
+    }
+    return fs;
+  }
+
+  /**
+   * Write lines of text to a file. Each line is a char sequence and is written
+   * to the file in sequence with each line terminated by the platform's line
+   * separator, as defined by the system property {@code
+   * line.separator}. Characters are encoded into bytes using the specified
+   * charset. This utility method opens the file for writing, creating the file
+   * if it does not exist, or overwrites an existing file.
+   *
+   * @param fileContext the file context with which to create the file
+   * @param path the path to the file
+   * @param lines a Collection to iterate over the char sequences
+   * @param cs the charset to use for encoding
+   *
+   * @return the file context
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileContext write(final FileContext fileContext,
+                                  final Path path, final Iterable<? extends CharSequence> lines,
+                                  final Charset cs) throws IOException {
+
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(lines);
+    Objects.requireNonNull(cs);
+
+    CharsetEncoder encoder = cs.newEncoder();
+    try (FSDataOutputStream out = fileContext.create(path).overwrite(true).build();
+         BufferedWriter writer =
+             new BufferedWriter(new OutputStreamWriter(out, encoder))) {
+      for (CharSequence line : lines) {
+        writer.append(line);
+        writer.newLine();
+      }
+    }
+    return fileContext;
+  }
+
+  /**
+   * Write a line of text to a file. Characters are encoded into bytes using the
+   * specified charset. This utility method opens the file for writing, creating
+   * the file if it does not exist, or overwrites an existing file.
+   *
+   * @param fs the file system with which to create the file
+   * @param path the path to the file
+   * @param charseq the char sequence to write to the file
+   * @param cs the charset to use for encoding
+   *
+   * @return the file system
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileSystem write(final FileSystem fs, final Path path,
+                                 final CharSequence charseq, final Charset cs) throws IOException {
+
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(charseq);
+    Objects.requireNonNull(cs);
+
+    CharsetEncoder encoder = cs.newEncoder();
+    try (FSDataOutputStream out = fs.createFile(path).overwrite(true).build();
+         BufferedWriter writer =
+             new BufferedWriter(new OutputStreamWriter(out, encoder))) {
+      writer.append(charseq);
+    }
+    return fs;
+  }
+
+  /**
+   * Write a line of text to a file. Characters are encoded into bytes using the
+   * specified charset. This utility method opens the file for writing, creating
+   * the file if it does not exist, or overwrites an existing file.
+   *
+   * @param fs the file context with which to create the file
+   * @param path the path to the file
+   * @param charseq the char sequence to write to the file
+   * @param cs the charset to use for encoding
+   *
+   * @return the file context
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileContext write(final FileContext fs, final Path path,
+                                  final CharSequence charseq, final Charset cs) throws IOException {
+
+    Objects.requireNonNull(path);
+    Objects.requireNonNull(charseq);
+    Objects.requireNonNull(cs);
+
+    CharsetEncoder encoder = cs.newEncoder();
+    try (FSDataOutputStream out = fs.create(path).overwrite(true).build();
+         BufferedWriter writer =
+             new BufferedWriter(new OutputStreamWriter(out, encoder))) {
+      writer.append(charseq);
+    }
+    return fs;
+  }
+
+  /**
+   * Write a line of text to a file. Characters are encoded into bytes using
+   * UTF-8. This utility method opens the file for writing, creating the file if
+   * it does not exist, or overwrites an existing file.
+   *
+   * @param fs the files system with which to create the file
+   * @param path the path to the file
+   * @param charseq the char sequence to write to the file
+   *
+   * @return the file system
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileSystem write(final FileSystem fs, final Path path,
+                                 final CharSequence charseq) throws IOException {
+    return write(fs, path, charseq, StandardCharsets.UTF_8);
+  }
+
+  /**
+   * Write a line of text to a file. Characters are encoded into bytes using
+   * UTF-8. This utility method opens the file for writing, creating the file if
+   * it does not exist, or overwrites an existing file.
+   *
+   * @param fileContext the files system with which to create the file
+   * @param path the path to the file
+   * @param charseq the char sequence to write to the file
+   *
+   * @return the file context
+   *
+   * @throws NullPointerException if any of the arguments are {@code null}
+   * @throws IOException if an I/O error occurs creating or writing to the file
+   */
+  public static FileContext write(final FileContext fileContext,
+                                  final Path path, final CharSequence charseq) throws IOException {
+    return write(fileContext, path, charseq, StandardCharsets.UTF_8);
   }
 }

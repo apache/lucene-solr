@@ -145,11 +145,15 @@ public final class HttpServer2 implements FilterContainer {
   // idle timeout in milliseconds
   public static final String HTTP_IDLE_TIMEOUT_MS_KEY =
       "hadoop.http.idle_timeout.ms";
-  public static final int HTTP_IDLE_TIMEOUT_MS_DEFAULT = 10000;
+  public static final int HTTP_IDLE_TIMEOUT_MS_DEFAULT = 60000;
   public static final String HTTP_TEMP_DIR_KEY = "hadoop.http.temp.dir";
 
   public static final String FILTER_INITIALIZER_PROPERTY
       = "hadoop.http.filter.initializers";
+
+  public static final String HTTP_SNI_HOST_CHECK_ENABLED_KEY
+      = "hadoop.http.sni.host.check.enabled";
+  public static final boolean HTTP_SNI_HOST_CHECK_ENABLED_DEFAULT = false;
 
   // The ServletContext attribute where the daemon Configuration
   // gets stored.
@@ -224,6 +228,8 @@ public final class HttpServer2 implements FilterContainer {
 
     private boolean xFrameEnabled;
     private XFrameOption xFrameOption = XFrameOption.SAMEORIGIN;
+
+    private boolean sniHostCheckEnabled;
 
     public Builder setName(String name){
       this.name = name;
@@ -370,6 +376,17 @@ public final class HttpServer2 implements FilterContainer {
     }
 
     /**
+     * Enable or disable sniHostCheck.
+     *
+     * @param sniHostCheckEnabled Enable sniHostCheck if true, else disable it.
+     * @return Builder.
+     */
+    public Builder setSniHostCheckEnabled(boolean sniHostCheckEnabled) {
+      this.sniHostCheckEnabled = sniHostCheckEnabled;
+      return this;
+    }
+
+    /**
      * A wrapper of {@link Configuration#getPassword(String)}. It returns
      * <code>String</code> instead of <code>char[]</code>.
      *
@@ -461,6 +478,13 @@ public final class HttpServer2 implements FilterContainer {
       int backlogSize = conf.getInt(HTTP_SOCKET_BACKLOG_SIZE_KEY,
           HTTP_SOCKET_BACKLOG_SIZE_DEFAULT);
 
+      // If setSniHostCheckEnabled() is used to enable SNI hostname check,
+      // configuration lookup is skipped.
+      if (!sniHostCheckEnabled) {
+        sniHostCheckEnabled = conf.getBoolean(HTTP_SNI_HOST_CHECK_ENABLED_KEY,
+            HTTP_SNI_HOST_CHECK_ENABLED_DEFAULT);
+      }
+
       for (URI ep : endpoints) {
         final ServerConnector connector;
         String scheme = ep.getScheme();
@@ -504,10 +528,12 @@ public final class HttpServer2 implements FilterContainer {
     private ServerConnector createHttpsChannelConnector(
         Server server, HttpConfiguration httpConfig) {
       httpConfig.setSecureScheme(HTTPS_SCHEME);
-      httpConfig.addCustomizer(new SecureRequestCustomizer());
+      httpConfig.addCustomizer(
+          new SecureRequestCustomizer(sniHostCheckEnabled));
       ServerConnector conn = createHttpChannelConnector(server, httpConfig);
 
-      SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+      SslContextFactory.Server sslContextFactory =
+          new SslContextFactory.Server();
       sslContextFactory.setNeedClientAuth(needsClientAuth);
       sslContextFactory.setKeyManagerPassword(keyPassword);
       if (keyStore != null) {
@@ -577,9 +603,9 @@ public final class HttpServer2 implements FilterContainer {
       threadPool.setMaxThreads(Math.max(maxThreads, 4));
     }
 
-    SessionHandler sessionHandler = webAppContext.getSessionHandler();
-    sessionHandler.setHttpOnly(true);
-    sessionHandler.getSessionCookieConfig().setSecure(true);
+    SessionHandler handler = webAppContext.getSessionHandler();
+    handler.setHttpOnly(true);
+    handler.getSessionCookieConfig().setSecure(true);
 
     ContextHandlerCollection contexts = new ContextHandlerCollection();
     RequestLog requestLog = HttpRequestLog.getRequestLog(name);
@@ -785,6 +811,7 @@ public final class HttpServer2 implements FilterContainer {
     addJerseyResourcePackage(packageName, pathSpec,
         Collections.<String, String>emptyMap());
   }
+
   /**
    * Add a Jersey resource package.
    * @param packageName The Java package name containing the Jersey resource.
@@ -792,8 +819,7 @@ public final class HttpServer2 implements FilterContainer {
    * @param params properties and features for ResourceConfig
    */
   public void addJerseyResourcePackage(final String packageName,
-      final String pathSpec, Map<String, String> params) {
-
+                                       final String pathSpec, Map<String, String> params) {
     LOG.info("addJerseyResourcePackage: packageName={}, pathcpec={}"
         , packageName, pathSpec);
     final ServletHolder sh = new ServletHolder(ServletContainer.class);
@@ -1209,7 +1235,7 @@ public final class HttpServer2 implements FilterContainer {
    * @return returns the exception
    */
   private static BindException constructBindException(ServerConnector listener,
-                                                      BindException ex) {
+                                                      IOException ex) {
     BindException be = new BindException("Port in use: "
         + listener.getHost() + ":" + listener.getPort());
     if (ex != null) {
@@ -1231,7 +1257,7 @@ public final class HttpServer2 implements FilterContainer {
       try {
         bindListener(listener);
         break;
-      } catch (BindException ex) {
+      } catch (IOException ex) {
         if (port == 0 || !findPort) {
           throw constructBindException(listener, ex);
         }
@@ -1251,13 +1277,13 @@ public final class HttpServer2 implements FilterContainer {
    */
   private void bindForPortRange(ServerConnector listener, int startPort)
       throws Exception {
-    BindException bindException = null;
+    IOException ioException = null;
     try {
       bindListener(listener);
       return;
-    } catch (BindException ex) {
+    } catch (IOException ex) {
       // Ignore exception.
-      bindException = ex;
+      ioException = ex;
     }
     for(Integer port : portRanges) {
       if (port == startPort) {
@@ -1268,12 +1294,16 @@ public final class HttpServer2 implements FilterContainer {
       try {
         bindListener(listener);
         return;
-      } catch (BindException ex) {
+      } catch (IOException ex) {
+        if (!(ex instanceof BindException)
+            && !(ex.getCause() instanceof BindException)) {
+          throw ex;
+        }
         // Ignore exception. Move to next port.
-        bindException = ex;
+        ioException = ex;
       }
     }
-    throw constructBindException(listener, bindException);
+    throw constructBindException(listener, ioException);
   }
 
   /**
@@ -1371,10 +1401,10 @@ public final class HttpServer2 implements FilterContainer {
 
   /**
    * Checks the user has privileges to access to instrumentation servlets.
-   * 
+   * <p/>
    * If <code>hadoop.security.instrumentation.requires.admin</code> is set to FALSE
    * (default value) it always returns TRUE.
-   *
+   * <p/>
    * If <code>hadoop.security.instrumentation.requires.admin</code> is set to TRUE
    * it will check that if the current user is in the admin ACLS. If the user is
    * in the admin ACLs it returns TRUE, otherwise it returns FALSE.
@@ -1504,10 +1534,12 @@ public final class HttpServer2 implements FilterContainer {
       /**
        * Return the set of parameter names, quoting each name.
        */
+      @SuppressWarnings("unchecked")
       @Override
       public Enumeration<String> getParameterNames() {
         return new Enumeration<String>() {
-          private Enumeration<String> rawIterator = rawRequest.getParameterNames();
+          private Enumeration<String> rawIterator =
+              rawRequest.getParameterNames();
           @Override
           public boolean hasMoreElements() {
             return rawIterator.hasMoreElements();
