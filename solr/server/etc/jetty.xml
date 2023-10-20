@@ -195,7 +195,7 @@
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <Ref id="RewriteHandler"/>
+      <Ref refid="RewriteHandler"/>
     </Set>
 
     <!-- =========================================================== -->
