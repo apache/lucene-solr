@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -67,8 +66,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private METHOD method = METHOD.GET;
   private String path = null;
-  private Map<String, String> headers;
-  private List<String> preferredNodes;
+  private Map<String,String> headers;
 
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
@@ -92,15 +90,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public SolrRequest setUseBinaryV2(boolean flag){
     this.useBinaryV2 = flag;
     return this;
-  }
-
-  public SolrRequest<T> setPreferredNodes(List<String> nodes) {
-    this.preferredNodes = nodes;
-    return this;
-  }
-
-  public List<String> getPreferredNodes() {
-    return this.preferredNodes;
   }
 
   private String basicAuthUser, basicAuthPwd;

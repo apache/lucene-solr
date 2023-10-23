@@ -1112,21 +1112,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "No collection param specified on request and no default collection has been set: " + inputCollections);
       }
-      List<String> preferredNodes = request.getPreferredNodes();
-      if (preferredNodes != null && !preferredNodes.isEmpty()) {
-        String joinedInputCollections = StrUtils.join(inputCollections, ',');
-        List<String> urlList = new ArrayList<>(preferredNodes.size());
-        for (String nodeName : preferredNodes) {
-          urlList.add(
-              Utils.getBaseUrlForNodeName(nodeName, urlScheme) + "/" + joinedInputCollections);
-        }
-        if (!urlList.isEmpty()) {
-          LBSolrClient.Req req = new LBSolrClient.Req(request, urlList);
-          LBSolrClient.Rsp rsp = getLbClient().request(req);
-          return rsp.getResponse();
-        }
-      }
-
 
       // TODO: not a big deal because of the caching, but we could avoid looking
       //   at every shard when getting leaders if we tweaked some things

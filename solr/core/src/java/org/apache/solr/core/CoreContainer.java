@@ -249,7 +249,6 @@ public class CoreContainer {
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
   private volatile SolrClientCache solrClientCache;
-  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ObjectCache objectCache = new ObjectCache();
 

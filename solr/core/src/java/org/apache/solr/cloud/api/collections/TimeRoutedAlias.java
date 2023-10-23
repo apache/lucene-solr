@@ -373,7 +373,7 @@ public class TimeRoutedAlias extends RoutedAlias {
     } catch (DateTimeParseException e) {
       startTime = DateMathParser.parseMath(new Date(), start).toInstant();
       SolrCore core = cmd.getReq().getCore();
-      ZkStateReader zkStateReader = cmd.getReq().getCoreContainer().getZkController().zkStateReader;
+      ZkStateReader zkStateReader = core.getCoreContainer().getZkController().zkStateReader;
       Aliases aliases = zkStateReader.getAliases();
       Map<String, String> props = new HashMap<>(aliases.getCollectionAliasProperties(aliasName));
       start = DateTimeFormatter.ISO_INSTANT.format(startTime);

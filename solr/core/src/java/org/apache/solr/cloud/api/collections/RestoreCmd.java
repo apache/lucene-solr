@@ -189,12 +189,8 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       this.backupCollectionState = this.backupManager.readCollectionState(this.backupCollection);
 
       this.shardHandler = ocmh.shardHandlerFactory.getShardHandler();
-      this.nodeList =
-          Assign.getLiveOrLiveAndCreateNodeSetList(
-              zkStateReader.getClusterState().getLiveNodes(),
-              message,
-              OverseerCollectionMessageHandler.RANDOM,
-              container.getZkController().getSolrCloudManager().getDistribStateManager());
+      this.nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
+              zkStateReader.getClusterState().getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
     }
 
     @Override

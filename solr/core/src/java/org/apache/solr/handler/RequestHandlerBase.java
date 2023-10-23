@@ -192,7 +192,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     requests.inc();
     // requests are distributed by default when ZK is in use, unless indicated otherwise
     boolean distrib = req.getParams().getBool(CommonParams.DISTRIB,
-        req.getCore() != null ? req.getCoreContainer().isZooKeeperAware() : false);
+        req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
       int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
@@ -226,7 +226,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       }
     } catch (Exception e) {
       if (req.getCore() != null) {
-        boolean isTragic = req.getCoreContainer().checkTragicException(req.getCore());
+        boolean isTragic = req.getCore().getCoreContainer().checkTragicException(req.getCore());
         if (isTragic) {
           if (e instanceof SolrException) {
             // Tragic exceptions should always throw a server error

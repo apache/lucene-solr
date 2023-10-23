@@ -138,7 +138,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
       throws InterruptedException, KeeperException, IOException {
 
-    CoreContainer coreContainer = req.getCoreContainer();
+    CoreContainer coreContainer = req.getCore().getCoreContainer();
     if (coreContainer.isZooKeeperAware()) {
       showFromZooKeeper(req, rsp, coreContainer);
     } else {
@@ -377,7 +377,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       }
       // A leading slash is unnecessary but supported and interpreted as start of config dir
       Path filePath = configdir.toPath().resolve(fname.startsWith("/") ? fname.substring(1) : fname);
-      req.getCoreContainer().assertPathAllowed(filePath);
+      req.getCore().getCoreContainer().assertPathAllowed(filePath);
       if (!filePath.normalize().startsWith(configdir.toPath().normalize())) {
         log.error("Path must be inside core config directory");
         rsp.setException(

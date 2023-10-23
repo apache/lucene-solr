@@ -217,7 +217,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
       leafContexts = searcher.getTopReaderContext().leaves();
       if (threadManager != null) {
-        threadManager.setExecutor(context.getRequest().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(context.getRequest().getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
 
       rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);

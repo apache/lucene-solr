@@ -50,7 +50,7 @@ public class DistributedUpdateProcessorFactory
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
 
-    final boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
+    final boolean isZkAware = req.getCore().getCoreContainer().isZooKeeperAware();
 
     DistributedUpdateProcessor distribUpdateProcessor =
         isZkAware ?

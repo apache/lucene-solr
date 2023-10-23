@@ -123,7 +123,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
     if (this.aliases == null) {
-      updateParsedCollectionAliases(cmd.getReq().getCoreContainer().getZkController().zkStateReader, false);
+      updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader, false);
     }
 
     Object fieldValue = cmd.getSolrInputDocument().getFieldValue(getRouteField());

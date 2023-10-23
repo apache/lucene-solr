@@ -400,7 +400,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     final SolrParams params = req.getParams();
     final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
     @SuppressWarnings("resource")
-    ZkController zkController = req.getCoreContainer().getZkController();
+    ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
     if (zkController != null) {
       return requestReplicaListTransformerGenerator.getReplicaListTransformer(
           params,

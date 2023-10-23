@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -56,8 +55,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.NodeRoles;
-import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -236,12 +233,7 @@ public class Assign {
     return false;
   }
 
-  public static List<String> getLiveOrLiveAndCreateNodeSetList(
-      final Set<String> liveNodes,
-      final ZkNodeProps message,
-      final Random random,
-      DistribStateManager zk) {
-
+  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
@@ -256,28 +248,13 @@ public class Assign {
         Collections.shuffle(nodeList, random);
       }
     } else {
-      nodeList = new ArrayList<>(filterNonDataNodes(zk, liveNodes));
+      nodeList = new ArrayList<>(liveNodes);
       Collections.shuffle(nodeList, random);
     }
 
     return nodeList;
   }
-  public static Collection<String> filterNonDataNodes(
-      DistribStateManager zk, Collection<String> liveNodes) {
-    try {
-      List<String> noData = ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.MODE_OFF, zk);
-      if (noData.isEmpty()) {
-        return liveNodes;
-      } else {
-        liveNodes = new HashSet<>(liveNodes);
-        liveNodes.removeAll(noData);
-        return liveNodes;
-      }
-    } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error fetching roles from Zookeeper", e);
-    }
-  }
+
   /**
    * <b>Note:</b> where possible, the {@link #usePolicyFramework(DocCollection, SolrCloudManager)} method should
    * be used instead of this method
