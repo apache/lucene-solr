@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -1044,11 +1045,11 @@ public class HttpSolrCall {
         if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
+          if (byCoreName && !Objects.equals(origCorename, replica.getStr(CORE_NAME_PROP))) {
             // if it's by core name, make sure they match
             continue;
           }
-          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
+          if (Objects.equals(replica.getBaseUrl(), cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }
