@@ -20,6 +20,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 
 public class ZkWriteCommand {
+  static final ZkWriteCommand NO_OP = new ZkWriteCommand(null, null);
 
   public final String name;
   public final DocCollection collection;

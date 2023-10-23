@@ -28,10 +28,12 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,5 +199,88 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
     }
 
+  }
+  public void testZkNodeVersions() throws Exception {
+    String NONPRS_COLL = "non_prs_test_coll1";
+    String PRS_COLL = "prs_test_coll2";
+    MiniSolrCloudCluster cluster =
+        configureCluster(3)
+            .addConfig(
+                "conf",
+                getFile("solrj")
+                    .toPath()
+                    .resolve("solr")
+                    .resolve("configsets")
+                    .resolve("streaming")
+                    .resolve("conf"))
+            .configure();
+    try {
+      Stat stat = null;
+      CollectionAdminRequest.createCollection(NONPRS_COLL, "conf", 10, 1)
+          .setMaxShardsPerNode(10)
+          .process(cluster.getSolrClient());
+      stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(NONPRS_COLL), null, true);
+      log.info("");
+      // the actual number can vary depending on batching
+      assertTrue(stat.getVersion() >= 2);
+      assertEquals(0, stat.getCversion());
+
+      CollectionAdminRequest.createCollection(PRS_COLL, "conf", 10, 1)
+          .setMaxShardsPerNode(10)
+          .setPerReplicaState(Boolean.TRUE)
+          .process(cluster.getSolrClient());
+      stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
+      // +1 after all replica are added with on state.json write to CreateCollectionCmd.setData()
+      assertEquals(1, stat.getVersion());
+      // For each replica:
+      // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
+      // +2 for runLeaderProcess, flip the replica to leader
+      // +2 for ZkController#register, in ZkController#publish, direct write PRS to active
+      // Hence 5 * 10 = 50. Take note that +1 for ADD, and +2 for all the UPDATE (remove the old PRS
+      // and add new PRS entry)
+      assertEquals(50, stat.getCversion());
+
+      CollectionAdminResponse response =
+          CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1")
+              .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(PRS_COLL, 10, 11);
+      stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
+      // For the new replica:
+      // +2 for state.json overseer writes, even though there's no longer PRS updates from
+      // overseer, current code would still do a "TOUCH" on the PRS entry
+      // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
+      // +2 for RecoveryStrategy#doRecovery, since this is no longer a new collection, new replica
+      // will go through recovery, direct write PRS to RECOVERING
+      assertEquals(57, stat.getCversion());
+
+      String addedCore = response.getCollectionCoresStatus().entrySet().iterator().next().getKey();
+      Replica addedReplica =
+          cluster
+              .getSolrClient()
+              .getZkStateReader()
+              .getCollection(PRS_COLL)
+              .getSlice("shard1")
+              .getReplicas(replica -> addedCore.equals(replica.getCoreName()))
+              .get(0);
+      CollectionAdminRequest.deleteReplica(PRS_COLL, "shard1", addedReplica.getName())
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(PRS_COLL, 10, 10);
+      stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
+      // For replica deletion
+      // +1 for ZkController#unregister, which delete the PRS entry from data node
+      // overseer, current code would still do a "TOUCH" on the PRS entry
+      assertEquals(59, stat.getCversion());
+
+      for (JettySolrRunner j : cluster.getJettySolrRunners()) {
+        j.stop();
+        j.start(true);
+        stat = cluster.getZkClient().exists(ZkStateReader.getCollectionPath(PRS_COLL), null, true);
+        // ensure restart does not update the state.json, after addReplica/deleteReplica, 2 more
+        // updates hence at version 3 on state.json version
+        assertEquals(3, stat.getVersion());
+      }
+    } finally {
+      cluster.shutdown();
+    }
   }
 }

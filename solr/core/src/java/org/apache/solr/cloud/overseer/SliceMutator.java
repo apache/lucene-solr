@@ -31,9 +31,7 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -45,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class SliceMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -91,23 +88,32 @@ public class SliceMutator {
       coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
     }
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
-    String baseUrl = Utils.getBaseUrlForNodeName(nodeName, cloudManager.getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
-    Replica replica = new Replica(coreNodeName,
-        makeMap(
-            ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
-            ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
-            ZkStateReader.NODE_NAME_PROP, nodeName,
-            ZkStateReader.BASE_URL_PROP, baseUrl,
-            ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, slice);
+    String baseUrl =
+        Utils.getBaseUrlForNodeName(
+            nodeName,
+            cloudManager
+                .getClusterStateProvider()
+                .getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
+    Replica replica =
+        new Replica(
+            coreNodeName,
+            Utils.makeMap(
+                ZkStateReader.CORE_NAME_PROP,
+                message.getStr(ZkStateReader.CORE_NAME_PROP),
+                ZkStateReader.STATE_PROP,
+                message.getStr(ZkStateReader.STATE_PROP),
+                ZkStateReader.NODE_NAME_PROP,
+                nodeName,
+                ZkStateReader.BASE_URL_PROP,
+                baseUrl,
+                ZkStateReader.FORCE_SET_STATE_PROP,
+                "false",
+                ZkStateReader.REPLICA_TYPE,
+                message.get(ZkStateReader.REPLICA_TYPE)),
+            coll,
+            slice);
 
-    if (collection.isPerReplicaState()) {
-      PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica),
-          PerReplicaStatesOps.addReplica(replica.getName(), replica.getState(), replica.isLeader(), prs), true);
-    } else {
-      return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
-    }
-
+    return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
@@ -132,14 +138,7 @@ public class SliceMutator {
       }
       newSlices.put(slice.getName(), slice);
     }
-
-
-    if (coll.isPerReplicaState()) {
-      PerReplicaStatesOps replicaOps = PerReplicaStatesOps.deleteReplica(cnn, PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates()) );
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), replicaOps, true);
-    } else {
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
-    }
+    return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
   }
 
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
@@ -175,17 +174,9 @@ public class SliceMutator {
     Map<String, Object> newSliceProps = slice.shallowCopy();
     newSliceProps.put(Slice.REPLICAS, newReplicas);
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
-    if (coll.isPerReplicaState()) {
-      PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice),
-          PerReplicaStatesOps.flipLeader(
-              slice.getReplicaNames(),
-              newLeader == null ? null : newLeader.getName(),
-              prs), false);
-    } else {
-      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
-    }
-  }    
+    return new ZkWriteCommand(
+        collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
+  }
 
   public ZkWriteCommand updateShardState(ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);

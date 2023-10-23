@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -39,9 +40,7 @@ import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
@@ -252,8 +251,6 @@ public class ReplicaMutator {
       log.info("Failed to update state because the replica does not exist, {}", message);
       return ZkStateWriter.NO_OP;
     }
-    boolean persistCollectionState = collection != null && collection.isPerReplicaState();
-
     if (coreNodeName == null) {
       coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(collection,
           message.getStr(ZkStateReader.NODE_NAME_PROP), message.getStr(ZkStateReader.CORE_NAME_PROP));
@@ -264,7 +261,6 @@ public class ReplicaMutator {
           log.info("Failed to update state because the replica does not exist, {}", message);
           return ZkStateWriter.NO_OP;
         }
-        persistCollectionState = true;
         // if coreNodeName is null, auto assign one
         coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
       }
@@ -279,7 +275,6 @@ public class ReplicaMutator {
       if (sliceName != null) {
         log.debug("shard={} is already registered", sliceName);
       }
-      persistCollectionState = true;
     }
     if (sliceName == null) {
       //request new shardId
@@ -290,14 +285,14 @@ public class ReplicaMutator {
       }
       sliceName = Assign.assignShard(collection, numShards);
       log.info("Assigning new node to shard shard={}", sliceName);
-      persistCollectionState = true;
     }
 
     Slice slice = collection != null ?  collection.getSlice(sliceName) : null;
 
+    Replica oldReplica = null;
     Map<String, Object> replicaProps = new LinkedHashMap<>(message.getProperties());
     if (slice != null) {
-      Replica oldReplica = slice.getReplica(coreNodeName);
+      oldReplica = slice.getReplica(coreNodeName);
       if (oldReplica != null) {
         if (oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
           replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
@@ -348,10 +343,13 @@ public class ReplicaMutator {
     Map<String, Object> sliceProps = null;
     Map<String, Replica> replicas;
 
+    boolean sliceChanged = true;
     if (slice != null) {
+      Slice.State originalState = slice.getState();
       collection = checkAndCompleteShardSplit(prevState, collection, coreNodeName, sliceName, replica);
       // get the current slice again because it may have been updated due to checkAndCompleteShardSplit method
       slice = collection.getSlice(sliceName);
+      sliceChanged = originalState != slice.getState();
       sliceProps = slice.getProperties();
       replicas = slice.getReplicasCopy();
     } else {
@@ -366,12 +364,55 @@ public class ReplicaMutator {
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
-    if (collection != null && collection.isPerReplicaState()) {
-      PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
-      return new ZkWriteCommand(collectionName, newCollection, PerReplicaStatesOps.flipState(replica.getName(), replica.getState(), prs), persistCollectionState);
-    } else{
-      return new ZkWriteCommand(collectionName, newCollection);
+    if (collection != null && collection.isPerReplicaState() && oldReplica != null) {
+      if (!sliceChanged && !persistStateJson(replica, oldReplica, collection)) {
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "state.json is not persisted slice/replica : {}/{} \n , old : {}, \n new {}",
+              replica.getSlice(),
+              replica.getName(),
+              Utils.toJSONString(oldReplica.getProperties()),
+              Utils.toJSONString(replica.getProperties()));
+        }
+        return ZkWriteCommand.NO_OP;
+      }
     }
+    return new ZkWriteCommand(collectionName, newCollection);
+  }
+
+  /** Whether it is required to persist the state.json */
+  private boolean persistStateJson(Replica newReplica, Replica oldReplica, DocCollection coll) {
+    if (!Objects.equals(newReplica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
+    if (!Objects.equals(newReplica.getCoreName(), oldReplica.getCoreName())) return true;
+    if (!Objects.equals(newReplica.getNodeName(), oldReplica.getNodeName())) return true;
+    if (!Objects.equals(newReplica.getState(), oldReplica.getState())) return true;
+    if (!Objects.equals(
+        newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
+        oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) {
+      if (log.isInfoEnabled()) {
+        log.info(
+            "{} force_set_state is changed from {} -> {}",
+            newReplica.getName(),
+            oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
+            newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP));
+      }
+    return true;
+  }
+  Slice slice = coll.getSlice(newReplica.getSlice());
+  // the slice may be in recovery
+    if (slice.getState() == Slice.State.RECOVERY) {
+      if (log.isInfoEnabled()) {
+        log.info("{} slice state_is_recovery", slice.getName());
+      }
+      return true;
+    }
+    if (Objects.equals(oldReplica.getProperties().get("state"), "recovering")) {
+      if (log.isInfoEnabled()) {
+        log.info("{} state_is_recovering", newReplica.getName());
+      }
+      return true;
+    }
+    return false;
   }
 
   /**

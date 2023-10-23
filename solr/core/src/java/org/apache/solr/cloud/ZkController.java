@@ -1657,13 +1657,14 @@ public class ZkController implements Closeable {
         cd.getCloudDescriptor().setLastPublished(state);
       }
       DocCollection coll = zkStateReader.getCollection(collection);
-      if (forcePublish || sendToOverseer(coll, coreNodeName)) {
-        overseerJobQueue.offer(Utils.toJSON(m));
-      } else {
-        if (log.isDebugEnabled()) {
-          log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
-        }
-        PerReplicaStates perReplicaStates = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+      if (forcePublish || updateStateDotJson(coll, coreNodeName)) {
+          overseerJobQueue.offer(Utils.toJSON(m));
+      }
+      // extra handling for PRS, we need to write the PRS entries from this node directly,
+      // as overseer does not and should not handle those entries
+      if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
+        PerReplicaStates perReplicaStates =
+            PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
             .persist(coll.getZNode(), zkClient);
       }
@@ -1671,18 +1672,17 @@ public class ZkController implements Closeable {
       MDCLoggingContext.clear();
     }
   }
-
   /**
-   * Whether a message needs to be sent to overseer or not
+   * Returns {@code true} if a message needs to be sent to overseer (or done in a distributed way)
+   * to update state.json for the collection
    */
-  static boolean sendToOverseer(DocCollection coll, String replicaName) {
+  static boolean updateStateDotJson(DocCollection coll, String replicaName) {
     if (coll == null) return true;
-    if (coll.getStateFormat() < 2 || !coll.isPerReplicaState()) return true;
+    if (!coll.isPerReplicaState()) return true;
     Replica r = coll.getReplica(replicaName);
     if (r == null) return true;
-    Slice shard = coll.getSlice(r.slice);
-    if (shard == null) return true;//very unlikely
-    if (shard.getState() == Slice.State.RECOVERY) return true;
+    Slice shard = coll.getSlice(r.getSlice());
+    if (shard == null) return true; // very unlikely
     if (shard.getParent() != null) return true;
     for (Slice slice : coll.getSlices()) {
       if (Objects.equals(shard.getName(), slice.getParent())) return true;
@@ -2765,9 +2765,44 @@ public class ZkController implements Closeable {
    */
   public void publishNodeAsDown(String nodeName) {
     log.info("Publish node={} as DOWN", nodeName);
+    try {
+      boolean sendToOverseer = false;
+      // Create a concurrently accessible set to avoid repeating collections
+      Set<String> processedCollections = new HashSet<>();
+      for (CoreDescriptor cd : cc.getCoreDescriptors()) {
+        String collName = cd.getCollectionName();
+        DocCollection coll = null;
+        if (collName != null
+            && processedCollections.add(collName)
+            && (coll = zkStateReader.getCollection(collName)) != null
+            && coll.isPerReplicaState()) {
+          final List<String> replicasToDown = new ArrayList<>(coll.getSlicesMap().size());
+          coll.forEachReplica(
+              (s, replica) -> {
+                if (replica.getNodeName().equals(nodeName)) {
+                  replicasToDown.add(replica.getName());
+                }
+              });
+          PerReplicaStatesOps.downReplicas(
+                  replicasToDown,
+                  PerReplicaStates.fetch(
+                      coll.getZNode(), zkClient, coll.getPerReplicaStates()))
+              .persist(coll.getZNode(), zkClient);
+        }
+        if (coll != null && !coll.isPerReplicaState()) {
+          sendToOverseer = true;
+        }
+      }
+
+      // Only send downnode message to overseer if we have to. We are trying to avoid the overhead
+      // from PRS collections, as it takes awhile to process downnode message by loading
+      // the DocCollection even if it does no further processing.
+      // In the future, we should optimize the handling on Solr side to speed up PRS DocCollection
+      // read on operations that do not require actual replica information.
+      if(!sendToOverseer) return;
+
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
         ZkStateReader.NODE_NAME_PROP, nodeName);
-    try {
       overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
     } catch (AlreadyClosedException e) {
       log.info("Not publishing node as DOWN because a resource required to do so is already closed.");

@@ -38,9 +38,12 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
 import org.apache.solr.cloud.ZkController;
@@ -180,12 +183,23 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       createCollectionZkNode(stateManager, collectionName, collectionParams);
 
       if (isPRS) {
-        // In case of a PRS collection, create the collection structure directly instead of resubmitting
-        // to the overseer queue.
+        // In case of a PRS collection, create the collection structure directly instead of
+        // resubmitting to the overseer queue.
         // TODO: Consider doing this for all collections, not just the PRS collections.
-        ZkWriteCommand command = new ClusterStateMutator(ocmh.cloudManager).createCollection(clusterState, message);
+        // TODO comment above achieved by switching the cluster to distributed state updates
+
+        // This code directly updates Zookeeper by creating the collection state.json. It is
+        // compatible with both distributed cluster state updates and Overseer based cluster state
+        // updates.
+
+        // TODO: Consider doing this for all collections, not just the PRS collections.
+        ZkWriteCommand command =
+            new ClusterStateMutator(ocmh.overseer.getSolrCloudManager())
+                .createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-        ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
+        ocmh.overseer.getZkStateReader()
+            .getZkClient()
+            .create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
@@ -279,8 +293,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             // to the overseer queue.
             // TODO: Consider doing this for all collections, not just the PRS collections.
             ZkWriteCommand command = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, props);
-            byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-            ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
+//            byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+//            ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
             clusterState = clusterState.copyWith(collectionName, command.collection);
             newColl = command.collection;
           } else {
@@ -322,6 +336,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if(isPRS) {
+        byte[] data =
+            Utils.toJSON(
+                Collections.singletonMap(
+                    collectionName, clusterState.getCollection(collectionName)));
+        zkStateReader.getZkClient().setData(collectionPath, data, true);
         ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
       }
 
@@ -347,21 +366,26 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
       @SuppressWarnings({"rawtypes"})
       boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
+      final Map<String, Replica> replicas;
       if (isPRS) {
-        TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
-        PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
+        TimeOut timeout =
+            new TimeOut(
+                Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120),
+                TimeUnit.SECONDS,
+                ocmh.timeSource); // could be a big cluster
+        PerReplicaStates prs =
+            PerReplicaStates.fetch(collectionPath, ocmh.overseer.getZkStateReader().getZkClient(), null);
         while (!timeout.hasTimedOut()) {
-          if(prs.allActive()) break;
+          if (prs.allActive()) break;
           Thread.sleep(100);
-          prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
+          prs =
+              PerReplicaStates.fetch(collectionPath, ocmh.overseer.getZkStateReader().getZkClient(), null);
         }
-        if (!prs.allActive()) {
+        if (prs.allActive()) {
+          // we have successfully found all replicas to be ACTIVE
+        } else {
           failure = true;
-        }  // we have successfully found all replicas to be ACTIVE
-
-        // Now ask Overseer to fetch the latest state of collection
-        // from ZK
-        ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
+        }
       }
       if (failure) {
         // Let's cleanup as we hit an exception
@@ -428,6 +452,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numSlices = shardNames.size();
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
     if (maxShardsPerNode == -1) maxShardsPerNode = Integer.MAX_VALUE;
+    cloudManager = wrapCloudManager(clusterState, cloudManager);
 
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -480,6 +505,34 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       sessionWrapper.set(PolicyHelper.getLastSessionWrapper(true));
     }
     return replicaPositions;
+  }
+  // the cloud manager should reflect the latest internal cluster state
+  private static SolrCloudManager wrapCloudManager(
+      ClusterState clusterState, SolrCloudManager solrCloudManager) {
+    final ClusterStateProvider csp =
+        new DelegatingClusterStateProvider(solrCloudManager.getClusterStateProvider()) {
+          @Override
+          public ClusterState.CollectionRef getState(String collection) {
+            return clusterState.getCollectionRef(collection);
+          }
+
+          @Override
+          public ClusterState getClusterState() {
+            return clusterState;
+          }
+
+          @Override
+          public DocCollection getCollection(String name) throws IOException {
+            return clusterState.getCollection(name);
+          }
+        };
+
+    return new DelegatingCloudManager(solrCloudManager) {
+      @Override
+      public ClusterStateProvider getClusterStateProvider() {
+        return csp;
+      }
+    };
   }
 
   public static void checkReplicaTypes(ZkNodeProps message) {
