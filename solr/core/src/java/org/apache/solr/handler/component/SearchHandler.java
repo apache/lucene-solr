@@ -240,8 +240,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
-    CoreContainer cc = req.getCore().getCoreContainer();
-    boolean isZkAware = cc.isZooKeeperAware();
+    CoreContainer cc = req.getCoreContainer();
+    boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
     rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
     if (!rb.isDistrib) {
       // for back compat, a shards param with URLs like localhost:8983/solr will mean that this

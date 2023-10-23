@@ -228,6 +228,8 @@ public class HttpSolrCall {
     }
 
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
+    log.info("HttpSolrCall.init({}?{})", req.getRequestURL(), req.getQueryString());
+
 
     // unused feature ?
     int idx = path.indexOf(':');
@@ -602,6 +604,13 @@ public class HttpSolrCall {
       return RETURN;
     }
 
+  }
+  protected String getCoreOrColName() {
+    String coreOrColName = HttpSolrCall.this.origCorename;
+    if (coreOrColName == null && getCore() != null) {
+      coreOrColName = getCore().getName();
+    }
+    return coreOrColName;
   }
 
   private boolean shouldAudit() {

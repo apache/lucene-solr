@@ -93,10 +93,10 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     // todo: a core should have a more direct way of finding a collection name, and the collection properties
     SolrCore core = req.getCore();
     CoreDescriptor coreDescriptor = core.getCoreDescriptor();
-    CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
+    CloudDescriptor cloudDescriptor = req.getCloudDescriptor();
     if (cloudDescriptor != null) {
       String collectionName = cloudDescriptor.getCollectionName();
-      CoreContainer coreContainer = core.getCoreContainer();
+      CoreContainer coreContainer = req.getCoreContainer();
       ZkController zkController = coreContainer.getZkController();
       ZkStateReader zkStateReader = zkController.getZkStateReader();
       Map<String, String> collectionProperties = zkStateReader.getCollectionProperties(collectionName, CACHE_FOR_MILLIS);
@@ -127,7 +127,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName) {
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = req.getCoreContainer().getZkController();
     final Map<String, String> aliasProperties = zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
     if (aliasProperties.isEmpty()) {
       throw RoutedAlias.newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
@@ -141,8 +141,8 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     this.routedAlias = routedAlias;
     assert aliasDistribPhase == DistribPhase.NONE;
     final SolrCore core = req.getCore();
-    final CoreContainer cc = core.getCoreContainer();
-    this.thisCollection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+    final CoreContainer cc = req.getCoreContainer();
+    this.thisCollection = req.getCloudDescriptor().getCollectionName();
     this.req = req;
     this.zkController = cc.getZkController();
     this.cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());

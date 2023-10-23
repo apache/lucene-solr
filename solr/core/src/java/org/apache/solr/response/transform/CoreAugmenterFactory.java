@@ -14,26 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
 
-import java.util.Collections;
-import java.util.Set;
+package org.apache.solr.response.transform;
 
-/**
- * Helper class to access package-private methods from ZkStateReader.
- */
-public class ZkStateReaderAccessor {
-  ZkStateReader zkStateReader;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
 
-  public ZkStateReaderAccessor(ZkStateReader zkStateReader) {
-    this.zkStateReader = zkStateReader;
-  }
+public class CoreAugmenterFactory extends TransformerFactory {
 
-  public Set<DocCollectionWatcher> getStateWatchers(String collection) {
-    return zkStateReader.getStateWatchers(collection);
-  }
-
-  public Set<String> getWatchedCollections() {
-    return Collections.unmodifiableSet(zkStateReader.getCollectionWatches().keySet());
+  @Override
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+    return new ValueAugmenterFactory.ValueAugmenter(field, req.getCore().getName());
   }
 }

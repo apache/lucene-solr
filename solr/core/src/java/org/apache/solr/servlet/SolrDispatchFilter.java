@@ -69,6 +69,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
@@ -103,6 +104,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
+  private HttpSolrCallFactory solrCallFactory;
+
   //TODO using Http2Client
   protected HttpClient httpClient;
   private ArrayList<Pattern> excludePatterns;
@@ -182,6 +185,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
 
       coresInit = createCoreContainer(computeSolrHome(config), extraProperties);
+      boolean isCoordinator =
+          NodeRoles.MODE_ON.equals(
+            coresInit
+                  .nodeRoles
+                  .getRoleMode(NodeRoles.Role.COORDINATOR));
+      solrCallFactory =
+          isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       
@@ -479,11 +489,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected HttpSolrCall getHttpSolrCall(HttpServletRequest request, HttpServletResponse response, boolean retry) {
     String path = ServletUtils.getPathAfterContext(request);
 
-    if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-      return new V2HttpCall(this, cores, request, response, false);
-    } else {
-      return new HttpSolrCall(this, cores, request, response, retry);
+    CoreContainer cores = null;
+    try {
+      cores = getCores();
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
+    return solrCallFactory.createInstance(this, path, cores, request, response, retry);
   }
 
   private boolean authenticateRequest(HttpServletRequest request, HttpServletResponse response, final AtomicReference<HttpServletRequest> wrappedRequest) throws IOException {
@@ -680,5 +692,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void closeOnDestroy(boolean closeOnDestroy) {
     this.closeOnDestroy = closeOnDestroy;
+  }
+  public interface HttpSolrCallFactory {
+    default HttpSolrCall createInstance(
+        SolrDispatchFilter filter,
+        String path,
+        CoreContainer cores,
+        HttpServletRequest request,
+        HttpServletResponse response,
+        boolean retry) {
+      if (filter.isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+        return new V2HttpCall(filter, cores, request, response, retry);
+      } else {
+        return new HttpSolrCall(filter, cores, request, response, retry);
+      }
+    }
   }
 }
