@@ -487,8 +487,8 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               params.getZnodeVersion(), RequestParams.RESOURCE, params.toByteArray(), true);
 
           log.debug("persisted to version : {} ", latestVersion);
-          waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
-              req.getCore().getCoreContainer().getZkController(), RequestParams.NAME, latestVersion, 30);
+          waitForAllReplicasState(req.getCloudDescriptor().getCollectionName(),
+              req.getCoreContainer().getZkController(), RequestParams.NAME, latestVersion, 30);
         }
 
       } else {
@@ -547,13 +547,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         int latestVersion = ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader, overlay.getZnodeVersion(),
             ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
         log.debug("Executed config commands successfully and persisted to ZK {}", ops);
-        waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
-            req.getCore().getCoreContainer().getZkController(),
+        waitForAllReplicasState(req.getCloudDescriptor().getCollectionName(),
+            req.getCoreContainer().getZkController(),
             ConfigOverlay.NAME,
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
+        req.getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 

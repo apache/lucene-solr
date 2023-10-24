@@ -324,7 +324,7 @@ public abstract class RoutedAlias {
 
     SolrQueryRequest req = cmd.getReq();
     SolrCore core = req.getCore();
-    CoreContainer coreContainer = core.getCoreContainer();
+    CoreContainer coreContainer = req.getCoreContainer();
     do {
       switch (targetCollectionDesc.getCreationType()) {
         case NONE:

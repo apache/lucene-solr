@@ -110,6 +110,12 @@ public class ZkStateReader implements SolrCloseable {
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
+  /**
+   * The following, node_roles and roles.json are for assigning roles to nodes. The node_roles is
+   * the preferred way (using -Dsolr.node.roles param), and roles.json is used by legacy ADDROLE API
+   * command.
+   */
+  public static final String NODE_ROLES = "/node_roles";
   public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
   public static final String CLUSTER_PROPS = "/clusterprops.json";
@@ -2076,6 +2082,10 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     return updated;
+  }
+  /* package-private for testing*/
+  Map<String, CollectionWatch<DocCollectionWatcher>> getCollectionWatches() {
+    return Collections.unmodifiableMap(collectionWatches);
   }
 
   public void registerCollectionPropsWatcher(final String collection, CollectionPropsWatcher propsWatcher) {

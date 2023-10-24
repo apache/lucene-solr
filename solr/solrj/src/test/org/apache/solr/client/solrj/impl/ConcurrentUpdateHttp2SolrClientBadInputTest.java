@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -83,19 +82,6 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
       assertExceptionThrownWithMessageContaining(IllegalArgumentException.class, Lists.newArrayList("ids", "empty"), () -> {
         client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
       });
-    }
-  }
-
-  private void assertExceptionThrownWithMessageContaining(@SuppressWarnings({"rawtypes"})Class expectedType,
-                                                          List<String> expectedStrings, LuceneTestCase.ThrowingRunnable runnable) {
-    @SuppressWarnings({"unchecked"})
-    Throwable thrown = expectThrows(expectedType, runnable);
-
-    if (expectedStrings != null) {
-      for (String expectedString : expectedStrings) {
-        assertTrue("[" + thrown.getMessage() + "] doesn't contain [" + expectedString + "]",
-            thrown.getMessage().contains(expectedString));
-      }
     }
   }
 }

@@ -8,6 +8,11 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-no
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
+New Features
+---------------------
+
+* SOLR-15694, 15715: Node roles and dedicated query coordinator nodes (Hitesh Khamesra, Ishan Chattopadhyaya, noble)
+
 Bug Fixes
 ---------------------
 * SOLR-16429: Add AWS STS support in s3-repository (Josh Souza via Houston Putman and Kevin Risden)

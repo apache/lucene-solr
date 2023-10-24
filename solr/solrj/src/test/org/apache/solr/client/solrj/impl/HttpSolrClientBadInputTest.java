@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Tests {@link HttpSolrClient}'s response to a variety of bad inputs.
@@ -43,18 +42,6 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
-  }
-
-  private void assertExceptionThrownWithMessageContaining(@SuppressWarnings({"rawtypes"})Class expectedType,
-                                                          List<String> expectedStrings, ThrowingRunnable runnable) {
-    @SuppressWarnings({"unchecked"})
-    Throwable thrown = expectThrows(expectedType, runnable);
-
-    if (expectedStrings != null) {
-      for (String expectedString : expectedStrings) {
-        assertThat(thrown.getMessage(), containsString(expectedString));
-      }
-    }
   }
 
   @Test

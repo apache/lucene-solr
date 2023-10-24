@@ -121,7 +121,7 @@ public class RealTimeGetComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
-    CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
+    CloudDescriptor cloudDesc = req.getCloudDescriptor();
 
     if (cloudDesc != null) {
       Replica.Type replicaType = cloudDesc.getReplicaType();
@@ -173,7 +173,7 @@ public class RealTimeGetComponent extends SearchComponent
           try {
             if (log.isDebugEnabled()) {
               log.debug("{} min count to sync to (from most recent searcher view) {}"
-                  , req.getCore().getCoreContainer().getZkController().getNodeName()
+                  , req.getCoreContainer().getZkController().getNodeName()
                   , searcher.count(new MatchAllDocsQuery()));
             }
           } finally {
@@ -987,11 +987,11 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: handle collection=...?
 
-    ZkController zkController = rb.req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = rb.req.getCoreContainer().getZkController();
 
     // if shards=... then use that
     if (zkController != null && params.get(ShardParams.SHARDS) == null) {
-      CloudDescriptor cloudDescriptor = rb.req.getCore().getCoreDescriptor().getCloudDescriptor();
+      CloudDescriptor cloudDescriptor = rb.req.getCloudDescriptor();
 
       String collection = cloudDescriptor.getCollectionName();
       ClusterState clusterState = zkController.getClusterState();
@@ -1220,7 +1220,7 @@ public class RealTimeGetComponent extends SearchComponent
     boolean onlyIfActive = rb.req.getParams().getBool("onlyIfActive", false);
     
     if (onlyIfActive) {
-      if (rb.req.getCore().getCoreDescriptor().getCloudDescriptor().getLastPublished() != Replica.State.ACTIVE) {
+      if (rb.req.getCloudDescriptor().getLastPublished() != Replica.State.ACTIVE) {
         log.info("Last published state was not ACTIVE, cannot sync.");
         rb.rsp.add("sync", "false");
         return;

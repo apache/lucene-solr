@@ -153,7 +153,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     @Override
     public Query parse() throws SyntaxError {
       if (threadManager != null) {
-        threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(req.getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
       // ReRanking Model
       final String[] modelNames = localParams.getParams(LTRQParserPlugin.MODEL);

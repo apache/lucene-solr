@@ -90,7 +90,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
-      CoreContainer container = info.getReq().getCore().getCoreContainer();
+      CoreContainer container = info.getReq().getCoreContainer();
 
       final SolrCore fromCore = container.getCore(fromIndex);
 
@@ -228,7 +228,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         final String myCore = req.getCore().getCoreDescriptor().getName();
 
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
-          CoreContainer container = req.getCore().getCoreContainer();
+          CoreContainer container = req.getCoreContainer();
 
           final String coreName = getCoreName(fromIndex, container);
           final SolrCore fromCore = container.getCore(coreName);

@@ -277,7 +277,7 @@ public class QueryComponent extends SearchComponent
     groupingSpec.setResponseFormat(responseFormat);
 
     // See SOLR-12249. Disallow grouping on text fields that are not SortableText in cloud mode
-    if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+    if (req.getCoreContainer().isZooKeeperAware()) {
       IndexSchema schema = rb.req.getSchema();
       String[] fields = params.getParams(GroupParams.GROUP_FIELD);
       if (fields != null) {

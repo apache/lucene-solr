@@ -168,7 +168,7 @@ public class SimpleFacets {
     this.docsOrig = docs;
     this.global = params;
     this.rb = rb;
-    this.facetExecutor = req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
+    this.facetExecutor = req.getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
   }
 
   public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
