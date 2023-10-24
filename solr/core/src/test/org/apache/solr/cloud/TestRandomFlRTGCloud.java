@@ -89,6 +89,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new DocIdValidator("my_docid_alias"),
       new ShardValidator(),
       new ShardValidator("my_shard_alias"),
+      new CoreValidator(),
+      new CoreValidator("my_core_alias"),
       new ValueAugmenterValidator(42),
       new ValueAugmenterValidator(1976, "val_alias"),
       //
@@ -673,6 +675,45 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       // trivial sanity check
       assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
       return Collections.<String>singleton(resultKey);
+    }
+  }
+
+  /** Trivial validator of CoreAugmenterFactory */
+  private static class CoreValidator implements FlValidator {
+    private static final String NAME = "core";
+    private static final String USAGE = "[" + NAME + "]";
+    private final String resultKey;
+
+    public CoreValidator(final String resultKey) {
+      this.resultKey = resultKey;
+    }
+
+    public CoreValidator() {
+      this(USAGE);
+    }
+
+    @Override
+    public String getDefaultTransformerFactoryName() {
+      return NAME;
+    }
+
+    @Override
+    public String getFlParam() {
+      return USAGE.equals(resultKey) ? resultKey : resultKey + ":" + USAGE;
+    }
+
+    @Override
+    public Collection<String> assertRTGResults(
+        final Collection<FlValidator> validators,
+        final SolrInputDocument expected,
+        final SolrDocument actual) {
+      final Object value = actual.getFirstValue(resultKey);
+      assertNotNull(getFlParam() + " => no value in actual doc", value);
+      assertTrue(USAGE + " must be a String: " + value, value instanceof String);
+
+      // trivial sanity check
+      assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
+      return Collections.singleton(resultKey);
     }
   }
 
