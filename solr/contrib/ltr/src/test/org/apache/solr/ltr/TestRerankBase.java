@@ -174,6 +174,8 @@ public class TestRerankBase extends RestTestBase {
     }
 
     System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("solr.enableRemoteStreaming", "true");
+    System.setProperty("solr.enableStreamBody", "true");
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
     return extraServlets;
   }
@@ -213,6 +215,8 @@ public class TestRerankBase extends RestTestBase {
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
+    System.clearProperty("solr.enableRemoteStreaming");
+    System.clearProperty("solr.enableStreamBody");
     // System.clearProperty("enable.update.log");
     unchooseDefaultFeatureFormat();
   }
