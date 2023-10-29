@@ -477,7 +477,7 @@ public class ZkStateReader implements SolrCloseable {
       if (log.isDebugEnabled()) {
         log.debug("Server older than client {}<{}", collection.getZNodeVersion(), version);
       }
-      DocCollection nu = getCollectionLive(this, coll);
+      DocCollection nu = getCollectionLive( coll);
       if (nu == null) return -1;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (updateWatchedCollection(coll, nu)) {
@@ -642,7 +642,7 @@ public class ZkStateReader implements SolrCloseable {
     try {
       final Stat stat = new Stat();
       final byte[] data = zkClient.getData(CLUSTER_STATE, watcher, stat, true);
-      final ClusterState loadedData = ClusterState.load(stat.getVersion(), data, emptySet(), CLUSTER_STATE);
+      final ClusterState loadedData = ClusterState.load(stat.getVersion(), data, emptySet(), CLUSTER_STATE, null);
       synchronized (getUpdateLock()) {
         if (this.legacyClusterStateVersion >= stat.getVersion()) {
           // Nothing to do, someone else updated same or newer.
@@ -807,7 +807,7 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         if (shouldFetch) {
-          cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
+          cachedDocCollection = getCollectionLive(collName);
           lastUpdateTime = System.nanoTime();
         }
       }
@@ -1611,34 +1611,27 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  public static DocCollection getCollectionLive(ZkStateReader zkStateReader, String coll) {
+  public DocCollection getCollectionLive(String coll) {
     try {
-      return zkStateReader.fetchCollectionState(coll, null, null);
+      return fetchCollectionState(coll, null, null);
     } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not load collection from ZK: " + coll, e);
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST, "Could not load collection from ZK: " + coll, e);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not load collection from ZK: " + coll, e);
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST, "Could not load collection from ZK: " + coll, e);
     }
   }
 
   public DocCollection fetchCollectionState(String coll, Watcher watcher, String path) throws KeeperException, InterruptedException {
     String collectionPath = path == null ? getCollectionPath(coll) : path;
     while (true) {
-      ClusterState.initReplicaStateProvider(() -> {
-        try {
-          PerReplicaStates replicaStates = PerReplicaStates.fetch(collectionPath, zkClient, null);
-          log.debug("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
-          return replicaStates;
-        } catch (Exception e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Error fetching per-replica-states");
-        }
-      });
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
-        ClusterState state = ClusterState.load(stat.getVersion(), data,
-            Collections.emptySet(), collectionPath);
+        ClusterState state = ClusterState.load (stat.getVersion(), data,
+            Collections.emptySet(), collectionPath, new PerReplicaStates.LazyPrsSupplier(zkClient, collectionPath));
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {
@@ -1646,14 +1639,12 @@ public class ZkStateReader implements SolrCloseable {
           // Leave an exists watch in place in case a state.json is created later.
           Stat exists = zkClient.exists(collectionPath, watcher, true);
           if (exists != null) {
-            // Rare race condition, we tried to fetch the data and couldn't find it, then we found it exists.
-            // Loop and try again.
+            // Rare race condition, we tried to fetch the data and couldn't find it, then we found
+            // it exists. Loop and try again.
             continue;
           }
         }
         return null;
-      } finally {
-        ClusterState.clearReplicaStateProvider();
       }
     }
   }

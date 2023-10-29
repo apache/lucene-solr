@@ -34,6 +34,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -116,15 +118,17 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       params.set("collection", collection);
     }
     params.set("action", "CLUSTERSTATUS");
+    params.set("prs", "true");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    NamedList cluster = (SimpleOrderedMap) client.request(request).get("cluster");
+    SimpleOrderedMap<?> cluster = (SimpleOrderedMap<?>) client.request(request).get("cluster");
     Map<String, Object> collectionsMap;
     if (collection != null) {
-      collectionsMap = Collections.singletonMap(collection,
-          ((NamedList) cluster.get("collections")).get(collection));
+      collectionsMap =
+          Collections.singletonMap(
+              collection, ((NamedList<?>) cluster.get("collections")).get(collection));
     } else {
-      collectionsMap = ((NamedList)cluster.get("collections")).asMap(10);
+      collectionsMap = ((NamedList<?>) cluster.get("collections")).asMap(10);
     }
     int znodeVersion;
     Map<String, Object> collFromStatus = (Map<String, Object>) (collectionsMap).get(collection);
@@ -132,15 +136,19 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       throw new NotACollectionException(); // probably an alias
     }
     if (collection != null) { // can be null if alias
-      znodeVersion =  (int) collFromStatus.get("znodeVersion");
+      znodeVersion = (int) collFromStatus.get("znodeVersion");
     } else {
       znodeVersion = -1;
     }
-    Set<String> liveNodes = new HashSet((List<String>)(cluster.get("live_nodes")));
+    Set<String> liveNodes = new HashSet<>((List<String>) (cluster.get("live_nodes")));
     this.liveNodes = liveNodes;
     liveNodesTimestamp = System.nanoTime();
-    //TODO SOLR-11877 we don't know the znode path; CLUSTER_STATE is probably wrong leading to bad stateFormat
-    ClusterState cs = ClusterState.load(znodeVersion, collectionsMap, liveNodes, ZkStateReader.CLUSTER_STATE);
+    ClusterState cs = new ClusterState(liveNodes, new HashMap<>(), -1);
+    for (Map.Entry<String, Object> e : collectionsMap.entrySet()) {
+      @SuppressWarnings("rawtypes")
+      Map m = (Map) e.getValue();
+      cs = cs.copyWith(e.getKey(), fillPrs(znodeVersion, e, m));
+    }
     if (clusterProperties != null) {
       Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
       if (properties != null) {
@@ -148,6 +156,22 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       }
     }
     return cs;
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private DocCollection fillPrs(int znodeVersion, Map.Entry<String, Object> e, Map m) {
+    DocCollection.PrsSupplier prsSupplier = null;
+    if (m.containsKey("PRS")) {
+      Map prs = (Map) m.remove("PRS");
+      prsSupplier =
+          new DocCollection.PrsSupplier(
+              () ->
+                  new PerReplicaStates(
+                      (String) prs.get("path"),
+                      (Integer) prs.get("cversion"),
+                      (List<String>) prs.get("states")));
+    }
+    return ClusterState.collectionFromObjects(e.getKey(), m, znodeVersion,ZkStateReader.getCollectionPath(e.getKey()),  prsSupplier);
   }
 
   @Override

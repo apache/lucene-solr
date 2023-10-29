@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.Overseer;
@@ -84,6 +85,15 @@ public class ZkStateWriter {
     this.stats = stats;
     this.clusterState = zkStateReader.getClusterState();
   }
+
+  /**
+   * if any collection is updated not through this class (directly written to ZK, then it needs to
+   * be updated locally)
+   */
+  public void updateClusterState(Function<ClusterState, ClusterState> fun) {
+    clusterState = fun.apply(clusterState);
+  }
+
 
   /**
    * Applies the given {@link ZkWriteCommand} on the <code>prevState</code>. The modified
@@ -250,12 +260,12 @@ public class ZkStateWriter {
                 log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               }
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
-              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
+              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path, new PerReplicaStates.LazyPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
-              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
+              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path, new PerReplicaStates.LazyPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             }
           } else if (c.getStateFormat() == 1) {

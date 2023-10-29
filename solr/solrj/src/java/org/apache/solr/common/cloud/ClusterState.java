@@ -226,7 +226,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes) {
-    return load(version, bytes, liveNodes, ZkStateReader.CLUSTER_STATE);
+    return load(version, bytes, liveNodes, ZkStateReader.CLUSTER_STATE, null);
   }
   /**
    * Create ClusterState from json string that is typically stored in zookeeper.
@@ -236,22 +236,25 @@ public class ClusterState implements JSONWriter.Writable {
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
-  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, String znode) {
+  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, String znode, DocCollection.PrsSupplier prsSupplier) {
     // System.out.println("######## ClusterState.load:" + (bytes==null ? null : new String(bytes)));
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    return load(version, stateMap, liveNodes, znode);
+    return load(version, stateMap, liveNodes, znode, prsSupplier);
   }
 
   public static ClusterState load(Integer version, Map<String, Object> stateMap, Set<String> liveNodes, String znode) {
+    return load(version, stateMap, liveNodes, znode, null);
+  }
+  public static ClusterState load(Integer version, Map<String, Object> stateMap, Set<String> liveNodes, String znode,  DocCollection.PrsSupplier prsSupplier) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
       @SuppressWarnings({"unchecked"})
-      DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version, znode);
+      DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version, znode, prsSupplier);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
@@ -259,7 +262,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   // TODO move to static DocCollection.loadFromMap
-  private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, Integer version, String znode) {
+  public static DocCollection collectionFromObjects(String name, Map<String, Object> objs, Integer version, String znode, DocCollection.PrsSupplier prsSupplier) {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
@@ -267,9 +270,7 @@ public class ClusterState implements JSONWriter.Writable {
       if(log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
-      //this collection has replica states stored outside
-      ReplicaStatesProvider rsp = REPLICASTATES_PROVIDER.get();
-      if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
+
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
@@ -296,7 +297,7 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version, znode);
+    return new DocCollection(name, slices, props, router, version, znode, prsSupplier);
   }
 
   @Override

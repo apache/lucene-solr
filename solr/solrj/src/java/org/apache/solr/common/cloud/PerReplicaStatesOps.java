@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
+import static org.apache.solr.common.cloud.PerReplicaStates.fetch;
 
 /**
  * This is a helper class that encapsulates various operations performed on the per-replica states
@@ -100,7 +101,7 @@ public class PerReplicaStatesOps {
         if(log.isInfoEnabled()) {
           log.info("Stale state for {}, attempt: {}. retrying...", znode, i);
         }
-        operations = refresh(PerReplicaStates.fetch(znode, zkClient, null));
+        operations = refresh(fetch(znode, zkClient, null));
       }
     }
   }

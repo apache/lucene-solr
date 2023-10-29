@@ -155,7 +155,7 @@ public class CollectionMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode());
+    DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode(), stateManager.getPrsSupplier(coll.getName()));
     if (replicaOps == null){
       return new ZkWriteCommand(coll.getName(), collection);
     } else {
@@ -175,7 +175,7 @@ public class CollectionMutator {
       slices.put(slice.getName(), slice);
       Map<String, Object> props = new HashMap<>(1);
       props.put(DocCollection.DOC_ROUTER, Utils.makeMap(NAME, ImplicitDocRouter.NAME));
-      newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
+      newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter(), -1);
     } else {
       slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
       slices.put(slice.getName(), slice);

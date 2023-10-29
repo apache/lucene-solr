@@ -59,7 +59,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
     clusterProperties = (Map<String, Object>)snapshot.getOrDefault("clusterProperties", Collections.emptyMap());
     Map<String, Object> stateMap = new HashMap<>((Map<String, Object>)snapshot.getOrDefault("clusterState", Collections.emptyMap()));
     Number version = (Number)stateMap.remove("version");
-    clusterState = ClusterState.load(version != null ? version.intValue() : null, stateMap, liveNodes, ZkStateReader.CLUSTER_STATE);
+    clusterState = ClusterState.load(version != null ? version.intValue() : null, stateMap, liveNodes, ZkStateReader.CLUSTER_STATE, null);
   }
 
   public Map<String, Object> getSnapshot() {

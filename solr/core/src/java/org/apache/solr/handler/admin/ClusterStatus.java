@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -193,6 +194,10 @@ public class ClusterStatus {
         String configName = zkStateReader.readConfigName(name);
         collectionStatus.put("configName", configName);
         collectionProps.add(name, collectionStatus);
+        if (message.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
+          PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
+          collectionStatus.put("PRS", prs);
+        }
       } catch (KeeperException.NoNodeException ex) {
         // skip this collection because the configset's znode has been deleted
         // which can happen during aggressive collection removal, see SOLR-10720

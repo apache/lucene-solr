@@ -326,5 +326,10 @@ public class PerReplicaStates implements ReflectMapWriter {
       return duplicate;
     }
   }
+  public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
+    public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
+      super(() -> fetch(collectionPath, zkClient, null));
+    }
+  }
 
 }

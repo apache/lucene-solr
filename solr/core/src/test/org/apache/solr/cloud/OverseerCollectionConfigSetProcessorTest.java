@@ -526,7 +526,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       if (CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))) {
         String collName = props.getStr("name");
         if (collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
-            new DocCollection(collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
+            new DocCollection(collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT, -1,null,
+                distribStateManagerMock.getPrsSupplier(collName) )));
       }
       if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {
         replicas.add(props);

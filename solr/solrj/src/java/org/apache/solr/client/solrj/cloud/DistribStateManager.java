@@ -30,7 +30,9 @@ import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -112,10 +114,20 @@ public interface DistribStateManager extends SolrCloseable {
     return tree;
   }
 
-  default PerReplicaStates getReplicaStates(String path) throws KeeperException, InterruptedException {
+  default PerReplicaStates getReplicaStates(String path)
+      throws KeeperException, InterruptedException {
     throw new UnsupportedOperationException("Not implemented");
+  }
 
-
+  default DocCollection.PrsSupplier getPrsSupplier(String collName) {
+    return new DocCollection.PrsSupplier(
+        () -> {
+          try {
+            return getReplicaStates(ZkStateReader.getCollectionPath(collName));
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**

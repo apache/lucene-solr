@@ -113,8 +113,9 @@ public class ClusterStateMutator {
     String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? null
         : ZkStateReader.getCollectionPath(cName);
 
-    DocCollection newCollection = new DocCollection(cName,
-        slices, collectionProps, router, -1, znode);
+    DocCollection newCollection =
+        new DocCollection(
+            cName, slices, collectionProps, router, -1, znode, stateManager.getPrsSupplier(cName));
 
     return new ZkWriteCommand(cName, newCollection);
   }
@@ -145,7 +146,6 @@ public class ClusterStateMutator {
       final String sliceName = "shard" + (i + 1);
       shardNames.add(sliceName);
     }
-
   }
 
   public static void getShardNames(List<String> shardNames, String shards) {
@@ -199,7 +199,7 @@ public class ClusterStateMutator {
 
     return new ZkWriteCommand(coll.getName(),
         new DocCollection(coll.getName(), coll.getSlicesMap(), coll.getProperties(), coll.getRouter(), 0,
-            ZkStateReader.getCollectionPath(collection)));
+            ZkStateReader.getCollectionPath(collection), stateManager.getPrsSupplier(collection)));
   }
 }
 
