@@ -106,6 +106,7 @@ import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -700,7 +701,7 @@ public class ZkController implements Closeable {
 
     // if this replica is not a leader, it will be put in recovery state by the leader
     String leader = cd.getCloudDescriptor().getCoreNodeName();
-    if (shard.getReplica(leader) != shard.getLeader()) return;
+    if (!Objects.equals(shard.getReplica(leader), shard.getLeader())) return;
 
     Set<String> liveNodes = getClusterState().getLiveNodes();
     int numActiveReplicas = shard.getReplicas(
@@ -858,6 +859,14 @@ public class ZkController implements Closeable {
       throws KeeperException, InterruptedException, IOException {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
+    for (NodeRoles.Role role : NodeRoles.Role.values()) {
+      cmdExecutor.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
+      for (String mode : role.supportedModes()) {
+        cmdExecutor.ensureExists(NodeRoles.getZNodeForRoleMode(role, mode), zkClient);
+      }
+    }
+
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH, zkClient);
@@ -1171,6 +1180,27 @@ public class ZkController implements Closeable {
       ops.add(Op.create(nodeAddedPath, json, zkClient.getZkACLProvider().getACLsToAdd(nodeAddedPath), CreateMode.EPHEMERAL));
     }
     zkClient.multi(ops, true);
+    Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
+
+    try {
+      zkClient.create(nodePath, null, CreateMode.EPHEMERAL, true);
+    } catch (KeeperException.NodeExistsException e) {
+      // ignore , it's already there
+    }
+
+    for (Map.Entry<NodeRoles.Role, String> e : roles.entrySet()) {
+      try {
+        zkClient.create(
+            NodeRoles.getZNodeForRoleMode(e.getKey(), e.getValue()) + "/" + nodeName,
+            null,
+            CreateMode.EPHEMERAL,
+            true);
+      } catch (KeeperException.NodeExistsException ex) {
+        // ignore , it already exists
+      }
+    }
+
+    log.info("non-data nodes now {}",  zkClient.getChildren("/node_roles/data/off", null,true));
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {

@@ -688,7 +688,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_1));
 
       // add another collection
-      CollectionAdminRequest.createCollection(TEST_COLLECTION_2, "conf1", 1, 2).process(client);
+      CollectionAdminRequest.createCollection(TEST_COLLECTION_2, "conf1", 1, 2)
+          .setMaxShardsPerNode(10)
+          .process(client);
       cluster.waitForActiveCollection(TEST_COLLECTION_2, 1, 2);
       new QueryRequest(new SolrQuery("*:*"))
           .setPreferredNodes(ImmutableList.of(coordinatorJetty.getNodeName()))
