@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -44,6 +45,7 @@ import org.rrd4j.core.RrdDb;
  *
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-17061")
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   private volatile static SolrCloudManager cloudManager;

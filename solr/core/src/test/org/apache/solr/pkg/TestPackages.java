@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
@@ -84,6 +85,7 @@ import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-17061")
 public class TestPackages extends SolrCloudTestCase {
 
   @Before
