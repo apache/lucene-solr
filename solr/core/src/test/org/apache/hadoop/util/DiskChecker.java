@@ -168,11 +168,6 @@ public class DiskChecker {
       throw new DiskErrorException("Directory is not writable: "
           + dir.toString());
     }
-
-    if (!FileUtil.canExecute(dir)) {
-      throw new DiskErrorException("Directory is not executable: "
-          + dir.toString());
-    }
   }
 
   /**
