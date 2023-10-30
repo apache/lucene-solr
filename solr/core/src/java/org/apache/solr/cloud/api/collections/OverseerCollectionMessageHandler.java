@@ -997,7 +997,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
                   Slice slice, ShardHandler shardHandler) {
       List<Replica> notLiveReplicas = new ArrayList<>();
       for (Replica replica : slice.getReplicas()) {
-        if ((stateMatcher == null || Replica.State.getState(replica.getStr(ZkStateReader.STATE_PROP)) == stateMatcher)) {
+        if ((stateMatcher == null || replica.getState() == stateMatcher)) {
           if (clusterState.liveNodesContain(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
             // For thread safety, only simple clone the ModifiableSolrParams
             ModifiableSolrParams cloneParams = new ModifiableSolrParams();

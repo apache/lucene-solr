@@ -1014,7 +1014,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       Map<String, Object> all = copy(req.getParams(), null,
           COLLECTION_PROP,
           SHARD_ID_PROP,
-          _ROUTE_);
+          _ROUTE_,
+          "prs");
       new ClusterStatus(h.coreContainer.getZkController().getZkStateReader(),
           new ZkNodeProps(all)).getClusterStatus(rsp.getValues());
       return null;
