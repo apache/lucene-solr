@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -311,7 +312,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
   }
 
-  private static boolean isCurrentlyTrusted(SolrZkClient zkClient, String configSetZkPath) {
+  public static boolean isCurrentlyTrusted(SolrZkClient zkClient, String configSetZkPath) {
     byte[] configSetNodeContent;
     try {
       configSetNodeContent = zkClient.getData(configSetZkPath, null, null, true);
@@ -329,7 +330,33 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     return (boolean) contentMap.getOrDefault("trusted", true);
   }
 
-  static boolean isTrusted(SolrQueryRequest req, AuthenticationPlugin authPlugin) {
+  private void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
+    try {
+      coreContainer.getZkController().getZkClient().makePath(
+          ZkConfigManager.CONFIGS_ZKNODE + "/" + configName,
+          Utils.toJSON(data),
+          CreateMode.PERSISTENT,
+          null,
+          false,
+          true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error setting config metadata", SolrZkClient.checkInterrupted(e));
+    }
+  }
+
+  public void removeConfigSetTrust(String configSetName) {
+    try {
+      Map<String, Object> metadata = Collections.singletonMap("trusted", false);
+      setConfigMetadata(configSetName, metadata);
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not remove trusted flag for configSet " + configSetName + ": " + e.getMessage(),
+          e);
+    }
+  }
+
+  public static boolean isTrusted(SolrQueryRequest req, AuthenticationPlugin authPlugin) {
     if (authPlugin != null && req.getUserPrincipal() != null) {
       log.debug("Trusted configset request");
       return true;

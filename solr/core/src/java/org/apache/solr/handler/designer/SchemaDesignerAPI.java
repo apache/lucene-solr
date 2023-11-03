@@ -65,6 +65,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -233,11 +234,12 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     byte[] data = DefaultSampleDocumentsLoader.streamAsBytes(extractSingleContentStream(req, true).getStream());
     Exception updateFileError = null;
+    boolean requestIsTrusted = ConfigSetsHandler.isTrusted(req, coreContainer.getAuthenticationPlugin());
     if (SOLR_CONFIG_XML.equals(file)) {
       // verify the updated solrconfig.xml is valid before saving to ZK (to avoid things blowing up later)
       try {
         InMemoryResourceLoader loader = new InMemoryResourceLoader(coreContainer, mutableId, SOLR_CONFIG_XML, data);
-        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, true, null);
+        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, requestIsTrusted, null);
       } catch (Exception exc) {
         updateFileError = exc;
       }
@@ -259,6 +261,11 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       zkClient.setData(zkPath, data, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Failed to save data in ZK at path: " + zkPath, SolrZkClient.checkInterrupted(e));
+    }
+    // If the request is untrusted, and the configSet is trusted, remove the trusted flag on the
+    // configSet.
+    if (ConfigSetsHandler.isCurrentlyTrusted(zkClient, ZkConfigManager.CONFIGS_ZKNODE + "/" + mutableId) && !requestIsTrusted) {
+      coreContainer.getConfigSetsHandler().removeConfigSetTrust(mutableId);
     }
 
     configSetHelper.reloadTempCollection(mutableId, false);
