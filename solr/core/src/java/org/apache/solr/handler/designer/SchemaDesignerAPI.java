@@ -113,8 +113,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     this.coreContainer = coreContainer;
     this.schemaSuggester = schemaSuggester;
     this.sampleDocLoader = sampleDocLoader;
-    this.settingsDAO = new SchemaDesignerSettingsDAO(coreContainer);
     this.configSetHelper = new SchemaDesignerConfigSetHelper(this.coreContainer, this.schemaSuggester);
+    this.settingsDAO = new SchemaDesignerSettingsDAO(coreContainer, configSetHelper);
   }
 
   public static SchemaSuggester newSchemaSuggester(CoreContainer coreContainer) {

@@ -330,7 +330,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     return (boolean) contentMap.getOrDefault("trusted", true);
   }
 
-  private void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
+  public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
     try {
       coreContainer.getZkController().getZkClient().makePath(
           ZkConfigManager.CONFIGS_ZKNODE + "/" + configName,
