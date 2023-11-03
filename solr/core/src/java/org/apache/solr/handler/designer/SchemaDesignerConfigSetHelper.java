@@ -610,10 +610,9 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   SolrConfig loadSolrConfig(String configSet) {
-    SolrResourceLoader resourceLoader = cc.getResourceLoader();
-    ZkSolrResourceLoader zkLoader =
-        new ZkSolrResourceLoader(resourceLoader.getInstancePath(), configSet, resourceLoader.getClassLoader(), new Properties(), cc.getZkController());
-    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, false, null);
+    ZkSolrResourceLoader zkLoader = zkLoaderForConfigSet(configSet);
+    boolean trusted = isConfigSetTrusted(configSet);
+    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, trusted, null);
   }
 
   ManagedIndexSchema loadLatestSchema(String configSet) {
@@ -1074,5 +1073,35 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   void copyConfig(String from, String to) throws IOException {
     configManager.copyConfigDir(from, to);
+  }
+
+  public boolean isConfigSetTrusted(String configSetName) {
+    try {
+      return cc.getConfigSetsHandler().isCurrentlyTrusted(cc.getZkController().getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName);
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not load conf " + configSetName + ": " + e.getMessage(),
+          e);
+    }
+  }
+
+  public void removeConfigSetTrust(String configSetName) {
+    try {
+      Map<String, Object> metadata = Collections.singletonMap("trusted", false);
+      cc.getConfigSetsHandler().setConfigMetadata(configSetName, metadata);
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not remove trusted flag for configSet " + configSetName + ": " + e.getMessage(),
+          e);
+    }
+  }
+
+  protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {
+    SolrResourceLoader resourceLoader = cc.getResourceLoader();
+    ZkSolrResourceLoader zkLoader =
+        new ZkSolrResourceLoader(resourceLoader.getInstancePath(), configSet, resourceLoader.getClassLoader(), new Properties(), cc.getZkController());
+    return zkLoader;
   }
 }

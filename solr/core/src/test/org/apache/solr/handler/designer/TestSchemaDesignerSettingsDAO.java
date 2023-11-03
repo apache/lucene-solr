@@ -69,7 +69,8 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase implements 
         CollectionAdminRequest.createCollection(collection, configSet, 1, 1).process(cluster.getSolrClient());
     CollectionsHandler.waitForActiveCollection(collection, cc, rsp);
 
-    SchemaDesignerSettingsDAO dao = new SchemaDesignerSettingsDAO(cc);
+    SchemaDesignerConfigSetHelper csh = new SchemaDesignerConfigSetHelper(cc, null);
+    SchemaDesignerSettingsDAO dao = new SchemaDesignerSettingsDAO(cc, csh);
     SchemaDesignerSettings settings = dao.getSettings(configSet);
     assertNotNull(settings);
 

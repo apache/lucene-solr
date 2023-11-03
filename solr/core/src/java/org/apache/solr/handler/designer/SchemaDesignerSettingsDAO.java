@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -33,7 +32,6 @@ import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -49,14 +47,15 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CoreContainer cc;
+  private final SchemaDesignerConfigSetHelper configSetHelper;
 
-  SchemaDesignerSettingsDAO(CoreContainer cc) {
+  SchemaDesignerSettingsDAO(CoreContainer cc, SchemaDesignerConfigSetHelper configSetHelper) {
     this.cc = cc;
+    this.configSetHelper = configSetHelper;
   }
 
   SchemaDesignerSettings getSettings(String configSet) {
-    SolrConfig solrConfig =
-        SolrConfig.readFromResourceLoader(zkLoaderForConfigSet(configSet), SOLR_CONFIG_XML, true, null);
+    SolrConfig solrConfig = configSetHelper.loadSolrConfig(configSet);
     return getSettings(solrConfig);
   }
 
@@ -97,8 +96,14 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     }
 
     if (changed) {
-      ZkController.persistConfigResourceToZooKeeper(zkLoaderForConfigSet(configSet), overlay.getZnodeVersion(),
-          ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
+      try (ZkSolrResourceLoader resourceLoader = configSetHelper.zkLoaderForConfigSet(configSet)) {
+        ZkController.persistConfigResourceToZooKeeper(
+            resourceLoader,
+            overlay.getZnodeVersion(),
+            ConfigOverlay.RESOURCE_NAME,
+            overlay.toByteArray(),
+            true);
+      }
     }
 
     return changed;
@@ -159,10 +164,5 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
       }
     }
     return hasPlugin;
-  }
-
-  private ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {
-    SolrResourceLoader loader = cc.getResourceLoader();
-    return new ZkSolrResourceLoader(loader.getInstancePath(), configSet, loader.getClassLoader(), new Properties(), cc.getZkController());
   }
 }
