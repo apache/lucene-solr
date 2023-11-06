@@ -8,10 +8,19 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-no
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
+Upgrade Notes
+--------------------- 
+
+* If your configset contains solrconfig.xml which uses <lib .. /> tags, you either need to remove them (and place your jar files
+  in the standard classpath instead) or use -Dsolr.lib.directive.allowed=true start up parameter for your Solr nodes. This is a
+  security measure to protect against RCE attacks. More details are in SOLR-16781.
+
 New Features
 ---------------------
 
 * SOLR-15694, 15715: Node roles and dedicated query coordinator nodes (Hitesh Khamesra, Ishan Chattopadhyaya, noble)
+
+* SOLR-16781: Disable <lib> directives in solrconfig.xml by default (Ishan Chattopadhyaya)
 
 Bug Fixes
 ---------------------

@@ -45,6 +45,11 @@ Solr plugins won't work in these locations.
 
 == Lib Directives in SolrConfig
 
+[IMPORTANT]
+====
+This functionality is disabled by default. Solr nodes needs to be started with a `-Dsolr.lib.directive.allowed=true`.
+====
+
 _Both_ plugin and <<resource-loading.adoc#,resource>> file paths are configurable via `<lib/>` directives in `solrconfig.xml`.
 When a directive matches a directory, then resources can be resolved from it.
 When a directive matches a `.jar` file, Solr plugins and their dependencies are resolved from it.

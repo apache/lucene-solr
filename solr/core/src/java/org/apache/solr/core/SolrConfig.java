@@ -843,8 +843,14 @@ public class SolrConfig implements MapSerializable {
       }
     }
 
+    boolean libDirectiveAllowed = Boolean.getBoolean(System.getProperty("solr.lib.directive.allowed", "false"));
     List<ConfigNode> nodes = root.getAll("lib");
     if (nodes != null && nodes.size() > 0) {
+      if (!libDirectiveAllowed) {
+        throw new SolrException(ErrorCode.UNAUTHORIZED,
+            "<lib .. /> directive is not allowed to be used in a configset unless the Solr node is started with "
+            + "'-Dsolr.lib.directive.allowed=true'. Please remove the <lib .. /> from your solrconfig.xml and try again.");
+      }
       if (!isConfigsetTrusted) {
         throw new SolrException(ErrorCode.UNAUTHORIZED,
           "The configset for this collection was uploaded without any authentication in place,"
