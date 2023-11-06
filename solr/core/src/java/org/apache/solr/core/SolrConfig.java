@@ -843,7 +843,7 @@ public class SolrConfig implements MapSerializable {
       }
     }
 
-    boolean libDirectiveAllowed = Boolean.getBoolean(System.getProperty("solr.lib.directive.allowed", "false"));
+    boolean libDirectiveAllowed = Boolean.getBoolean("solr.lib.directive.allowed");
     List<ConfigNode> nodes = root.getAll("lib");
     if (nodes != null && nodes.size() > 0) {
       if (!libDirectiveAllowed) {

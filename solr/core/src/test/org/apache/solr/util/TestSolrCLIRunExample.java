@@ -73,6 +73,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         Paths.get(".").toAbsolutePath().toString().contains(" "));
     // to be true
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
+    System.setProperty("solr.lib.directive.allowed", "true");
   }
 
   @AfterClass

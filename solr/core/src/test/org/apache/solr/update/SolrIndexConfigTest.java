@@ -56,6 +56,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.lib.directive.allowed", "true");
     initCore(solrConfigFileName,schemaFileName);
   }
   

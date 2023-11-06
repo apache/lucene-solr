@@ -44,6 +44,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.lib.directive.allowed", "true");
     configureCluster(2).configure();
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());

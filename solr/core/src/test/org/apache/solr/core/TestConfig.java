@@ -41,6 +41,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.lib.directive.allowed", "true");
     initCore("solrconfig-test-misc.xml","schema-reversed.xml");
   }
 

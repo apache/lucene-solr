@@ -47,6 +47,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    System.setProperty("solr.lib.directive.allowed", "true");
     initCore("solrconfig.xml", "schema.xml");
     createAndStartJetty(legacyExampleCollection1SolrHome());
   }
