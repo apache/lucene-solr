@@ -73,7 +73,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot, builder.canUseZkACLs);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new Http2ClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -135,6 +135,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
     protected Http2SolrClient.Builder internalClientBuilder;
+    private boolean canUseZkACLs = true;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient} instances.
@@ -180,6 +181,12 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       this.zkHosts = zkHosts;
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
+
+    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
+      this.canUseZkACLs = canUseZkACLs;
+      return this;
     }
 
     /**
@@ -245,7 +252,7 @@ public class CloudHttp2SolrClient  extends BaseCloudSolrClient {
     public CloudHttp2SolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
         }
         else if (!this.solrUrls.isEmpty()) {
           try {

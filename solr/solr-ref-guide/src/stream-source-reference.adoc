@@ -30,6 +30,7 @@ This expression allows you to specify a request hander using the `qt` parameter.
 * `fl`: (Mandatory) The list of fields to return.
 * `sort`: (Mandatory) The sort criteria.
 * `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `qt`: Specifies the query type, or request handler, to use. Set this to `/export` to work with large result sets. The default is `/select`.
 * `rows`: (Mandatory with the `/select` handler) The rows parameter specifies how many rows to return. This parameter is only needed with the `/select` handler (which is the default) since the `/export` handler always returns all rows.
 * `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorator-reference.adoc#parallel,parallel>> function for details.
@@ -461,6 +462,7 @@ stream decorator to perform parallel relational algebra. When used in parallel m
 * `fl`: (Mandatory) The list of fields to return.
 * `sort`: (Mandatory) The sort criteria.
 * `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorator-reference.adoc#parallel,parallel>> function for details.
 
 === shuffle Syntax
@@ -592,6 +594,7 @@ The topic function should be considered in beta until https://issues.apache.org/
 * `fl`: (Mandatory) The field list returned by the topic function.
 * `initialCheckpoint`: (Optional) Sets the initial Solr `\_version_` number to start reading from the queue. If not set, it defaults to the highest version in the index. Setting to 0 will process all records that match query in the index.
 * `zkHost`: (Optional) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 
 === topic Syntax
 

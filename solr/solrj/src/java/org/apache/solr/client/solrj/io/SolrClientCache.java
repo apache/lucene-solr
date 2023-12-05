@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
@@ -49,6 +50,7 @@ public class SolrClientCache implements Serializable {
   //Timeouts cans be increased by setting the system properties defined below.
   private static final int conTimeout = Math.max(Integer.parseInt(System.getProperty(HttpClientUtil.PROP_CONNECTION_TIMEOUT,"60000")), 60000);
   private static final int socketTimeout = Math.max(Integer.parseInt(System.getProperty(HttpClientUtil.PROP_SO_TIMEOUT,"60000")), 60000);
+  private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
 
 
   public SolrClientCache() {
@@ -57,6 +59,17 @@ public class SolrClientCache implements Serializable {
 
   public SolrClientCache(HttpClient httpClient) {
     this.httpClient = httpClient;
+  }
+
+  public void setDefaultZKHost(String zkHost) {
+    if (zkHost != null) {
+      zkHost = zkHost.split("/")[0];
+      if (!zkHost.isEmpty()) {
+        defaultZkHost.set(zkHost);
+      } else {
+        defaultZkHost.set(null);
+      }
+    }
   }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
@@ -75,9 +88,16 @@ public class SolrClientCache implements Serializable {
     if (solrClients.containsKey(zkHost)) {
       client = (CloudSolrClient) solrClients.get(zkHost);
     } else {
+      // Can only use ZK ACLs if there is a default ZK Host, and the given ZK host contains that
+      // default.
+      // Basically the ZK ACLs are assumed to be only used for the default ZK host,
+      // thus we should only provide the ACLs to that Zookeeper instance.
+      String zkHostNoChroot = zkHost.split("/")[0];
+      boolean canUseACLs =
+          Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(socketTimeout).withConnectionTimeout(conTimeout);
+      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(socketTimeout).withConnectionTimeout(conTimeout).canUseZkACLs(canUseACLs);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }

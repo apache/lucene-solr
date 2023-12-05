@@ -44,6 +44,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   String zkHost;
+  private final boolean canUseZkACLs;
   int zkConnectTimeout = 15000;
   int zkClientTimeout = 45000;
 
@@ -53,14 +54,22 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
     this.closeZkStateReader =  false;
+    this.canUseZkACLs = true;
   }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
-    zkHost = buildZkHostString(zkHosts,chroot);
+    this(zkHosts, chroot, true);
+  }
+
+  public ZkClientClusterStateProvider(
+      Collection<String> zkHosts, String chroot, boolean canUseZkACLs) {
+    zkHost = buildZkHostString(zkHosts, chroot);
+    this.canUseZkACLs = canUseZkACLs;
   }
 
   public ZkClientClusterStateProvider(String zkHost){
     this.zkHost = zkHost;
+    this.canUseZkACLs = true;
   }
 
   @Override
@@ -173,7 +182,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
         if (zkStateReader == null) {
           ZkStateReader zk = null;
           try {
-            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
+            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout, canUseZkACLs);
             zk.createClusterStateWatchersAndUpdate();
             log.info("Cluster at {} ready", zkHost);
             zkStateReader = zk;

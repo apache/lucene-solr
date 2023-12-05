@@ -1055,6 +1055,7 @@ The worker nodes can be from the same collection as the data, or they can be a d
 * `StreamExpression`: Expression to send to the worker collection.
 * `workers`: Number of workers in the worker collection to send the expression to.
 * `zkHost`: (Optional) The ZooKeeper connect string where the worker collection resides.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `sort`: The sort criteria for ordering tuples returned by the worker nodes.
 
 === parallel Syntax

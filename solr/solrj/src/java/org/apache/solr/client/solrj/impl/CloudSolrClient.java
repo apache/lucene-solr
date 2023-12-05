@@ -77,7 +77,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot, builder.canUseZkACLs);
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -228,6 +228,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
+    private boolean canUseZkACLs = true;
     
     /**
      * @deprecated use other constructors instead.  This constructor will be changing visibility in an upcoming release.
@@ -375,6 +376,12 @@ public class CloudSolrClient extends BaseCloudSolrClient {
       this.zkChroot = zkChroot;
       return this;
     }
+
+    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
+      this.canUseZkACLs = canUseZkACLs;
+      return this;
+    }
     
     /**
      * Provides a {@link LBHttpSolrClient} for the builder to use when creating clients.
@@ -457,7 +464,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     public CloudSolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
         }
         else if (!this.solrUrls.isEmpty()) {
           try {
