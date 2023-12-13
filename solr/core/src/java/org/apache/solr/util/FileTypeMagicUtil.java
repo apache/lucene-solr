@@ -142,6 +142,8 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    * @return true if file is among the forbidden mime-types
    */
   public static boolean isFileForbiddenInConfigset(byte[] bytes) {
+    if (bytes == null || bytes.length == 0)
+      return false; // A ZK znode may be a folder with no content
     return isFileForbiddenInConfigset(new ByteArrayInputStream(bytes));
   }
 
