@@ -1,0 +1,59 @@
+# POSIX tar archives
+# URL: https://en.wikipedia.org/wiki/Tar_(computing)
+# Reference: https://www.freebsd.org/cgi/man.cgi?query=tar&sektion=5&manpath=FreeBSD+8-current
+# header mainly padded with nul bytes
+500	quad		0
+!:strength /2
+# filename or extended attribute printable strings in range space null til umlaut ue
+>0	ubeshort	>0x1F00
+>>0	ubeshort	<0xFCFD
+# last 4 header bytes often null but tar\0 in gtarfail2.tar gtarfail.tar-bad
+# at https://sourceforge.net/projects/s-tar/files/testscripts/
+>>>508	ubelong&0x8B9E8DFF	0
+# nul, space or ascii digit 0-7 at start of mode
+>>>>100	ubyte&0xC8	=0
+>>>>>101 ubyte&0xC8	=0
+# nul, space at end of check sum
+>>>>>>155 ubyte&0xDF	=0
+# space or ascii digit 0 at start of check sum
+>>>>>>>148	ubyte&0xEF	=0x20
+# check for specific 1st member name that indicates other mime type and file name suffix
+>>>>>>>>0	string		TpmEmuTpms/permall
+!:mime	application/x-tar
+!:ext	tar
+# other stuff in padding
+# some implementations add new fields to the blank area at the end of the header record
+# created for example by DOS TAR 3.20g 1994 Tim V.Shapore with -j option
+>>257	ulong		!0		tar archive (old)
+!:mime	application/x-tar
+!:ext	tar
+# magic in newer, GNU, posix variants
+>257	string		=ustar
+# 2 last char of magic and UStar version because string expression does not work
+# 2 space characters followed by a null for GNU variant
+>>261	ubelong		=0x72202000	POSIX tar archive (GNU)
+!:mime	application/x-gtar
+!:ext	tar/gtar
+
+
+# Zip archives (Greg Roelofs, c/o zip-bugs@wkuvx1.wku.edu)
+0	string		PK\005\006	Zip archive data (empty)
+0	string		PK\003\004  Zip archive data
+!:strength +1
+!:mime application/zip
+!:ext zip/cbz
+
+
+# JAVA
+0	belong		0xcafebabe
+>4	ubelong		>30		compiled Java class data,
+!:mime	application/x-java-applet
+#!:mime	application/java-byte-code
+!:ext	class
+
+
+# SHELL scripts
+#0	string/w	:			shell archive or script for antique kernel text
+0	regex	\^#!\\s?(/bin/|/usr/)		POSIX shell script text executable
+!:mime	text/x-shellscript
+!:ext	sh/bash

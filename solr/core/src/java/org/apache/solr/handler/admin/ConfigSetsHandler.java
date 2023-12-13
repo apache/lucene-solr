@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +57,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -203,9 +205,17 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         try {
           // Create a node for the configuration in zookeeper
           // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
-          createBaseZnode(zkClient, overwritesExisting, requestIsTrusted, configPathInZk);
-          String filePathInZk = configPathInZk + "/" + fixedSingleFilePath;
-          zkClient.makePath(filePathInZk, IOUtils.toByteArray(inputStream), CreateMode.PERSISTENT, null, !allowOverwrite, true);
+          byte[] bytes = IOUtils.toByteArray(inputStream);
+          if (!FileTypeMagicUtil.isFileForbiddenInConfigset(bytes)) {
+            createBaseZnode(zkClient, overwritesExisting, requestIsTrusted, configPathInZk);
+            String filePathInZk = configPathInZk + "/" + fixedSingleFilePath;
+            zkClient.makePath(filePathInZk, bytes, CreateMode.PERSISTENT, null, !allowOverwrite, true);
+          } else {
+            String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(bytes);
+            throw new SolrException(ErrorCode.BAD_REQUEST,
+                String.format(Locale.ROOT, "Not uploading file %s to configset, as it matched the MAGIC signature of a forbidden mime type %s",
+                    fixedSingleFilePath, mimeType));
+          }
         } catch(KeeperException.NodeExistsException nodeExistsException) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
                   "The path " + singleFilePath + " for configSet " + configSetName + " already exists. In order to overwrite, provide overwrite=true or use an HTTP PUT with the V2 API.");
@@ -244,8 +254,15 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       if (zipEntry.isDirectory()) {
         zkClient.makePath(filePathInZk, false,  true);
       } else {
-        createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk,
-            IOUtils.toByteArray(zis));
+        byte[] bytes = IOUtils.toByteArray(zis);
+        if (!FileTypeMagicUtil.isFileForbiddenInConfigset(bytes)) {
+          createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk, bytes);
+        } else {
+          String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(bytes);
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              String.format(Locale.ROOT, "Not uploading file %s to configset, as it matched the MAGIC signature of a forbidden mime type %s",
+                  zipEntry.getName(), mimeType));
+        }
       }
     }
     zis.close();

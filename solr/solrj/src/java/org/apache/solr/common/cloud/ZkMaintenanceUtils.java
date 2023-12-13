@@ -301,6 +301,7 @@ public class ZkMaintenanceUtils {
           log.info("uploadToZK skipping '{}' due to filenameExclusions '{}'", filename, filenameExclusions);
           return FileVisitResult.CONTINUE;
         }
+        // TODO: Cannot check MAGIC header for file since FileTypeMagicUtil is in core
         String zkNode = createZkNodeName(zkPath, rootPath, file);
         try {
           // if the path exists (and presumably we're uploading data to it) just set its data
@@ -348,6 +349,7 @@ public class ZkMaintenanceUtils {
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a marker on the local
         // disk so create an empty file.
+        // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
         if (copyDataDown(zkClient, zkPath, file.toFile()) == 0) {
           Files.createFile(file);
         }

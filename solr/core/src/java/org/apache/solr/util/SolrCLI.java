@@ -1971,6 +1971,7 @@ public class SolrCLI {
 
         echoIfVerbose("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost(), cli);
+        FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
         ((ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider()).uploadConfig(confPath, confname);
       }
 
@@ -2265,6 +2266,7 @@ public class SolrCLI {
         echo("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + cli.getOptionValue("confname") + " to ZooKeeper at " + zkHost);
 
+        FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
         zkClient.upConfig(confPath, confName);
       } catch (Exception e) {
         log.error("Could not complete upconfig operation for reason: ", e);

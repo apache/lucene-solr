@@ -22,7 +22,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,6 +33,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +46,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -90,17 +91,17 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.TestDynamicLoading;
-import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.AuthorizationResponse;
+import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.apache.zookeeper.data.Stat;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -903,6 +904,19 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         params("q", "*:*")).getResults().get(0).get("id"));
   }
 
+  @Test
+  public void testUploadWithForbiddenContent() throws Exception {
+    // Uploads a config set containing a script, a class file and jar file, will return 400 error
+    long res = uploadForbiddenConfigSet(
+        "forbidden",
+        "suffix",
+        "foo",
+        true,
+        false,
+        true);
+    assertEquals(400, res);
+  }
+
   private static String getSecurityJson() throws KeeperException, InterruptedException {
     String securityJson = "{\n" +
             "  'authentication':{\n" +
@@ -953,6 +967,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     // Read zipped sample config
     return uploadGivenConfigSet(createTempZipFile("solr/configsets/upload/"+configSetName),
                                 configSetName, suffix, username, overwrite, cleanup, v2);
+  }
+
+  private long uploadForbiddenConfigSet(String configSetName, String suffix, String username,
+                                        boolean overwrite, boolean cleanup, boolean v2) throws IOException {
+    return uploadGivenConfigSet(createTempZipFileWithForbiddenContent("magic"),
+        configSetName, suffix, username, overwrite, cleanup, v2);
   }
 
   private long uploadBadConfigSet(String configSetName, String suffix, String username,
@@ -1317,6 +1337,38 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private StringBuilder getConfigSetProps(Map<String, String> map) {
     return new StringBuilder(new String(Utils.toJSON(map), UTF_8));
+  }
+
+  /** Create a zip file (in the temp directory) containing files with forbidden content */
+  private File createTempZipFileWithForbiddenContent(String resourcePath) {
+    try {
+      final File zipFile = createTempFile("configset", "zip").toFile();
+      final File directory = SolrTestCaseJ4.getFile(resourcePath);
+      if (log.isInfoEnabled()) {
+        log.info("Directory: {}", directory.getAbsolutePath());
+      }
+      zipWithForbiddenContent(directory, zipFile);
+      if (log.isInfoEnabled()) {
+        log.info("Zipfile: {}", zipFile.getAbsolutePath());
+      }
+      return zipFile;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static void zipWithForbiddenContent(File directory, File zipfile)
+      throws IOException {
+    OutputStream out = Files.newOutputStream(zipfile.toPath());
+    assertTrue(directory.isDirectory());
+    try (ZipOutputStream zout = new ZipOutputStream(out)) {
+      // Copy in all files from the directory
+      for (File file : Objects.requireNonNull(directory.listFiles())) {
+        zout.putNextEntry(new ZipEntry(file.getName()));
+        zout.write(Files.readAllBytes(file.toPath()));
+        zout.closeEntry();
+      }
+    }
   }
 
   public static class CreateNoErrorChecking extends ConfigSetAdminRequest.Create {

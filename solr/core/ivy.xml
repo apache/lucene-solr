@@ -45,6 +45,7 @@
     <dependency org="com.google.guava" name="failureaccess" rev="${/com.google.guava/failureaccess}" conf="compile"/>
     <dependency org="com.google.guava" name="listenablefuture" rev="${/com.google.guava/listenablefuture}" conf="compile"/>
     <dependency org="com.google.j2objc" name="j2objc-annotations" rev="${/com.google.j2objc/j2objc-annotations}" conf="compile"/>
+    <dependency org="com.j256.simplemagic" name="simplemagic" rev="${/com.j256.simplemagic/simplemagic}" conf="compile"/>
     <dependency org="org.locationtech.spatial4j" name="spatial4j" rev="${/org.locationtech.spatial4j/spatial4j}" conf="compile"/>
     <dependency org="org.antlr" name="antlr4-runtime" rev="${/org.antlr/antlr4-runtime}"/>
     <dependency org="org.apache.commons" name="commons-math3" rev="${/org.apache.commons/commons-math3}" conf="compile"/>

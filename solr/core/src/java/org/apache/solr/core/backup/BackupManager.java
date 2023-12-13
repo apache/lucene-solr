@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.solr.util.FileTypeMagicUtil;
 
 import com.google.common.base.Preconditions;
 import org.apache.lucene.store.IOContext;
@@ -302,8 +303,16 @@ public class BackupManager {
         if (children.size() == 0) {
           log.debug("Writing file {}", file);
           byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
-          try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
-            os.write(data);
+          if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+            try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
+              os.write(data);
+            }
+          } else {
+            String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+            log.warn(
+                "Not including zookeeper file {} in backup, as it matched the MAGIC signature of a forbidden mime type {}",
+                file,
+                mimeType);
           }
         } else {
           URI uri = repository.resolve(dir, file);
@@ -329,7 +338,15 @@ public class BackupManager {
           try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
             byte[] arr = new byte[(int) is.length()]; // probably ok since the config file should be small.
             is.readBytes(arr, 0, (int) is.length());
-            zkClient.makePath(zkNodePath, arr, true);
+            if (!FileTypeMagicUtil.isFileForbiddenInConfigset(arr)) {
+              zkClient.makePath(zkNodePath, arr, true);
+            } else {
+              String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(arr);
+              log.warn(
+                  "Not restoring configset file {} to zookeeper, as it matched the MAGIC signature of a forbidden mime type {}",
+                  file,
+                  mimeType);
+            }
           } catch (KeeperException | InterruptedException e) {
             throw new IOException(SolrZkClient.checkInterrupted(e));
           }
