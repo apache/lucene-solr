@@ -20,7 +20,6 @@ package org.apache.solr.util;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import com.j256.simplemagic.ContentType;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileVisitResult;
@@ -58,22 +57,18 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
   public static void assertConfigSetFolderLegal(Path confPath) throws IOException {
     Files.walkFileTree(confPath, new SimpleFileVisitor<Path>() {
       @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
         // Read first 100 bytes of the file to determine the mime type
-        try(InputStream fileStream = Files.newInputStream(file)) {
-          byte[] bytes = new byte[100];
-          fileStream.read(bytes);
-          if (FileTypeMagicUtil.isFileForbiddenInConfigset(bytes)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                String.format(Locale.ROOT, "Not uploading file %s to configset, as it matched the MAGIC signature of a forbidden mime type %s",
-                    file, FileTypeMagicUtil.INSTANCE.guessMimeType(bytes)));
-          }
-          return FileVisitResult.CONTINUE;
+        if (FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              String.format(Locale.ROOT, "Not uploading file %s to configset, as it matched the MAGIC signature of a forbidden mime type %s",
+                  file, FileTypeMagicUtil.INSTANCE.guessMimeType(file)));
         }
+        return FileVisitResult.CONTINUE;
       }
 
       @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
         if (SKIP_FOLDERS.contains(dir.getFileName().toString())) return FileVisitResult.SKIP_SUBTREE;
 
         return FileVisitResult.CONTINUE;
@@ -84,16 +79,26 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
   /**
    * Guess the mime type of file based on its magic number.
    *
+   * @param file file to check
+   * @return string with content-type or "application/octet-stream" if unknown
+   */
+  public String guessMimeType(Path file) {
+    try {
+      return guessTypeFallbackToOctetStream(util.findMatch(file.toFile()));
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  /**
+   * Guess the mime type of file based on its magic number.
+   *
    * @param stream input stream of the file
    * @return string with content-type or "application/octet-stream" if unknown
    */
-  public String guessMimeType(InputStream stream) {
+  String guessMimeType(InputStream stream) {
     try {
-      ContentInfo info = util.findMatch(stream);
-      if (info == null) {
-        return ContentType.OTHER.getMimeType();
-      }
-      return info.getContentType().getMimeType();
+      return guessTypeFallbackToOctetStream(util.findMatch(stream));
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -106,7 +111,7 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    * @return string with content-type or "application/octet-stream" if unknown
    */
   public String guessMimeType(byte[] bytes) {
-    return guessMimeType(new ByteArrayInputStream(bytes));
+    return guessTypeFallbackToOctetStream(util.findMatch(bytes));
   }
 
   @Override
@@ -128,10 +133,28 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
    *   <li><code>text/x-shellscript</code>: shell or bash script
    * </ul>
    *
+   * @param file file to check
+   * @return true if file is among the forbidden mime-types
+   */
+  public static boolean isFileForbiddenInConfigset(Path file) {
+    return forbiddenTypes.contains(FileTypeMagicUtil.INSTANCE.guessMimeType(file));
+  }
+
+  /**
+   * Determine forbidden file type based on magic bytes matching of the file itself. Forbidden types
+   * are:
+   *
+   * <ul>
+   *   <li><code>application/x-java-applet</code>: java class file
+   *   <li><code>application/zip</code>: jar or zip archives
+   *   <li><code>application/x-tar</code>: tar archives
+   *   <li><code>text/x-shellscript</code>: shell or bash script
+   * </ul>
+   *
    * @param fileStream stream from the file content
    * @return true if file is among the forbidden mime-types
    */
-  public static boolean isFileForbiddenInConfigset(InputStream fileStream) {
+  static boolean isFileForbiddenInConfigset(InputStream fileStream) {
     return forbiddenTypes.contains(FileTypeMagicUtil.INSTANCE.guessMimeType(fileStream));
   }
 
@@ -144,7 +167,7 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
   public static boolean isFileForbiddenInConfigset(byte[] bytes) {
     if (bytes == null || bytes.length == 0)
       return false; // A ZK znode may be a folder with no content
-    return isFileForbiddenInConfigset(new ByteArrayInputStream(bytes));
+    return forbiddenTypes.contains(FileTypeMagicUtil.INSTANCE.guessMimeType(bytes));
   }
 
   private static final Set<String> forbiddenTypes =
@@ -155,4 +178,11 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
                       "application/x-java-applet,application/zip,application/x-tar,text/x-shellscript")
                   .split(",")));
 
+  private String guessTypeFallbackToOctetStream(ContentInfo contentInfo) {
+    if (contentInfo == null) {
+      return ContentType.OTHER.getMimeType();
+    } else {
+      return contentInfo.getContentType().getMimeType();
+    }
+  }
 }
