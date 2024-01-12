@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import java.io.IOException;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
@@ -61,19 +62,19 @@ public class SolrClientCacheTest extends SolrCloudTestCase {
       // This ZK Host is fake, thus the ZK ACLs should not be used
       cache.setDefaultZKHost("test:2181");
       expectThrows(
-          SolrException.class, () -> cache.getCloudSolrClient(zkClient().getZkServerAddress()));
+          SolrException.class, () -> cache.getCloudSolrClient(zkClient().getZkServerAddress()).close());
     } finally {
       cache.close();
     }
   }
 
   @Test
-  public void testZkACLsUsedWithDifferentChroot() {
+  public void testZkACLsUsedWithDifferentChroot() throws IOException {
     SolrClientCache cache = new SolrClientCache();
     try {
       // The same ZK Host is used, so the ZK ACLs should still be applied
       cache.setDefaultZKHost(zkClient().getZkServerAddress() + "/random/chroot");
-      cache.getCloudSolrClient(zkClient().getZkServerAddress());
+      cache.getCloudSolrClient(zkClient().getZkServerAddress()).close();
     } finally {
       cache.close();
     }

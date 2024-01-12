@@ -103,8 +103,8 @@ public class SolrClientCache implements Serializable {
       }
 
       client = builder.build();
-      client.connect();
       solrClients.put(zkHost, client);
+      client.connect();
     }
 
     return client;
