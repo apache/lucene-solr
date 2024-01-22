@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -425,9 +426,83 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertEquals( 2, out.getNumFound() );
     assertEquals( 0, out.get(0).size() );
     assertEquals( 0, out.get(1).size() );
-
   }
-  
+
+  @Test
+  public void testMatchAllPaging() throws Exception {
+    SolrClient client = getSolrClient();
+
+    // Empty the database...
+    client.deleteByQuery("*:*"); // delete everything!
+    if (random().nextBoolean()) {
+      client.commit();
+    }
+    // Add eleven docs
+    List<SolrInputDocument> docs = new ArrayList<>();
+    final int docsTotal = CommonParams.ROWS_DEFAULT + 1;
+    for (int i = 0; i < docsTotal; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id" + i);
+      doc.addField("name", "doc" + i);
+      doc.addField("price", "" + i);
+      docs.add(doc);
+      if (rarely() && !docs.isEmpty()) {
+        client.add(docs);
+        client.commit();
+        docs.clear();
+      }
+    }
+    if (!docs.isEmpty()) {
+      client.add(docs);
+    }
+    if (random().nextBoolean()) {
+      client.commit();
+    } else {
+      client.optimize();
+    }
+    final List<String> sorts = Arrays.asList("_docid_", "id", "name", "price", null);
+    Collections.shuffle(sorts, random());
+    final List<Integer> starts =
+        Arrays.asList(0, 1, 2, CommonParams.ROWS_DEFAULT, docsTotal, CommonParams.ROWS_DEFAULT + 2);
+    Collections.shuffle(starts, random());
+    final List<String> queries = Arrays.asList("*:*", "id:[* TO *]", "{!prefix f=name}doc");
+    Collections.shuffle(queries, random());
+    for (String queryVal : queries) {
+      for (String sort : sorts) {
+        if (rarely()) {
+          continue; // shortcut to run faster
+        }
+        for (int start : starts) {
+          final SolrQuery query = new SolrQuery(queryVal);
+          if (sort != null) {
+            query.setSort(
+                sort, random().nextBoolean() ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+          }
+          if (start > 0 || random().nextBoolean()) {
+            query.setStart(start);
+          }
+          if (usually()) {
+            query.setRows(CommonParams.ROWS_DEFAULT);
+          }
+          SolrDocumentList results = client.query(query).getResults();
+          assertEquals(docsTotal, results.getNumFound());
+          assertEquals(
+              "page from " + start,
+              Math.max(Math.min(CommonParams.ROWS_DEFAULT, docsTotal - start), 0),
+              results.size());
+          for (SolrDocument doc : results) {
+            assertTrue(doc.containsKey("id"));
+            assertTrue(doc.containsKey("name"));
+            assertTrue(doc.containsKey("price"));
+          }
+          if (rarely()) {
+            break; // shortcut to run faster
+          }
+        }
+      }
+    }
+  }
+
   private String randomTestString(int maxLength) {
     // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc
     // (considered invalid by XML)

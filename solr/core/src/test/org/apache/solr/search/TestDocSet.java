@@ -569,4 +569,24 @@ public class TestDocSet extends SolrTestCase {
       doFilterTest(r);
     }
   }
+
+  private static final int MAX_SRC_SIZE = 130; // push _just_ into 3 `long` "words"
+
+  public void testCopyBitsToRange() {
+    // Sanity-check round-tripping.
+    for (int i = 0; i < 1000; i++) {
+      final int sz = rand.nextInt(MAX_SRC_SIZE);
+      final FixedBitSet src = getRandomSet(sz, rand.nextInt(sz + 1));
+      final int destSize = sz * 2;
+      final int destOffset =
+          sz == 0
+              ? 0
+              : (rand.nextInt(sz) + 1); // +1 here b/c we want nextInt(sz) _inclusive_ of sz.
+      final FixedBitSet dest = new FixedBitSet(destSize);
+      final FixedBitSet roundTrip = new FixedBitSet(sz);
+      DocSetUtil.copyTo(src.asReadOnlyBits(), 0, sz, dest, destOffset);
+      DocSetUtil.copyTo(dest.asReadOnlyBits(), destOffset, destOffset + sz, roundTrip, 0);
+      assertEquals(src, roundTrip);
+    }
+  }
 }

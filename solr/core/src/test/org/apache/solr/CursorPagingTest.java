@@ -649,10 +649,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final long postFcHits = (Long) filterCacheStats.getValue().get("hits");
     
     assertEquals("query cache inserts changed", preQcIn, postQcIn);
-    // NOTE: use of pure negative filters clauses "*:* to be tracked in filterCache
-    assertEquals("filter cache did not grow correctly", 3, postFcIn-preFcIn);
+    assertEquals("filter cache did not grow correctly", 2, postFcIn - preFcIn);
     assertTrue("filter cache did not have any new cache hits", 0 < postFcHits-preFcHits);
-
   }
 
   /** randomized testing of a non-trivial number of docs using assertFullWalkNoDups 

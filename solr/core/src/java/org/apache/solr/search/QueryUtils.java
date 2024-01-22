@@ -24,6 +24,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 
@@ -42,6 +43,36 @@ public class QueryUtils {
       if (!clause.isProhibited()) return false;
     }
     return true;
+  }
+
+  /**
+   * Recursively unwraps the specified query to determine whether it is capable of producing a score
+   * that varies across different documents. Returns true if this query is not capable of producing
+   * a varying score (i.e., it is a constant score query).
+   */
+  public static boolean isConstantScoreQuery(Query q) {
+    while (true) {
+      if (q instanceof BoostQuery) {
+        q = ((BoostQuery) q).getQuery();
+      } else if (q instanceof WrappedQuery) {
+        q = ((WrappedQuery) q).getWrappedQuery();
+      } else if (q instanceof ConstantScoreQuery) {
+        return true;
+      } else if (q instanceof MatchAllDocsQuery) {
+        return true;
+      } else if (q instanceof MatchNoDocsQuery) {
+        return true;
+      } else if (q instanceof BooleanQuery) {
+        // NOTE: this check can be very simple because:
+        //  1. there's no need to check `q == clause.getQuery()` because BooleanQuery is final, with
+        //     a builder that prevents direct loops.
+        //  2. we don't bother recursing to second-guess a nominally "scoring" clause that actually
+        //     wraps a constant-score query.
+        return ((BooleanQuery) q).clauses().stream().noneMatch(BooleanClause::isScoring);
+      } else {
+        return false;
+      }
+    }
   }
 
   /** Returns the original query if it was already a positive query, otherwise
@@ -155,6 +186,13 @@ public class QueryUtils {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything
       } else {
+        /*
+        NOTE: we _must_ wrap filter in a ConstantScoreQuery (default score `1f`) in order to
+        guarantee score parity with the actual user-specified scoreQuery (i.e., MatchAllDocsQuery).
+        This should only matter if score is _explicitly_ requested to be returned, but we don't know
+        that here, and it's probably not worth jumping through the necessary hoops simply to avoid
+        wrapping in the case where `true==isConstantScoreQuery(filterQuery)`
+         */
         return new ConstantScoreQuery(filterQuery);
       }
     } else {
