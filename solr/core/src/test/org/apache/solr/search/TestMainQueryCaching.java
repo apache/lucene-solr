@@ -38,7 +38,7 @@ import org.junit.Test;
 public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   private static final int MOST_DOCS = 100;
-  private static final int ALL_DOCS = MOST_DOCS + 1;
+  private static final long ALL_DOCS = MOST_DOCS + 1;
   private static final String TEST_UFFSQ_PROPNAME = "solr.test.useFilterForSortedQuery";
   static String RESTORE_UFFSQ_PROP;
   private static final String TEST_QRC_WINDOW_SIZE_PROPNAME = "solr.test.queryResultWindowSize";
@@ -77,7 +77,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       }
     }
     // add an extra doc to distinguish scoring query from `*:*`
-    assertU(adoc("id", Integer.toString(MOST_DOCS), "str", "e" + MOST_DOCS));
+    assertU(adoc("id", Long.toString(MOST_DOCS), "str", "e" + MOST_DOCS));
     assertU(commit());
   }
 
@@ -102,8 +102,8 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static long coreToSortCount(SolrCore core, String skipOrFull) {
-    return (long)
-        ((SolrMetricManager.GaugeWrapper<?>)
+    return
+        ((SolrMetricManager.GaugeWrapper<Long>)
                 core.getCoreMetricManager()
                     .getRegistry()
                     .getMetrics()
@@ -261,7 +261,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertEquals("Bad matchAllDocs insert count", 1, coreToMatchAllDocsInsertCount(core));
     assertEquals("Bad filterCache insert count", 0, coreToInserts(core, "filterCache"));
     assertEquals("Bad full sort count", 0, coreToSortCount(core, "full"));
-    assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
+    assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (body.get("numFound")));
     long queryCacheInsertCount = coreToInserts(core, "queryResultCache");
     if (queryCacheInsertCount == expectCounters[0]) {
       // should be a hit, so all insert/sort-count metrics remain unchanged.
@@ -329,7 +329,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
                 "*",
                 "sort",
                 includeScoreInSort ? "score desc,id asc" : "id asc"));
-    final int expectNumFound = MATCH_ALL_DOCS_QUERY.equals(q) ? ALL_DOCS : MOST_DOCS;
+    final long expectNumFound = MATCH_ALL_DOCS_QUERY.equals(q) ? ALL_DOCS : MOST_DOCS;
     final boolean consultMatchAllDocs;
     final boolean insertFilterCache;
     if (includeScoreInSort) {
@@ -385,9 +385,9 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   private static void assertMetricCounts(
       String response,
       boolean matchAllDocs,
-      int expectFilterCacheInsertCount,
-      int expectFullSortCount,
-      int expectSkipSortCount) {
+      long expectFilterCacheInsertCount,
+      long expectFullSortCount,
+      long expectSkipSortCount) {
     assertMetricCounts(
         response,
         matchAllDocs,
@@ -400,10 +400,10 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   private static void assertMetricCounts(
       String response,
       boolean matchAllDocs,
-      int expectFilterCacheInsertCount,
-      int expectFullSortCount,
-      int expectSkipSortCount,
-      int expectNumFound) {
+      long expectFilterCacheInsertCount,
+      long expectFullSortCount,
+      long expectSkipSortCount,
+      long expectNumFound) {
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
     SolrCore core = h.getCore();
@@ -418,7 +418,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
     assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
     assertEquals(
-        "Should have exactly " + expectNumFound, expectNumFound, (long) (body.get("numFound")));
+        "Should have exactly " + expectNumFound, expectNumFound, (body.get("numFound")));
   }
 
   @Test
@@ -453,7 +453,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
                   Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
                   Map<?, ?> body = (Map<?, ?>) (res.get("response"));
                   assertEquals(
-                      "Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound")));
+                      "Should have exactly " + ALL_DOCS, ALL_DOCS, (body.get("numFound")));
                 } catch (Exception ex) {
                   throw new RuntimeException(ex);
                 }
