@@ -63,6 +63,7 @@
     <dependency org="io.netty" name="netty-handler" rev="${/io.netty/netty-handler}" conf="compile"/>
     <dependency org="io.netty" name="netty-transport" rev="${/io.netty/netty-transport}" conf="compile"/>
     <dependency org="io.netty" name="netty-transport-native-epoll" rev="${/io.netty/netty-transport-native-epoll}" conf="compile"/>
+    <dependency org="io.netty" name="netty-transport-classes-epoll" rev="${/io.netty/netty-transport-classes-epoll}" conf="compile"/>
     <dependency org="io.netty" name="netty-transport-native-unix-common" rev="${/io.netty/netty-transport-native-unix-common}" conf="compile"/>
 
     <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="test"/>
