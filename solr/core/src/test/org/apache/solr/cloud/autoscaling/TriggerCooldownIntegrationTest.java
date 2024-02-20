@@ -187,7 +187,7 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     public void process(TriggerEvent event, ActionContext actionContext) {
       try {
         if (triggerFired.compareAndSet(false, true)) {
-          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getTimeNs();
+          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -222,7 +222,7 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(timeSource.getTimeNs(),
+      lst.add(new CapturedEvent(timeSource.getEpochTimeNs(),
                                 context, config, stage, actionName, event, message));
     }
   }

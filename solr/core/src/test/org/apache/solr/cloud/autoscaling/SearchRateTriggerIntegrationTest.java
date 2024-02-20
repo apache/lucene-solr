@@ -237,7 +237,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertNull(events.get(2).actionName);
 
     CapturedEvent ev = events.get(0);
-    long now = timeSource.getTimeNs();
+    long now = timeSource.getEpochTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     Map<String, Double> nodeRates = (Map<String, Double>) ev.event.getProperties().get(SearchRateTrigger.HOT_NODES);
@@ -715,7 +715,7 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
-      CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
+      CapturedEvent ev = new CapturedEvent(timeSource.getEpochTimeNs(), context, config, stage, actionName, event, message);
       final CountDownLatch latch = listenerEventLatch;
       synchronized (latch) {
         if (0 == latch.getCount()) {

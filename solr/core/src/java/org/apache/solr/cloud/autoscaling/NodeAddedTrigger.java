@@ -93,7 +93,7 @@ public class NodeAddedTrigger extends TriggerBase {
         if (lastLiveNodes.contains(n) && !nodeNameVsTimeAdded.containsKey(n)) {
           // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeAdded for a node may also be restored
           log.debug("Adding node from marker path: {}", n);
-          nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTimeNs());
+          nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getEpochTimeNs());
         }
       });
     } catch (NoSuchElementException e) {
@@ -192,7 +192,7 @@ public class NodeAddedTrigger extends TriggerBase {
       Set<String> copyOfNew = new HashSet<>(newLiveNodes);
       copyOfNew.removeAll(lastLiveNodes);
       copyOfNew.forEach(n -> {
-        long eventTime = cloudManager.getTimeSource().getTimeNs();
+        long eventTime = cloudManager.getTimeSource().getEpochTimeNs();
         log.debug("Tracking new node: {} at time {}", n, eventTime);
         nodeNameVsTimeAdded.put(n, eventTime);
       });
@@ -204,7 +204,7 @@ public class NodeAddedTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeAdded = entry.getValue();
-        long now = cloudManager.getTimeSource().getTimeNs();
+        long now = cloudManager.getTimeSource().getEpochTimeNs();
         if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           nodeNames.add(nodeName);
           times.add(timeAdded);
@@ -215,7 +215,7 @@ public class NodeAddedTrigger extends TriggerBase {
         if (processor != null) {
           if (log.isDebugEnabled()) {
             log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name,
-                nodeNames, times, cloudManager.getTimeSource().getTimeNs());
+                nodeNames, times, cloudManager.getTimeSource().getEpochTimeNs());
           }
           if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames, preferredOp, replicaType))) {
             // remove from tracking set only if the fire was accepted

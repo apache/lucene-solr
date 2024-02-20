@@ -159,7 +159,7 @@ public class MetricTrigger extends TriggerBase {
       values.forEach((tag, rate) -> rates.computeIfAbsent(node, s -> (Number) rate));
     }
 
-    long now = cloudManager.getTimeSource().getTimeNs();
+    long now = cloudManager.getTimeSource().getEpochTimeNs();
     // check for exceeded rates and filter out those with less than waitFor from previous events
     Map<String, Number> hotNodes = rates.entrySet().stream()
         .filter(entry -> waitForElapsed(entry.getKey(), now, lastNodeEvent))

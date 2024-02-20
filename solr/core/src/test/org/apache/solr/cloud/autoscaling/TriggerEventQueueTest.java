@@ -64,7 +64,7 @@ public class TriggerEventQueueTest extends SolrTestCaseJ4 {
     hotHosts.put("host1", 1);
     hotHosts.put("host2", 1);
     TriggerEvent ev = new MetricTrigger.MetricBreachedEvent("testTrigger", "testCollection", "shard1",
-        CollectionParams.CollectionAction.ADDREPLICA.toLower(), cloudManager.getTimeSource().getTimeNs(),
+        CollectionParams.CollectionAction.ADDREPLICA.toLower(), cloudManager.getTimeSource().getEpochTimeNs(),
         "foo", hotHosts);
     queue.offerEvent(ev);
     ev = queue.pollEvent();
