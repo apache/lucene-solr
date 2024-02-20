@@ -10,7 +10,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17168: Add netty-transport-classes-epoll dependency (Colvin Cowie)
 
 ==================  8.11.3 ==================
 
