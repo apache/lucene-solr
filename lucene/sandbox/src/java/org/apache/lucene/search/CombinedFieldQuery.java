@@ -409,7 +409,7 @@ public final class CombinedFieldQuery extends Query implements Accountable {
       }
 
       MultiNormsLeafSimScorer scoringSimScorer =
-          new MultiNormsLeafSimScorer(simWeight, context.reader(), fields, true);
+          new MultiNormsLeafSimScorer(simWeight, context.reader(), fieldAndWeights.values(), true);
       LeafSimScorer nonScoringSimScorer =
           new LeafSimScorer(simWeight, context.reader(), "pseudo_field", false);
       // we use termscorers + disjunction as an impl detail

@@ -21,8 +21,10 @@ import static org.apache.lucene.search.CombinedFieldQuery.FieldAndWeight;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
@@ -59,7 +61,13 @@ final class MultiNormsLeafSimScorer {
     if (needsScores) {
       final List<NumericDocValues> normsList = new ArrayList<>();
       final List<Float> weightList = new ArrayList<>();
+      final Set<String> duplicateCheckingSet = new HashSet<>();
       for (FieldAndWeight field : normFields) {
+        assert duplicateCheckingSet.add(field.field)
+            : "There is a duplicated field ["
+                + field.field
+                + "] used to construct MultiNormsLeafSimScorer";
+
         NumericDocValues norms = reader.getNormValues(field.field);
         if (norms != null) {
           normsList.add(norms);
