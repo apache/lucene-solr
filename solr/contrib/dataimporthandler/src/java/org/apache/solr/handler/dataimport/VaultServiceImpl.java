@@ -6,46 +6,24 @@ import org.springframework.vault.core.VaultTemplate;
 import org.springframework.vault.support.VaultResponse;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.io.*;
 
 public class VaultServiceImpl {
     private static final String ENV_VAULT_TOKEN = "VAULT_TOKEN";
-    private static final String ENV_VAULT_AUTH_PATH = "VAULT_AUTH_PATH";
     private static final String ENV_VAULT_ADDR = "VAULT_ADDR";
     private static final String ENV_VAULT_PATH = "VAULT_PATH";
     private static final String DATA = "data";
-    private static final String vaultTokenFilePath = System.getenv().getOrDefault(ENV_VAULT_AUTH_PATH, "/etc/vault/token");
+
     private VaultTemplate vaultTemplate;
-    private String vaultToken;
-    private String vaultHost;
 
     public VaultServiceImpl() {
         try {
-            vaultToken = getVaultToken();
-            vaultHost = System.getenv(ENV_VAULT_ADDR);
+            String vaultToken = System.getenv(ENV_VAULT_TOKEN);
+            String vaultHost = System.getenv(ENV_VAULT_ADDR);
             vaultTemplate = new VaultTemplate(VaultEndpoint.from(new URI(vaultHost)), new TokenAuthentication(vaultToken));
         } catch (Exception e) {
             throw new RuntimeException("Failed to connect to vault using token", e);
-        }
-        watchVaultFileUpdates();
-    }
-
-    private String getVaultToken() {
-        try {
-            List<String> lines = Files.readAllLines(Paths.get(vaultTokenFilePath));
-            if (!lines.isEmpty()) {
-                return lines.get(0);
-            } else {
-                throw new RuntimeException(vaultTokenFilePath + ": vault auth token file is empty.");
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error reading vault auth token file", e);
         }
     }
 
@@ -79,16 +57,5 @@ public class VaultServiceImpl {
         }
 
         return new Properties();
-    }
-
-    private void watchVaultFileUpdates() {
-        FileWatcher.getInstance().addListener(Paths.get(vaultTokenFilePath).getParent(), (path, kind) -> {
-            vaultToken = getVaultToken();
-            try {
-                vaultTemplate = new VaultTemplate(VaultEndpoint.from(new URI(vaultHost)), new TokenAuthentication(vaultToken));
-            } catch (Exception e) {
-                throw new RuntimeException("vault configuration is wrong", e);
-            }
-        });
     }
 }
