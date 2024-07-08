@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * <p> {@link DocBuilder} is responsible for creating Solr documents out of the given configuration. It also maintains
@@ -83,6 +84,7 @@ public class DocBuilder {
   private DIHProperties propWriter;
   private DebugLogger debugLogger;
   private final RequestInfo reqParams;
+  private ObjectMapper mapper;
   
   public DocBuilder(DataImporter dataImporter, DIHWriter solrWriter, DIHProperties propWriter, RequestInfo reqParams) {
     INSTANCE.set(this);
@@ -98,6 +100,7 @@ public class DocBuilder {
     if (writer != null) {
       writer.init(ctx);
     }
+    this.mapper = new ObjectMapper();
   }
 
 
@@ -650,6 +653,23 @@ public class DocBuilder {
       Object value = entry.getValue();
       if (value == null)  continue;
       if (key.startsWith("$")) continue;
+        if (key.equalsIgnoreCase("payload")) {
+            if (value == null) {
+                continue;
+            }
+            try {
+                final SilkcloudIndexDocument document = (SilkcloudIndexDocument)mapper.readValue(value.toString(), (Class)SilkcloudIndexDocument.class);
+                for (final Map.Entry<String, Object> fieldEntry : document.getFields().entrySet()) {
+                    if (fieldEntry.getValue() != null) {
+                        doc.addField((String)fieldEntry.getKey(), fieldEntry.getValue());
+                    }
+                }
+                continue;
+            }
+            catch (Exception e) {
+                throw new DataImportHandlerException(500, e);
+            }
+        }
       Set<EntityField> field = entity.getColNameVsField().get(key);
       IndexSchema schema = null == reqParams.getRequest() ? null : reqParams.getRequest().getSchema();
       if (field == null && schema != null) {
