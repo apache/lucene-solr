@@ -93,7 +93,7 @@ public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          long currentTimeNanos = timeSource.getTimeNs();
+          long currentTimeNanos = timeSource.getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -135,7 +135,7 @@ public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
-          long currentTimeNanos = timeSource.getTimeNs();
+          long currentTimeNanos = timeSource.getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -282,7 +282,7 @@ public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
       newTrigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          long currentTimeNanos = timeSource.getTimeNs();
+          long currentTimeNanos = timeSource.getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {

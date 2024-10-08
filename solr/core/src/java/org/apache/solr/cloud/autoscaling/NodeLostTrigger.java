@@ -90,7 +90,7 @@ public class NodeLostTrigger extends TriggerBase {
         if (!lastLiveNodes.contains(n) && !nodeNameVsTimeRemoved.containsKey(n)) {
           // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeRemoved for a node may also be restored
           log.debug("Adding lost node from marker path: {}", n);
-          nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
+          nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getEpochTimeNs());
         }
       });
     } catch (NoSuchElementException e) {
@@ -184,7 +184,7 @@ public class NodeLostTrigger extends TriggerBase {
       copyOfLastLiveNodes.removeAll(newLiveNodes);
       copyOfLastLiveNodes.forEach(n -> {
         log.debug("Tracking lost node: {}", n);
-        nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getTimeNs());
+        nodeNameVsTimeRemoved.put(n, cloudManager.getTimeSource().getEpochTimeNs());
       });
 
       // has enough time expired to trigger events for a node?
@@ -194,7 +194,7 @@ public class NodeLostTrigger extends TriggerBase {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeRemoved = entry.getValue();
-        long now = cloudManager.getTimeSource().getTimeNs();
+        long now = cloudManager.getTimeSource().getEpochTimeNs();
         long te = TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS);
         if (te >= getWaitForSecond()) {
           nodeNames.add(nodeName);

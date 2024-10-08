@@ -154,7 +154,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     Thread.sleep(2000);
     assertEquals(listenerEvents.toString(), 4, listenerEvents.get("srt").size());
     CapturedEvent ev = listenerEvents.get("srt").get(0);
-    long now = timeSource.getTimeNs();
+    long now = timeSource.getEpochTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     assertEquals(collectionName, ev.event.getProperties().get("collection"));
@@ -197,7 +197,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     Thread.sleep(2000);
     assertEquals(listenerEvents.toString(), 4, listenerEvents.get("srt").size());
     ev = listenerEvents.get("srt").get(0);
-    now = timeSource.getTimeNs();
+    now = timeSource.getEpochTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     assertEquals(collectionName, ev.event.getProperties().get("collection"));
@@ -210,7 +210,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     @Override
     public void process(TriggerEvent event, ActionContext context) throws Exception {
       try {
-        long currentTimeNanos = context.getCloudManager().getTimeSource().getTimeNs();
+        long currentTimeNanos = context.getCloudManager().getTimeSource().getEpochTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -236,7 +236,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message));
+      lst.add(new CapturedEvent(timeSource.getEpochTimeNs(), context, config, stage, actionName, event, message));
                                 
     }
   }

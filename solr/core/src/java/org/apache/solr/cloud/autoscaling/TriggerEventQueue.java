@@ -53,7 +53,7 @@ public class TriggerEventQueue {
   }
 
   public boolean offerEvent(TriggerEvent event) {
-    event.getProperties().put(ENQUEUE_TIME, timeSource.getTimeNs());
+    event.getProperties().put(ENQUEUE_TIME, timeSource.getEpochTimeNs());
     try {
       byte[] data = Utils.toJSON(event);
       delegate.offer(data);
@@ -116,7 +116,7 @@ public class TriggerEventQueue {
 
   private TriggerEvent fromMap(Map<String, Object> map) {
     TriggerEvent res = TriggerEvent.fromMap(map);
-    res.getProperties().put(DEQUEUE_TIME, timeSource.getTimeNs());
+    res.getProperties().put(DEQUEUE_TIME, timeSource.getEpochTimeNs());
     return res;
   }
 }

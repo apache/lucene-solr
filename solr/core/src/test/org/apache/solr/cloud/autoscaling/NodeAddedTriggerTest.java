@@ -97,7 +97,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
-          long currentTimeNanos = cloudManager.getTimeSource().getTimeNs();
+          long currentTimeNanos = cloudManager.getTimeSource().getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -144,7 +144,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       AtomicBoolean fired = new AtomicBoolean(false);
       trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
-          long currentTimeNanos = cloudManager.getTimeSource().getTimeNs();
+          long currentTimeNanos = cloudManager.getTimeSource().getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -295,7 +295,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
       newTrigger.setProcessor(event -> {
         //the processor may get called 2 times, for newly added node and initial nodes
-        long currentTimeNanos = cloudManager.getTimeSource().getTimeNs();
+        long currentTimeNanos = cloudManager.getTimeSource().getEpochTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {

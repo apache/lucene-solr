@@ -341,7 +341,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     // since we know the nodeLost event has been detected, we can recored the current timestamp
     // (relative to the cluster's time source) and later assert that (restored state) correctly
     // tracked that the event happened prior to "now"
-    final long maxEventTimeNs = cluster.getTimeSource().getTimeNs();
+    final long maxEventTimeNs = cluster.getTimeSource().getEpochTimeNs();
     
     // even though our trigger has detected a lost node, the *action* we registered should not have
     // been run yet, due to the large waitFor configuration...
@@ -441,7 +441,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     // since we know the nodeAddded event has been detected, we can recored the current timestamp
     // (relative to the cluster's time source) and later assert that (restored state) correctly
     // tracked that the event happened prior to "now"
-    final long maxEventTimeNs = cluster.getTimeSource().getTimeNs();
+    final long maxEventTimeNs = cluster.getTimeSource().getEpochTimeNs();
     
     // even though our trigger has detected an added node, the *action* we registered should not have
     // been run yet, due to the large waitFor configuration...
@@ -670,7 +670,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
-          long currentTimeNanos = cluster.getTimeSource().getTimeNs();
+          long currentTimeNanos = cluster.getTimeSource().getEpochTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -1093,7 +1093,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
-      CapturedEvent ev = new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message);
+      CapturedEvent ev = new CapturedEvent(cluster.getTimeSource().getEpochTimeNs(), context, config, stage, actionName, event, message);
       final CountDownLatch latch = listenerEventLatch;
       synchronized (latch) {
         if (0 == latch.getCount()) {
@@ -1358,7 +1358,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     public void process(TriggerEvent event, ActionContext context) throws Exception {
       try {
         events.add(event);
-        long currentTimeNanos = cluster.getTimeSource().getTimeNs();
+        long currentTimeNanos = cluster.getTimeSource().getEpochTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
         if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -1459,7 +1459,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertNull(events.get(3).actionName);
 
     CapturedEvent ev = events.get(0);
-    long now = cluster.getTimeSource().getTimeNs();
+    long now = cluster.getTimeSource().getEpochTimeNs();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     Map<String, Double> nodeRates = (Map<String, Double>)ev.event.getProperties().get(SearchRateTrigger.HOT_NODES);

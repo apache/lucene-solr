@@ -124,7 +124,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
-      CapturedEvent ev = new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message);
+      CapturedEvent ev = new CapturedEvent(cluster.getTimeSource().getEpochTimeNs(), context, config, stage, actionName, event, message);
       final CountDownLatch latch = listenerEventLatch;
       synchronized (latch) {
         if (0 == latch.getCount()) {
