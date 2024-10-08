@@ -33,6 +33,8 @@ def read_config():
   parser = argparse.ArgumentParser(description='Find open Pull Requests that need attention')
   parser.add_argument('--json', action='store_true', default=False, help='Output as json')
   parser.add_argument('--token', help='Github access token in case you query too often anonymously')
+  parser.add_argument('--bulkclose', metavar='message',
+                      help='To bulk close all open PRs with label "stale-closed", supply a PR comment message')
   newconf = parser.parse_args()
   return newconf
 
@@ -59,6 +61,32 @@ def main():
   out("============================")
   out("Number of open Pull Requests: %s" % open_prs.totalCount)
   result['open_count'] = open_prs.totalCount
+
+  bulkclose = conf.bulkclose if conf.bulkclose is not None else None
+  if bulkclose:
+    if not token:
+      out("Need to supply a GitHub token to close PRs")
+      sys.exit(1)
+    out("Do you really want to bulk close %s open PRs with provided message?" % open_prs.totalCount)
+    a = None
+    while a not in ['y', 'n', 'l']:
+      out("\n")
+      a = input("Please choose Yes or No, or List (Y/N/L): ").lower()
+      if a == 'l':
+        for pr in open_prs:
+          out("#%s: %s" % (pr.number, pr.title))
+        a = None
+      if a == 'n':
+        sys.exit(0)
+      if a == 'y':
+        for pr in open_prs:
+          out("Closing #%s: %s" % (pr.number, pr.title))
+          pr.add_to_labels('stale-closed')
+          pr.create_issue_comment(bulkclose)
+          pr.edit(state='closed')
+        out("All open PRs now closed with comment and label 'stale-closed'")
+        sys.exit(1)
+    return
 
   lack_jira = list(filter(lambda x: not re.match(r'.*\b(LUCENE|SOLR)-\d{3,6}\b', x.title), open_prs))
   lack_jira_dict = {}
