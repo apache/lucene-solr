@@ -69,6 +69,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -130,7 +131,11 @@ public class SolrIndexSplitter {
     }
     routeFieldName = cmd.routeFieldName;
     if (routeFieldName == null) {
-      field = searcher.getSchema().getUniqueKeyField();
+      // To support routing child documents, use the root field if it exists, otherwise use the unique key field
+      field = searcher.getSchema().getFieldOrNull(IndexSchema.ROOT_FIELD_NAME);
+      if(field == null) {
+        field = searcher.getSchema().getUniqueKeyField();
+      }
     } else  {
       field = searcher.getSchema().getField(routeFieldName);
     }
