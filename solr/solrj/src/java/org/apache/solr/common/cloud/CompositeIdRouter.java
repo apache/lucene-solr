@@ -101,6 +101,18 @@ public class CompositeIdRouter extends HashBasedRouter {
     return new KeyParser(id).getHash();
   }
 
+  @Override
+  public Slice getTargetSlice(String id, SolrInputDocument sdoc, String route, SolrParams params, DocCollection collection) {
+    // if this is a delete-by-id (sdoc==null), then return null if the route is missing and there is a route field defined.
+    // otherwise, we will return the slice using the hash on the id
+    if (sdoc == null && route == null) {
+      String shardFieldName = getRouteField(collection);
+      if (shardFieldName != null) {
+        return null;
+      }
+    }
+    return super.getTargetSlice(id, sdoc, route, params, collection);
+  }
 
   /**
    * Get Range for a given CompositeId based route key

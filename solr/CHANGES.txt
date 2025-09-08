@@ -10,7 +10,9 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
+  and the route is missing from the command. (Michael Kosten via Christine Poerschke, David Smiley, Eric Pugh)
 
 ==================  8.11.4 ==================
 

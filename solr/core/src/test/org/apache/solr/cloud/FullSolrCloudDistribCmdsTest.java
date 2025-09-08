@@ -249,19 +249,24 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
          SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
-      // Add three documents w/diff routes (all sent to shard1 leader's core)
+      // Add six documents w/diff routes (all sent to shard1 leader's core)
       shard1.add(sdoc("id", "1", "routefield_s", "europe"));
       shard1.add(sdoc("id", "3", "routefield_s", "europe"));
       shard1.add(sdoc("id", "5", "routefield_s", "africa"));
+      shard1.add(sdoc("id", "7", "routefield_s", "europe"));
+      shard1.add(sdoc("id", "9", "routefield_s", "europe"));
+      shard1.add(sdoc("id", "11", "routefield_s", "africa"));
       shard1.commit();
 
-      // Add two documents w/diff routes (all sent to shard2 leader's core)
+      // Add four documents w/diff routes (all sent to shard2 leader's core)
+      shard2.add(sdoc("id", "8", "routefield_s", "africa"));
+      shard2.add(sdoc("id", "6", "routefield_s", "europe"));
       shard2.add(sdoc("id", "4", "routefield_s", "africa"));
       shard2.add(sdoc("id", "2", "routefield_s", "europe"));
       shard2.commit();
-      
-      final AtomicInteger docCountsEurope = new AtomicInteger(3);
-      final AtomicInteger docCountsAfrica = new AtomicInteger(2);
+
+      final AtomicInteger docCountsEurope = new AtomicInteger(6);
+      final AtomicInteger docCountsAfrica = new AtomicInteger(4);
 
       // A re-usable helper to verify that the expected number of documents can be found based on _route_ key...
       Runnable checkShardCounts = () -> {
@@ -292,6 +297,27 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("2", "europe");
         deleteRequest.deleteById("5", "africa");
+        shard1.request(deleteRequest);
+        shard1.commit();
+        docCountsEurope.decrementAndGet();
+        docCountsAfrica.decrementAndGet();
+      }
+      checkShardCounts.run();
+
+      // Tests for distributing delete by id when route is missing from the request
+      { // Send a delete request with no route to shard1 for document on shard2, should be distributed
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("8");
+        shard1.request(deleteRequest);
+        shard1.commit();
+        docCountsAfrica.decrementAndGet();
+      }
+      checkShardCounts.run();
+
+      { // Multiple deleteById commands with missing route in a single request, should be distributed
+        final UpdateRequest deleteRequest = new UpdateRequest();
+        deleteRequest.deleteById("6");
+        deleteRequest.deleteById("11");
         shard1.request(deleteRequest);
         shard1.commit();
         docCountsEurope.decrementAndGet();
